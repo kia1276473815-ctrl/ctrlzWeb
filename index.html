@@ -8,10 +8,38 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>CTRL Z</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,400..900&display=swap">
+<meta name="description" content="FOR GEN Z BY GEN Z · 声音、视觉、资源与创作者店铺。采样、合成器预设、TouchDesigner .tox 与视觉素材，一站发现与交易。">
+<link rel="canonical" href="https://kia1276473815-ctrl.github.io/ctrlzWeb/">
+<!-- 分享卡片：链接发到 QQ / Telegram / Discord / X / iMessage 等时显示的标题、简介与封面 -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CTRL Z">
+<meta property="og:title" content="CTRL Z · FOR GEN Z BY GEN Z">
+<meta property="og:description" content="声音 · 视觉 · 资源 · 创作者店铺。采样、预设、.tox 与视觉素材。">
+<meta property="og:url" content="https://kia1276473815-ctrl.github.io/ctrlzWeb/">
+<meta property="og:image" content="https://kia1276473815-ctrl.github.io/ctrlzWeb/og.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="CTRL Z — FOR GEN Z BY GEN Z">
+<meta property="og:locale" content="zh_CN">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CTRL Z · FOR GEN Z BY GEN Z">
+<meta name="twitter:description" content="声音 · 视觉 · 资源 · 创作者店铺。采样、预设、.tox 与视觉素材。">
+<meta name="twitter:image" content="https://kia1276473815-ctrl.github.io/ctrlzWeb/og.jpg">
+<!-- 图标 -->
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="CTRL Z">
+<!-- 展示字体 Archivo 随站点自托管（不依赖 Google Fonts，国内网络也能正常加载、不阻塞首屏） -->
+<link rel="preload" href="fonts/Archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* 展示字体：Archivo（SIL OFL 1.1，见 fonts/Archivo_OFL.txt），可变字重 400–900、字宽 62%–125%，按字符范围拆分 */
+@font-face{font-family:"Archivo";font-style:normal;font-weight:400 900;font-stretch:62% 125%;font-display:swap;src:url("fonts/Archivo-latin-ext.woff2") format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Archivo";font-style:normal;font-weight:400 900;font-stretch:62% 125%;font-display:swap;src:url("fonts/Archivo-latin.woff2") format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Archivo";font-style:italic;font-weight:400 900;font-stretch:62% 125%;font-display:swap;src:url("fonts/Archivo-Italic-latin-ext.woff2") format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Archivo";font-style:italic;font-weight:400 900;font-stretch:62% 125%;font-display:swap;src:url("fonts/Archivo-Italic-latin.woff2") format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 /* 正文字体：HarmonyOS Sans（西文随页面直接加载；中文字库较大，由脚本在页面可用后加载，加载完成前用系统字体） */
 @font-face{font-family:"HarmonyOS Sans";src:url("fonts/HarmonyOS_Sans.ttf") format("truetype");font-weight:40 900;font-style:normal;font-display:swap}
 
@@ -4971,11 +4999,18 @@ document.addEventListener('keydown', e => {
 
 /* ================= 启动 ================= */
 /* 中文字库（HarmonyOS Sans SC，未改动的原始字体文件）约 20MB，按传输需要拆成两段，取回后原样拼接再交给浏览器；
-   页面先用系统字体显示，字库就绪后整体切换 */
+   页面先用系统字体显示，字库就绪后整体切换。
+   取回的两段存进 Cache Storage，再次访问直接从本地读取，不再重新下载；开启「省流量」的设备不加载，一直用系统字体 */
 function loadHarmonySC(){
   if (!window.FontFace || !window.fetch || /^file:/.test(location.protocol)) return;
+  if (navigator.connection && navigator.connection.saveData) return;
   const parts = ['fonts/HarmonyOS_Sans_SC.part1.ttf', 'fonts/HarmonyOS_Sans_SC.part2.ttf'];
-  Promise.all(parts.map(u => fetch(u).then(r => { if (!r.ok) throw new Error(u); return r.arrayBuffer(); })))
+  const cacheP = window.caches ? caches.open('ctrlz-font-sc-v1').catch(() => null) : Promise.resolve(null);
+  const get = u => cacheP.then(c => (c ? c.match(u).catch(() => null) : Promise.resolve(null)).then(hit => {
+    if (hit) return hit.arrayBuffer();
+    return fetch(u).then(r => { if (!r.ok) throw new Error(u); if (c) c.put(u, r.clone()).catch(() => {}); return r.arrayBuffer(); });
+  }));
+  Promise.all(parts.map(get))
     .then(bufs => { const all = new Uint8Array(bufs.reduce((a, b) => a + b.byteLength, 0)); let o = 0; bufs.forEach(b => { all.set(new Uint8Array(b), o); o += b.byteLength; });
       const f = new FontFace('HarmonyOS Sans SC', all.buffer, {weight:'40 900', style:'normal'}); return f.load(); })
     .then(f => { document.fonts.add(f); document.documentElement.classList.add('hos'); fitText(); navInk(); })
