@@ -58,6 +58,7 @@
   --f-b:"HarmonyOS Sans","HarmonyOS Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
   --g:clamp(16px,3.2vw,44px);
   --hd:64px;
+  --hdy:var(--hd); /* 顶栏当前占用的高度：往下滑收起时变 0，贴在顶栏下面的元素用它定位 */
   --ease:cubic-bezier(.2,.9,.1,1);
   --spring:cubic-bezier(.3,1.5,.5,1);
   --grain:none;
@@ -86,8 +87,12 @@ img{display:block}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--c,var(--ink));flex:none;display:inline-block}
 
 /* ===== 顶栏 ===== */
-.hd{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;height:var(--hd);display:flex;align-items:center;gap:clamp(12px,2vw,28px);padding-inline:var(--g);background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid transparent;transition:border-color .2s}
+.hd{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;height:var(--hd);display:flex;align-items:center;gap:clamp(12px,2vw,28px);padding-inline:var(--g);background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid transparent;transition:border-color .2s,transform .3s var(--ease)}
 .hd.sc{border-bottom-color:var(--rule)}
+/* 往下滑收起顶栏、往上滑再浮出（所有尺寸）；贴在顶栏下面的页签条、侧栏一起上移 */
+html.hd-off{--hdy:0px}
+html.hd-off .hd{transform:translateY(calc(-100% - env(safe-area-inset-top,0px) - 2px))}
+.sticky-f,.info,.snav,.htabs,.mtabs,.m-main,.toasts,.stk-hd{transition:top .3s var(--ease)}
 .wm{font:900 26px/1 var(--f-x);font-stretch:125%;letter-spacing:-.04em;display:flex;align-items:baseline;white-space:nowrap}
 .wm span{color:var(--pink);margin-left:.18em;position:relative}
 .wm span::before{content:"Z";position:absolute;left:2px;top:2px;color:var(--blue);mix-blend-mode:multiply;z-index:-1}
@@ -96,6 +101,10 @@ img{display:block}
 .nav a:hover{color:var(--ink);background:rgba(20,20,24,.05)}
 .nav a.on{color:var(--paper);background:var(--ink)}
 .hd-r{display:flex;align-items:center;gap:10px}
+.hd[data-s=none] .sbtn{display:none} /* 「我」板块不提供搜索 */
+/* 首页：左上角是菜单（三条横线），不显示 logo；其他页面照常显示 logo */
+.hd-menu{flex:none;margin-left:-8px}
+.hd:not(.at-home) .hd-menu,.hd.at-home .wm{display:none}
 .sbtn{display:flex;align-items:center;gap:10px;height:40px;padding:0 8px 0 16px;border-radius:999px;background:var(--card);border:1px solid var(--rule);color:var(--ink-3);font-size:14px;min-width:220px;transition:border-color .2s}
 .sbtn:hover{border-color:var(--rule-2);color:var(--ink-2)}
 .sbtn svg{width:16px;height:16px}
@@ -166,7 +175,7 @@ main{min-height:80vh}
 .more svg{width:14px;height:14px}
 .rail{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-block:2px;-webkit-overflow-scrolling:touch}
 .rail::-webkit-scrollbar{display:none}
-.sticky-f{position:sticky;top:calc(var(--hd) + env(safe-area-inset-top,0px));z-index:20;background:var(--paper);padding-block:10px;margin-inline:calc(var(--g) * -1);padding-inline:var(--g)}
+.sticky-f{position:sticky;top:calc(var(--hdy) + env(safe-area-inset-top,0px));z-index:20;background:var(--paper);padding-block:10px;margin-inline:calc(var(--g) * -1);padding-inline:var(--g)}
 
 /* ===== 首页海报 ===== */
 .hero{position:relative;height:min(82vh,760px);min-height:520px;overflow:hidden;background:#F7F6F1;cursor:crosshair;touch-action:manipulation;user-select:none;-webkit-user-select:none}
@@ -509,7 +518,7 @@ main{min-height:80vh}
 .seg{display:inline-flex;background:rgba(255,255,255,.5);border-radius:999px;padding:3px}
 .seg button{height:30px;padding:0 13px;border-radius:999px;font:700 12px/1 var(--f-b);transition:all .18s;white-space:nowrap}
 .seg button.on{background:var(--ink);color:var(--paper)}
-.info{display:flex;flex-direction:column;gap:22px;min-width:0;position:sticky;top:calc(var(--hd) + 20px)}
+.info{display:flex;flex-direction:column;gap:22px;min-width:0;position:sticky;top:calc(var(--hdy) + 20px)}
 .info h1{font-size:clamp(28px,3vw,40px);line-height:1.2;font-weight:900;margin-top:8px}
 .info .en{font-size:clamp(18px,1.6vw,22px)}
 .buy{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -560,7 +569,7 @@ main{min-height:80vh}
 
 /* ===== 后台 ===== */
 .dash{display:grid;grid-template-columns:200px minmax(0,1fr);gap:clamp(20px,3vw,48px);align-items:start}
-.snav{display:flex;flex-direction:column;gap:2px;position:sticky;top:calc(var(--hd) + 20px)}
+.snav{display:flex;flex-direction:column;gap:2px;position:sticky;top:calc(var(--hdy) + 20px)}
 .snav button{display:flex;align-items:center;gap:10px;height:42px;padding:0 14px;border-radius:999px;font-size:14.5px;font-weight:500;color:var(--ink-2);text-align:left;transition:all .18s}
 .snav button:hover{background:rgba(20,20,24,.05);color:var(--ink)}
 .snav button.on{background:var(--ink);color:var(--paper)}
@@ -711,7 +720,7 @@ mark{background:var(--yellow);color:inherit;border-radius:3px;padding:0 1px}
 body.post-open .player{bottom:auto;top:calc(10px + env(safe-area-inset-top,0px));animation:none}
 @media (min-width:761px) and (min-height:561px){ body.post-open.playing .ov{padding-top:84px;transition:padding .25s var(--ease)} body.post-open.playing .post{height:min(860px,calc(100vh - 108px))} }
 /* 吐司 */
-.toasts{position:fixed;left:50%;top:calc(var(--hd) + 12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:120;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toasts{position:fixed;left:50%;top:calc(var(--hdy) + 12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:120;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
 .toast{display:flex;align-items:center;gap:10px;height:42px;padding:0 18px 0 8px;border-radius:999px;background:var(--ink);color:var(--paper);font-size:14px;animation:tin .32s var(--spring);white-space:nowrap}
 .toast i{width:26px;height:26px;border-radius:50%;background:var(--c,var(--green));display:grid;place-items:center;color:var(--ink)}
 .toast i svg{width:13px;height:13px}
@@ -735,7 +744,7 @@ footer p{font-size:13px;color:var(--ink-3);text-align:right;line-height:1.8}
   .info{position:static}
   .post{grid-template-columns:1fr;grid-template-rows:minmax(0,46%) minmax(0,1fr)}
   .dash{grid-template-columns:1fr}
-  .snav{position:sticky;top:calc(var(--hd) + env(safe-area-inset-top,0px));z-index:15;flex-direction:row;overflow-x:auto;background:var(--paper);padding-block:8px;scrollbar-width:none;margin-inline:calc(var(--g) * -1);padding-inline:var(--g)}
+  .snav{position:sticky;top:calc(var(--hdy) + env(safe-area-inset-top,0px));z-index:15;flex-direction:row;overflow-x:auto;background:var(--paper);padding-block:8px;scrollbar-width:none;margin-inline:calc(var(--g) * -1);padding-inline:var(--g)}
   .snav::-webkit-scrollbar{display:none}
   .snav button{flex:none}
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -1085,7 +1094,7 @@ canvas[data-wave]:focus-visible{box-shadow:0 0 0 2px var(--on)}
 .nav a .bdg{right:-6px;top:-2px}
 /* 首页 */
 .home{padding-top:6px}
-.htabs{position:sticky;top:var(--hd);z-index:20;display:flex;justify-content:center;gap:clamp(18px,4vw,36px);padding:10px 0 12px;margin-bottom:6px;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.htabs{position:sticky;top:calc(var(--hdy) + env(safe-area-inset-top,0px));z-index:20;display:flex;justify-content:center;gap:clamp(18px,4vw,36px);padding:10px 0 12px;margin-bottom:6px;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .htabs button{position:relative;font:700 17px/1 var(--f-b);color:var(--ink-3);padding:6px 2px;transition:color .2s}
 .htabs button.on{color:var(--ink)}
 .htabs button.on::after{content:"";position:absolute;left:50%;bottom:-4px;width:20px;height:3px;margin-left:-10px;border-radius:2px;background:var(--pink)}
@@ -1215,7 +1224,7 @@ body.reels-open .totop{display:none}
 .mrow time{font-size:11.5px;color:var(--ink-3);white-space:nowrap}
 .mrow .mr .bdg{position:static}
 .mrow .nth{width:44px;height:44px;border-radius:8px;object-fit:cover}
-.m-main{min-width:0;border-radius:20px;background:var(--card);height:calc(100vh - var(--hd) - 40px);height:calc(100dvh - var(--hd) - 40px);min-height:420px;display:flex;flex-direction:column;overflow:hidden;position:sticky;top:calc(var(--hd) + 20px)}
+.m-main{min-width:0;border-radius:20px;background:var(--card);height:calc(100vh - var(--hd) - 40px);height:calc(100dvh - var(--hd) - 40px);min-height:420px;display:flex;flex-direction:column;overflow:hidden;position:sticky;top:calc(var(--hdy) + 20px)}
 .m-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--ink-3);padding:30px;text-align:center}
 .m-empty .x{font-size:64px;color:var(--rule-2)}
 .conv{flex:1;display:flex;flex-direction:column;min-height:0;height:100%}
@@ -1290,7 +1299,7 @@ body.reels-open .totop{display:none}
 .mqc span span{font-size:12px;color:var(--ink-3);display:block;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mqc em{font-style:normal;color:var(--pink);font-weight:700}
 .mqc > span:last-child{min-width:0}
-.mtabs{position:sticky;top:var(--hd);z-index:20;display:flex;gap:clamp(18px,4vw,34px);margin-top:18px;padding:12px 0 10px;border-bottom:1px solid var(--rule);background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.mtabs{position:sticky;top:calc(var(--hdy) + env(safe-area-inset-top,0px));z-index:20;display:flex;gap:clamp(18px,4vw,34px);margin-top:18px;padding:12px 0 10px;border-bottom:1px solid var(--rule);background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .mtabs button{position:relative;display:flex;align-items:baseline;gap:5px;font:700 16px/1 var(--f-b);color:var(--ink-3);padding:4px 0}
 .mtabs button i{font-style:normal;font-size:12px;font-weight:600}
 .mtabs button.on{color:var(--ink)}
@@ -1321,7 +1330,7 @@ body.reels-open .totop{display:none}
 .drw-f{margin-top:auto;padding:14px 8px 0;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:10px;align-items:flex-start}
 .msub .sub-h{display:flex;align-items:center;gap:12px;padding:16px 0 20px}
 .msub .sub-h h1{font:900 clamp(24px,3.4vw,36px)/1 var(--f-b)}
-@media (max-width:760px){ .mtabs{top:var(--hd)} .htabs{top:var(--hd)} .mh-q{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .mqc{padding:10px 12px;gap:10px} .mqc .g{width:34px;height:34px} }
+@media (max-width:760px){ .mtabs{top:calc(var(--hdy) + env(safe-area-inset-top,0px))} .htabs{top:calc(var(--hdy) + env(safe-area-inset-top,0px))} .mh-q{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .mqc{padding:10px 12px;gap:10px} .mqc .g{width:34px;height:34px} }
 @media (max-height:440px){ .rl-d,.rl-att{display:none} .rl-info{padding:40px 14px 14px;gap:6px} .rl-info h3{font-size:14px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;overflow:hidden} .rl-top{padding-top:4px} .rl-ic{width:38px;height:38px} .rl-cm{height:80%} }
 
 /* ===== 声音流（替代短视频）：封面会跟着声音动，底部是可点选 / 拖动的真实波形 ===== */
@@ -1581,6 +1590,7 @@ html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
 
 <header class="hd" id="hd">
   <button class="hd-back" id="hdBack" data-act="back" aria-label="返回" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+  <button class="rl-ic dk hd-menu" data-act="me-menu" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
   <a class="wm" href="#home" aria-label="CTRL Z 首页">CTRL<span>Z</span></a>
   <span class="hd-tt" id="hdTt"></span>
   <nav class="nav" aria-label="主导航"><span class="nav-ink"></span>
@@ -3339,10 +3349,12 @@ const UI = {
 };
 const CUR = {key:null, hash:'#home', post:null};
 function parseHash(){ const h = decodeURIComponent(location.hash.slice(1)) || 'home'; const i = h.indexOf('-'); return i < 0 ? {r:h, arg:''} : {r:h.slice(0,i), arg:h.slice(i+1)}; }
-function go(h){ if (location.hash.slice(1) === h) render(true); else location.hash = h; }
+function go(h){ h = String(h).replace(/^#/, '');
+  if (HST.ov){ HST.after = h; closeOverlays(); return; }   // 先关弹层（退掉它那条历史），再去目标页
+  if (location.hash.slice(1) === h) render(true); else if (isRootH(h)) navTab(h); else location.hash = h; }
 function render(force){
   const {r, arg} = parseHash();
-  if (r === 'v' && POST(arg) && !inStream(POST(arg))){ location.replace('#post-' + arg); return; }
+  if (r === 'v' && POST(arg) && !inStream(POST(arg))){ navReplace('#post-' + arg); return; }
   if (r === 'v' || (r === 'post' && inStream(POST(arg)))){ if (!CUR.key) renderBase('home', ''); if (CUR.post) closePostLayer(); openReels(arg); return; }
   if (RL.on) closeReels();
   if (r === 'post'){ if (!CUR.key) renderBase('home', ''); openPost(arg); return; }
@@ -3370,8 +3382,42 @@ function renderBase(r, arg, soft){
 function revealActive(root){ $$('.on', root).forEach(el => { const par = el.parentElement; if (!par || par.scrollWidth <= par.clientWidth + 2 || !/(auto|scroll)/.test(getComputedStyle(par).overflowX)) return;
   const l = el.getBoundingClientRect().left - par.getBoundingClientRect().left + par.scrollLeft, want = l - (par.clientWidth - el.offsetWidth)/2; if (l < par.scrollLeft || l + el.offsetWidth > par.scrollLeft + par.clientWidth) par.scrollLeft = Math.max(0, want); }); }
 function rerender(){ if (CUR.post) { renderPost(CUR.post); UI.dirty = true; return; } const {r, arg} = parseHash(); renderBase(r, arg, true); }
-/* 返回：有站内历史就退一步，没有就回到上一级 */
-const NAV = [location.hash || '#home'];
+/* ---------- 浏览器历史 = 页面层级（安卓返回手势、浏览器后退键都走这里） ----------
+   · 首页是最底层；商城 / 私信 / 我 永远只叠在首页上面一层：在这三个页签按返回 → 首页，首页再返回 → 离开网站
+   · 页签之间切换不新增历史；子页面、帖子照常一层层往上叠，返回一层层退
+   · 页面里的「返回 / 关闭」按钮：上一条历史就是要回去的页面 → 真正后退；否则原地替换，不在历史里越堆越多
+   · 弹层（底部面板、侧边菜单、搜索）打开时也占一条历史，所以返回手势先关弹层，而不是直接离开页面
+   每条历史在 state.ctrlz 里记下自己的层数，后退 / 前进 / 刷新后都据此知道自己在第几层 */
+const HST = {d:0, stk:['#home'], pend:null, after:null, repl:false, ov:false};
+const routeOf = h => (String(h || '').replace(/^#/, '').split('-')[0]) || 'home';
+const isRootH = h => !isOverlay(h) && !parentOf('#' + String(h || '').replace(/^#/, ''));
+const curH = () => location.hash || '#home';
+function navReplace(h){ h = '#' + String(h).replace(/^#/, ''); if (h === curH()) return; HST.repl = true; location.replace(h); }
+/* 退回到第 k 层；落地那一层不是 h 的话再原地换成 h（中间那一下不渲染） */
+function navBackTo(k, h){ h = '#' + String(h).replace(/^#/, ''); if (k >= HST.d){ navReplace(h); return; } HST.pend = h; history.go(k - HST.d); }
+/* 回上一层 */
+function navUp(h){ h = '#' + String(h).replace(/^#/, ''); const prev = HST.stk[HST.d - 1];
+  if (HST.d > 0 && prev && (prev === h || routeOf(prev) === routeOf(h))) navBackTo(HST.d - 1, h); else navReplace(h); }
+/* 切到页签（首页在第 0 层，其余页签在第 1 层） */
+function navTab(h){ h = '#' + String(h).replace(/^#/, ''); const want = routeOf(h) === 'home' ? 0 : 1;
+  if (HST.d === want) navReplace(h); else if (HST.d < want) location.hash = h; else navBackTo(want, h); }
+/* 启动：刷新时沿用这条历史记下的层数；直接打开某个非首页的链接时，在它下面垫一层首页，返回就先回首页 */
+(() => { const st = history.state, h = curH();
+  if (st && st.ctrlz != null){ HST.d = st.ctrlz; HST.stk[HST.d] = h; return; }
+  if (routeOf(h) === 'home' && !h.includes('-')){ history.replaceState({ctrlz:0}, ''); return; }
+  history.replaceState({ctrlz:0}, '', '#home'); history.pushState({ctrlz:1}, '', h); HST.d = 1; HST.stk = ['#home', h]; })();
+/* 弹层占一条历史：打开时压入一条同网址的历史；点关闭 → 顺手退掉这条；按返回 → 退掉这条并关闭弹层 */
+function closeOverlays(){ closeSheet(); closeSearch(); }
+function ovSync(){ const open = !!($('#layer').firstElementChild || $('#srch'));
+  if (open && !HST.ov){ HST.ov = true; HST.d++; HST.stk.length = HST.d; HST.stk[HST.d] = curH(); history.pushState({ctrlz:HST.d, ov:1}, ''); }
+  else if (!open && HST.ov){ HST.ov = false; history.back(); } }
+new MutationObserver(ovSync).observe($('#layer'), {childList:true});
+new MutationObserver(ovSync).observe(document.body, {childList:true});
+/* 网址没变的后退（关弹层那一条）不会触发 hashchange，在这里处理 */
+addEventListener('popstate', () => { const st = history.state; if (!st || st.ctrlz == null || curH() !== HST.stk[HST.d]) return;
+  HST.d = st.ctrlz; if (HST.ov){ HST.ov = false; closeOverlays(); }
+  if (HST.pend){ const p = HST.pend; HST.pend = null; navReplace(p); }
+  else if (HST.after){ const a = HST.after; HST.after = null; go(a); } });
 /* 位置记忆：离开一个页面时记下它的滚动位置；后退或从导航页签切回来时恢复，普通前进到新页面从顶部开始 */
 try { history.scrollRestoration = 'manual'; } catch(e){}
 const SCROLLS = {}, PSCROLLS = {}, NAVX = {back:false, tab:false};
@@ -3379,11 +3425,17 @@ const SCROLLS = {}, PSCROLLS = {}, NAVX = {back:false, tab:false};
 const scrollKey = h => /^#shop(-|$)/.test(h || '') ? `#shop:${UI.shop.cat}:${UI.shop.sub || 'all'}` : h;
 function restoreScroll(y){ const go = () => scrollTo(0, Math.min(y, document.documentElement.scrollHeight - innerHeight)); go(); requestAnimationFrame(() => requestAnimationFrame(go)); } // 先同步滚一次（页面切换动画拍快照时就在原位），两帧后再校正
 function postScroller(){ const p = $('#post .post'); if (!p) return null; return getComputedStyle(p).overflowY === 'auto' ? p : $('#post .scroll'); }
-addEventListener('hashchange', () => { const h = location.hash || '#home';
+addEventListener('hashchange', () => { const h = curH(), st = history.state;
+  let back = false;
+  if (st && st.ctrlz != null){ back = st.ctrlz < HST.d; HST.d = st.ctrlz; }   // 后退 / 前进到一条已有的历史
+  else { if (!HST.repl){ HST.d++; HST.stk.length = HST.d; } history.replaceState({ctrlz:HST.d}, ''); }   // 新压入（或原地替换）的历史
+  HST.repl = false; HST.stk[HST.d] = h;
+  if (HST.pend){ const p = HST.pend; HST.pend = null; if (p !== h){ navReplace(p); return; } }
+  if (HST.ov){ HST.ov = false; closeOverlays(); }
   SCROLLS[scrollKey(CUR.hash)] = scrollY; if (CUR.post){ const sc = postScroller(); if (sc) PSCROLLS[CUR.post] = sc.scrollTop; }
-  NAVX.back = UI.goUp || NAV[NAV.length - 2] === h; UI.goUp = false;
+  NAVX.back = UI.goUp || back; UI.goUp = false;
   { const r0 = (h.slice(1).split('-')[0]) || 'home'; if (['home','shop','msg','me'].includes(r0) && !h.includes('-') ) UI.lastTab = r0; }
-  if (NAVX.back) NAV.pop(); else NAV.push(h); if (NAV.length > 60) NAV.shift(); closeSheet(); $('#menu')?.remove();
+  closeSheet(); closeSearch(); $('#menu')?.remove();
   pageSwap(navDir(CUR.hash, h), () => { render(); NAVX.back = NAVX.tab = false; }); });
 /* 返回 = 回到真正的上一层（页面层级），而不是浏览器历史里的上一步：
    商品 → 它所在的商城分类；会话 → 私信列表；我的子页 / 工作室 / 管理 → 我；别人的主页 → 你当前所在的那个底部页签 */
@@ -3402,14 +3454,27 @@ ACTIONS.back = () => {
   const p = parentOf(location.hash || '#home'); if (!p) return;
   if (p.startsWith('shop-')){ const [c, sb] = p.slice(5).split('-'), s = UI.shop;
     // 你刚才在看的商城筛选本来就包含这件商品（比如"全部"）→ 原样回去，位置也还在；否则回到它所在的分类
-    if (s.cat === 'all' || (s.cat === c && (!sb || !s.sub || s.sub === 'all' || s.sub === sb))){ UI.goUp = true; location.hash = 'shop'; return; }
+    if (s.cat === 'all' || (s.cat === c && (!sb || !s.sub || s.sub === 'all' || s.sub === sb))){ UI.goUp = true; navUp('shop'); return; }
     s.cat = c; s.sub = sb || 'all'; }
-  UI.goUp = true; location.hash = p;
+  UI.goUp = true; navUp(p);
 };
-addEventListener('scroll', () => $('#hd').classList.toggle('sc', scrollY > 8), {passive:true});
-/* 再点一次当前页签 = 回到顶部；点别的页签 = 切过去并回到上次看到的位置 */
-document.addEventListener('click', e => { const a = e.target.closest('a[data-r]'); if (!a || e.metaKey || e.ctrlKey) return;
-  const h = a.getAttribute('href'); if ((location.hash || '#home') === h && !CUR.post){ e.preventDefault(); scrollTo({top:0, behavior:reduced() ? 'auto' : 'smooth'}); } else NAVX.tab = true; }, true);
+/* 顶栏：往下滑一段收起，往上滑立刻浮出；靠近页面顶部、刚切换页面（恢复滚动位置那一下不算）时始终显示 */
+const HDS = {y:0, acc:0, lock:0};
+const hdShow = on => document.documentElement.classList.toggle('hd-off', !on);
+addEventListener('scroll', () => { const y = scrollY, dy = y - HDS.y; HDS.y = y;
+  $('#hd').classList.toggle('sc', y > 8);
+  if (y < $('#hd').offsetHeight + 24){ HDS.acc = 0; hdShow(true); return; }
+  if (performance.now() < HDS.lock || HST.ov || CUR.post || RL.on) return;
+  HDS.acc = Math.sign(dy) === Math.sign(HDS.acc) ? HDS.acc + dy : dy;
+  if (HDS.acc > 24) hdShow(false); else if (HDS.acc < -12) hdShow(true); }, {passive:true});
+document.addEventListener('rendered', () => { if (HDS.key === CUR.key) return; HDS.key = CUR.key; hdShow(true); HDS.acc = 0; HDS.y = scrollY; HDS.lock = performance.now() + 600; });
+/* 再点一次当前页签 = 回到顶部；点别的页签 = 切过去并回到上次看到的位置。
+   站内链接统一走 go()：去页签按页签规则切换，弹层里点的链接先关弹层再走 */
+document.addEventListener('click', e => { const a = e.target.closest('a[href^="#"]'); if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+  const h = a.getAttribute('href'); if (h.length < 2) return;
+  if (a.dataset.r){ if (curH() === h && !CUR.post && !HST.ov){ e.preventDefault(); scrollTo({top:0, behavior:reduced() ? 'auto' : 'smooth'}); return; } NAVX.tab = true; }
+  if (curH() === h && !HST.ov) return;
+  if (HST.ov || isRootH(h)){ e.preventDefault(); go(h.slice(1)); } }, true);
 /* 回到顶部：普通页面滚窗口，帖子浮层滚帖子本身；外圈是阅读进度 */
 function fabUpdate(){ const el = $('#toTop'); if (!el) return; const s = CUR.post ? postScroller() : null;
   const y = s ? s.scrollTop : scrollY, vh = s ? s.clientHeight : innerHeight, max = (s ? s.scrollHeight : document.documentElement.scrollHeight) - vh;
@@ -3598,7 +3663,7 @@ ROUTES.creators = () => `<div class="wrap"><div class="ph"><h1 class="x">创作�
 
 /* ================= 帖子浮层 ================= */
 function openPost(id){
-  if (!POST(id)) { location.hash = CUR.hash; return; } CUR.post = id; addHist('post', id); document.documentElement.style.overflow = 'hidden'; document.body.classList.add('post-open'); renderPost(id, true);
+  if (!POST(id)) { navReplace(CUR.hash); return; } CUR.post = id; addHist('post', id); document.documentElement.style.overflow = 'hidden'; document.body.classList.add('post-open'); renderPost(id, true);
   if (NAVX.back && PSCROLLS[id]){ const sc = postScroller(); if (sc) sc.scrollTop = PSCROLLS[id]; } NAVX.back = false; fabUpdate();
   const f = UI.from, post = $('#post .post');
   if (f && f.id === id && post && !reduced()){ post.style.animation = 'none'; post.style.transformOrigin = '0 0'; const ov = $('#post .ov'); ov.style.animation = 'none'; ov.animate([{background:'rgba(20,20,24,0)'},{background:'rgba(20,20,24,.42)'}], {duration:360}); const R = post.getBoundingClientRect(), s = f.rect;
@@ -3660,12 +3725,12 @@ ACTIONS.pclose = () => {
   if (f && card && post && f.id === CUR.post && !reduced() && visible(card)){
     const s = card.getBoundingClientRect(), R = post.getBoundingClientRect(); post.style.transformOrigin = '0 0'; $('#post .side').style.opacity = 0; $('#post .pback').style.opacity = 0; $$('#post .navp').forEach(x => x.remove());
     $('#post .ov').animate([{background:'rgba(20,20,24,.42)'},{background:'rgba(20,20,24,0)'}], {duration:300, fill:'forwards'});
-    post.animate([{transform:'none'},{transform:`translate(${s.left - R.left}px,${s.top - R.top}px) scale(${s.width/R.width},${s.height/R.height})`, borderRadius:'14px'}], {duration:320, easing:'cubic-bezier(.4,0,.2,1)', fill:'forwards'}).onfinish = () => { UI.from = null; location.hash = CUR.hash; };
+    post.animate([{transform:'none'},{transform:`translate(${s.left - R.left}px,${s.top - R.top}px) scale(${s.width/R.width},${s.height/R.height})`, borderRadius:'14px'}], {duration:320, easing:'cubic-bezier(.4,0,.2,1)', fill:'forwards'}).onfinish = () => { UI.from = null; navUp(CUR.hash); };
     return; }
-  UI.from = null; location.hash = CUR.hash;
+  UI.from = null; navUp(CUR.hash);
 };
 /* 点话题 = 用这个话题搜帖子 */
-ACTIONS.tagjump = b => { UI.stab = 'post'; openSearch(); const q = $('#sq'); q.value = b.dataset.v.replace(/^#/, ''); q.dispatchEvent(new Event('input')); };
+ACTIONS.tagjump = b => { closeSearch(); openSearch('all', 'post'); const q = $('#sq'); q.value = b.dataset.v.replace(/^#/, ''); q.dispatchEvent(new Event('input')); };
 ACTIONS.reply = b => { const i = $('#cmtIn'); i.value = '@' + b.dataset.v + ' '; i.focus(); };
 ACTIONS['more-post'] = b => sheet(`<h3>这篇帖子</h3><button class="pill lt lg" data-act="share">${IC.share}复制链接</button><button class="pill lt lg" data-act="report" data-id="${b.dataset.id}">${IC.flag}举报</button>`);
 document.addEventListener('keydown', e => {
@@ -3987,7 +4052,7 @@ function uploadView(){
   ];
   return `<div class="up"><div class="stepper">${steps.map(([h, inner, ok], i) => `<div class="step ${ok ? 'ok' : ''}"><span class="no">${ok ? IC.check.replace('<svg','<svg width="16" height="16"') : i+1}</span><div style="min-width:0"><h4>${h}</h4>${inner}</div></div>`).join('')}
     <button class="pill lg" data-act="up-submit" ${U.file ? '' : 'disabled'} style="align-self:flex-start">${U.file ? '提交审核' : '还差文件'}</button></div>
-    <div style="position:sticky;top:calc(var(--hd) + 20px)"><span class="lab" style="display:block;margin-bottom:10px">买家会看到</span>
+    <div class="stk-hd" style="position:sticky;top:calc(var(--hdy) + 20px)"><span class="lab" style="display:block;margin-bottom:10px">买家会看到</span>
       <article class="slv c-${c.c}"><div class="cv" data-qbox="upload"><img src="${fakeCover}" alt="" width="480" height="480"><span class="pv"><button class="pbtn" data-act="qplay" data-id="upload" aria-label="试听封面">${IC.play}</button></span></div><div class="bd"><div class="en"><span class="dot"></span><span id="pv-en">${esc(U.en)}</span></div><h3 id="pv-t">${esc(U.title)}</h3><div class="ft"><span class="price" id="pv-p">¥${U.price}</span><span class="by">${av(ME,'sm')}<span>${esc(USERS[ME].name)}</span></span></div></div></article>
       <p class="mut2" style="font-size:12.5px;margin-top:12px">${COVER_TPLS[U.look.tpl]} · ${COVER_PALS[U.look.pal].n} · 试听方式：${({sample:'敲打 16 个 pad', preset:'XY 板 + 键盘弹奏', video:'12 秒视频循环'})[U.tpl]}</p></div></div>`;
 }
@@ -4105,7 +4170,7 @@ function buildReels(){
   const el = RL.el = $('#reels');
   el.innerHTML = `<div class="rl" role="dialog" aria-label="声音流">
     <div class="rl-col">
-      <div class="rl-top"><button class="rl-ic" data-act="rl-close" aria-label="返回">${IC.back}</button><span class="rl-pos"></span><span style="flex:1"></span><button class="rl-ic" data-act="search" aria-label="搜索">${IC.search}</button><button class="rl-ic" data-act="rl-share" aria-label="转发">${RIC.fwd}</button></div>
+      <div class="rl-top"><button class="rl-ic" data-act="rl-close" aria-label="返回">${IC.back}</button><span class="rl-pos"></span><span style="flex:1"></span><button class="rl-ic" data-act="search" data-v="all" aria-label="搜索">${IC.search}</button><button class="rl-ic" data-act="rl-share" aria-label="转发">${RIC.fwd}</button></div>
       <div class="rl-view"><div class="rl-track"></div></div>
       <div class="rl-bar"><button class="rl-say" data-act="rl-cmts" data-focus="1">${RIC.pen}<span>说点什么…</span></button>
         <button class="rl-b" data-act="rl-like" aria-label="点赞"><span class="i"></span><b></b></button>
@@ -4141,7 +4206,7 @@ function goReel(i, jump){
   track.style.transition = jump ? 'none' : ''; track.style.transform = `translateY(${-i*100}%)`;
   $('.rl-pos', RL.el).textContent = `${i + 1} / ${n}`;
   $('.rl-nav [data-act="rl-prev"]', RL.el).disabled = i === 0; $('.rl-nav [data-act="rl-next"]', RL.el).disabled = i === n - 1;
-  if (changed){ const p = RL.list[i]; history.replaceState(null, '', '#v-' + p.id); reelBar(); closeReelCm(); reelPlay(); addHist('video', p.id); }
+  if (changed){ const p = RL.list[i]; history.replaceState(history.state, '', '#v-' + p.id); HST.stk[HST.d] = '#v-' + p.id; reelBar(); closeReelCm(); reelPlay(); addHist('video', p.id); }
 }
 const reelCur = () => RL.list[RL.i];
 function reelBar(){
@@ -4225,7 +4290,7 @@ function openReelCm(focus){
 function closeReelCm(){ if (!RL.el) return; const box = $('.rl-cm', RL.el); RL.cm = false; box?.classList.remove('on'); box?.setAttribute('aria-hidden', 'true'); RL.el.classList.remove('cm-on'); }
 Object.assign(ACTIONS, {
   'rl-more': b => b.classList.toggle('open'),
-  'rl-close': () => { closeReels(); location.hash = CUR.hash; },
+  'rl-close': () => { closeReels(); navUp(CUR.hash); },
   'rl-next': () => goReel(RL.i + 1), 'rl-prev': () => goReel(RL.i - 1),
   'rl-like': () => reelLike(),
   'rl-fav': () => { const p = reelCur(); if (!p || needLogin()) return; STATE.favs.has(p.id) ? STATE.favs.delete(p.id) : (STATE.favs.add(p.id), toast('已收藏', 'yellow')); reelBar(); UI.dirty = true; },
@@ -4356,11 +4421,11 @@ Object.assign(ACTIONS, {
   'me-list': b => { const k = b.dataset.v, ids = k === 'follow' ? [...STATE.follows] : NOTES.fans.map(n => n.u).concat(['nova', 'lowf']).filter((v, i, a) => a.indexOf(v) === i);
     sheet(`<h3>${k === 'follow' ? '我关注的' : '我的粉丝'}</h3><div class="m-list">${ids.map(id => `<a class="mrow" data-go="user-${id}">${av(id, 'md')}<span class="mt"><b>${esc(USERS[id].name)}</b><span>${esc(USERS[id].role)}</span></span><button class="pill sm ${STATE.follows.has(id) ? 'lt' : ''}" data-act="follow" data-id="${id}">${STATE.follows.has(id) ? (k === 'fans' ? '互相关注' : '已关注') : '回关'}</button></a>`).join('') || '<div class="rnone">还没有</div>'}</div>`); },
   'me-menu': () => {
-    closeSheet(); const r = STATE.role;
-    $('#layer').innerHTML = `<div class="sov drw-ov" data-ov><nav class="drw" aria-label="更多"><div class="drw-u">${av(ME, 'md')}<b>${esc(USERS[ME].name)}</b></div>
+    closeSheet(); const r = STATE.role, g = r === 'guest';   // 首页左上角也能打开；未登录时顶部换成登录入口，不显示账号相关项
+    $('#layer').innerHTML = `<div class="sov drw-ov" data-ov><nav class="drw" aria-label="更多">${g ? `<div class="drw-u"><button class="pill" data-act="login">登录 / 注册</button></div>` : `<div class="drw-u">${av(ME, 'md')}<b>${esc(USERS[ME].name)}</b></div>
       <a href="#me-edit">${RIC.pen}编辑资料</a><a href="#me-orders">${IC.dl}订单</a><a href="#me-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2-1.2L14.2 3h-4.4l-.4 2.6a7 7 0 00-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 000 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 002 1.2l.4 2.6h4.4l.4-2.6a7 7 0 002-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>设置</a>
-      <a href="#user-${ME}">${av(ME, 'sm')}别人眼中的我</a><a href="#seller">${GLYPH.sample}工作室</a>
-      <button class="drw-sw" data-act="vislab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M4 12h3l2-5 3 10 2-6 2 3h4"/></svg>可视化实验室</button><button class="drw-sw drw-thm" data-act="theme">${isDark() ? IC.sun : IC.moon}${isDark() ? '浅色模式' : '深色模式'}</button><button class="drw-sw" data-act="switch-acc">${IC.user}切换账号</button><button class="drw-out" data-act="logout">${IC.back}退出登录</button>
+      <a href="#user-${ME}">${av(ME, 'sm')}别人眼中的我</a><a href="#seller">${GLYPH.sample}工作室</a>`}
+      <button class="drw-sw" data-act="vislab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M4 12h3l2-5 3 10 2-6 2 3h4"/></svg>可视化实验室</button><button class="drw-sw drw-thm" data-act="theme">${isDark() ? IC.sun : IC.moon}${isDark() ? '浅色模式' : '深色模式'}</button>${g ? '' : `<button class="drw-sw" data-act="switch-acc">${IC.user}切换账号</button><button class="drw-out" data-act="logout">${IC.back}退出登录</button>`}
       <div class="drw-f"><span class="lab">原型 · 切换身份</span><div class="roles">${Object.entries(ROLE_NAME).map(([k, l]) => `<button class="${r === k ? 'on' : ''}" data-act="role" data-v="${k}">${l}</button>`).join('')}</div>${STATE.seller ? '<button class="more" data-act="unseller">撤回卖家资格</button>' : ''}</div></nav></div>`;
   }
 });
@@ -4773,7 +4838,7 @@ Object.assign(ACTIONS, {
   compose: () => { if (needLogin()) return; composeSheet(); },
   theme: () => { STATE.settings.theme = isDark() ? 'light' : 'dark'; applySettings(); applyTheme(true); },
   'set-theme': b => { STATE.settings.theme = b.dataset.v; applySettings(); applyTheme(true); rerender(); },
-  search: () => openSearch(),
+  search: b => openSearch(b && b.dataset.v ? b.dataset.v : undefined),
 });
 function detectPlat(v){ v = v.toLowerCase(); if (/bilibili\.com|b23\.tv|bv[0-9a-z]{6,}/.test(v)) return 'BILIBILI'; if (/youtu\.?be/.test(v)) return 'YOUTUBE'; if (/vimeo/.test(v)) return 'VIMEO'; return ''; }
 /* ================= 发布：只有「帖子 / 产品」两个入口 =================
@@ -4931,32 +4996,64 @@ Object.assign(ACTIONS, {
   }
 });
 /* 菜单与样式：`.chip.on` 的颜色在撰写面板里也要生效 */
-/* 搜索 */
-function openSearch(){
-  const el = document.createElement('div'); el.className = 'srch'; el.id = 'srch';
-  el.innerHTML = `<div class="srch-in"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><button class="hd-back" style="display:grid" data-act="sclose" aria-label="返回">${IC.back}</button><span class="lab">搜索 CTRL Z</span></div><div class="sq-w"><input id="sq" type="search" placeholder="鼓组、Vital、.tox…" autocomplete="off" enterkeyhint="search"><button class="sq-x" data-act="sclear" aria-label="清空输入" tabindex="-1">${IC.x}</button></div><div id="sres"></div></div>`;
+/* 搜索：按所在板块搜不同的东西 —— 首页搜全站（帖子 / 资源 / 创作者），商城只搜商品，私信只搜联系人和聊天记录，「我」不提供搜索 */
+const SCOPES = {
+  all: {lab:'搜索 CTRL Z', ph:'鼓组、Vital、.tox…', btn:'搜帖子、资源、创作者', tabs:[['post','帖子'],['prod','资源'],['user','创作者']], unit:{post:'个帖子', prod:'个资源', user:'位创作者'},
+        tries:['鼓组','TouchDesigner','Vital','贝斯','循环','免费','CRT','提问'], hist:['TouchDesigner 粒子', '808', 'lofi 鼓组'], none:['去首页逛逛', '#home']},
+  shop:{lab:'搜索商城', ph:'搜商品：鼓组、预设、.tox…', btn:'搜商品：采样、预设、.tox', tabs:[['prod','商品']], unit:{prod:'件商品'},
+        tries:['鼓组','Vital','TouchDesigner','贝斯','循环','免费','808','HUD'], hist:['808', 'lofi 鼓组'], none:['去商城逛逛', '#shop']},
+  msg: {lab:'搜索私信', ph:'搜联系人、聊天记录', btn:'搜联系人、聊天记录', tabs:[['contact','联系人'],['chat','聊天记录']], unit:{contact:'位联系人', chat:'条聊天记录'},
+        tries:null, hist:[], none:null}
+};
+/* 当前页面属于哪个板块的搜索；null = 不显示搜索 */
+function searchScope(){ const h = CUR.hash || curH(), r = routeOf(h);
+  if (['me','seller','admin'].includes(r) || h === '#user-' + ME) return null;
+  if (r === 'shop' || r === 'item') return 'shop';
+  if (r === 'msg') return 'msg';
+  if (r === 'user') return UI.lastTab === 'me' ? null : UI.lastTab === 'shop' ? 'shop' : UI.lastTab === 'msg' ? 'msg' : 'all';
+  return 'all'; }
+function syncSearchBtn(){ const s = searchScope(), hd = $('#hd'), b = $('#hd .sbtn'); if (!hd) return; hd.dataset.s = s || 'none';
+  if (b && s){ b.querySelector('.t').textContent = SCOPES[s].btn; b.setAttribute('aria-label', SCOPES[s].lab); } }
+document.addEventListener('rendered', syncSearchBtn);
+document.addEventListener('rendered', () => $('#hd').classList.toggle('at-home', routeOf(CUR.hash) === 'home'));
+function contactIds(){ return [...new Set([...Object.keys(CHATS), ...STATE.follows])].filter(id => USERS[id] && id !== ME); }
+function openSearch(scope, tab){
+  scope = scope === undefined ? searchScope() : scope; if (!scope || $('#srch')) return; const S = SCOPES[scope];
+  UI.stabs ||= {}; UI.stabs[scope] = tab || null;   // 没手动选过页签时，自动停在第一个有结果的页签
+  SHIST.k = scope === 'all' ? 'shist' : 'shist-' + scope; SHIST.def = S.hist;
+  const el = document.createElement('div'); el.className = 'srch'; el.id = 'srch'; el.dataset.s = scope;
+  el.innerHTML = `<div class="srch-in"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><button class="hd-back" style="display:grid" data-act="sclose" aria-label="返回">${IC.back}</button><span class="lab">${S.lab}</span></div><div class="sq-w"><input id="sq" type="search" placeholder="${S.ph}" autocomplete="off" enterkeyhint="search"><button class="sq-x" data-act="sclear" aria-label="清空输入" tabindex="-1">${IC.x}</button></div><div id="sres"></div></div>`;
   document.body.appendChild(el); document.documentElement.style.overflow = 'hidden';
   const q = $('#sq'); q.focus(); let sel = 0;
   const draw = () => {
     const v = q.value.trim().toLowerCase(); const hl = s => { const t = esc(s); if (!v) return t; const i = s.toLowerCase().indexOf(v); return i < 0 ? t : esc(s.slice(0,i)) + '<mark>' + esc(s.slice(i, i + v.length)) + '</mark>' + esc(s.slice(i + v.length)); };
     q.parentNode.classList.toggle('has', !!q.value);
-    if (!v){ const h = SHIST.list(); $('#sres').innerHTML = (h.length ? `<div class="sr-g sh-g"><div class="sh-hd"><span class="lab">最近搜索</span><button class="sh-clr" data-act="shist-clr">清空</button></div><div class="sh-list">${h.map(s => `<span class="chip sh-c"><button class="sh-t" data-act="sfill" data-v="${esc(s)}">${IC.clock || ''}${esc(s)}</button><button class="sh-d" data-act="shist-del" data-v="${esc(s)}" aria-label="删除这条记录">${IC.x}</button></span>`).join('')}</div></div>` : '') + `<div class="sr-g"><span class="lab">试试</span><div class="rail" style="flex-wrap:wrap;margin-top:10px">${['鼓组','TouchDesigner','Vital','贝斯','循环','免费','CRT','提问'].map(s => `<button class="chip" data-act="sfill" data-v="${s}">${s}</button>`).join('')}</div></div>`; return; }
-    const prods = PRODUCTS.filter(p => onSale(p) && (p.title + p.en + p.compat + p.desc + (p.price === 0 ? '免费' : '')).toLowerCase().includes(v));
-    const posts = POSTS.filter(p => (p.title + p.ex + p.tags.join(' ') + (p.type === 'question' ? '提问' : '')).toLowerCase().includes(v));
-    const users = Object.values(USERS).filter(u => (u.name + u.role + u.bio).toLowerCase().includes(v));
-    const G = {
-      post: posts.map(p => ({go:'post-' + p.id, img:p.cover ? cover(p.cover, hash(p.id)%50, 120, 120) : null, t:hl(p.title), s:`${USERS[p.author].name} · ${typeTagCN[p.type]}`})),
-      prod: prods.map(p => ({go:'item-' + p.id, img:cover(p.cover, hash(p.id)%50, 120, 120), t:hl(p.title), s:`${p.en} · ${yuan(p.price)}`})),
-      user: users.map(u => ({go:'user-' + u.id, av:u.id, t:hl(u.name), s:u.role}))
-    };
-    const tab = UI.stab || 'post'; const rows = G[tab];
+    if (!v){ const h = SHIST.list(), tries = S.tries || contactIds().slice(0, 8).map(id => USERS[id].name);
+      $('#sres').innerHTML = (h.length ? `<div class="sr-g sh-g"><div class="sh-hd"><span class="lab">最近搜索</span><button class="sh-clr" data-act="shist-clr">清空</button></div><div class="sh-list">${h.map(s => `<span class="chip sh-c"><button class="sh-t" data-act="sfill" data-v="${esc(s)}">${IC.clock || ''}${esc(s)}</button><button class="sh-d" data-act="shist-del" data-v="${esc(s)}" aria-label="删除这条记录">${IC.x}</button></span>`).join('')}</div></div>` : '') + (tries.length ? `<div class="sr-g"><span class="lab">${S.tries ? '试试' : '最近联系'}</span><div class="rail" style="flex-wrap:wrap;margin-top:10px">${tries.map(s => `<button class="chip" data-act="sfill" data-v="${esc(s)}">${esc(s)}</button>`).join('')}</div></div>` : ''); return; }
+    const G = {};
+    if (scope === 'msg'){
+      G.contact = contactIds().filter(id => (USERS[id].name + USERS[id].role).toLowerCase().includes(v))
+        .map(id => ({go:'msg-' + id, av:id, t:hl(USERS[id].name), s:CHATS[id] ? USERS[id].role : USERS[id].role + ' · 发起私信'}));
+      G.chat = Object.keys(CHATS).filter(id => USERS[id]).flatMap(id => CHATS[id].map(m => ({id, m, txt:msgPreview({...m, me:false})})))
+        .filter(x => x.txt.toLowerCase().includes(v)).sort((a, b) => b.m.ts - a.m.ts)
+        .map(x => { const i = x.txt.toLowerCase().indexOf(v), st = Math.max(0, i - 12); return {go:'msg-' + x.id, av:x.id, t:esc(USERS[x.id].name) + ` <small style="font-weight:500;color:var(--ink-3)">${ago(x.m.ts)}</small>`, sh:(x.m.me ? '我：' : '') + (st ? '…' : '') + hl(x.txt.slice(st))}; });
+    } else {
+      G.prod = PRODUCTS.filter(p => onSale(p) && (p.title + p.en + p.compat + p.desc + (p.price === 0 ? '免费' : '')).toLowerCase().includes(v))
+        .map(p => ({go:'item-' + p.id, img:cover(p.cover, hash(p.id)%50, 120, 120), t:hl(p.title), s:`${p.en} · ${yuan(p.price)}`}));
+      if (scope === 'all'){
+        G.post = POSTS.filter(p => (p.title + p.ex + p.tags.join(' ') + (p.type === 'question' ? '提问' : '')).toLowerCase().includes(v))
+          .map(p => ({go:'post-' + p.id, img:p.cover ? cover(p.cover, hash(p.id)%50, 120, 120) : null, t:hl(p.title), s:`${USERS[p.author].name} · ${typeTagCN[p.type]}`}));
+        G.user = Object.values(USERS).filter(u => (u.name + u.role + u.bio).toLowerCase().includes(v)).map(u => ({go:'user-' + u.id, av:u.id, t:hl(u.name), s:u.role}));
+      }
+    }
+    const keys = S.tabs.map(([k]) => k), tab = keys.includes(UI.stabs[scope]) ? UI.stabs[scope] : (keys.find(k => G[k].length) || keys[0]), rows = G[tab];
     sel = clamp(sel, 0, Math.max(0, rows.length - 1));
-    const tabs = `<div class="s-tabs" role="tablist">${[['post','帖子'],['prod','资源'],['user','创作者']].map(([k,l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''} ${G[k].length ? '' : 'nil'}" data-act="stab" data-v="${k}">${l}<i>${G[k].length}</i></button>`).join('')}</div>`;
+    const tabs = keys.length < 2 ? '' : `<div class="s-tabs" role="tablist">${S.tabs.map(([k,l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''} ${G[k].length ? '' : 'nil'}" data-act="stab" data-v="${k}">${l}<i>${G[k].length}</i></button>`).join('')}</div>`;
     let body;
     if (!rows.length){
-      const alt = ['post','prod','user'].find(k => G[k].length);
-      body = `<div class="empty" style="align-items:flex-start;padding-inline:0"><span class="x" style="font-size:44px">没找到</span><span>${alt ? `<button class="pill" data-act="stab" data-v="${alt}">看 ${G[alt].length} 个${({post:'帖子',prod:'资源',user:'创作者'})[alt]}</button>` : `换个词，或者<a href="#home" style="text-decoration:underline">去首页逛逛</a>`}</span></div>`;
-    } else body = `<div class="s-list">` + rows.map((r, k) => `<div class="sr-row ${k === sel ? 'kb-on' : ''}" data-sgo="${r.go}">${r.av ? av(r.av) : r.img ? `<img src="${r.img}" alt="">` : `<span class="av c-yellow" style="border-radius:10px;font:900 26px/1 var(--f-x)">?</span>`}<div style="min-width:0"><b>${r.t}</b><span>${esc(r.s)}</span></div>${IC.arrow.replace('<svg','<svg width="16" height="16"')}</div>`).join('') + `</div>`;
+      const alt = keys.find(k => G[k].length);
+      body = `<div class="empty" style="align-items:flex-start;padding-inline:0"><span class="x" style="font-size:44px">没找到</span><span>${alt ? `<button class="pill" data-act="stab" data-v="${alt}">看 ${G[alt].length} ${S.unit[alt]}</button>` : S.none ? `换个词，或者<a href="${S.none[1]}" style="text-decoration:underline">${S.none[0]}</a>` : '换个词试试'}</span></div>`;
+    } else body = `<div class="s-list">` + rows.map((r, k) => `<div class="sr-row ${k === sel ? 'kb-on' : ''}" data-sgo="${r.go}">${r.av ? av(r.av) : r.img ? `<img src="${r.img}" alt="">` : `<span class="av c-yellow" style="border-radius:10px;font:900 26px/1 var(--f-x)">?</span>`}<div style="min-width:0"><b>${r.t}</b><span>${r.sh || esc(r.s)}</span></div>${IC.arrow.replace('<svg','<svg width="16" height="16"')}</div>`).join('') + `</div>`;
     $('#sres').innerHTML = tabs + body;
   };
   q.addEventListener('input', () => { sel = 0; draw(); });
@@ -4966,17 +5063,18 @@ function openSearch(){
   draw();
 }
 const typeTagCN = {image:'图文', audio:'声音', video:'视频', question:'提问'};
-function closeSearch(){ $('#srch')?.remove(); if (!CUR.post) document.documentElement.style.overflow = ''; }
+function closeSearch(){ const el = $('#srch'); if (!el) return; el.remove(); if (!CUR.post) document.documentElement.style.overflow = ''; }
 ACTIONS.sclose = () => closeSearch();
-/* 历史搜索：最近 10 条，去重，新的在前 */
+/* 历史搜索：每个板块各记最近 10 条，去重，新的在前 */
 const SHIST = {
-  list(){ return store.get('shist', ['TouchDesigner 粒子', '808', 'lofi 鼓组']); },
-  save(a){ store.set('shist', a.slice(0, 10)); },
+  k:'shist', def:[],
+  list(){ return store.get(this.k, this.def); },
+  save(a){ store.set(this.k, a.slice(0, 10)); },
   add(v){ v = String(v || '').trim(); if (!v) return; this.save([v, ...this.list().filter(x => x.toLowerCase() !== v.toLowerCase())]); },
   del(v){ this.save(this.list().filter(x => x !== v)); }
 };
 const sRedraw = () => $('#srch')?._draw?.();
-ACTIONS.stab = b => { UI.stab = b.dataset.v; sRedraw(); const q = $('#sq'); if (q && !IS_MOBILE) q.focus(); };
+ACTIONS.stab = b => { const sc = $('#srch')?.dataset.s || 'all'; (UI.stabs ||= {})[sc] = b.dataset.v; sRedraw(); const q = $('#sq'); if (q && !IS_MOBILE) q.focus(); };
 ACTIONS.sclear = () => { const q = $('#sq'); if (!q) return; q.value = ''; q.dispatchEvent(new Event('input')); q.focus(); };
 ACTIONS['shist-del'] = b => { const c = b.closest('.sh-c'); c?.classList.add('out'); setTimeout(() => { SHIST.del(b.dataset.v); sRedraw(); $('#sq')?.focus(); }, reduced() ? 0 : 160); };
 ACTIONS['shist-clr'] = () => { const g = $('.sh-g'); g?.classList.add('out'); setTimeout(() => { SHIST.save([]); sRedraw(); $('#sq')?.focus(); }, reduced() ? 0 : 200); };
