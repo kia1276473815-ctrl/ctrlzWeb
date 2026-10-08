@@ -1850,7 +1850,7 @@ html.rm .fx-shp{display:none}
 .fx-spin{animation:spin1 .55s var(--spring)}
 html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 @media (prefers-reduced-motion:reduce){ .empty .x,.toast i,.bdg,.drw > *{animation:none} }
-/* ===== 差异化：杂志刊头、荧光笔页签、错版投影、录音键、调音台通知、创作者名片 ===== */
+/* ===== 差异化：杂志刊头、荧光笔页签、圆形发布键、通知条、创作者名片 ===== */
 /* F. 页签：选中项用一块歪一点的荧光笔色块，代替下划线（滑动动效照旧） */
 .ht-t button,.mtabs button,.s-tabs button{isolation:isolate}
 .ht-t button.on::after,.mtabs button.on::after,.s-tabs button.on::after{content:"";position:absolute;z-index:-1;left:-8px;right:-8px;top:-2px;bottom:-2px;width:auto;height:auto;margin:0;border-radius:5px 8px 6px 7px;background:var(--yellow);transform:rotate(-2.2deg);animation:none}
@@ -1862,14 +1862,10 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 .ht-no i{font:600 10px/1 var(--f-b);font-style:normal;color:var(--ink-3);letter-spacing:.1em}
 @media (min-width:761px){ .ht-no{left:var(--g)} }
 @media (max-width:339px){ .ht-no{display:none} }
-/* B. 信息流卡片：封面右下错开一块实色投影，颜色按类型（声音粉 / 视频黄 / 提问蓝 / 图文橙） */
-.card .cv{box-shadow:5px 6px 0 var(--sh,var(--orange));overflow:hidden}
-.card[data-t="audio"]{--sh:var(--pink)} .card[data-t="video"]{--sh:var(--yellow)} .card[data-t="question"]{--sh:var(--blue)} .card[data-t="image"]{--sh:var(--orange)}
-.mason .card{margin-right:6px}
-/* C. 底部导航：发布是圆形录音键（带错版阴影，按下会陷进去）；选中页签图标后面垫一块对应的几何图形 */
+/* C. 底部导航：发布是圆形按键；选中页签图标后面垫一块对应的几何图形 */
 @media (max-width:760px){
-  .tb .plus span{width:46px;height:46px;border-radius:50%;box-shadow:3px 3px 0 var(--blue);transition:transform .12s,box-shadow .12s,background .2s,color .2s}
-  .tb .plus:active span{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--blue)}
+  .tb .plus span{width:46px;height:46px;border-radius:50%;transition:transform .15s var(--spring),background .2s,color .2s}
+  .tb .plus:active span{transform:scale(.9)}
   .tb a svg{box-sizing:content-box;padding:4px;margin:-4px;background:no-repeat center/100% 100%;transition:background-size .25s var(--spring)}
   .tb a.on[data-r="home"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Ccircle cx='17' cy='17' r='12' fill='%23FF4FA7'/%3E%3C/svg%3E")}
   .tb a.on[data-r="shop"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Crect x='6' y='6' width='22' height='22' rx='2' fill='%232E5BFF' opacity='.75'/%3E%3C/svg%3E")}
@@ -1877,9 +1873,8 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
   .tb a.on[data-r="me"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath d='M4 26a13 13 0 0126 0z' fill='%23FF6B2C'/%3E%3C/svg%3E")}
 }
 @media (max-width:760px) and (max-height:430px), (max-height:430px) and (min-aspect-ratio:3/2){ .tb .plus span{width:34px;height:34px} }
-#hd .pill.post-btn{border-radius:50%;box-shadow:3px 3px 0 var(--blue);transition:transform .12s,box-shadow .12s}
-#hd .pill.post-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--blue)}
-/* D. 私信：调音台式通知条（三个通道：标签 + 大号未读数 + 电平灯） */
+#hd .pill.post-btn{border-radius:50%}
+/* D. 私信：一条通知条，三格：标签 + 大号未读数（有新的是深色，没有是灰色） */
 .m-quick{gap:0;border-radius:16px;background:var(--card);overflow:hidden}
 .mq{background:none;border-radius:0;align-items:stretch;gap:6px;padding:12px 14px 12px;text-align:left}
 .mq + .mq{border-left:1px solid var(--rule)}
@@ -1889,14 +1884,8 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 .mq .g svg{width:14px;height:14px}
 .mq-n{font:900 26px/1 var(--f-x);font-stretch:115%;font-variant-numeric:tabular-nums;color:var(--ink-3)}
 .mq.live .mq-n{color:var(--ink)}
-.mq-led{display:flex;gap:3px}
-.mq-led i{flex:1;height:5px;border-radius:2px;background:var(--rule)}
-.mq-led i.on{background:var(--c)}
-@keyframes ledpulse{0%,100%{opacity:1}50%{opacity:.35}}
-.mq.live .mq-led i.pk{animation:ledpulse 1.4s ease-in-out infinite}   /* 最高那格灯在闪 */
 @media (max-width:374px){ .mq{padding:10px} .mq-h b{font-size:11.5px} }
 @media (max-width:359px){ .mq .g{display:none} }   /* 极窄屏：去掉小图标，保证三个名字完整显示 */
-html.rm .mq-led i.pk{animation:none}
 /* E. 「我」：创作者名片——展示字体大名字、头像后垫孔版色块、票根式数据条 */
 .mh-id h1{font:900 clamp(28px,6.4vw,48px)/1 var(--f-x);font-stretch:118%;letter-spacing:-.02em}
 .mh-av{isolation:isolate}
@@ -4998,7 +4987,7 @@ function msgBadge(){ const n = unreadTotal(); $$('[data-r="msg"]').forEach(b => 
 function msgPreview(m){ if (!m) return ''; const who = m.me ? '我：' : ''; return who + (m.t === 'text' ? m.text : m.t === 'img' ? '[图片]' : m.t === 'post' ? '[帖子] ' + (POST(m.ref)?.title || '') : '[商品] ' + (P(m.ref)?.title || '')); }
 function msgList(sel){
   const ids = Object.keys(CHATS).filter(id => USERS[id]).sort((a, b) => lastTs(b) - lastTs(a));
-  return `<div class="m-quick">${[['likes','喜欢','pink',IC.heartF],['fans','新粉丝','blue','<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.4-7 8-7s7 2.5 8 7z"/></svg>'],['at','回复与@','yellow',RIC.cm]].map(([k,l,c,ic]) => { const n = NOTE_NEW[k] || 0; return `<button class="mq c-${c} mq-${k} ${n ? 'live' : ''}" data-act="note" data-v="${k}" data-n="${n}" aria-label="${l}${n ? '，' + n + ' 条新的' : ''}"><span class="mq-h"><span class="g">${ic}</span><b>${l}</b></span><span class="mq-n">${n}</span><span class="mq-led" aria-hidden="true">${Array.from({length:6}, (_, i) => { const lit = Math.min(6, n * 2); return `<i class="${i < lit ? 'on' : ''} ${i === lit - 1 ? 'pk' : ''}"></i>`; }).join('')}</span></button>`; }).join('')}</div>
+  return `<div class="m-quick">${[['likes','喜欢','pink',IC.heartF],['fans','新粉丝','blue','<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.4-7 8-7s7 2.5 8 7z"/></svg>'],['at','回复与@','yellow',RIC.cm]].map(([k,l,c,ic]) => { const n = NOTE_NEW[k] || 0; return `<button class="mq c-${c} mq-${k} ${n ? 'live' : ''}" data-act="note" data-v="${k}" data-n="${n}" aria-label="${l}${n ? '，' + n + ' 条新的' : ''}"><span class="mq-h"><span class="g">${ic}</span><b>${l}</b></span><span class="mq-n">${n}</span></button>`; }).join('')}</div>
   <div class="m-list">${ids.map(id => { const m = CHATS[id][CHATS[id].length - 1], u = USERS[id]; return `<a class="mrow ${sel === id ? 'on' : ''}" data-go="msg-${id}">${av(id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>${esc(msgPreview(m))}</span></span><span class="mr"><time>${ago(m.ts)}</time>${CHAT_UNREAD[id] ? `<i class="bdg">${CHAT_UNREAD[id]}</i>` : ''}</span></a>`; }).join('') || '<div class="rnone">还没有私信</div>'}</div>`;
 }
 function bubble(m, uid){
