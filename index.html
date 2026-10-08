@@ -1787,6 +1787,34 @@ html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
 .pill.cta::after{content:"";position:absolute;top:0;bottom:0;left:0;width:34%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:sheen 3.6s var(--ease) infinite;pointer-events:none}
 @media (prefers-reduced-motion:reduce){ .slv .pbtn::after,.pill.cta::after{animation:none;opacity:0} }
 html.rm .slv .pbtn::after,html.rm .pill.cta::after{animation:none;opacity:0}
+/* ===== 第一批动效：几何碎片、双击点赞、私信入口、头像错版、付款、发布按钮、页签滑动 ===== */
+.fx-shp{position:fixed;z-index:131;pointer-events:none;width:var(--s);height:var(--s);display:block}
+.fx-shp.c{border-radius:50%} .fx-shp.t{clip-path:polygon(50% 0,100% 100%,0 100%)} .fx-shp.h{height:calc(var(--s) / 2);border-radius:999px 999px 0 0}
+.rl-heart.fx-fixed{position:fixed;z-index:132}
+/* 私信快捷入口：心跳 / 小人跳出来 / 气泡晃 */
+@keyframes beat{0%,100%{transform:scale(1)}20%{transform:scale(1.32)}35%{transform:scale(.92)}55%{transform:scale(1.18)}}
+@keyframes popin{0%{transform:translateY(0)}30%{transform:translateY(5px) scale(1.1,.85)}60%{transform:translateY(-7px)}100%{transform:none}}
+@keyframes wag{0%,100%{transform:rotate(0)}20%{transform:rotate(-16deg)}45%{transform:rotate(12deg)}70%{transform:rotate(-6deg)}}
+.mq .g svg{transform-origin:50% 60%}
+.mq-likes.fx-go .g svg,.mq-likes:hover .g svg{animation:beat .7s var(--ease)}
+.mq-fans.fx-go .g svg,.mq-fans:hover .g svg{animation:popin .6s var(--spring)}
+.mq-at.fx-go .g svg,.mq-at:hover .g svg{animation:wag .6s var(--ease)}
+.mq.fx-go .g{animation:jelly .5s var(--ease)}
+/* 「我」头像：孔版错版分层再合回 */
+@keyframes split{0%{box-shadow:0 0 0 transparent,0 0 0 transparent;transform:none}30%{box-shadow:-9px -4px 0 var(--pink),9px 4px 0 var(--blue);transform:scale(.92)}60%{box-shadow:6px -3px 0 var(--pink),-6px 3px 0 var(--blue);transform:scale(1.05)}100%{box-shadow:0 0 0 transparent,0 0 0 transparent;transform:none}}
+.mh-av.fx-split .av{animation:split .5s var(--ease)}
+/* 付款：印章落下时面板一沉 */
+@keyframes thud{0%,100%{transform:none}30%{transform:translateY(5px) scale(.995)}}
+.sheet.fx-thud{animation:thud .35s var(--ease)}
+/* 发布按钮：+ 转成 × */
+[data-act="compose"] svg{transition:transform .35s var(--spring)}
+[data-act="compose"].fx-open svg{transform:rotate(135deg)}
+.tb .plus.fx-open span{background:var(--ink);color:var(--paper)}
+.tb .plus span{transition:background .2s,color .2s}
+/* 页签下划线从旧位置滑过来 */
+@keyframes inkslide{from{transform:translateX(var(--ix,0)) scaleX(var(--isx,1))}}
+.fx-ink::after{animation:inkslide .34s cubic-bezier(.3,1.2,.5,1) !important;transform-origin:left center}
+html.rm .fx-shp{display:none}
 </style>
 
 </head>
@@ -2548,6 +2576,18 @@ function closeSheet(){ if (_sheetClean){ try { _sheetClean(); } catch(e){} _shee
 /* ---------- 交互动效小工具 ---------- */
 /* 给元素重新播放一次动效类（pop 弹起 / drop 缩回 / jelly 果冻 / hit 分类插画动起来） */
 function fxPop(el, cls='fx-up', ms=600){ if (!el || reduced()) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); clearTimeout(el._fx); el._fx = setTimeout(() => el.classList.remove(cls), ms); }
+/* 孔版几何碎片：圆 / 方 / 三角 / 半圆从一点炸开再落下（gravity 往下的落差） */
+function fxShapes(x, y, n=14, spread=110, colors=['pink','blue','yellow','orange'], gravity=40){ if (reduced()) return; const K = ['c','s','t','h'];
+  for (let i = 0; i < n; i++){ const el = document.createElement('i'), a = Math.random()*Math.PI*2, d = spread*(.45 + Math.random()*.55), dx = Math.cos(a)*d, dy = Math.sin(a)*d - spread*.25, rot = (Math.random()*2 - 1)*260, sz = 7 + Math.random()*8;
+    el.className = 'fx-shp ' + K[i % 4]; el.style.cssText = `left:${x}px;top:${y}px;--s:${sz}px;background:${INK[colors[i % colors.length]] || colors[i % colors.length]}`; document.body.appendChild(el);
+    el.animate([{transform:'translate(-50%,-50%) scale(.3)', opacity:1}, {transform:`translate(calc(-50% + ${dx*.75}px), calc(-50% + ${dy*.75}px)) rotate(${rot*.5}deg) scale(1)`, opacity:1, offset:.45},
+      {transform:`translate(calc(-50% + ${dx}px), calc(-50% + ${dy + gravity}px)) rotate(${rot}deg) scale(.6)`, opacity:0}], {duration:650 + Math.random()*350, easing:'cubic-bezier(.2,.75,.3,1)'}).onfinish = () => el.remove(); } }
+/* 大爱心（双击点赞） */
+function fxHeart(x, y){ if (reduced()) return; const h = document.createElement('span'); h.className = 'rl-heart fx-fixed'; h.innerHTML = IC.heartF; h.style.left = x + 'px'; h.style.top = y + 'px'; h.style.setProperty('--r', (Math.random()*30 - 15) + 'deg'); document.body.appendChild(h); setTimeout(() => h.remove(), 900); }
+/* 页签下划线：从旧页签滑到新页签。sel = 页签行，mutate = 真正的切换（同步重绘）；异步切换的先记下旧位置，切完再调 inkFrom */
+function inkFrom(sel, o){ if (!o || reduced()) return; const n = $(sel + ' .on'); if (!n) return; const r = n.getBoundingClientRect(); if (Math.abs(o.left - r.left) < 1) return;
+  n.style.setProperty('--ix', (o.left - r.left) + 'px'); n.style.setProperty('--isx', Math.max(.2, o.width / r.width).toFixed(3)); fxPop(n, 'fx-ink', 420); }
+function inkSlide(sel, mutate){ const o = $(sel + ' .on')?.getBoundingClientRect(); mutate(); inkFrom(sel, o); }
 /* 从一点扩散的圆环 */
 function fxRing(x, y, c){ if (reduced()) return; const r = document.createElement('i'); r.className = 'fx-ring'; r.style.cssText = `left:${x}px;top:${y}px;border-color:${c || INK.pink}`; document.body.appendChild(r); setTimeout(() => r.remove(), 560); }
 /* 点分类时的一声（只在设置里开了音效时响） */
@@ -3702,6 +3742,7 @@ function rootOf(h){ if (/^#?(post|v)-/.test(h)) return '#home'; let x = h, p, n 
 /* 弹层占一条历史：打开时压入一条同网址的历史；点关闭 → 顺手退掉这条；按返回 → 退掉这条并关闭弹层 */
 function closeOverlays(){ closeSheet(); closeSearch(); }
 function ovSync(){ const open = !!($('#layer').firstElementChild || $('#srch'));
+  if (!open) $$('[data-act="compose"].fx-open').forEach(x => x.classList.remove('fx-open'));   // 发布面板关了，× 转回 +
   if (open && !HST.ov){ HST.ov = true; HST.d++; HST.stk.length = HST.d; HST.stk[HST.d] = curH(); history.pushState({ctrlz:HST.d, ov:1}, ''); }
   else if (!open && HST.ov){ HST.ov = false; history.back(); } }
 new MutationObserver(ovSync).observe($('#layer'), {childList:true});
@@ -3800,6 +3841,8 @@ Object.assign(ACTIONS, {
         <label class="avs-o"><input type="file" accept="image/*" id="avFile" hidden><span class="g c-blue">${IC.up}</span><b>上传照片</b><span>需要管理员审核</span></label>
         ${AVIMG[ME] ? `<button class="avs-o" data-act="av-reset"><span class="g c-yellow" style="font:900 15px/1 var(--f-x)">Aa</span><b>用回首字母</b><span>马上生效</span></button>` : ''}
       </div>`, d => { $('#avFile', d).addEventListener('change', e => { const f = e.target.files[0]; if (f) avCrop(f); }); }); },
+  /* 「我」页面点头像：先像孔版错版一样分出粉 / 蓝两层再合回去，撒一把小图形，然后打开更换面板 */
+  'av-tap': (b, e) => { if (reduced()){ ACTIONS['av-edit'](); return; } const r = b.getBoundingClientRect(); fxPop(b, 'fx-split', 520); fxShapes(r.left + r.width/2, r.top + r.height/2, 12, 90, ['pink','blue','yellow','pink'], 20); haptic(8); setTimeout(() => ACTIONS['av-edit'](), 300); },
   'av-reset': () => { setAvatar(ME, null); closeSheet(); toast('换回了首字母头像'); rerender(); },
   'av-cancel': () => { const i = AVQ.findIndex(q => q.uid === ME); if (i >= 0) AVQ.splice(i, 1); avSave(); closeSheet(); toast('已撤回', 'blue'); rerender(); },
   /* 头像编辑器：不能自由绘制（防止违规内容），只能用几何图形拼，最多 5 个 */
@@ -4334,6 +4377,7 @@ ACTIONS['do-pay'] = b => {
   sh.innerHTML = `<div class="done"><div class="ring-p" id="rp" style="--p:0"></div><b style="font-size:18px">正在等待${UI.pay}…</b></div>`;
   const t0 = performance.now(); const tick = now => { const k = Math.min(1, (now - t0)/1200); const r = $('#rp'); if (!r) return; r.style.setProperty('--p', k*100); if (k < 1) requestAnimationFrame(tick); else done(); }; requestAnimationFrame(tick);
   const done = () => { grant(pr, UI.pay, pr.price); sfx('ok');
+    setTimeout(() => { const st = $('#layer .stamp'); if (st){ const r = st.getBoundingClientRect(); fxShapes(r.left + r.width/2, r.top + r.height/2, 28, 170, ['pink','blue','yellow','orange','green'], 70); fxPop($('#layer .sheet'), 'fx-thud', 400); haptic(16); } }, 140);
     setTimeout(() => { const st = $('#layer .stamp'); flyTo(st ? st.getBoundingClientRect() : null, cover(pr.cover, hash(pr.id)%50, 200, 200), () => { STATE.libNew++; badge(); }); }, 520);
     sh.innerHTML = `<button class="x-close" data-act="close-re" aria-label="关闭">${IC.x}</button><div class="done"><span class="stamp big pop" style="--sc:var(--blue)">PAID<small>已付款</small></span><b style="font-size:20px;margin-top:10px">${esc(pr.title)} 是你的了</b><span class="mut" style="font-size:14px">已放进资源库，随时可以下载</span></div><button class="pill lg" data-act="dl" data-id="${pr.id}">${IC.dl}现在下载</button><button class="pill lg lt" data-act="close-re">继续逛</button>`;
   };
@@ -4368,6 +4412,16 @@ Object.assign(ACTIONS, {
 });
 function fallbackCopy(v){ try { const t = document.createElement('textarea'); t.value = v; t.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(t); t.select(); const ok = document.execCommand('copy'); t.remove(); return ok; } catch(e){ return false; } }
 ACTIONS.buy = (b, e) => { const r = b.getBoundingClientRect(); if (STATE.role !== 'guest') burst(e?.clientX || r.left + r.width/2, e?.clientY || r.top + r.height/2, ['pink', 'yellow', 'blue']); haptic(12); ACTIONS.buy0(b, e); };
+/* 帖子大图：双击点赞（和视频流一致：大爱心 + 几何碎片）；单击照常，不延迟 */
+(() => { let t0 = 0, p0 = null;
+  document.addEventListener('pointerup', e => { const m = e.target.closest?.('#post .media'); if (!m || e.target.closest('button,a,input,[data-act]')) return; const now = performance.now();
+    if (now - t0 < 300 && p0 && Math.hypot(e.clientX - p0[0], e.clientY - p0[1]) < 40){ t0 = 0; const id = CUR.post; if (!id || needLogin()) return;
+      fxHeart(e.clientX, e.clientY); fxShapes(e.clientX, e.clientY, 16, 120, ['pink','yellow','pink','blue']); haptic(12);
+      if (!STATE.liked.has(id)){ const b = $(`#post [data-act="like"][data-id="${id}"]`); if (b) ACTIONS.like(b, e); } return; }
+    t0 = now; p0 = [e.clientX, e.clientY]; });
+})();
+/* 私信页：有新消息的快捷入口，进页面时依次招一下手 */
+document.addEventListener('rendered', () => { if (CUR.key !== 'msg|' || reduced()) return; $$('#app .mq').forEach((b, i) => { if (b.querySelector('.bdg')) setTimeout(() => fxPop(b, 'fx-go', 700), 260 + i*160); }); });
 /* 商品卡（电脑）：鼠标在封面上移动时轻轻倾斜，带一道跟着走的高光 */
 (() => { if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return; let cur = null;
   document.addEventListener('pointermove', e => { const cv = e.target.closest?.('.slv .cv'); if (cur && cur !== cv){ cur.style.transform = ''; cur.classList.remove('tilt'); cur = null; }
@@ -4392,7 +4446,7 @@ ROUTES.user = id => {
     : `<div class="shopband grain"><div style="position:relative;z-index:2"><span class="lab" style="color:var(--ink)">受邀创作者店铺</span><div class="x" style="margin-top:8px">${esc(u.shop)}</div></div><div class="stats" style="position:relative;z-index:2"><div><b>${shop.length}</b><span style="color:var(--ink)">件资源</span></div><div><b data-roll="${shop.reduce((s,p) => s + p.sales, 0)}">0</b><span style="color:var(--ink)">次被拥有</span></div></div></div>${isMe ? `<div style="display:flex;justify-content:flex-end;margin:-10px 0 18px"><button class="pill" data-act="sell">${IC.plus}上架新资源</button></div>` : ''}<div class="grid-p">${shop.map(sleeve).join('')}</div>`}
   </div>`;
 };
-ACTIONS.utab = b => { UI.userTab = b.dataset.v; rerender(); };
+ACTIONS.utab = b => inkSlide('.mtabs', () => { UI.userTab = b.dataset.v; rerender(); });
 
 const gate = (title, sub, btn) => `<div class="wrap"><div class="ph"><h1 class="x">${title}</h1></div><div class="empty" style="align-items:flex-start;text-align:left;padding-inline:0"><p style="font-size:18px;color:var(--ink);max-width:30ch">${sub}</p>${btn}</div></div>`;
 
@@ -4443,6 +4497,9 @@ ROUTES.seller = arg => {
   const nav = [['overview','概览'],['products','我的产品', pend],['collab','我的合作', COLLAB.reqs.filter(r => r.st === 'new').length]], cur = t === 'upload' ? 'products' : t;   // 上架是「我的产品」下面的子页
   let body = '';
   if (t === 'overview'){ const max = Math.max(...MONTHLY.map(m => m[1]));
+    onMount(root => { if (reduced()) return; const bs = $$('.bars .b', root); bs.forEach((b, k) => { const i = b.querySelector('i'), em = b.querySelector('em'), last = k === bs.length - 1;   // 柱子依次从 0 长出来，本月最后长、多跳一下
+      i.animate(last ? [{height:'0px'}, {height:`calc(${i.style.height} * 1.12)`, offset:.7}, {height:i.style.height}] : [{height:'0px'}, {height:i.style.height}], {duration:last ? 760 : 560, delay:120 + k*90, easing:'cubic-bezier(.2,.9,.25,1)', fill:'backwards'});
+      em && em.animate([{opacity:0, transform:'translateY(6px)'}, {opacity:1, transform:'none'}], {duration:300, delay:420 + k*90, fill:'backwards'}); }); });
     body = `<div class="kpis"><div class="kpi cc c-pink grain"><span class="lab" style="color:var(--ink);position:relative;z-index:2">九月预计到手</span><b data-roll="${tot.net.toFixed(2)}" data-pre="¥" style="position:relative;z-index:2">¥${tot.net.toFixed(2)}</b><span class="d" style="color:var(--ink);position:relative;z-index:2">已扣 1% 平台费与支付手续费</span></div>
       <div class="kpi"><span class="lab">九月销售额</span><b data-roll="${gross}" data-pre="¥">¥${gross}</b><span class="d">${paid.length} 单 · 1 单退款</span></div>
       <div class="kpi"><span class="lab">30 天浏览</span><b data-roll="5210">5,210</b><span class="d" style="color:var(--green);font-weight:600">比上月多 18%</span></div>
@@ -4613,7 +4670,8 @@ const HOME_TABS = ['fol', 'rec'];
 function homeSwitch(to, from){   // from = 松手时内容已经被拖动的距离（点页签时为 0）
   const cur = UI.homeTab || 'rec'; if (to === cur) return;
   const dir = HOME_TABS.indexOf(to) > HOME_TABS.indexOf(cur) ? -1 : 1, W = innerWidth, f = $('#app .hfeed');
-  const swap = () => { UI.homeTab = to; rerender(); const n = $('#app .hfeed'); if (n && !reduced()) n.animate([{transform:`translateX(${-dir * W * .35}px)`, opacity:0}, {transform:'none', opacity:1}], {duration:260, easing:'cubic-bezier(.2,.9,.1,1)'}); };
+  const ink = $('.ht-t .on')?.getBoundingClientRect();
+  const swap = () => { UI.homeTab = to; rerender(); inkFrom('.ht-t', ink); const n = $('#app .hfeed'); if (n && !reduced()) n.animate([{transform:`translateX(${-dir * W * .35}px)`, opacity:0}, {transform:'none', opacity:1}], {duration:260, easing:'cubic-bezier(.2,.9,.1,1)'}); };
   if (!f || reduced()){ swap(); return; }
   f.animate([{transform:`translateX(${from || 0}px)`, opacity:1}, {transform:`translateX(${dir * W * .45}px)`, opacity:0}], {duration:from ? 140 : 170, easing:'ease-in', fill:'forwards'}).onfinish = swap;
 }
@@ -4748,7 +4806,7 @@ function bindReelGestures(el){
     if (d.drag){ RL.noClick = true; setTimeout(() => RL.noClick = false, 60); track().style.transition = ''; if (d.dy < -H*.16 || v < -.5) goReel(RL.i + 1); else if (d.dy > H*.16 || v > .5) goReel(RL.i - 1); else goReel(RL.i); d = null; return; }
     if (e.type === 'pointercancel' || d.noTap){ d = null; return; }
     const now = performance.now(), r = el.getBoundingClientRect();
-    if (now - tapT < 280){ clearTimeout(tapTimer); tapT = 0; heartAt(e.clientX - r.left, e.clientY - r.top); reelLike(true); }
+    if (now - tapT < 280){ clearTimeout(tapTimer); tapT = 0; heartAt(e.clientX - r.left, e.clientY - r.top); fxShapes(e.clientX, e.clientY, 16, 120, ['pink','yellow','pink','blue']); reelLike(true); }
     else { tapT = now; tapTimer = setTimeout(() => { tapT = 0; reelToggle(); }, 280); }
     d = null;
   };
@@ -4835,7 +4893,7 @@ function msgBadge(){ const n = unreadTotal(); $$('[data-r="msg"]').forEach(b => 
 function msgPreview(m){ if (!m) return ''; const who = m.me ? '我：' : ''; return who + (m.t === 'text' ? m.text : m.t === 'img' ? '[图片]' : m.t === 'post' ? '[帖子] ' + (POST(m.ref)?.title || '') : '[商品] ' + (P(m.ref)?.title || '')); }
 function msgList(sel){
   const ids = Object.keys(CHATS).filter(id => USERS[id]).sort((a, b) => lastTs(b) - lastTs(a));
-  return `<div class="m-quick">${[['likes','赞和收藏','pink',IC.heartF],['fans','新增关注','blue','<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.4-7 8-7s7 2.5 8 7z"/></svg>'],['at','评论和@','yellow',RIC.cm]].map(([k,l,c,ic]) => `<button class="mq c-${c}" data-act="note" data-v="${k}"><span class="g">${ic}</span><b>${l}</b>${NOTE_NEW[k] ? `<i class="bdg">${NOTE_NEW[k]}</i>` : ''}</button>`).join('')}</div>
+  return `<div class="m-quick">${[['likes','赞和收藏','pink',IC.heartF],['fans','新增关注','blue','<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.4-7 8-7s7 2.5 8 7z"/></svg>'],['at','评论和@','yellow',RIC.cm]].map(([k,l,c,ic]) => `<button class="mq c-${c} mq-${k}" data-act="note" data-v="${k}"><span class="g">${ic}</span><b>${l}</b>${NOTE_NEW[k] ? `<i class="bdg">${NOTE_NEW[k]}</i>` : ''}</button>`).join('')}</div>
   <div class="m-list">${ids.map(id => { const m = CHATS[id][CHATS[id].length - 1], u = USERS[id]; return `<a class="mrow ${sel === id ? 'on' : ''}" data-go="msg-${id}">${av(id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>${esc(msgPreview(m))}</span></span><span class="mr"><time>${ago(m.ts)}</time>${CHAT_UNREAD[id] ? `<i class="bdg">${CHAT_UNREAD[id]}</i>` : ''}</span></a>`; }).join('') || '<div class="rnone">还没有私信</div>'}</div>`;
 }
 function bubble(m, uid){
@@ -4879,7 +4937,7 @@ Object.assign(ACTIONS, {
     sheet(`<h3>分享给 ${esc(USERS[uid].name)}</h3>${sec('我的作品', mine.map(o => ['post', o]))}${sec('收藏', fav.map(o => [o.price !== undefined ? 'prod' : 'post', o]))}${sec('已购 / 我的资源', own.map(o => ['prod', o]))}`); },
   'cv-share': b => { closeSheet(); sendMsg(b.dataset.uid, {t:b.dataset.k, ref:b.dataset.id}); },
   'new-chat': () => { sheet(`<h3>发起私信</h3><div class="rsearch">${IC.search}<input class="inp" id="ncQ" placeholder="搜创作者" autocomplete="off"></div><div class="m-list" id="ncL"></div>`, d => { const draw = () => { const q = $('#ncQ', d).value.trim().toLowerCase(); $('#ncL', d).innerHTML = Object.values(USERS).filter(u => u.id !== ME && (!q || (u.name + u.role).toLowerCase().includes(q))).map(u => `<a class="mrow" data-go="msg-${u.id}">${av(u.id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>${esc(u.role)}</span></span>${STATE.follows.has(u.id) ? '<span class="tag k">已关注</span>' : ''}</a>`).join(''); }; $('#ncQ', d).addEventListener('input', draw); draw(); setTimeout(() => $('#ncQ', d).focus(), 60); }); },
-  note: b => { const k = b.dataset.v, t = {likes:'赞和收藏', fans:'新增关注', at:'评论和@'}[k]; NOTE_NEW[k] = 0; msgBadge();
+  note: b => { fxPop(b, 'fx-go', 700); const k = b.dataset.v, t = {likes:'赞和收藏', fans:'新增关注', at:'评论和@'}[k]; NOTE_NEW[k] = 0; msgBadge();
     sheet(`<h3>${t}</h3><div class="m-list">${NOTES[k].map(n => { const p = n.ref && POST(n.ref); return `<a class="mrow" data-go="${p ? postHref(p) : 'user-' + n.u}">${av(n.u, 'md')}<span class="mt"><b>${esc(USERS[n.u].name)}</b><span>${k === 'fans' ? '开始关注你了' : esc(n.k) + (n.text ? '：' + esc(n.text) : '')} · ${ago(n.ts)}</span></span>${p ? miniThumb(p, 'nth') : k === 'fans' ? `<button class="pill sm ${STATE.follows.has(n.u) ? 'lt' : ''}" data-act="follow" data-id="${n.u}">${STATE.follows.has(n.u) ? '互相关注' : '回关'}</button>` : ''}</a>`; }).join('')}</div>`);
     const q = $(`[data-act="note"][data-v="${k}"] .bdg`); q && q.remove(); }
 });
@@ -4890,7 +4948,7 @@ function meHead(){
   const u = USERS[ME], nProd = PRODUCTS.filter(p => p.seller === ME).length, owned = STATE.owned.size;
   return `<div class="mh">
     <div class="mh-top"><button class="rl-ic dk" data-act="me-menu" aria-label="更多">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>'}</button><span style="flex:1"></span><button class="rl-ic dk" data-act="me-share" aria-label="分享主页">${RIC.fwd}</button></div>
-    <div class="mh-id"><button class="mh-av" data-act="av-edit" aria-label="更换头像">${av(ME, 'xl')}<i class="mh-cam">${RIC.pen}</i>${AVQ.some(q => q.uid === ME) ? '<span class="mh-pend">审核中</span>' : ''}</button><div style="min-width:0"><h1>${esc(u.name)}</h1><span class="mut2">${['CTRL Z 号 · ' + esc(u.id), esc(u.city || '')].filter(Boolean).join(' · ')}</span></div></div>
+    <div class="mh-id"><button class="mh-av" data-act="av-tap" aria-label="更换头像">${av(ME, 'xl')}<i class="mh-cam">${RIC.pen}</i>${AVQ.some(q => q.uid === ME) ? '<span class="mh-pend">审核中</span>' : ''}</button><div style="min-width:0"><h1>${esc(u.name)}</h1><span class="mut2">${['CTRL Z 号 · ' + esc(u.id), esc(u.city || '')].filter(Boolean).join(' · ')}</span></div></div>
     <p class="mh-bio">${esc(u.bio)}</p>
     <div class="mh-st"><button data-act="me-list" data-v="follow"><b>${u.follow + STATE.follows.size}</b>关注</button><button data-act="me-list" data-v="fans"><b>${u.fans.toLocaleString()}</b>粉丝</button><span><b>${u.likes}</b>获赞与收藏</span></div>
     <div class="mh-q">
@@ -4919,7 +4977,7 @@ function meProfile(){
     <div class="mtb">${meTabBody(t)}</div></div>`;
 }
 Object.assign(ACTIONS, {
-  'me-tab': b => { UI.meTab = b.dataset.v; flip(rerender); },
+  'me-tab': b => { inkSlide('.mtabs', () => { UI.meTab = b.dataset.v; flip(rerender); }); },
   'fav-sub': b => { UI.favSub = b.dataset.v; rerender(); },
   'hist-clear': () => { STATE.hist = []; store.set('hist', []); rerender(); },
   'goto-cmt': b => { const p = POST(b.dataset.p); UI.flashCmt = {p:p.id, t:b.dataset.t}; if (inStream(p)){ go('v-' + p.id); setTimeout(() => openReelCm(), 350); } else go('post-' + p.id); },
@@ -5347,7 +5405,9 @@ Object.assign(ACTIONS, {
   solve: b => { const p = POST(b.dataset.id); if (curUser() !== p.author) return; const now = !isSolved(p); STATE.solved[p.id] = now; UI.justStamped = now; sfx(now ? 'ok' : 'click'); renderPost(p.id); UI.dirty = true; if (now){ const s = $('.stamp.big'); if (s){ const r = s.getBoundingClientRect(); setTimeout(() => burst(r.left + r.width/2, r.top + r.height/2, ['green','yellow']), 250); } } },
   report: () => sheet(`<h3>举报原因</h3><div style="display:flex;flex-direction:column;gap:8px">${['侵犯了我的版权','分享盗版资源','广告引流','不友善'].map(r => `<button class="pill lt lg" style="justify-content:flex-start" data-act="do-report">${r}</button>`).join('')}</div>`),
   'do-report': () => { closeSheet(); toast('收到，我们会尽快处理'); },
-  compose: () => { if (needLogin()) return; composeSheet(); },
+  compose: b => { if (needLogin()) return; const r = b?.getBoundingClientRect(); composeSheet(); $$('[data-act="compose"]').forEach(x => x.classList.add('fx-open'));
+    const sh = $('#layer .sheet'); if (sh && r && !reduced()){ const s = sh.getBoundingClientRect(), dx = r.left + r.width/2 - (s.left + s.width/2), dy = r.top + r.height/2 - (s.top + s.height/2);
+      sh.animate([{transform:`translate(${dx}px, ${dy}px) scale(.12)`, opacity:0, borderRadius:'50%'}, {transform:'none', opacity:1}], {duration:420, easing:'cubic-bezier(.3,1.25,.5,1)'}); } },
   theme: () => { STATE.settings.theme = isDark() ? 'light' : 'dark'; applySettings(); applyTheme(true);
     const t = $('.drw-thm'); if (t) t.innerHTML = (isDark() ? IC.sun : IC.moon) + (isDark() ? '浅色模式' : '深色模式'); },   // 侧边菜单里的按钮文字跟着变
   'set-theme': b => { STATE.settings.theme = b.dataset.v; applySettings(); applyTheme(true); rerender(); },
@@ -5590,7 +5650,7 @@ const SHIST = {
 };
 const sRedraw = () => $('#srch')?._draw?.();
 /* 搜索结果的页签（不要和工作室页签的 stab 重名，否则会覆盖掉它） */
-ACTIONS.srtab = b => { const sc = $('#srch')?.dataset.s || 'all'; (UI.stabs ||= {})[sc] = b.dataset.v; sRedraw(); const q = $('#sq'); if (q && !IS_MOBILE) q.focus(); };
+ACTIONS.srtab = b => { const sc = $('#srch')?.dataset.s || 'all'; inkSlide('#srch .s-tabs', () => { (UI.stabs ||= {})[sc] = b.dataset.v; sRedraw(); }); const q = $('#sq'); if (q && !IS_MOBILE) q.focus(); };
 ACTIONS.sclear = () => { const q = $('#sq'); if (!q) return; q.value = ''; q.dispatchEvent(new Event('input')); q.focus(); };
 ACTIONS['shist-del'] = b => { const c = b.closest('.sh-c'); c?.classList.add('out'); setTimeout(() => { SHIST.del(b.dataset.v); sRedraw(); $('#sq')?.focus(); }, reduced() ? 0 : 160); };
 ACTIONS['shist-clr'] = () => { const g = $('.sh-g'); g?.classList.add('out'); setTimeout(() => { SHIST.save([]); sRedraw(); $('#sq')?.focus(); }, reduced() ? 0 : 200); };
