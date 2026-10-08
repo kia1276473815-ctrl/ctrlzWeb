@@ -449,8 +449,11 @@ main{min-height:80vh}
 .cat:not(.on){opacity:.94}
 .cat.on{box-shadow:inset 0 0 0 3px var(--ink)}
 .cat.all.on{box-shadow:inset 0 0 0 3px var(--ink),inset 0 0 0 6px var(--paper)}
-.cat svg.sh{position:absolute;right:-14px;bottom:-18px;width:min(110px,40cqi);height:min(110px,40cqi);mix-blend-mode:multiply;opacity:.9}
-.cat .cn{max-width:calc(100% - min(80px,26cqi));line-height:1.3;word-break:keep-all}
+.cat svg.sh{position:absolute;right:12px;bottom:40px;width:min(100px,50cqi);height:min(100px,50cqi);mix-blend-mode:multiply;opacity:.92;transition:transform .35s var(--spring)}
+.cat svg.sh.all{mix-blend-mode:normal;opacity:.22}
+.cat:hover svg.sh{transform:rotate(-6deg) translateY(-3px)}
+.cat .cn{line-height:1.3;word-break:keep-all}
+.cat:not(.all){min-height:184px}   /* 留出插画的位置：标题在上、插画在右侧中间、说明文字在底部整行 */
 .grid-p{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:30px 18px}
 .slv{display:flex;flex-direction:column;gap:12px;cursor:pointer}
 .slv .cv{position:relative;aspect-ratio:1;border-radius:14px;overflow:hidden;background:var(--c)}
@@ -2152,6 +2155,51 @@ const GLYPH = {
   visual:'<svg viewBox="0 0 100 100"><rect x="6" y="6" width="88" height="88" fill="currentColor"/></svg>',
   max:'<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="34" fill="none" stroke="currentColor" stroke-width="22"/></svg>',
   pd:'<svg viewBox="0 0 100 100"><path d="M50 2L98 50 50 98 2 50z" fill="currentColor"/></svg>'
+};
+/* 商城分类卡片右下角的插画：极简、单色叠印（currentColor = 油墨色，白色部分叠印后透出卡片底色） */
+const CAT_ART = {
+  // 小军鼓 + 两根鼓棒
+  sample:`<svg viewBox="0 0 100 100" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M28 6l20 30M78 8L56 36" stroke="currentColor" stroke-width="6"/><circle cx="28" cy="6" r="5" fill="currentColor"/><circle cx="78" cy="8" r="5" fill="currentColor"/>
+    <path d="M12 50v30c0 7 17 12 38 12s38-5 38-12V50" fill="currentColor"/>
+    <path d="M24 58v28M40 61v30M60 61v30M76 58v28" stroke="#fff" stroke-width="3"/>
+    <ellipse cx="50" cy="50" rx="38" ry="12" fill="#fff" stroke="currentColor" stroke-width="5"/></svg>`,
+  // 合成器：一排旋钮 + 推子 + 琴键
+  preset:`<svg viewBox="0 0 100 100">
+    <rect x="4" y="30" width="92" height="60" rx="6" fill="currentColor"/>
+    <g fill="#fff"><circle cx="18" cy="44" r="6"/><circle cx="36" cy="44" r="6"/><circle cx="54" cy="44" r="6"/><rect x="68" y="38" width="20" height="4" rx="2"/><rect x="68" y="46" width="20" height="4" rx="2"/>
+    <rect x="10" y="58" width="80" height="26" rx="2"/></g>
+    <g fill="currentColor"><path d="M18 44l0-6M36 44l4-4.5M54 44l-5 3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><rect x="74" y="36" width="4" height="8" rx="1"/><rect x="80" y="44" width="4" height="8" rx="1"/>
+    <rect x="20" y="58" width="5" height="15"/><rect x="31" y="58" width="5" height="15"/><rect x="48" y="58" width="5" height="15"/><rect x="59" y="58" width="5" height="15"/><rect x="70" y="58" width="5" height="15"/>
+    <path d="M26.6 75v9M42.6 75v9M58.6 75v9M74.6 75v9" stroke="currentColor" stroke-width="1.6"/></g></svg>`,
+  // TouchDesigner：算子框用曲线连成网络
+  td:`<svg viewBox="0 0 100 100" fill="none" stroke-linecap="round">
+    <path d="M36 24c16 0 10 26 26 26M38 78c14 0 10-22 24-22" stroke="currentColor" stroke-width="4"/>
+    <g fill="currentColor"><rect x="4" y="12" width="32" height="24" rx="4"/><rect x="62" y="40" width="34" height="26" rx="4"/><rect x="6" y="66" width="32" height="24" rx="4"/></g>
+    <g fill="#fff"><rect x="9" y="17" width="22" height="9" rx="1.5"/><rect x="67" y="45" width="24" height="10" rx="1.5"/><rect x="11" y="71" width="22" height="9" rx="1.5"/>
+    <circle cx="36" cy="24" r="2.6"/><circle cx="62" cy="50" r="2.6"/><circle cx="38" cy="78" r="2.6"/><circle cx="62" cy="56" r="2.6"/></g></svg>`,
+  // 视觉：显示器里的「太阳 + 山」
+  visual:`<svg viewBox="0 0 100 100">
+    <rect x="4" y="14" width="92" height="64" rx="6" fill="currentColor"/>
+    <rect x="11" y="21" width="78" height="50" rx="2" fill="#fff"/>
+    <circle cx="66" cy="38" r="9" fill="currentColor"/><path d="M11 71l24-26 16 16 10-9 28 19z" fill="currentColor"/>
+    <path d="M42 78h16l4 12H38z" fill="currentColor"/><rect x="28" y="88" width="44" height="6" rx="3" fill="currentColor"/></svg>`,
+  // Max：对象框、直连线、旋钮、扬声器（ezdac~）
+  max:`<svg viewBox="0 0 100 100" fill="none" stroke-linecap="round">
+    <path d="M18 26v18M22 52l20 16M70 34v22M64 66l-14 6" stroke="currentColor" stroke-width="3.5"/>
+    <g fill="currentColor"><rect x="4" y="12" width="34" height="14" rx="2"/><rect x="4" y="44" width="40" height="14" rx="2"/><circle cx="70" cy="22" r="13"/><path d="M38 66h12l14-12v36L50 78H38z"/></g>
+    <g fill="#fff"><rect x="8" y="15" width="3.5" height="3" /><rect x="8" y="47" width="3.5" height="3"/><rect x="36" y="47" width="3.5" height="3"/></g>
+    <path d="M70 22l7-7" stroke="#fff" stroke-width="3.5"/><path d="M72 66c5 4 5 12 0 16M80 60c9 8 9 22 0 30" stroke="currentColor" stroke-width="3.5"/></svg>`,
+  // Pure Data：消息框（右边缺口）+ 数字框（切角）+ 对象框
+  pd:`<svg viewBox="0 0 100 100" fill="none" stroke-linecap="round">
+    <path d="M22 28v16M60 58v14M30 58l22 16" stroke="currentColor" stroke-width="3.5"/>
+    <path d="M4 12h44l-6 8 6 8H4z" fill="currentColor"/>
+    <path d="M10 44h32l6 7v7H10z" fill="currentColor"/>
+    <rect x="44" y="72" width="52" height="18" rx="2" fill="currentColor"/>
+    <g fill="#fff"><rect x="9" y="17" width="20" height="6" rx="1"/><rect x="15" y="48" width="16" height="6" rx="1"/><rect x="50" y="77" width="30" height="8" rx="1"/></g>
+    <circle cx="78" cy="30" r="14" fill="currentColor"/><circle cx="78" cy="30" r="5" fill="#fff"/></svg>`,
+  // 全部：四个小图形
+  all:`<svg viewBox="0 0 100 100"><circle cx="28" cy="28" r="22" fill="currentColor"/><rect x="56" y="6" width="42" height="42" rx="3" fill="currentColor"/><path d="M28 54l24 42H4z" fill="currentColor"/><path d="M54 96a22 22 0 0144 0z" fill="currentColor"/></svg>`
 };
 
 /* ================= 孔版印刷：颗粒、半调、封面 ================= */
@@ -4035,7 +4083,7 @@ ROUTES.shop = arg => {
   let list = PRODUCTS.filter(p => onSale(p) && (s.cat === 'all' || p.cat === s.cat) && (!CATS[s.cat]?.subs || !s.sub || s.sub === 'all' || p.sub === s.sub) && (s.price === 'all' || (s.price === 'free' && p.price === 0) || (s.price === 'lt50' && p.price > 0 && p.price < 50) || (s.price === '50' && p.price >= 50 && p.price <= 100) || (s.price === 'gt100' && p.price > 100)));
   const sorts = {hot:(a,b) => b.sales - a.sales, new:(a,b) => PRODUCTS.indexOf(b) - PRODUCTS.indexOf(a), asc:(a,b) => a.price - b.price};
   list = [...list].sort(sorts[s.sort]);
-  const tile = (k, c, en, cn, n) => `<button class="cat ${c ? 'c-' + c : 'all'} ${c ? 'grain' : ''} ${s.cat===k?'on':''}" data-act="sf" data-k="cat" data-v="${k}"><span class="x">${en}<sup class="ct">${n}</sup></span><span class="cn">${cn}</span>${k !== 'all' ? GLYPH[k].replace('<svg', `<svg class="sh" style="color:${INK[c === 'yellow' ? 'blue' : c === 'blue' ? 'yellow' : 'ink']}"`) : ''}</button>`;
+  const tile = (k, c, en, cn, n) => `<button class="cat ${c ? 'c-' + c : 'all'} ${c ? 'grain' : ''} ${s.cat===k?'on':''}" data-act="sf" data-k="cat" data-v="${k}"><span class="x">${en}<sup class="ct">${n}</sup></span><span class="cn">${cn}</span>${CAT_ART[k].replace('<svg', `<svg class="sh${k === 'all' ? ' all' : ''}" aria-hidden="true" style="color:${k === 'all' ? 'var(--paper)' : INK[c === 'yellow' ? 'blue' : c === 'blue' ? 'yellow' : 'ink']}"`)}</button>`;
   onMount(root => { const bn = $('.bn', root); bn && mountBanner(root); });
   return `<section class="bn c-pink" tabindex="0" aria-roledescription="carousel" aria-label="精选海报">
     <canvas></canvas><div class="bcur" aria-hidden="true"></div>
