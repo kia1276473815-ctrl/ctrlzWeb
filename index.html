@@ -3429,8 +3429,8 @@ function revealActive(root){ $$('.on', root).forEach(el => { const par = el.pare
   const l = el.getBoundingClientRect().left - par.getBoundingClientRect().left + par.scrollLeft, want = l - (par.clientWidth - el.offsetWidth)/2; if (l < par.scrollLeft || l + el.offsetWidth > par.scrollLeft + par.clientWidth) par.scrollLeft = Math.max(0, want); }); }
 function rerender(){ if (CUR.post) { renderPost(CUR.post); UI.dirty = true; return; } const {r, arg} = parseHash(); renderBase(r, arg, true); }
 /* ---------- 浏览器历史 = 页面层级（安卓返回手势、浏览器后退键都走这里） ----------
-   · 首页是最底层；商城 / 私信 / 我 永远只叠在首页上面一层：在这三个页签按返回 → 首页，首页再返回 → 离开网站
-   · 页签之间切换不新增历史；子页面、帖子照常一层层往上叠，返回一层层退
+   · 首页 / 商城 / 私信 / 我 都是最底层：在这四个页签上按返回 → 直接离开网站
+   · 页签之间切换不新增历史（原地替换）；子页面、帖子照常一层层往上叠，返回一层层退
    · 页面里的「返回 / 关闭」按钮：上一条历史就是要回去的页面 → 真正后退；否则原地替换，不在历史里越堆越多
    · 弹层（底部面板、侧边菜单、搜索）打开时也占一条历史，所以返回手势先关弹层，而不是直接离开页面
    每条历史在 state.ctrlz 里记下自己的层数，后退 / 前进 / 刷新后都据此知道自己在第几层 */
@@ -3444,14 +3444,16 @@ function navBackTo(k, h){ h = '#' + String(h).replace(/^#/, ''); if (k >= HST.d)
 /* 回上一层 */
 function navUp(h){ h = '#' + String(h).replace(/^#/, ''); const prev = HST.stk[HST.d - 1];
   if (HST.d > 0 && prev && (prev === h || routeOf(prev) === routeOf(h))) navBackTo(HST.d - 1, h); else navReplace(h); }
-/* 切到页签（首页在第 0 层，其余页签在第 1 层） */
-function navTab(h){ h = '#' + String(h).replace(/^#/, ''); const want = routeOf(h) === 'home' ? 0 : 1;
-  if (HST.d === want) navReplace(h); else if (HST.d < want) location.hash = h; else navBackTo(want, h); }
-/* 启动：刷新时沿用这条历史记下的层数；直接打开某个非首页的链接时，在它下面垫一层首页，返回就先回首页 */
+/* 切到页签：四个页签都在第 0 层 —— 从子页面切过去会先退回第 0 层再原地换成目标页签 */
+function navTab(h){ h = '#' + String(h).replace(/^#/, ''); if (HST.d === 0) navReplace(h); else navBackTo(0, h); }
+/* 子页面所属的页签（一直往上找到没有上一级的那一页）；帖子 / 视频浮层算在首页下面 */
+function rootOf(h){ if (/^#?(post|v)-/.test(h)) return '#home'; let x = h, p, n = 0; while ((p = parentOf(x)) && n++ < 6) x = '#' + p; return x; }
+/* 启动：刷新时沿用这条历史记下的层数；直接打开子页面的链接时，在它下面垫一层它所属的页签，返回就先回那个页签 */
 (() => { const st = history.state, h = curH();
   if (st && st.ctrlz != null){ HST.d = st.ctrlz; HST.stk[HST.d] = h; return; }
-  if (routeOf(h) === 'home' && !h.includes('-')){ history.replaceState({ctrlz:0}, ''); return; }
-  history.replaceState({ctrlz:0}, '', '#home'); history.pushState({ctrlz:1}, '', h); HST.d = 1; HST.stk = ['#home', h]; })();
+  const root = rootOf(h); HST.stk = [root];
+  if (root === h){ history.replaceState({ctrlz:0}, ''); return; }
+  history.replaceState({ctrlz:0}, '', root); history.pushState({ctrlz:1}, '', h); HST.d = 1; HST.stk = [root, h]; })();
 /* 弹层占一条历史：打开时压入一条同网址的历史；点关闭 → 顺手退掉这条；按返回 → 退掉这条并关闭弹层 */
 function closeOverlays(){ closeSheet(); closeSearch(); }
 function ovSync(){ const open = !!($('#layer').firstElementChild || $('#srch'));
