@@ -102,9 +102,14 @@ html.hd-off .hd{transform:translateY(calc(-100% - env(safe-area-inset-top,0px) -
 .nav a.on{color:var(--paper);background:var(--ink)}
 .hd-r{display:flex;align-items:center;gap:10px}
 .hd[data-s=none] .sbtn{display:none} /* 「我」板块不提供搜索 */
-/* 首页：左上角是菜单（三条横线），不显示 logo；其他页面照常显示 logo */
+/* 顶栏左上角：所有页面都不显示 logo；首页和「我」放菜单（三条横线），商城、私信留空，子页面是返回箭头 */
+.hd .wm{display:none}
+.hd-r{margin-left:auto}
 .hd-menu{flex:none;margin-left:-8px}
-.hd:not(.at-home) .hd-menu,.hd.at-home .wm{display:none}
+.hd:not(.at-home):not(.at-me) .hd-menu{display:none}
+/* 「我」：平板 / 电脑的菜单在顶栏里，页面里那个就不重复了；手机上整条顶栏隐藏，页面直接从顶部开始 */
+@media (min-width:761px){ .mh-top [data-act="me-menu"]{display:none} }
+@media (max-width:760px){ html.no-hd .hd{display:none} html.no-hd{--hdy:0px} html.no-hd .mep{padding-top:calc(8px + env(safe-area-inset-top,0px))} }
 .sbtn{display:flex;align-items:center;gap:10px;height:40px;padding:0 8px 0 16px;border-radius:999px;background:var(--card);border:1px solid var(--rule);color:var(--ink-3);font-size:14px;min-width:220px;transition:border-color .2s}
 .sbtn:hover{border-color:var(--rule-2);color:var(--ink-2)}
 .sbtn svg{width:16px;height:16px}
@@ -5015,7 +5020,9 @@ function searchScope(){ const h = CUR.hash || curH(), r = routeOf(h);
 function syncSearchBtn(){ const s = searchScope(), hd = $('#hd'), b = $('#hd .sbtn'); if (!hd) return; hd.dataset.s = s || 'none';
   if (b && s){ b.querySelector('.t').textContent = SCOPES[s].btn; b.setAttribute('aria-label', SCOPES[s].lab); } }
 document.addEventListener('rendered', syncSearchBtn);
-document.addEventListener('rendered', () => $('#hd').classList.toggle('at-home', routeOf(CUR.hash) === 'home'));
+document.addEventListener('rendered', () => { const r = routeOf(CUR.hash), meRoot = r === 'me' && !parentOf(CUR.hash);
+  $('#hd').classList.toggle('at-home', r === 'home'); $('#hd').classList.toggle('at-me', meRoot);
+  document.documentElement.classList.toggle('no-hd', meRoot && !!$('.mep .mh-top')); });   // 只有个人主页（有页面内菜单）才在手机上隐藏顶栏
 function contactIds(){ return [...new Set([...Object.keys(CHATS), ...STATE.follows])].filter(id => USERS[id] && id !== ME); }
 function openSearch(scope, tab){
   scope = scope === undefined ? searchScope() : scope; if (!scope || $('#srch')) return; const S = SCOPES[scope];
