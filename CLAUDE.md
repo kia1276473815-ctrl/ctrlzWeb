@@ -61,3 +61,14 @@
 - 内容变化补动效 `MORPH`：按钮里图标原地换掉（播放 ↔ 暂停等）自动弹入；小胶囊（`.tag` / `.vbadge` / 关注 / 演示循环……，见 `PILL`）宽度变化自动弹性过渡（ResizeObserver 记上一次宽度，动画期间不接力）；软重绘（`rerender` / `renderPost`）前后按 `data-act + data-id` 对号补同样的动效。新增「会变长短的胶囊」加进 `PILL` 即可；页面刚打开 2.5 秒内、窗口刚改尺寸时不补
 - 迷你播放器：只在第一次出现时入场，换曲目宽度过渡，停止时滑下淡出
 - 商城海报：底边渐隐到页面底色（和分类卡衔接）；CONCRETE 海报的波纹会真的推开周围（鼓面轮廓 / 刻纹 / 鼓名按点位移，标题逐字母、副标题、按钮被推一下，`wv()`）
+
+## 性能约定（不改外观的前提下）
+- 动画循环（`loopAdd`）里不要直接 `getBoundingClientRect` / `matchMedia`：判断是否在屏幕里用 `visible(el)`、画布尺寸用 `fitCanvas()`（都由 `OBS` 的 Intersection / ResizeObserver 缓存）；媒体查询用 `MQ.dark / MQ.rm / MQ.mob`
+- 滚动监听里的读写合并到一帧一次（`fabQ` 写法）；常驻的「每帧检查」改成事件驱动（如陀螺仪用 `deviceorientation`，不要常驻 rAF）
+- 主线程长任务（离线渲染曲子 `renderTrack`）只给快滑到眼前的卡片做（`waveLoop` 的 near 观察者），并且等用户停手 0.5 秒（`LAST_MOVE` / `pumpTracks`）
+- Paper 着色器用 `FX.cap(mount)` 限 30 帧（慢速流动，看不出区别）
+- 会动的 SVG 光照滤镜物件：每个物件单独一层、只动 transform（滤镜只栅格化一次），不要在同一张 svg 里动 `<g>`
+- 不要给卡片加 `contain:paint`（实测会改变颗粒 / 混合模式的叠加效果）
+- 中文字体分片用 Blob URL 交给浏览器解码，不在 JS 里拼大数组
+- `sw.js`：页面网络优先（总是最新、断网可开），字体 / 图标 / vendor 缓存优先 + 后台更新。**更新 vendor 文件时改文件名**，否则老用户先用一次旧缓存；改了缓存策略要改 `V` 的版本号
+- 性能回归测试脚本思路：Playwright + CDP `Emulation.setCPUThrottlingRate 4`，测空闲 TaskDuration 和滚动 rAF 帧间隔；视觉回归：停掉 `LOOPS`、冻结动画后新旧版本逐像素对比（颗粒纹理每次加载随机，属正常差异）

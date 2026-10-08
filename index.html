@@ -34,6 +34,8 @@
 <meta name="apple-mobile-web-app-title" content="CTRL Z">
 <!-- 展示字体 Archivo 随站点自托管（不依赖 Google Fonts，国内网络也能正常加载、不阻塞首屏） -->
 <link rel="preload" href="fonts/Archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+<!-- 正文字体（拉丁）提前下载：少一次字体替换引起的重排 -->
+<link rel="preload" href="fonts/HarmonyOS_Sans.ttf" as="font" type="font/ttf" crossorigin>
 <style>
 /* 展示字体：Archivo（SIL OFL 1.1，见 fonts/Archivo_OFL.txt），可变字重 400–900、字宽 62%–125%，按字符范围拆分 */
 @font-face{font-family:"Archivo";font-style:normal;font-weight:400 900;font-stretch:62% 125%;font-display:swap;src:url("fonts/Archivo-latin-ext.woff2") format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
@@ -2243,15 +2245,15 @@ html.rm .mq .g{transition:none}
 .mh-av.gg-on .mh-gg{opacity:1}
 
 /* ---- 空状态软胶几何 ---- */
-.fx-em{width:min(200px,60vw);height:auto;overflow:visible;margin-bottom:-4px}
+.fx-em{position:relative;width:min(200px,60vw);aspect-ratio:168/74;margin-bottom:-4px}
 .empty[style*="flex-start"] .fx-em{width:min(160px,48vw)}
-.fx-em .em-f{transform-box:fill-box;transform-origin:50% 100%;animation:emf 3.4s ease-in-out infinite}
+/* 每个物件一层：整张 svg 叠在一起，只动 transform（原点 = 该物件底边中点，和原来 fill-box 的 50% 100% 一致） */
+.fx-em .em-f{position:absolute;inset:0;width:100%;height:100%;overflow:visible;will-change:transform;animation:emf 3.4s ease-in-out infinite}
 .fx-em .em-2{animation-delay:-.9s} .fx-em .em-3{animation-delay:-1.8s} .fx-em .em-4{animation-delay:-2.6s}
-.fx-em .em-sh{fill:var(--ink);opacity:.1}
-.fx-em .em-sh ellipse{transform-box:fill-box;transform-origin:center;animation:ems 3.4s ease-in-out infinite}
-.fx-em .em-sh ellipse:nth-child(2){animation-delay:-.9s} .fx-em .em-sh ellipse:nth-child(3){animation-delay:-1.8s} .fx-em .em-sh ellipse:nth-child(4){animation-delay:-2.6s}
-@keyframes emf{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-7px) rotate(4deg)}}
-@keyframes ems{0%,100%{transform:scaleX(1);opacity:1}50%{transform:scaleX(.72);opacity:.6}}
+.fx-em .em-sh{position:absolute;border-radius:50%;background:var(--ink);opacity:.1;animation:ems 3.4s ease-in-out infinite}
+/* 上浮 7 个 viewBox 单位 = 高度的 7/74 */
+@keyframes emf{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-9.4595%) rotate(4deg)}}
+@keyframes ems{0%,100%{transform:scaleX(1);opacity:.1}50%{transform:scaleX(.72);opacity:.06}}
 html.rm .fx-em *{animation:none}
 @media (prefers-reduced-motion:reduce){ .fx-em *{animation:none} }
 
@@ -2744,7 +2746,9 @@ const CAT_ART = {
 /* ================= 孔版印刷：颗粒、半调、封面 ================= */
 /* 主题 */
 const HOST_THEME = document.documentElement.dataset.theme || '';
-const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+// 媒体查询对象只建一次（每次 matchMedia() 都会新建一个对象；动画循环里每帧都在问）
+const MQ = {dark: matchMedia('(prefers-color-scheme: dark)'), rm: matchMedia('(prefers-reduced-motion:reduce)'), mob: matchMedia('(max-width:760px)')};
+const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === 'dark' : MQ.dark.matches; };
 const BL = () => isDark() ? 'screen' : 'multiply';
 const INKC = () => isDark() ? '#ECECE6' : '#141418';
 const inkA = a => isDark() ? `rgba(236,236,230,${a})` : `rgba(20,20,24,${a})`;
@@ -2753,7 +2757,7 @@ const PAPER = '#F7F6F1';
 const NOISE = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const d = g.createImageData(128,128); for (let i=0;i<d.data.length;i+=4){ const r = Math.random(); const v = 255 - Math.pow(r, 7)*110; d.data[i]=d.data[i+1]=d.data[i+2]=v; d.data[i+3]=255; } g.putImageData(d,0,0); return c; })();
 (() => { const c = document.createElement('canvas'); c.width = c.height = 160; const g = c.getContext('2d'); const d = g.createImageData(160,160); for (let i=0;i<d.data.length;i+=4){ const r = Math.random(); d.data[i]=d.data[i+1]=d.data[i+2]=20; d.data[i+3]=Math.pow(r, 8)*120; } g.putImageData(d,0,0); document.documentElement.style.setProperty('--grain', `url(${c.toDataURL()})`);
   const m = g.createImageData(160,160); for (let i=0;i<m.data.length;i+=4){ m.data[i]=m.data[i+1]=m.data[i+2]=0; m.data[i+3] = Math.random() < .16 ? 40 + Math.random()*90 : 255; } g.putImageData(m,0,0); document.documentElement.style.setProperty('--stamp', `url(${c.toDataURL()})`); })();
-function grainify(g, w, h, a=.9){ g.save(); g.globalCompositeOperation = 'multiply'; g.globalAlpha = a; g.fillStyle = g.createPattern(NOISE, 'repeat'); g.fillRect(0,0,w,h); g.restore(); }
+function grainify(g, w, h, a=.9){ g.save(); g.globalCompositeOperation = 'multiply'; g.globalAlpha = a; g.fillStyle = g._grain || (g._grain = g.createPattern(NOISE, 'repeat')); g.fillRect(0,0,w,h); g.restore(); }
 function halftone(g, x0, y0, w, h, step, f, color){ g.fillStyle = color; for (let y=y0; y<y0+h; y+=step) for (let x=x0 + ((y/step)%2 ? step/2 : 0); x<x0+w; x+=step){ const v = f(x, y); if (v <= .02) continue; g.beginPath(); g.arc(x, y, step*.55*Math.sqrt(Math.min(1,v)), 0, Math.PI*2); g.fill(); } }
 const COVERS = new Map();
 const COVER_PAL = {wave:['blue','pink'], drum:['pink','blue'], particles:['blue','pink'], grid:['blue','yellow'], bars:['pink','blue'], crt:['pink','blue'], metal:['blue','yellow'], fog:['pink','blue'], rings:['violet','orange'], topo:['green','pink'], type:['orange','blue']};
@@ -2984,8 +2988,14 @@ function sfx(kind='click'){
 const LOOPS = new Set(); let _raf = 0;
 function loopAdd(fn){ LOOPS.add(fn); if (!_raf) _raf = requestAnimationFrame(_frame); return () => LOOPS.delete(fn); }
 function _frame(t){ _raf = 0; if (!document.hidden) LOOPS.forEach(f => { try { f(t); } catch(e){ console.error(e); LOOPS.delete(f); } }); if (LOOPS.size) _raf = requestAnimationFrame(_frame); }
-function fitCanvas(cv, maxDpr){ const r = cv.getBoundingClientRect(); const dpr = Math.min(window.devicePixelRatio || 1, maxDpr || (IS_MOBILE ? 1.5 : 2)); const w = Math.max(1, Math.round(r.width*dpr)), h = Math.max(1, Math.round(r.height*dpr)); if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; } return {w, h, dpr}; }
-function visible(el){ const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && r.width > 0; }
+/* 性能：画布尺寸 / 是否在屏幕里，交给 ResizeObserver / IntersectionObserver 记住，动画循环里不再每帧量位置（每次量都可能强制重排）。
+   第一次调用还是当场量一次，之后用观察者给的值；页面重绘后清掉已经不在页面上的 */
+const OBS = {set: new Set(), ro: new ResizeObserver(es => es.forEach(e => { const b = e.contentBoxSize?.[0]; e.target._sz = b ? {width: b.inlineSize, height: b.blockSize} : e.contentRect; })),
+  io: new IntersectionObserver(es => es.forEach(e => { const r = e.boundingClientRect; e.target._vi = e.isIntersecting || (r.bottom > 0 && r.top < innerHeight && r.width > 0); }))};
+const obsAdd = el => { if (OBS.set.has(el)) return; OBS.set.add(el); OBS.ro.observe(el); OBS.io.observe(el); };
+document.addEventListener('rendered', () => OBS.set.forEach(el => { if (!el.isConnected){ OBS.ro.unobserve(el); OBS.io.unobserve(el); OBS.set.delete(el); } }));
+function fitCanvas(cv, maxDpr){ let r = cv._sz; if (!r){ r = cv.getBoundingClientRect(); obsAdd(cv); } const dpr = Math.min(window.devicePixelRatio || 1, maxDpr || (IS_MOBILE ? 1.5 : 2)); const w = Math.max(1, Math.round(r.width*dpr)), h = Math.max(1, Math.round(r.height*dpr)); if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; } return {w, h, dpr}; }
+function visible(el){ if (el._vi !== undefined) return el._vi; obsAdd(el); const r = el.getBoundingClientRect(); return (el._vi = r.bottom > 0 && r.top < innerHeight && r.width > 0); }
 
 /* ================= 平面滑杆 ================= */
 const CTRL = {}; let _cid = 0;
@@ -3055,7 +3065,7 @@ function burst(x, y, colors=['pink','blue','yellow']){
   for (let i=0;i<10;i++){ const d = document.createElement('i'); d.className = 'burst'; const a = Math.PI*2*i/10 + Math.random()*.4, r = 26 + Math.random()*26; d.style.cssText = `left:${x-4}px;top:${y-4}px;background:${INK[colors[i%colors.length]]};--dx:${Math.cos(a)*r}px;--dy:${Math.sin(a)*r}px`; document.body.appendChild(d); setTimeout(() => d.remove(), 650); }
 }
 function rollNums(root){
-  if (STATE.settings.rm || matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  if (STATE.settings.rm || MQ.rm.matches) return;
   $$('[data-roll]', root).forEach(el => {
     const target = parseFloat(el.dataset.roll), dec = (el.dataset.roll.split('.')[1] || '').length, pre = el.dataset.pre || '', t0 = performance.now();
     const step = now => { const k = Math.min(1, (now - t0)/650), e = 1 - Math.pow(1-k, 3); el.textContent = pre + (target*e).toLocaleString('zh-CN', {minimumFractionDigits:dec, maximumFractionDigits:dec}); if (k < 1) requestAnimationFrame(step); };
@@ -3746,7 +3756,7 @@ SCENES.pack = B => {
       papEl = document.createElement('div'); papEl.className = 'bn-paper'; papEl.setAttribute('aria-hidden', 'true'); B.box.prepend(papEl); dk = isDark();
       pap = new P.ShaderMount(papEl, P.grainGradientFragmentShader, Object.assign(paperU(P, dk), {u_softness: 1, u_intensity: .18, u_noise: .22, u_shape: P.GrainGradientShapes.corners, u_noiseTexture: nz,
         u_fit: P.ShaderFitOptions.cover, u_scale: 1.15, u_rotation: 0, u_offsetX: 0, u_offsetY: 0, u_originX: .5, u_originY: .5, u_worldWidth: 0, u_worldHeight: 0}),
-        {preserveDrawingBuffer: true, premultipliedAlpha: false}, 0, 0, 1, FX.lite ? 2.2e5 : 6e5);
+        {preserveDrawingBuffer: true, premultipliedAlpha: false}, 0, 0, 1, FX.lite ? 2.2e5 : 6e5); FX.cap(pap);
       pap._P = P;
     } catch(e){ console.warn(e); pap = null; papEl?.remove(); }
     mode = 'gl'; t3 = performance.now();
@@ -3898,10 +3908,10 @@ function mountBanner(root){
     if (CW !== B.CW || CH !== B.CH){ B.CW = CW; B.CH = CH; B.F = frame(CW, CH); B.resized = true; } else B.resized = false;
     const F = B.F; B.W = F.w; B.H = F.h; B.m = Math.min(F.w, F.h); B.full = {x:-F.x, y:-F.y, w:CW, h:CH};
     readAudio(t); B.bg = isDark() ? (SLIDES[B.i].bgd || '#151518') : (SLIDES[B.i].bg || PAPER);
-    const paused = B.ptr.in || B.ptr.down || (GEN.on && GEN.owner === 'home') || B.trans || STATE.settings.rm || matchMedia('(prefers-reduced-motion:reduce)').matches;
+    const paused = B.ptr.in || B.ptr.down || (GEN.on && GEN.owner === 'home') || B.trans || STATE.settings.rm || MQ.rm.matches;
     box.classList.toggle('paused', !!paused);
     if (!paused){ B.prog += dt/DUR; if (B.prog >= 1) goTo(B.i + 1, 1); }
-    const seg = $$('.bn-seg button', box)[B.i]; if (seg) seg.style.setProperty('--p', B.prog);
+    const segs = B.segs || (B.segs = $$('.bn-seg button', box)), seg = segs[B.i]; if (seg) seg.style.setProperty('--p', B.prog);
     g.setTransform(dpr, 0, 0, dpr, 0, 0); g.fillStyle = B.bg; g.fillRect(0, 0, CW, CH); g.setTransform(dpr, 0, 0, dpr, F.x*dpr, F.y*dpr);
     scene(B.i).draw(g, B.W, B.H, t, dt);
     g.setTransform(1, 0, 0, 1, 0, 0);
@@ -4663,8 +4673,10 @@ function fabUpdate(){ const el = $('#toTop'); if (!el) return; const s = CUR.pos
   const y = s ? s.scrollTop : scrollY, vh = s ? s.clientHeight : innerHeight, max = (s ? s.scrollHeight : document.documentElement.scrollHeight) - vh;
   el.classList.toggle('on', y > vh*1.2); el.style.setProperty('--p', max > 0 ? Math.min(1, y/max).toFixed(3) : 0);
   const post = $('#post .post'); if (post && s === post){ const m = $('.media', post); post.classList.toggle('pm-on', y > (m ? m.offsetHeight - 64 : 300)); } }
-addEventListener('scroll', fabUpdate, {passive:true});
-document.addEventListener('scroll', e => { if (e.target !== document) fabUpdate(); }, {capture:true, passive:true});
+// 滚动时一帧最多算一次（fabUpdate 要读 scrollHeight，每个滚动事件都算会反复强制重排）
+const fabQ = () => { if (!fabQ.r) fabQ.r = requestAnimationFrame(() => { fabQ.r = 0; fabUpdate(); }); };
+addEventListener('scroll', fabQ, {passive:true});
+document.addEventListener('scroll', e => { if (e.target !== document) fabQ(); }, {capture:true, passive:true});
 addEventListener('resize', fabUpdate);
 ACTIONS.totop = () => { const s = CUR.post ? postScroller() : null; (s || window).scrollTo({top:0, behavior:reduced() ? 'auto' : 'smooth'}); sfx('click'); };
 
@@ -4839,17 +4851,27 @@ POSTS.filter(p => p.type === 'audio' || p.vis).forEach(p => { const sp = specOf(
 const ensureTrack = id => renderTrack('post:' + id, specOf(POST(id)));
 const TQ = []; let tBusy = false;
 function queueTrack(id){ if (TRACKS['post:' + id] || TQ.includes(id) || !POSTS.find(p => p.id === id)) return; TQ.push(id); pumpTracks(); }
-function pumpTracks(){ if (tBusy || !TQ.length) return; tBusy = true; const id = TQ.shift(); (window.requestIdleCallback || (f => setTimeout(f, 80)))(() => ensureTrack(id).finally(() => { tBusy = false; pumpTracks(); })); }
+/* 离线渲染一首要一口气搭几千个音频节点（主线程长任务）：用户正在滑动 / 拖动时先不渲染，停手 0.5 秒后再在空闲时做，避免滑动卡一下 */
+let LAST_MOVE = 0; ['scroll', 'touchmove', 'wheel'].forEach(t => addEventListener(t, () => { LAST_MOVE = performance.now(); }, {passive: true, capture: true}));
+function pumpTracks(){ if (tBusy || !TQ.length) return; tBusy = true;
+  const run = () => { if (performance.now() - LAST_MOVE < 500){ setTimeout(() => (window.requestIdleCallback || (f => setTimeout(f, 80)))(run, {timeout: 1500}), 300); return; }
+    const id = TQ.shift(); if (!id){ tBusy = false; return; } ensureTrack(id).finally(() => { tBusy = false; pumpTracks(); }); };
+  (window.requestIdleCallback || (f => setTimeout(f, 80)))(run, {timeout: 1500}); }
 const waveProg = id => GEN.on && GEN.tr && GEN.owner === 'post:' + id ? GEN.frac() : 0;
+/* 波形：可见性交给 IntersectionObserver（不再每帧量位置）；快滑到眼前（提前 800px）才排队离线渲染，远处的卡片不提前算 */
 function waveLoop(cvs){
-  cvs.forEach(cv => { queueTrack(cv.dataset.wave); cv._key = ''; });
-  return loopAdd(() => cvs.forEach(cv => { if (!cv.isConnected || !visible(cv)) return; const id = cv.dataset.wave, tr = TRACKS['post:' + id], ready = !!tr?.peaks;
+  const near = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ queueTrack(e.target.dataset.wave); near.unobserve(e.target); } }), {rootMargin: '800px 0px'});
+  const seen = new IntersectionObserver(es => es.forEach(e => { e.target._vis = e.isIntersecting; }));
+  cvs.forEach(cv => { cv._key = ''; cv._vis = false; near.observe(cv); seen.observe(cv); });
+  const WT = {}, wt = id => (WT[id] && WT[id].every(e => e.isConnected)) ? WT[id] : (WT[id] = $$(`[data-wt="${id}"]`));
+  const off = loopAdd(() => cvs.forEach(cv => { if (!cv._vis || !cv.isConnected) return; const id = cv.dataset.wave, tr = TRACKS['post:' + id], ready = !!tr?.peaks;
     const prog = cv._scrub ?? waveProg(id), grow = ready && performance.now() - tr.born < 520, n = +cv.dataset.bars || 0;
     const key = ready + '|' + Math.round(prog*400) + '|' + (cv._hov == null ? '' : Math.round(cv._hov*400)) + '|' + cv.clientWidth + '|' + isDark();
     if (key !== cv._key || grow || !ready){ cv._key = key; drawTrackWave(cv, prog, n ? {bars:n} : {}); }
     const D = POST(id)?.dur || (tr ? fmtT(tr.dur) : '');
-    if (GEN.owner === 'post:' + id && GEN.tr){ const txt = fmtT(GEN.pos()) + ' / ' + D; $$(`[data-wt="${id}"]`).forEach(el => { if (el.textContent !== txt) el.textContent = txt; }); }
-    else $$(`[data-wt="${id}"]`).forEach(el => { if (el.textContent !== D) el.textContent = D; }); }));
+    if (GEN.owner === 'post:' + id && GEN.tr){ const txt = fmtT(GEN.pos()) + ' / ' + D; wt(id).forEach(el => { if (el.textContent !== txt) el.textContent = txt; }); }
+    else wt(id).forEach(el => { if (el.textContent !== D) el.textContent = D; }); }));
+  return () => { off(); near.disconnect(); seen.disconnect(); };
 }
 function mountWaves(root){ onClean(waveLoop($$('canvas[data-wave]', root))); }
 const PEND = {id:null, n:0};
@@ -4900,7 +4922,7 @@ function fitText(root=document){
 let _fitT; addEventListener('resize', () => { clearTimeout(_fitT); _fitT = setTimeout(() => fitText(), 120); });
 function navInk(){ const ink = $('.nav-ink'), a = $('.nav a.on'); if (!ink) return; if (a){ Object.assign(ink.style, {left:a.offsetLeft + 'px', top:a.offsetTop + 'px', width:a.offsetWidth + 'px', height:a.offsetHeight + 'px', opacity:1}); } else ink.style.opacity = 0; }
 addEventListener('resize', navInk);
-const reduced = () => STATE.settings.rm || matchMedia('(prefers-reduced-motion:reduce)').matches;
+const reduced = () => STATE.settings.rm || MQ.rm.matches;
 /* ================= 液态玻璃折射（LG） =================
    思路来自 Shu Ding 的 liquid-glass（https://github.com/shuding/liquid-glass，MIT License）：
    用圆角矩形 SDF 算一张位移贴图，越靠边越往中心取样，再用 SVG feDisplacementMap 作为 backdrop-filter，
@@ -4999,7 +5021,12 @@ const FX = (() => {
     return gl2;
   };
   const load = p => import(new URL(p, document.baseURI).href);
-  return {can, lite: IS_MOBILE,
+  /* Paper 的慢速流动渐变：每秒 30 帧就足够（变化本来就很慢，肉眼看不出区别），GPU 占用减半 */
+  const cap = (m, fps = 30) => { const iv = 1000/fps, render = m.render; let last = 0;
+    m.requestRender = () => { if (m.rafId !== null) cancelAnimationFrame(m.rafId);
+      const tick = t => { if (t - last < iv - 2){ m.rafId = requestAnimationFrame(tick); return; } last = t; render(t); }; m.rafId = requestAnimationFrame(tick); };
+    return m; };
+  return {can, cap, lite: IS_MOBILE,
     three: () => three || (three = load('vendor/three.min.js')),
     paper: () => paper || (paper = load('vendor/paper-shaders.min.js'))};
 })();
@@ -5162,7 +5189,7 @@ document.addEventListener('rendered', () => {
     const C = P.getShaderColorFromString;
     MH_GG.m = new P.ShaderMount(el, P.grainGradientFragmentShader, {u_colorBack: C('#FFE14A'), u_colors: ['#FFE14A', '#FFB21F', '#FF6B2C', '#FFF4B0'].map(C), u_colorsCount: 4,
       u_softness: .6, u_intensity: .5, u_noise: .55, u_shape: P.GrainGradientShapes.ripple, u_noiseTexture: nz, u_fit: P.ShaderFitOptions.cover, u_scale: 1.4, u_rotation: 0,
-      u_offsetX: 0, u_offsetY: 0, u_originX: .5, u_originY: .5, u_worldWidth: 0, u_worldHeight: 0}, {premultipliedAlpha: false}, .35, 0, 1, 1.2e5);
+      u_offsetX: 0, u_offsetY: 0, u_originX: .5, u_originY: .5, u_worldWidth: 0, u_worldHeight: 0}, {premultipliedAlpha: false}, .35, 0, 1, 1.2e5); FX.cap(MH_GG.m);
     btn.classList.add('gg-on');
   }).catch(() => el.remove());
 });
@@ -5245,19 +5272,26 @@ function catRub(){
   card.addEventListener('pointermove', e => { const r = svg.getBoundingClientRect(); aim((e.clientX - r.left)/r.width*2 - 1, (e.clientY - r.top)/r.height*2 - 1); }, {passive: true});
   card.addEventListener('pointerleave', () => aim(-.5, -.8));
   // 手机：陀螺仪倾斜手机，高光跟着跑（只在卡片在屏幕里时看）
-  if (GRAV.on || IS_MOBILE){ const off = loopAdd(() => { if (!svg.isConnected){ off(); return; } if (!GRAV.on || !visible(svg)) return;
-    const x = GRAV.tx*1.6 - .2, y = -(1 - GRAV.ty)*1.6 - .5; if (Math.abs(x - st.tx) + Math.abs(y - st.ty) > .03) aim(x, y); }); }
+  // 只在陀螺仪真的有变化、卡片在屏幕里时才更新（不常驻每帧循环）
+  if (IS_MOBILE){ let q = 0, vis = false; const io = new IntersectionObserver(es => { vis = es[0].isIntersecting; }); io.observe(svg);
+    const on = () => { if (q) return; q = requestAnimationFrame(() => { q = 0; if (!svg.isConnected){ removeEventListener('deviceorientation', on); io.disconnect(); return; } if (!GRAV.on || !vis) return;
+      const x = GRAV.tx*1.6 - .2, y = -(1 - GRAV.ty)*1.6 - .5; if (Math.abs(x - st.tx) + Math.abs(y - st.ty) > .03) aim(x, y); }); };
+    addEventListener('deviceorientation', on, {passive: true}); }
 }
 document.addEventListener('rendered', catRub);
 
 /* 空状态：四个孔版几何（圆 / 方 / 三角 / 半圆）做成软胶小物件，各自轻轻漂浮、错开节奏；
    和分类卡同一套 SVG 光照滤镜（不开 WebGL），地上的影子跟着物件一起一呼一吸 */
-const EMPTY_RUB = `<svg class="fx-em" viewBox="0 0 168 74" aria-hidden="true">
-  <g class="em-sh"><ellipse cx="28" cy="68" rx="15" ry="2.6"/><ellipse cx="68" cy="68" rx="13" ry="2.4"/><ellipse cx="106" cy="68" rx="14" ry="2.4"/><ellipse cx="144" cy="68" rx="14" ry="2.4"/></g>
-  <g class="em-f em-1"><g filter="url(#fx-rub2)"><circle cx="28" cy="38" r="16" fill="#FF4FA7"/></g></g>
-  <g class="em-f em-2"><g filter="url(#fx-rub2)"><rect x="56" y="30" width="24" height="24" rx="4" fill="#2E5BFF" transform="rotate(-10 68 42)"/></g></g>
-  <g class="em-f em-3"><g filter="url(#fx-rub2)"><path d="M106 22 L122 50 Q123 53 120 53 L92 53 Q89 53 90 50 Z" fill="#FFE14A"/></g></g>
-  <g class="em-f em-4"><g filter="url(#fx-rub2)"><path d="M128 52 A16 16 0 0 1 160 52 Z" fill="#FF6B2C"/></g></g></svg>`;
+// 性能：四个物件各自是一层（同一个 viewBox、坐标不变），漂浮只动这一层的 transform，光照滤镜只栅格化一次；
+// 原来在同一张 svg 里动 <g>，每一帧都要把四个光照滤镜重算一遍
+const EMPTY_RUB = (() => {
+  const S = [['<circle cx="28" cy="38" r="16" fill="#FF4FA7"/>', '16.6667% 72.973%'],
+    ['<rect x="56" y="30" width="24" height="24" rx="4" fill="#2E5BFF" transform="rotate(-10 68 42)"/>', '40.4762% 75.5432%'],
+    ['<path d="M106 22 L122 50 Q123 53 120 53 L92 53 Q89 53 90 50 Z" fill="#FFE14A"/>', '63.0952% 71.6216%'],
+    ['<path d="M128 52 A16 16 0 0 1 160 52 Z" fill="#FF6B2C"/>', '85.7143% 70.2703%']];
+  const SH = [[28, 15, 2.6], [68, 13, 2.4], [106, 14, 2.4], [144, 14, 2.4]];
+  return `<div class="fx-em" aria-hidden="true">${SH.map(([cx, rx, ry], i) => `<i class="em-sh em-${i + 1}" style="left:${(cx - rx)/1.68}%;top:${(68 - ry)/.74}%;width:${rx*2/1.68}%;height:${ry*2/.74}%"></i>`).join('')}${S.map(([d, o], i) => `<svg class="em-f em-${i + 1}" viewBox="0 0 168 74" style="transform-origin:${o}"><g filter="url(#fx-rub2)">${d}</g></svg>`).join('')}</div>`;
+})();
 document.addEventListener('rendered', () => { $$('#app .empty').forEach(e => { if (e.querySelector('.fx-em, .stamp')) return; RUB.host(); e.insertAdjacentHTML('afterbegin', EMPTY_RUB); }); });
 function flip(mutate){
   const before = new Map($$('#app [data-flip]').map(el => [el.dataset.flip, el.getBoundingClientRect()]));
@@ -6944,7 +6978,7 @@ document.addEventListener('click', e => { const a = e.target.closest('[data-act=
 /* ---------- 页面切换：按页面层级决定方向 ----------
    往下一层 = 新页从右边推入；回上一层 = 当前页向右滑走；切底部页签 = 淡入淡出。
    用浏览器的 View Transitions 拍快照做动画，固定在底部的购买栏、顶栏都不会跟着错位；不支持的浏览器直接切换。 */
-const isMob = () => matchMedia('(max-width:760px)').matches;
+const isMob = () => MQ.mob.matches;
 const isOverlay = h => /^#?(post|v)-/.test(h || '');
 function depthOf(h){ let d = 0, x = h; while ((x = parentOf(x.startsWith('#') ? x : '#' + x)) && d < 6) d++; return d; }
 function navDir(from, to){
@@ -6979,7 +7013,7 @@ function syncTitle(){
   el.textContent = t ? t.t : ''; hd.classList.toggle('tt-late', !!(t && t.late)); hd.classList.toggle('tt', !!t); ttScroll();
 }
 function ttScroll(){ const hd = $('#hd'); if (hd) hd.classList.toggle('tt-on', !hd.classList.contains('tt-late') || scrollY > 150); }
-addEventListener('scroll', ttScroll, {passive:true});
+addEventListener('scroll', () => { if (!ttScroll.r) ttScroll.r = requestAnimationFrame(() => { ttScroll.r = 0; ttScroll(); }); }, {passive:true});
 document.addEventListener('rendered', syncTitle);
 
 /* ---------- 弹层：手机上可以按住往下拖走（抽屉往左拖），点遮罩 / ✕ / Esc 也会滑出去而不是瞬间消失 ---------- */
@@ -7393,13 +7427,14 @@ function loadHarmonySC(){
   if (navigator.connection && navigator.connection.saveData) return;
   const parts = ['fonts/HarmonyOS_Sans_SC.part1.ttf', 'fonts/HarmonyOS_Sans_SC.part2.ttf'];
   const cacheP = window.caches ? caches.open('ctrlz-font-sc-v1').catch(() => null) : Promise.resolve(null);
-  const get = u => cacheP.then(c => (c ? c.match(u).catch(() => null) : Promise.resolve(null)).then(hit => {
-    if (hit) return hit.arrayBuffer();
-    return fetch(u).then(r => { if (!r.ok) throw new Error(u); if (c) c.put(u, r.clone()).catch(() => {}); return r.arrayBuffer(); });
+  // 性能：两段字体用 Blob 直接拼成一个文件交给浏览器（浏览器在后台线程解码），不再在 JS 里拷贝出 20MB 的数组
+  const getB = u => cacheP.then(c => (c ? c.match(u).catch(() => null) : Promise.resolve(null)).then(hit => {
+    if (hit) return hit.blob();
+    return fetch(u).then(r => { if (!r.ok) throw new Error(u); if (c) c.put(u, r.clone()).catch(() => {}); return r.blob(); });
   }));
-  Promise.all(parts.map(get))
-    .then(bufs => { const all = new Uint8Array(bufs.reduce((a, b) => a + b.byteLength, 0)); let o = 0; bufs.forEach(b => { all.set(new Uint8Array(b), o); o += b.byteLength; });
-      const f = new FontFace('HarmonyOS Sans SC', all.buffer, {weight:'40 900', style:'normal'}); return f.load(); })
+  Promise.all(parts.map(getB))
+    .then(bl => { const url = URL.createObjectURL(new Blob(bl, {type: 'font/ttf'}));
+      const f = new FontFace('HarmonyOS Sans SC', `url(${url})`, {weight:'40 900', style:'normal'}); return f.load().finally(() => setTimeout(() => URL.revokeObjectURL(url), 1000)); })
     .then(f => { document.fonts.add(f); document.documentElement.classList.add('hos'); fitText(); navInk(); })
     .catch(() => {});
 }
@@ -7409,6 +7444,8 @@ function loadHarmonySC(){
   Object.assign(STATE.settings, store.get('settings', {})); applySettings(); applyTheme(); STATE.seller = !!store.get('seller', false);
   setRole(store.get('role', 'user'), true);
   render(); msgBadge(); setTimeout(navInk, 300); (window.requestIdleCallback || setTimeout)(loadHarmonySC);
+  // 缓存加速（Service Worker，见 sw.js）：页面加载完再注册，不和首屏抢资源
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) addEventListener('load', () => setTimeout(() => navigator.serviceWorker.register('sw.js').catch(() => {}), 1500));
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { COVERS.clear(); if (!CUR.post) { const {r, arg} = parseHash(); renderBase(r, arg, true); } });
 })();
 </script>
