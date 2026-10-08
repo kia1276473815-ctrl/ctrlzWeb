@@ -1282,6 +1282,143 @@ body.reels-open .totop{display:none}
 .at-lk.on{color:var(--pink)}
 .at-lk.fx-up svg{animation:hpop .55s var(--spring)} .at-lk.fx-dn svg{animation:hdrop .3s var(--ease)}
 .m-ha .dm-all:disabled{opacity:.35}
+/* ===== 合作：主页页签、邀约卡片、邀约表单 ===== */
+.co-stars{display:inline-flex;gap:2px;vertical-align:middle}
+.co-stars i{width:15px;height:15px;background:var(--rule-2);clip-path:polygon(50% 0,61.5% 35%,98% 35%,68.5% 57%,79.5% 91%,50% 70%,20.5% 91%,31.5% 57%,2% 35%,38.5% 35%)}
+.co-stars i.on{background:var(--orange)} .co-stars i.half{background:linear-gradient(90deg,var(--orange) 50%,var(--rule-2) 50%)}
+.co-stars.sm i{width:12px;height:12px}
+.co-prof{display:flex;flex-direction:column;gap:18px;padding-bottom:40px}
+.co-pv{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:var(--yellow-t);font-size:13.5px;font-weight:600}
+.co-pv svg{width:16px;height:16px;flex:none}
+/* 好评度名片：票根式，虚线分隔 */
+.co-rep{display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px 26px;align-items:center;padding:20px 22px;border-radius:18px;background:var(--card);position:relative}
+.co-big{display:flex;align-items:center;gap:12px}
+.co-big b{font-size:clamp(46px,7vw,64px);line-height:.9}
+.co-big div{display:flex;flex-direction:column;gap:6px}
+.co-big span{font-size:12.5px;color:var(--ink-3)}
+.co-kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.co-kv div{display:flex;flex-direction:column;gap:5px;padding:0 14px;border-left:1.5px dashed var(--rule-2)}
+.co-kv b{font:900 20px/1.1 var(--f-b);font-stretch:110%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-kv span{font-size:12px;color:var(--ink-3)}
+.co-tags{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding-top:14px;border-top:1.5px dashed var(--rule-2)}
+.co-tags span{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;background:var(--paper);font-size:13px;font-weight:600}
+.co-tags i{font:800 11px/1 var(--f-b);font-style:normal;color:var(--ink-3)}
+/* 业务卡：按下去像按键，悬停时图标跳一下 */
+.co-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,170px),1fr));gap:10px}
+.co-tile{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:150px;padding:16px;border-radius:18px;background:var(--c);color:var(--on,#141418);text-align:left;transition:transform .22s var(--spring)}
+.co-tile > *{position:relative;z-index:2}
+.co-tile .co-g{width:42px;height:42px;margin-bottom:auto;transition:transform .35s var(--spring)}
+.co-tile .co-g svg{width:100%;height:100%}
+.co-tile b{font:900 20px/1.1 var(--f-b);font-stretch:110%}
+.co-tile .co-from{font-size:13px;font-weight:600;opacity:.75}
+.co-tile .co-go{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12.5px;font-weight:800}
+.co-tile .co-go i{font-style:normal;transition:transform .25s var(--spring)}
+.co-tile:active{transform:scale(.95)}
+@media (hover:hover){ .co-tile:hover .co-g{transform:rotate(-10deg) scale(1.12)} .co-tile:hover .co-go i{transform:translateX(5px)} }
+.co-safe{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;line-height:1.6;color:var(--ink-2)}
+.co-safe svg{width:15px;height:15px;flex:none;margin-top:2px}
+.co-h{font-size:20px;font-weight:900;display:flex;align-items:baseline;gap:8px;margin-top:6px}
+.co-h i{font:800 13px/1 var(--f-b);font-style:normal;color:var(--ink-3)}
+.co-revs{display:flex;flex-direction:column}
+.co-rv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;padding:14px 0;border-top:1px solid var(--rule)}
+.co-rvh{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:14px}
+.co-rvh time{margin-left:auto;font-size:11.5px;color:var(--ink-3)}
+.co-rv p{margin-top:6px;font-size:14.5px;line-height:1.6}
+.co-rvt{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.co-rvt span{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--paper);color:var(--ink-2)}
+/* 邀约卡片（私信 / 工作室） */
+.co-g{display:inline-grid;place-items:center;flex:none}
+.co-g svg{width:20px;height:20px}
+.msg.co-m{max-width:min(92%,380px)}
+.co-card{width:min(340px,74vw);display:flex;flex-direction:column;gap:9px;padding:14px;border-radius:18px;background:var(--card);box-shadow:inset 0 0 0 1.5px var(--rule);text-align:left;transition:opacity .3s,filter .3s}
+.co-card.list{width:100%}
+.co-ch{display:flex;align-items:center;gap:8px}
+.co-ch .co-g{width:30px;height:30px;border-radius:50%;background:var(--c);color:var(--on,#141418)}
+.co-ch .co-g svg{width:17px;height:17px}
+.co-k{font-size:12.5px;font-weight:700;color:var(--ink-2);margin-right:auto}
+.co-t{font-size:16.5px;line-height:1.35}
+.co-px{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px}
+.co-px b{font:900 26px/1 var(--f-b);font-stretch:110%;font-variant-numeric:tabular-nums}
+.co-px s{font:700 15px/1 var(--f-b);color:var(--ink-3)}
+.co-px span{font-size:12px;color:var(--ink-3)}
+.co-n{font-size:13.5px;line-height:1.55;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line}
+.co-n:empty{display:none}
+.co-f{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;padding:10px 12px;border-radius:12px;background:var(--paper)}
+.co-f.full{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+.co-f dt{font-size:11px;color:var(--ink-3);font-weight:600}
+.co-f dd{margin:3px 0 0;font-size:13.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.co-who{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2)}
+.co-who em{font:800 12px/1 var(--f-b);font-style:normal}
+.co-more{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--ink-2);padding:6px 2px}
+.co-a{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.co-a .pill.sm{height:36px}
+.co-wait{font-size:12.5px;color:var(--ink-3);padding:0 4px}
+.co-card.old{opacity:.55;filter:grayscale(.7)}
+.co-card.old .co-t{text-decoration:line-through}
+.co-card.st-declined,.co-card.st-withdrawn{opacity:.7}
+.co-list{display:flex;flex-direction:column;gap:10px}
+.msep.co-sys span{display:inline-block;max-width:92%;padding:6px 12px;border-radius:999px;background:var(--paper);font-size:12px;line-height:1.5;color:var(--ink-2)}
+.co-dt{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:13px;color:var(--ink-3)}
+.co-tl{display:flex;flex-direction:column;gap:0;padding-left:4px}
+.co-tl div{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:7px 0;font-size:13px;position:relative}
+.co-tl i{width:8px;height:8px;border-radius:50%;background:var(--ink);align-self:center}
+.co-tl div:not(:last-child)::after{content:"";position:absolute;left:3.5px;top:calc(50% + 6px);bottom:calc(-50% + 6px);width:1px;background:var(--rule-2)}
+.co-tl time{font-size:11.5px;color:var(--ink-3)}
+.co-dsp{font-size:12.5px;color:var(--ink-3);text-decoration:underline;text-underline-offset:3px;align-self:center}
+.co-pay{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:center}
+.co-pay .co-g{width:44px;height:44px;border-radius:12px;background:var(--c);color:var(--on,#141418)}
+.co-pay b{display:block;font-size:15px}
+.co-pay .mut2{font-size:12.5px}
+/* 评价：大星星，点亮时依次弹起 */
+.co-rate{display:flex;flex-direction:column;gap:12px;align-items:stretch}
+.co-sts{display:flex;justify-content:center;gap:6px}
+.co-sts button{width:48px;height:48px;display:grid;place-items:center;color:var(--rule-2);transition:color .15s}
+.co-sts button svg{width:34px;height:34px}
+.co-sts button.on{color:var(--orange)}
+.co-rl{text-align:center;font-size:13px;font-weight:700;color:var(--ink-2);min-height:18px}
+/* 邀约表单：手机整屏，电脑对话框；底部是「按住发送」的录音键 */
+.sheet.pk-full.cf-sheet{display:flex;flex-direction:column;height:min(760px,calc(100dvh - 40px))}
+.cf-top{display:flex;align-items:center;gap:12px;padding-right:48px}
+.cf-sheet .cf-top{padding:20px 64px 6px 20px}
+.cf-top .co-g{width:46px;height:46px;border-radius:14px;background:var(--c);color:var(--on,#141418)}
+.cf-top .co-g svg{width:26px;height:26px}
+.cf-top h3{padding-right:0;font-size:21px}
+.cf-rep{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:12.5px;color:var(--ink-2)}
+.cf-sheet .cf-rep{padding:6px 20px 10px;border-bottom:1px solid var(--rule)}
+.cf-rep b{font:800 13px/1 var(--f-b)}
+.cf-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:16px 20px 24px;display:flex;flex-direction:column;gap:18px}
+.cf-l{display:flex;flex-direction:column;gap:8px}
+.cf-l > span{font-size:13px;font-weight:700;color:var(--ink-2)}
+.cf-l em{font-style:normal;font-weight:500;color:var(--ink-3);margin-left:6px;font-size:12px}
+.cf-l .chips,.co-rate .chips,.sheet > .chips{display:flex;flex-wrap:wrap;gap:6px}
+.cf-bud{display:flex;align-items:center;gap:6px;border-radius:14px;background:var(--paper);padding:0 14px}
+.cf-bud i{font:900 26px/1 var(--f-b);font-style:normal}
+.cf-bud .inp{font:900 30px/1 var(--f-b);font-stretch:110%;height:58px;padding:0;background:transparent;font-variant-numeric:tabular-nums}
+.cf-hint{font-size:12.5px;color:var(--ink-3);min-height:18px}
+.cf-hint.warn{color:var(--orange)} .cf-hint.ok{color:var(--green)}
+.cf-split{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;font-size:14px}
+.cf-split input{width:100%;accent-color:var(--ink)}
+.cf-send{flex:none;display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 20px calc(14px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule);background:var(--card)}
+.cf-rec{position:relative;width:68px;height:68px;border-radius:50%;display:grid;place-items:center;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:transform .2s var(--spring)}
+.cf-rec svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.cf-rec .cf-tr{fill:none;stroke:var(--rule-2);stroke-width:4}
+.cf-rec .cf-pg{fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-dasharray:100;stroke-dashoffset:100}
+.cf-rec i{width:44px;height:44px;border-radius:50%;background:var(--pink);transition:border-radius .25s var(--spring),transform .25s var(--spring)}
+.cf-rec.hold{transform:scale(.94)} .cf-rec.hold i{border-radius:10px;transform:scale(.72)}
+.cf-tip{font-size:14px;font-weight:700;min-width:7em}
+.cf-grow{position:fixed;z-index:95;pointer-events:none;background:var(--c);transform-origin:0 0}
+.cf-sent{position:absolute;inset:0;z-index:5;display:grid;place-items:center;background:color-mix(in srgb,var(--card) 72%,transparent);border-radius:inherit;animation:fade .2s}
+.cf-fly{position:fixed;z-index:140;pointer-events:none;border-radius:14px;background:var(--c);box-shadow:0 10px 24px -10px rgba(20,20,24,.45)}
+@media (max-width:760px){
+  .sheet.pk-full.cf-sheet{height:100%;height:100dvh}
+  .cf-sheet .cf-top{padding:16px 60px 6px 16px}
+  .cf-sheet .cf-rep{padding:6px 16px 10px}
+  .cf-body{padding:14px 16px 24px}
+  .co-rep{grid-template-columns:1fr;padding:18px}
+  .co-kv div:first-child{border-left:0;padding-left:0}
+  .co-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .co-tile{min-height:138px;padding:14px}
+}
 /* 私信分享页：整屏（手机）/ 对话框（大屏），三个页签左右滑 */
 .sheet.pk-full{width:min(620px,100%);height:min(600px,calc(100dvh - 40px));max-height:none;padding:0;gap:0;overflow:hidden}
 .pk-top{padding:20px 20px 0;flex:none}
@@ -2268,11 +2405,6 @@ const COLLAB = {
   svcs:[
     {k:'arr', n:'编曲', on:true, from:800}, {k:'mix', n:'混音', on:true, from:500}, {k:'master', n:'母带', on:false, from:300},
     {k:'vocal', n:'演唱', on:false, from:600}, {k:'lyric', n:'作词', on:false, from:300}, {k:'co', n:'联名合作', on:true, from:null}
-  ],
-  reqs:[
-    {id:'c1', u:'mio', svc:'mix', title:'第一首单曲的混音', note:'人声 + 吉他 + 鼓机，大概 3 分半，想要偏暖的 lo-fi 质感', budget:'¥800', due:'10 月 20 日前', st:'new'},
-    {id:'c2', u:'lowf', svc:'co', title:'一起做一张 lo-fi EP', note:'4 首，你出节奏，我出和声与混音，收入五五分', budget:'分成', due:'年底', st:'doing'},
-    {id:'c3', u:'nova', svc:'arr', title:'采样包 demo 曲编曲', note:'用 CONCRETE KIT 做一首 1 分钟的 demo', budget:'¥1,200', due:'已交付', st:'done'}
   ]
 };
 const SELLER_ORDERS = [
@@ -4730,14 +4862,14 @@ document.addEventListener('rendered', () => { const k = routeOf(CUR.hash); if (k
 ROUTES.user = id => {
   const u = USERS[id] || USERS[ME]; const isMe = curUser() === u.id;
   const works = POSTS.filter(p => p.author === u.id), shop = PRODUCTS.filter(p => p.seller === u.id && onSale(p));
-  const showShop = shop.length || isMe; const tab = UI.userTab === 'shop' && !showShop ? 'works' : UI.userTab;
+  const showShop = shop.length || isMe, svcs = svcsOf(u.id); const tab = (UI.userTab === 'shop' && !showShop) || (UI.userTab === 'collab' && !svcs.length) ? 'works' : UI.userTab;
   onMount(root => mountWaves(root));
   return `<div class="wrap ${ucls(u.id)}">
   <div class="prof">${av(u.id, 'xl')}<div style="min-width:0"><span class="lab">${esc(u.role)} · ${esc(u.city)}</span><h1 class="x" style="margin-top:10px">${esc(u.name)}</h1><p class="bio">${esc(u.bio)}</p></div>
     <div class="acts" style="display:flex;flex-direction:column;gap:18px;align-items:flex-start"><div class="stats"><div><b data-roll="${u.fans}">${u.fans}</b><span>关注者</span></div><div><b data-roll="${u.follow}">${u.follow}</b><span>关注中</span></div><div><b>${u.likes}</b><span>获赞</span></div></div>
       ${isMe ? `<a class="pill ol" href="#me-edit">编辑资料</a>` : `<div style="display:flex;gap:8px"><button class="pill ${STATE.follows.has(u.id) ? 'lt' : ''}" data-act="follow" data-id="${u.id}">${STATE.follows.has(u.id) ? '已关注' : '关注'}</button><a class="pill ol" href="#msg-${u.id}">私信</a><button class="pill ol sq-ic" data-act="shr-open" data-k="user" data-id="${u.id}" aria-label="分享主页">${RIC.fwd}</button></div>`}</div></div>
-  <div class="utabs"><button class="${tab==='works'?'on':''}" data-act="utab" data-v="works">作品 <i>${works.length}</i></button>${showShop ? `<button class="${tab==='shop'?'on':''}" data-act="utab" data-v="shop">店铺 <i>${shop.length}</i></button>` : ''}</div>
-  ${tab === 'works' ? (works.length ? `<div class="mason">${works.map(postCard).join('')}</div>` : '<div class="empty"><div class="x">空</div><span>还没有发布作品</span></div>')
+  <div class="utabs"><button class="${tab==='works'?'on':''}" data-act="utab" data-v="works">作品 <i>${works.length}</i></button>${showShop ? `<button class="${tab==='shop'?'on':''}" data-act="utab" data-v="shop">店铺 <i>${shop.length}</i></button>` : ''}${svcs.length ? `<button class="${tab==='collab'?'on':''}" data-act="utab" data-v="collab">合作 <i>${svcs.length}</i></button>` : ''}</div>
+  ${tab === 'collab' ? coProfile(u.id) : tab === 'works' ? (works.length ? `<div class="mason">${works.map(postCard).join('')}</div>` : '<div class="empty"><div class="x">空</div><span>还没有发布作品</span></div>')
     : isMe && !STATE.seller ? `<div class="shopband grain c-yellow" style="align-items:center"><div style="position:relative;z-index:2"><div class="x">把你的作品<br>卖给同行</div><p style="margin-top:12px;font-size:15px;max-width:30ch">采样、预设、.tox、视觉循环都可以上架。平台只收 3%。</p></div><button class="pill lg" data-act="sell" style="position:relative;z-index:2">${IC.plus}上架作品</button></div>`
     : `<div class="shopband grain"><div style="position:relative;z-index:2"><span class="lab" style="color:var(--ink)">受邀创作者店铺</span><div class="x" style="margin-top:8px">${esc(u.shop)}</div></div><div class="stats" style="position:relative;z-index:2"><div><b>${shop.length}</b><span style="color:var(--ink)">件资源</span></div><div><b data-roll="${shop.reduce((s,p) => s + p.sales, 0)}">0</b><span style="color:var(--ink)">次被拥有</span></div></div></div>${isMe ? `<div style="display:flex;justify-content:flex-end;margin:-10px 0 18px"><button class="pill" data-act="sell">${IC.plus}上架新资源</button></div>` : ''}<div class="grid-p">${shop.map(sleeve).join('')}</div>`}
   </div>`;
@@ -4790,7 +4922,7 @@ ROUTES.seller = arg => {
   const tot = SELLER_ORDERS.reduce((a,o) => { const c = calcOrder(o); a.fee += c.fee; a.plat += c.plat; a.net += c.net; return a; }, {fee:0, plat:0, net:0});
   MONTHLY[5][1] = gross;
   const pend = SELLER_PRODUCTS.filter(x => x.st === '审核中').length;
-  const nav = [['overview','概览'],['products','我的产品', pend],['collab','我的合作', COLLAB.reqs.filter(r => r.st === 'new').length]], cur = t === 'upload' ? 'products' : t;   // 上架是「我的产品」下面的子页
+  const nav = [['overview','概览'],['products','我的产品', pend],['collab','我的合作', coTodo().length]], cur = t === 'upload' ? 'products' : t;   // 上架是「我的产品」下面的子页
   let body = '';
   if (t === 'overview'){ const max = Math.max(...MONTHLY.map(m => m[1]));
     onMount(root => { if (reduced()) return; const bs = $$('.bars .b', root); bs.forEach((b, k) => { const i = b.querySelector('i'), em = b.querySelector('em'), last = k === bs.length - 1;   // 柱子依次从 0 长出来，本月最后长、多跳一下
@@ -4810,12 +4942,13 @@ ROUTES.seller = arg => {
     <div class="sp-h"><h3>${SELLER_PRODUCTS.length} 件资源</h3><a class="pill" data-go="seller-upload">${IC.plus}上架新资源</a></div>
     <div style="display:flex;flex-direction:column;gap:10px">${SELLER_PRODUCTS.map(sp => { const p = sp.pid ? P(sp.pid) : null; const title = p ? p.title : sp.title, cat = p ? p.cat : sp.cat, cv = p ? p.cover : sp.cover; const sc = {'已上架':'green','审核中':'yellow','已驳回':'orange'}[sp.st];
       return `<div class="li c-${CATS[cat].c}" style="grid-template-columns:72px minmax(0,1fr) auto"><img src="${cover(cv, 3, 160, 160)}" alt="" style="width:72px;height:72px"><div style="min-width:0"><h4>${esc(title)}</h4><div class="m" style="margin:4px 0 0">${sp.note ? esc(sp.note) : `${sp.views.toLocaleString()} 次浏览 · ${sp.sales} 单 · 下单率 ${sp.conv}`}</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="tag c-${sc}">${sp.st}</span>${p ? `<a class="pill sm lt" data-go="item-${p.id}">查看</a>` : sp.st === '已驳回' ? `<button class="pill sm" data-go="seller-upload">去修改</button>` : ''}</div></div>`; }).join('')}</div>`;
-  if (t === 'collab'){ const SV = Object.fromEntries(COLLAB.svcs.map(x => [x.k, x])), stc = {new:['c-pink','待回复'], doing:['c-blue','进行中'], done:['c-green','已完成']};
-    body = `<div class="box" style="margin-top:0"><div class="box-h"><h3>我接的业务</h3><span class="mut2" style="font-size:13px">开启后会显示在你的主页，别人可以向你发起合作</span></div>
+  if (t === 'collab'){ const mine = CO.orders.filter(o => o.to === ME), sent = CO.orders.filter(o => o.from === ME), r = repOf(ME), todo = coTodo().length;
+    const held = mine.filter(o => ['paid','delivered','revising'].includes(o.st) && o.price).reduce((a, o) => a + coNet(o.price), 0), got = mine.filter(o => o.st === 'done' && o.price).reduce((a, o) => a + coNet(o.price), 0);
+    body = `<div class="kpis k3" style="margin-bottom:18px"><div class="kpi"><span class="lab">托管中 · 验收后到手</span><b class="num">${cny(held)}</b><span class="d">钱在平台，对方验收后打给你</span></div><div class="kpi"><span class="lab">合作已到手</span><b class="num" data-roll="${got}" data-pre="¥">${cny(got)}</b><span class="d">已扣 ${CO_FEE*100}% 平台服务费</span></div><div class="kpi"><span class="lab">好评度</span><b class="num">${r.avg.toFixed(1)}</b><span class="d">${r.n} 条评价 · 准时率 ${Math.round(r.ontime*100)}%</span></div></div>
+    <div class="box" style="margin-top:0"><div class="box-h"><h3>我接的业务</h3><span class="mut2" style="font-size:13px">开启后会显示在你的主页，别人可以向你发起合作</span></div>
       <div class="co-svcs">${COLLAB.svcs.map(x => `<div class="co-svc ${x.on ? 'on' : ''}"><button class="co-sw" data-act="co-svc" data-k="${x.k}" role="switch" aria-checked="${x.on}"><i></i>${x.n}</button><button class="co-p" data-act="co-price" data-k="${x.k}" aria-label="设置${x.n}的价格">${x.from == null ? '面议' : '¥' + x.from.toLocaleString() + ' 起'}${RIC.pen}</button></div>`).join('')}</div></div>
-    <div class="box"><div class="box-h"><h3>合作邀约</h3><span class="mut2" style="font-size:13px">${COLLAB.reqs.filter(r => r.st === 'new').length} 条待回复</span></div>
-      <div class="co-list">${COLLAB.reqs.map(r => `<div class="co-req" data-id="${r.id}"><div class="co-top">${av(r.u, 'md')}<div style="min-width:0;flex:1"><b>${esc(r.title)}</b><span class="co-m">${esc(USERS[r.u].name)} · ${SV[r.svc]?.n || ''} · ${r.quote != null ? `报价 ¥${r.quote.toLocaleString()}` : `预算 ${esc(r.budget)}`} · ${esc(r.due)}</span></div><span class="tag ${stc[r.st][0]}">${stc[r.st][1]}</span></div>
-        <p>${esc(r.note)}</p><div class="co-acts">${r.st === 'new' ? `<button class="pill sm" data-act="co-ok" data-id="${r.id}">接受</button><button class="pill sm lt" data-act="co-no" data-id="${r.id}">婉拒</button>` : ''}<a class="pill sm lt" data-go="msg-${r.u}">发私信</a></div></div>`).join('') || '<div class="rnone">还没有合作邀约</div>'}</div></div>`; }
+    <div class="box"><div class="box-h"><h3>收到的邀约</h3><span class="mut2" style="font-size:13px">${todo ? todo + ' 件要你处理' : '都处理完了'}</span></div><div class="co-list">${mine.map(o => coCard(o, o.v, 'list')).join('') || '<div class="rnone">还没有合作邀约</div>'}</div></div>
+    <div class="box"><div class="box-h"><h3>我发出的</h3><span class="mut2" style="font-size:13px">在别人主页的「合作」里发邀约</span></div><div class="co-list">${sent.map(o => coCard(o, o.v, 'list')).join('') || '<div class="rnone">还没有发出过邀约</div>'}</div></div>`; }
   if (t === 'upload') body = uploadView();
   return `<div class="wrap"><div class="ph"><h1 class="x">工作室<span class="s">studio</span></h1><p class="sub">${esc(u.shop)}</p></div>
   <div class="dash"><nav class="snav">${nav.map(([k,l,n]) => `<button class="${cur===k?'on':''}" data-act="stab" data-v="${k}">${l}${n ? `<span class="n" style="background:var(--yellow)">${n}</span>` : ''}</button>`).join('')}</nav><div style="min-width:0">${body}</div></div></div>`;
@@ -4836,12 +4969,6 @@ Object.assign(ACTIONS, {
     if (!ny && !(v > 0)){ toast('填一个大于 0 的价格，或者选面议', 'orange', 'x'); return; }
     x.from = ny ? null : v; x.on = true; closeSheet(); toast(`${x.n}：${ny ? '面议' : '¥' + v.toLocaleString() + ' 起'}`); rerender(); },
   /* 接下邀约时确认报价（默认填对方的预算） */
-  'co-ok': b => { const r = COLLAB.reqs.find(v => v.id === b.dataset.id), n = parseInt(String(r.budget).replace(/\D/g, '')) || '';
-    sheet(`<h3>接下「${esc(r.title)}」</h3><p class="mut2" style="margin:-4px 0 14px;font-size:13.5px">${esc(USERS[r.u].name)} 的预算：${esc(r.budget)}</p><div class="fg"><div class="fl full"><label for="coQ">你的报价（元）</label><input class="inp" id="coQ" type="number" inputmode="numeric" min="0" step="50" value="${n}" placeholder="按分成合作可以留空"></div></div>
-      <button class="pill" data-act="co-okgo" data-id="${r.id}" style="margin-top:16px">确认接下</button>`); },
-  'co-okgo': b => { const r = COLLAB.reqs.find(v => v.id === b.dataset.id), v = Math.round(+$('#coQ').value); r.quote = v > 0 ? v : null; r.st = 'doing'; closeSheet();
-    toast(`接下了「${r.title}」${r.quote ? '，报价 ¥' + r.quote.toLocaleString() : ''}，去私信里聊细节吧`); rerender(); fxPop($(`.co-req[data-id="${r.id}"] .tag`), 'fx-flip', 600); },
-  'co-no': b => { const r = COLLAB.reqs.find(v => v.id === b.dataset.id); COLLAB.reqs.splice(COLLAB.reqs.indexOf(r), 1); toast('已婉拒', 'blue'); rerender(); }
 });
 function ordersTable(list){ return `<table class="t"><tbody>${list.map(o => `<tr class="${o.st === 'refund' ? 'dim' : ''}"><td>${av(USERS[o.buyer] ? o.buyer : 'x','sm').replace('AZ', esc((o.buyer[0] || '?').toUpperCase()))}</td><td style="font-weight:600">雨夜磁带 Lo-Fi 采样包</td><td class="mut2">@${esc(USERS[o.buyer]?.name || o.buyer)}</td><td>${o.pay}</td><td class="r n">${yuan2(o.amt)}</td><td class="mut2 n">${o.time}</td></tr>`).join('')}</tbody></table>`; }
 /* 工作室页签是页内切换：原地替换网址（不新增返回记录）、不翻页、不跳回顶部 */
@@ -5187,7 +5314,7 @@ Object.assign(ACTIONS, {
 /* ================= 私信 ================= */
 const unreadTotal = () => Object.values(CHAT_UNREAD).reduce((a, b) => a + b, 0) + Object.values(NOTE_NEW).reduce((a, b) => a + b, 0);
 function msgBadge(){ const n = unreadTotal(); $$('[data-r="msg"]').forEach(b => { let d = b.querySelector('.bdg'); if (n > 0){ if (!d){ d = document.createElement('span'); d.className = 'bdg'; b.appendChild(d); } d.textContent = n > 99 ? '99+' : n; } else d && d.remove(); }); }
-function msgPreview(m){ if (!m) return ''; const who = m.me ? '我：' : ''; return who + (m.t === 'text' ? m.text : m.t === 'img' ? '[图片]' : m.t === 'post' ? '[帖子] ' + (POST(m.ref)?.title || '') : '[商品] ' + (P(m.ref)?.title || '')); }
+function msgPreview(m){ if (!m) return ''; const who = m.me ? '我：' : ''; return who + (m.t === 'text' ? m.text : m.t === 'img' ? '[图片]' : m.t === 'post' ? '[帖子] ' + (POST(m.ref)?.title || '') : m.t === 'co' ? '[合作邀约] ' + (CO_BY(m.ref)?.title || '') : m.t === 'cosys' ? m.text : '[商品] ' + (P(m.ref)?.title || '')); }
 function msgList(sel){
   const ids = Object.keys(CHATS).filter(id => USERS[id]).sort((a, b) => lastTs(b) - lastTs(a));
   return `<div class="m-quick">${[['likes','喜欢','pink',IC.heartF],['fans','新粉丝','blue','<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.4-7 8-7s7 2.5 8 7z"/></svg>'],['at','回复与@','yellow',RIC.cm]].map(([k,l,c,ic]) => { const n = NOTE_NEW[k] || 0; return `<button class="mq c-${c} mq-${k} ${n ? 'live' : ''}" data-act="note" data-v="${k}" data-n="${n}" aria-label="${l}${n ? '，' + n + ' 条新的' : ''}"><span class="mq-h"><span class="g">${ic}</span><b>${l}</b></span><span class="mq-n">${n}</span></button>`; }).join('')}</div>
@@ -5198,6 +5325,8 @@ function bubble(m, uid){
   if (m.t === 'text') inner = `<div class="bub">${esc(m.text)}</div>`;
   else if (m.t === 'img') inner = `<div class="bimg"><img src="${m.url || cover(m.cover || 'rings', 3, 360, 440)}" alt=""></div>`;
   else if (m.t === 'post'){ const p = POST(m.ref); inner = p ? `<a class="bcard" data-go="${postHref(p)}"><span class="bcv">${miniThumb(p)}${inStream(p) ? `<i class="bplay">${IC.play}</i>` : ''}</span><b>${esc(p.title)}</b><span class="by">${av(p.author, 'sm')}${esc(USERS[p.author].name)}</span></a>` : `<div class="bub">[帖子已删除]</div>`; }
+  else if (m.t === 'co'){ const o = CO_BY(m.ref); if (o) return `<div class="msg ${m.me ? 'me' : ''} co-m">${m.me ? '' : av(uid)}${coCard(o, m.v)}</div>`; }
+  else if (m.t === 'cosys') return `<div class="msep co-sys"><span>${esc(m.text)}</span></div>`;
   else if (m.t === 'prod'){ const p = P(m.ref); inner = p ? `<a class="bcard prod c-${CATS[p.cat].c}" data-go="item-${p.id}"><span class="bcv"><img src="${cover(p.cover, hash(p.id) % 50, 300, 300)}" alt=""></span><b>${esc(p.title)}</b><span class="by"><i class="dot"></i>${esc(p.kind)}<em>${p.price ? yuan(p.price) : '免费'}</em></span></a>` : ''; }
   return `<div class="msg ${m.me ? 'me' : ''}">${m.me ? '' : av(uid)}${inner}</div>`;
 }
@@ -5271,6 +5400,340 @@ function atMark(id){ if (AT_READ.has(id)) return; AT_READ.add(id); const r = $(`
   const a = $('#layer [data-act="at-all"]'); if (a && !atUnread()) a.disabled = true; noteSync(); msgBadge(); }
 function noteSync(){ ['likes','fans','at'].forEach(k => { const q = $(`.mq-${k}`); if (!q) return; const n = NOTE_NEW[k] || 0, el = q.querySelector('.mq-n'); if (el && el.textContent !== String(n)){ el.textContent = n; fxPop(el, 'fx-dn', 300); } q.dataset.n = n; q.classList.toggle('live', n > 0); }); }
 
+/* ================= 合作：业务类型、各人接的业务、好评度、邀约订单 =================
+   · 流程：主页「合作」页签选业务 → 填邀约 → 对方在私信卡片上 接下 / 婉拒 / 再聊聊 / 改价
+     → 委托方担保付款（钱先放平台）→ 创作者交付 → 委托方验收（含 2 次免费修改，交付后 7 天不处理自动验收）→ 平台打款给创作者 → 双方互评
+   · 平台服务费从创作者到手里扣（CO_FEE），委托方只付合作金额 */
+const CO_FEE = .05;          // ⚠️ 合作服务费比例（示例），改这一个数即可
+const CO_FREE_REV = 2;       // 免费修改次数
+const CO_AUTO_DAYS = 7;      // 交付后多少天不验收就自动确认
+const SVC_DEF = {
+  arr:   {n:'编曲', c:'pink',   ph:'比如：一首 lo-fi 单曲的完整编曲', f:[['style','风格','text','lo-fi / city pop / 氛围…'], ['bpm','BPM','num','90'], ['len','时长','one',['1 分钟内','1–3 分钟','3–5 分钟','5 分钟以上']]]},
+  mix:   {n:'混音', c:'blue',   ph:'比如：第一首单曲的混音', f:[['tracks','分轨数','one',['8 轨内','8–24 轨','24–48 轨','48 轨以上']], ['len','歌曲时长','one',['3 分钟内','3–5 分钟','5 分钟以上']], ['ref','参考曲','text','歌名或链接']]},
+  master:{n:'母带', c:'yellow', ph:'比如：EP 四首歌的母带', f:[['songs','曲数','num','4'], ['plat','发行到','multi',['流媒体','黑胶','CD','现场']]]},
+  vocal: {n:'演唱', c:'orange', ph:'比如：一段副歌的人声', f:[['range','声部','one',['女高','女中','男高','男中','不限']], ['lang','语言','multi',['中文','英文','日文','粤语']], ['style','风格','text','温柔 / 有颗粒感…']]},
+  lyric: {n:'作词', c:'green',  ph:'比如：一首关于夜班公交的歌词', f:[['theme','主题','text','写什么'], ['lang','语言','one',['中文','英文','中英混']]]},
+  co:    {n:'联名合作', c:'violet', ph:'比如：一起做一张 lo-fi EP', f:[['split','分成（你 : TA）','split',50], ['part','你负责','text','节奏 / 和声 / 视觉…']]},
+  vj:    {n:'现场视觉', c:'yellow', ph:'比如：下个月 livehouse 的现场视觉', f:[['date','演出日期','text','11 月 8 日'], ['venue','场地 / 屏幕','text','几块屏、什么比例'], ['len','演出时长','one',['30 分钟内','1 小时','2 小时以上']]]},
+  td:    {n:'TD 定制', c:'orange', ph:'比如：一个跟着鼓点跑的粒子组件', f:[['input','输入','multi',['音频','MIDI','摄像头','传感器']], ['out','输出','one',['投影','LED 屏','直播','装置']]]},
+  sfx:   {n:'声音设计', c:'pink', ph:'比如：独立游戏的 30 个界面音效', f:[['use','用途','one',['游戏','影视','装置','产品']], ['count','音效数量','num','30']]},
+  snd:   {n:'音色定制', c:'blue', ph:'比如：一组暗色贝斯音色', f:[['synth','合成器','one',['Serum','Vital','Diva','其他']], ['count','音色数量','num','16']]}
+};
+/* 业务图标：同一套孔版几何（圆 / 方 / 三角 / 半圆） */
+const SVC_G = {
+  arr:'<rect x="3" y="4" width="8" height="4" rx="1"/><rect x="9" y="10" width="12" height="4" rx="1"/><rect x="5" y="16" width="9" height="4" rx="1"/>',
+  mix:'<rect x="4" y="3" width="3" height="18" rx="1.5" opacity=".35"/><rect x="10.5" y="3" width="3" height="18" rx="1.5" opacity=".35"/><rect x="17" y="3" width="3" height="18" rx="1.5" opacity=".35"/><rect x="2.5" y="12" width="6" height="4" rx="1"/><rect x="9" y="6" width="6" height="4" rx="1"/><rect x="15.5" y="14" width="6" height="4" rx="1"/>',
+  master:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4" fill="var(--paper)"/>',
+  vocal:'<rect x="8.5" y="2" width="7" height="12" rx="3.5"/><path d="M5 11a7 7 0 0014 0" fill="none" stroke="currentColor" stroke-width="2"/><rect x="11" y="18" width="2" height="4"/>',
+  lyric:'<path d="M3 20L14 4l7 4-11 16z"/><circle cx="6" cy="6" r="3"/>',
+  co:'<circle cx="9" cy="12" r="6.5"/><circle cx="15" cy="12" r="6.5" opacity=".55"/>',
+  vj:'<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M10 8l5 3-5 3z" fill="var(--paper)"/><rect x="8" y="19" width="8" height="2" rx="1"/>',
+  td:'<rect x="2" y="3" width="8" height="6" rx="1.5"/><rect x="14" y="15" width="8" height="6" rx="1.5"/><path d="M10 6c6 0 0 12 4 12" fill="none" stroke="currentColor" stroke-width="2"/>',
+  sfx:'<path d="M2 12h3l2-6 3 12 3-15 3 15 2-6h4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>',
+  snd:'<circle cx="12" cy="12" r="9"/><path d="M12 12l4-5" stroke="var(--paper)" stroke-width="2.6" stroke-linecap="round"/>'
+};
+const svcIcon = k => `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${SVC_G[k] || SVC_G.co}</svg>`;
+/* 其他创作者接的业务（我自己的在工作室「我的合作」里设置：COLLAB.svcs） */
+const USVC = {
+  nova:[{k:'sfx', from:600}, {k:'mix', from:500}, {k:'master', from:300}],
+  merc:[{k:'vj', from:2000}, {k:'td', from:1500}],
+  lowf:[{k:'snd', from:300}, {k:'mix', from:800}, {k:'co', from:null}],
+  ash: [{k:'vj', from:1200}, {k:'co', from:null}]
+};
+const svcsOf = uid => uid === ME ? COLLAB.svcs.filter(x => x.on && SVC_DEF[x.k]) : (USVC[uid] || []);
+/* 好评度：基础数据（平台统计）+ 评价 */
+const CO_TAGS = ['准时','沟通顺畅','质量高','专业','爽快','需求清晰','付款快','会再合作'];
+const REP = store.get('coRep', null) || {
+  rin:  {done:21, ontime:.95, reply:'2 小时内', base:[18, 87], reviews:[{u:'nova', s:5, svc:'arr', t:'编曲完成度很高，demo 一次过。', tags:['质量高','准时'], ts:NOW0 - 30*24*H}, {u:'mio', s:5, svc:'mix', t:'学姐很耐心，改了两次都很快。', tags:['沟通顺畅','爽快'], ts:NOW0 - 52*24*H}]},
+  nova: {done:38, ontime:.97, reply:'1 小时内', base:[35, 172], reviews:[{u:'merc', s:5, svc:'sfx', t:'采样很干净，命名规范，直接能用。', tags:['专业','质量高'], ts:NOW0 - 6*24*H}, {u:'lowf', s:4, svc:'mix', t:'效果很好，就是周末回复慢一点。', tags:['质量高'], ts:NOW0 - 20*24*H}]},
+  merc: {done:52, ontime:.92, reply:'半天内', base:[49, 238], reviews:[{u:'ash', s:5, svc:'vj', t:'现场效果炸了，提前一天到场调试。', tags:['专业','准时','会再合作'], ts:NOW0 - 9*24*H}, {u:'rin', s:5, svc:'td', t:'组件写了文档，交接很省心。', tags:['专业','沟通顺畅'], ts:NOW0 - 40*24*H}]},
+  lowf: {done:17, ontime:1, reply:'1 小时内', base:[15, 73], reviews:[{u:'rin', s:5, svc:'snd', t:'音色都带宏控制，很好用。', tags:['质量高','爽快'], ts:NOW0 - 12*24*H}]},
+  ash:  {done:26, ontime:.88, reply:'1 天内', base:[24, 110], reviews:[{u:'merc', s:4, svc:'vj', t:'素材很有味道，交付晚了半天。', tags:['质量高'], ts:NOW0 - 15*24*H}]},
+  mio:  {done:2, ontime:1, reply:'很快', base:[1, 5], reviews:[{u:'rin', s:5, svc:'mix', t:'需求写得很清楚，付款也快。', tags:['需求清晰','付款快'], ts:NOW0 - 52*24*H}]}
+};
+function repOf(uid){ const r = REP[uid] || (REP[uid] = {done:0, ontime:1, reply:'—', base:[0, 0], reviews:[]});
+  const n = r.base[0] + r.reviews.length, sum = r.base[1] + r.reviews.reduce((a, v) => a + v.s, 0), tags = {};
+  r.reviews.forEach(v => v.tags.forEach(t => tags[t] = (tags[t] || 0) + 1));
+  return {avg:n ? sum/n : 0, n, done:r.done, ontime:r.ontime, reply:r.reply, tags:Object.entries(tags).sort((a, b) => b[1] - a[1]), reviews:r.reviews.slice().sort((a, b) => b.ts - a.ts)}; }
+const stars = (v, cls='') => `<span class="co-stars ${cls}" aria-label="${v.toFixed(1)} 星">${[1,2,3,4,5].map(i => `<i class="${v >= i - .25 ? 'on' : v >= i - .75 ? 'half' : ''}"></i>`).join('')}</span>`;
+/* 邀约订单。st：sent 等对方回复 / counter 对方改价，等发起人 / declined 婉拒 / withdrawn 撤回 / accepted 已接下，等付款
+   / paid 进行中（已托管）/ delivered 已交付，等验收 / revising 修改中 / done 已完成 / dispute 平台介入中 */
+const CO = {orders: store.get('coOrders', null) || [
+  {id:'c1', from:'mio', to:'rin', svc:'mix', title:'第一首单曲的混音', note:'人声 + 吉他 + 鼓机，大概 3 分半，想要偏暖的 lo-fi 质感。', budget:800, price:800, due:'10 月 20 日前', fields:{tracks:'8–24 轨', len:'3–5 分钟', ref:'Tomppabeats - Monday Loop'}, st:'sent', v:1, rev:0, ts:NOW0 - 3*H, log:[{k:'card', v:1, by:'mio', ts:NOW0 - 3*H}]},
+  {id:'c2', from:'lowf', to:'rin', svc:'co', title:'一起做一张 lo-fi EP', note:'4 首，你出节奏，我出和声与混音，收入五五分。', budget:null, price:null, due:'年底', fields:{split:50, part:'节奏'}, st:'paid', v:1, rev:0, ts:NOW0 - 12*24*H, log:[{k:'card', v:1, by:'lowf', ts:NOW0 - 12*24*H}, {k:'sys', text:'rin.wav 接下了邀约 · 分成合作，无需托管', ts:NOW0 - 11*24*H}]},
+  {id:'c3', from:'nova', to:'rin', svc:'arr', title:'采样包 demo 曲编曲', note:'用 CONCRETE KIT 做一首 1 分钟的 demo。', budget:1200, price:1200, due:'已交付', fields:{style:'工业 / 打击乐', len:'1 分钟内'}, st:'done', v:1, rev:0, ts:NOW0 - 34*24*H, paidAt:NOW0 - 33*24*H, delivAt:NOW0 - 31*24*H, doneAt:NOW0 - 30*24*H, rated:{nova:true}, log:[{k:'card', v:1, by:'nova', ts:NOW0 - 34*24*H}, {k:'sys', text:'已完成 · ¥1,140 已打到 rin.wav 的待结算', ts:NOW0 - 30*24*H}]},
+  {id:'c4', from:'rin', to:'merc', svc:'vj', title:'下个月 livehouse 的现场视觉', note:'11 月 8 日在育音堂，一块横屏 16:9，跟着我的 live set 走，偏粗颗粒的几何风格。', budget:2000, price:2400, due:'11 月 5 日前', fields:{date:'11 月 8 日', venue:'育音堂 · 一块 16:9 横屏', len:'1 小时'}, st:'counter', v:2, rev:0, offers:[{by:'merc', price:2400, note:'要做 1 小时的实时素材，含一次彩排，2400 比较合适。', ts:NOW0 - 5*H}], ts:NOW0 - 8*H, log:[{k:'card', v:1, by:'rin', ts:NOW0 - 8*H}, {k:'card', v:2, by:'merc', ts:NOW0 - 5*H}]}
+]};
+const coSave = () => { store.set('coOrders', CO.orders); store.set('coRep', REP); };
+const CO_BY = id => CO.orders.find(o => o.id === id);
+const coOther = o => o.from === ME ? o.to : o.from;
+/* 把订单里的卡片 / 系统消息放进对应的私信会话（刷新页面后也在） */
+function coInject(){ CO.orders.forEach(o => { if (o.from !== ME && o.to !== ME) return; const u = coOther(o), list = CHATS[u] ||= [];
+  o.log.forEach(e => { if (list.some(m => m.coe === e)) return; list.push(e.k === 'card' ? {me:e.by === ME, t:'co', ref:o.id, v:e.v, ts:e.ts, coe:e} : {me:false, t:'cosys', ref:o.id, text:e.text, ts:e.ts, coe:e}); });
+  list.sort((a, b) => a.ts - b.ts); }); }
+coInject();
+
+/* ================= 合作：主页页签、邀约表单、私信卡片、托管 / 交付 / 验收 / 互评 ================= */
+const CO_ST = {sent:['c-pink','等回复'], counter:['c-orange','改价中'], declined:['k','已婉拒'], withdrawn:['k','已撤回'], accepted:['c-yellow','待付款'], paid:['c-blue','进行中'],
+  delivered:['c-green','待验收'], revising:['c-violet','修改中'], done:['c-green','已完成'], dispute:['c-orange','平台介入中']};
+const cny = n => n == null ? '面议' : '¥' + Math.round(n).toLocaleString();
+const coNet = p => p == null ? null : Math.round(p*(1 - CO_FEE));
+const coDay = ts => { const d = new Date(ts); return `${d.getMonth() + 1} 月 ${d.getDate()} 日`; };
+const coFv = (o, k) => { const v = o.fields?.[k]; return v == null || v === '' ? null : Array.isArray(v) ? v.join('、') : k === 'split' ? `${v} : ${100 - v}` : String(v); };
+/* 需要我动手的邀约（工作室角标、私信提醒） */
+const coTodo = () => CO.orders.filter(o => (o.to === ME && ['sent','paid','revising'].includes(o.st)) || (o.from === ME && ['accepted','delivered'].includes(o.st)) || (o.st === 'counter' && o.offers?.at(-1)?.by !== ME && (o.from === ME || o.to === ME)) || (o.st === 'done' && (o.from === ME || o.to === ME) && !o.rated?.[ME]));
+/* 卡片上的按钮：只有最新一版卡片能操作 */
+function coActs(o){
+  const A = (a, l, cls='') => `<button class="pill sm ${cls}" data-act="co-a" data-a="${a}" data-id="${o.id}">${l}</button>`, W = t => `<span class="co-wait">${t}</span>`;
+  const to = o.to === ME, from = o.from === ME, last = o.offers?.at(-1);
+  switch (o.st){
+    case 'sent': return to ? A('accept', '接下') + A('counter', '改价', 'lt') + A('chat', '再聊聊', 'lt') + A('decline', '婉拒', 'lt') : A('chat', '再聊聊', 'lt') + A('withdraw', '撤回', 'lt') + W('等 TA 回复');
+    case 'counter': return last.by === ME ? A('chat', '再聊聊', 'lt') + W('等 TA 确认新报价') : A('agree', `同意 ${cny(last.price)}`) + A('chat', '再聊聊', 'lt') + A('reject', '不接受', 'lt');
+    case 'accepted': return from ? A('pay', `担保付款 ${cny(o.price)}`) + A('chat', '再聊聊', 'lt') : W('等 TA 付款托管') + A('chat', '再聊聊', 'lt');
+    case 'paid': case 'revising': return to ? A('deliver', o.st === 'revising' ? '提交修改版' : '提交交付') + A('chat', '再聊聊', 'lt') : W(o.st === 'revising' ? `TA 在改第 ${o.rev} 版` : 'TA 正在做') + A('chat', '再聊聊', 'lt');
+    case 'delivered': return from ? A('confirm', '确认验收') + A('revise', o.rev < CO_FREE_REV ? `申请修改 · 剩 ${CO_FREE_REV - o.rev} 次` : '免费修改已用完', 'lt') + A('deliv', '查看交付', 'lt') : A('deliv', '查看交付', 'lt') + W(`等 TA 验收 · ${coDay(o.delivAt + CO_AUTO_DAYS*24*H)}自动确认`);
+    case 'done': return (o.deliv ? A('deliv', '查看交付', 'lt') : '') + (o.rated?.[ME] ? W('已评价') : A('rate', '评价 TA'));
+    case 'dispute': return W('客服会在 24 小时内联系双方') + A('chat', '再聊聊', 'lt');
+    default: return '';
+  }
+}
+function coCard(o, v = o.v, mode = 'chat'){
+  const D = SVC_DEF[o.svc] || SVC_DEF.co, old = v < o.v, st = CO_ST[o.st] || ['k', o.st], other = coOther(o), r = repOf(other);
+  const offer = v > 1 ? o.offers?.[v - 2] : null, prev = v > 2 ? o.offers[v - 3].price : o.budget, live = !old;
+  const money = offer ? `<div class="co-px"><s>${cny(prev)}</s><b>${cny(offer.price)}</b><span>${esc(USERS[offer.by].name)} 的新报价</span></div>`
+    : live && o.price != null && ['accepted','paid','delivered','revising','done'].includes(o.st) ? `<div class="co-px"><b>${cny(o.price)}</b><span>${o.to === ME ? `到手 ${cny(coNet(o.price))}（扣 ${CO_FEE*100}% 服务费）` : o.st === 'accepted' ? '待托管' : o.st === 'done' ? '已结算' : '平台托管中'}</span></div>` : '';
+  const facts = [[o.svc === 'co' ? '方式' : '预算', o.svc === 'co' ? '分成合作' : cny(o.budget)], ['截止', o.due], ...D.f.slice(0, 2).map(([k, l]) => coFv(o, k) && [l, coFv(o, k)])].filter(Boolean);
+  return `<div class="co-card c-${D.c} ${old ? 'old' : ''} st-${o.st} ${mode}" data-co="${o.id}" data-v="${v}">
+    <div class="co-ch"><span class="co-g">${svcIcon(o.svc)}</span><span class="co-k">${D.n} · ${offer ? '改价' : '合作邀约'}</span><span class="tag ${old ? 'k' : st[0]} co-st">${old ? '已作废' : st[1]}</span></div>
+    <b class="co-t">${esc(o.title)}</b>${money}
+    <p class="co-n">${esc(offer ? offer.note || '' : o.note || '')}</p>
+    <dl class="co-f">${facts.map(([l, v]) => `<div><dt>${l}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
+    <div class="co-who">${av(other, 'sm')}<span>${esc(USERS[other].name)}</span>${stars(r.avg, 'sm')}<em>${r.avg.toFixed(1)}</em><button class="co-more" data-act="co-view" data-id="${o.id}">详情</button></div>
+    ${live ? `<div class="co-a">${coActs(o)}</div>` : ''}</div>`;
+}
+/* 主页「合作」页签：好评度名片 + 业务卡 + 评价 */
+function coProfile(uid){
+  const svcs = svcsOf(uid), r = repOf(uid), isMe = uid === ME;
+  const pending = k => CO.orders.find(o => o.from === ME && o.to === uid && o.svc === k && ['sent','counter','accepted','paid','delivered','revising'].includes(o.st));
+  return `<div class="co-prof">${isMe ? `<div class="co-pv">${IC.user}预览：这是别人在你主页看到的「合作」</div>` : ''}
+    <div class="co-rep"><div class="co-big"><b class="x num">${r.avg.toFixed(1)}</b><div>${stars(r.avg)}<span>${r.n} 条评价</span></div></div>
+      <div class="co-kv"><div><b class="num" data-roll="${r.done}">${r.done}</b><span>完成</span></div><div><b class="num">${Math.round(r.ontime*100)}%</b><span>准时率</span></div><div><b>${esc(r.reply)}</b><span>回复</span></div></div>
+      ${r.tags.length ? `<div class="co-tags">${r.tags.slice(0, 5).map(([t, n]) => `<span>${t}<i>${n}</i></span>`).join('')}</div>` : ''}</div>
+    <div class="co-tiles">${svcs.map(x => { const D = SVC_DEF[x.k], p = pending(x.k); return `<button class="co-tile c-${D.c} grain" data-act="co-new" data-u="${uid}" data-k="${x.k}"><span class="co-g">${svcIcon(x.k)}</span><b>${D.n}</b><span class="co-from">${x.from == null ? '面议' : '¥' + x.from.toLocaleString() + ' 起'}</span><span class="co-go">${p ? `已邀约 · ${CO_ST[p.st][1]}` : isMe ? '别人点这里发邀约' : '发邀约'}<i>→</i></span></button>`; }).join('')}</div>
+    <p class="co-safe">${IC.lock}平台担保：接下后钱先放在平台，验收后才打给创作者 · 含 ${CO_FREE_REV} 次免费修改 · 交付后 ${CO_AUTO_DAYS} 天不处理自动验收</p>
+    <h3 class="co-h">评价 <i>${r.n}</i></h3>
+    <div class="co-revs">${r.reviews.map(v => `<div class="co-rv">${av(v.u, 'sm')}<div><div class="co-rvh"><b>${esc(USERS[v.u]?.name || v.u)}</b>${stars(v.s, 'sm')}<span class="tag c-${SVC_DEF[v.svc]?.c || 'pink'}">${SVC_DEF[v.svc]?.n || ''}</span><time>${ago(v.ts)}</time></div><p>${esc(v.t)}</p>${v.tags.length ? `<div class="co-rvt">${v.tags.map(t => `<span>${t}</span>`).join('')}</div>` : ''}</div></div>`).join('') || '<div class="rnone">还没有评价</div>'}</div></div>`;
+}
+/* ---------- 发邀约：卡片原地长成表单 ---------- */
+const CF = {};
+function coForm(uid, k, tile){
+  const D = SVC_DEF[k], x = svcsOf(uid).find(v => v.k === k) || {}, from = x.from ?? null, r = repOf(uid), share = k === 'co';
+  Object.assign(CF, {uid, k, from, due:'2 周内', f:{}});
+  D.f.forEach(([fk, , type, opt]) => { if (type === 'split') CF.f[fk] = opt; if (type === 'multi') CF.f[fk] = []; });
+  const r100 = n => Math.round(n/100)*100, budChips = from ? [from, r100(from*1.5), r100(from*2)] : [500, 1000, 2000];
+  const field = ([fk, l, type, opt]) => type === 'one' || type === 'multi' ? `<div class="cf-l"><span>${l}${type === 'multi' ? '<em>可多选</em>' : ''}</span><div class="chips">${opt.map(v => `<button class="chip" data-act="cf-chip" data-g="${fk}" data-m="${type === 'multi' ? 1 : ''}" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div></div>`
+    : type === 'split' ? `<div class="cf-l"><span>${l}</span><div class="cf-split"><b id="cfSa">你 ${opt}</b><input type="range" min="10" max="90" step="5" value="${opt}" id="cfS" aria-label="${l}"><b id="cfSb">TA ${100 - opt}</b></div></div>`
+    : `<label class="cf-l"><span>${l}</span><input class="inp" data-cf="${fk}" ${type === 'num' ? 'inputmode="numeric"' : ''} placeholder="${esc(opt || '')}" autocomplete="off"></label>`;
+  sheet(`<div class="cf-top"><span class="co-g c-${D.c}">${svcIcon(k)}</span><div style="min-width:0"><span class="lab">邀请 ${esc(USERS[uid].name)}</span><h3>${D.n} · 合作邀约</h3></div></div>
+    <div class="cf-rep">${av(uid, 'sm')}${stars(r.avg, 'sm')}<b>${r.avg.toFixed(1)}</b><span>${r.done} 单 · 准时率 ${Math.round(r.ontime*100)}% · ${share ? '分成合作' : '起价 ' + cny(from)}</span></div>
+    <div class="cf-body">
+      <label class="cf-l"><span>项目标题</span><input class="inp" id="cfT" placeholder="${esc(D.ph)}" autocomplete="off" maxlength="40"></label>
+      ${share ? '' : `<div class="cf-l"><span>预算</span><div class="cf-bud"><i>¥</i><input class="inp num" id="cfB" inputmode="numeric" value="${from || ''}" autocomplete="off" aria-label="预算金额"></div>
+        <div class="chips">${budChips.map(v => `<button class="chip" data-act="cf-bud" data-v="${v}">¥${v.toLocaleString()}</button>`).join('')}<button class="chip" data-act="cf-bud" data-v="">面议</button></div><span class="cf-hint" id="cfBh"></span></div>`}
+      <div class="cf-l"><span>截止时间</span><div class="chips">${['1 周内','2 周内','1 个月内','不急'].map(v => `<button class="chip ${v === CF.due ? 'on' : ''}" data-act="cf-chip" data-g="due" data-v="${v}">${v}</button>`).join('')}</div></div>
+      ${D.f.map(field).join('')}
+      <label class="cf-l"><span>需求描述</span><textarea class="inp" id="cfN" rows="3" placeholder="越具体越好：想要的感觉、参考、交付格式…"></textarea></label>
+      <label class="cf-l"><span>参考链接<em>可选</em></span><input class="inp" id="cfR" placeholder="网盘 / 音乐平台 / 视频链接" autocomplete="off"></label>
+      <p class="co-safe">${IC.lock}${share ? '分成合作不经过托管，收入按约定分成' : `TA 接下后你付款给平台托管，验收后才打给 TA（服务费由创作者承担，你只付 ${cny(from || 0).replace('¥0', '预算')}）`} · 含 ${CO_FREE_REV} 次免费修改 · 交付后 ${CO_AUTO_DAYS} 天自动验收</p>
+    </div>
+    <div class="cf-send"><button class="cf-rec" id="cfRec" aria-label="按住发送邀约"><svg viewBox="0 0 64 64" aria-hidden="true"><circle class="cf-tr" cx="32" cy="32" r="29"/><circle class="cf-pg" cx="32" cy="32" r="29" pathLength="100"/></svg><i></i></button><span class="cf-tip" id="cfTip">按住发送</span></div>`, d => {
+      d.classList.add('cf-sheet', 'pk-full'); d.closest('.sov').classList.add('sov-full');
+      const b = $('#cfB', d), h = $('#cfBh', d), sl = $('#cfS', d);
+      if (b) b.addEventListener('input', () => { b.value = b.value.replace(/\D/g, '').slice(0, 7); coBudHint(); $$('[data-act="cf-bud"]', d).forEach(c => c.classList.toggle('on', c.dataset.v === b.value)); });
+      if (sl) sl.addEventListener('input', () => { const v = +sl.value; CF.f.split = v; $('#cfSa', d).textContent = '你 ' + v; $('#cfSb', d).textContent = 'TA ' + (100 - v); });
+      const n = $('#cfN', d); n.addEventListener('input', () => autoGrow(n));
+      coHold($('#cfRec', d)); coBudHint();
+      // 从业务卡长出来：同色色块从卡片位置放大到整个面板再淡出
+      if (tile && !reduced()){ const a = tile.getBoundingClientRect(), z = d.getBoundingClientRect(), g = document.createElement('div'); g.className = 'cf-grow c-' + D.c;
+        g.style.cssText = `left:${z.left}px;top:${z.top}px;width:${z.width}px;height:${z.height}px;border-radius:${getComputedStyle(d).borderRadius}`; document.body.appendChild(g);
+        const sx = a.width/z.width, sy = a.height/z.height; d.style.animation = 'none';
+        g.animate([{transform:`translate(${a.left - z.left}px,${a.top - z.top}px) scale(${sx},${sy})`, opacity:1}, {transform:'none', opacity:1, offset:.6}, {transform:'none', opacity:0}], {duration:520, easing:'cubic-bezier(.3,.9,.3,1)'}).onfinish = () => g.remove();
+        d.animate([{opacity:0}, {opacity:0, offset:.45}, {opacity:1}], {duration:520}); }
+    });
+}
+function coBudHint(){ const b = $('#cfB'), h = $('#cfBh'); if (!b || !h) return; const v = +b.value, f = CF.from;
+  h.className = 'cf-hint'; if (!b.value){ h.textContent = '不填就是面议，TA 接下前会报价'; return; }
+  if (f && v < f){ h.textContent = `低于 TA 的起价 ¥${f.toLocaleString()}，TA 可能会改价`; h.classList.add('warn'); fxPop(h, 'fx-shake', 300); }
+  else { h.textContent = `✓ 在 TA 的报价范围内`; h.classList.add('ok'); } }
+/* 按住发送：圆环填满才发出，中途松手取消；键盘回车 / 空格直接发 */
+function coHold(btn){
+  let an = null, ticks = [];
+  const tip = t => { const e = $('#cfTip'); if (e) e.textContent = t; };
+  const stop = () => { ticks.forEach(clearTimeout); ticks = []; if (an){ an.cancel(); an = null; } btn.classList.remove('hold'); };
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); if (!coValid()) return; btn.setPointerCapture?.(e.pointerId); btn.classList.add('hold'); tip('继续按住…');
+    const pg = $('.cf-pg', btn); an = pg.animate([{strokeDashoffset:100}, {strokeDashoffset:0}], {duration:reduced() ? 10 : 700, easing:'cubic-bezier(.4,0,.6,1)', fill:'forwards'});
+    ticks = [230, 460].map(ms => setTimeout(() => haptic(6), ms)); an.onfinish = () => { an = null; btn.classList.remove('hold'); coSend(); }; });
+  ['pointerup','pointercancel','pointerleave'].forEach(ev => btn.addEventListener(ev, () => { if (an){ stop(); tip('按住不放才会发出'); fxPop($('#cfTip'), 'fx-shake', 300); } }));
+  btn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); if (coValid()) coSend(); } });
+  btn.addEventListener('click', e => e.preventDefault());
+}
+function coValid(){ const t = $('#cfT'); if (!t.value.trim()){ t.focus(); fxPop(t, 'fx-shake', 300); toast('先写个项目标题', 'orange', 'pen'); return false; } return true; }
+function coSend(){
+  const d = $('#layer .sheet'), D = SVC_DEF[CF.k], b = $('#cfB'), fields = {...CF.f};
+  $$('[data-cf]', d).forEach(i => { if (i.value.trim()) fields[i.dataset.cf] = i.value.trim(); });
+  const budget = CF.k === 'co' ? null : b && b.value ? +b.value : null;
+  const o = {id:'c' + Date.now().toString(36), from:ME, to:CF.uid, svc:CF.k, title:$('#cfT').value.trim(), note:$('#cfN').value.trim() + ($('#cfR').value.trim() ? `\n参考：${$('#cfR').value.trim()}` : ''), budget, price:budget, due:CF.due, fields, st:'sent', v:1, rev:0, ts:Date.now(), log:[]};
+  CO.orders.unshift(o); coCardPush(o, ME); coSave(); sfx('ok'); haptic(14);
+  // 盖「已发出」章 + 几何礼花，然后卡片飞进私信图标
+  const st = document.createElement('div'); st.className = 'cf-sent'; st.innerHTML = `<span class="stamp big pop" style="--sc:var(--pink)">SENT<small>已发出</small></span>`; d.appendChild(st);
+  const sr = st.firstChild.getBoundingClientRect(); fxShapes(sr.left + sr.width/2, sr.top + sr.height/2, 24, 160, ['pink','blue','yellow','orange'], 70);
+  setTimeout(() => { const r = d.getBoundingClientRect(); closeSheet(); coFlyToMsg(r, D.c); toast(`邀约已发给 ${USERS[CF.uid].name}，回复会出现在私信里`, 'pink', 'chat'); rerender(); coSim(o, 'sent'); }, reduced() ? 300 : 900);
+}
+function coFlyToMsg(rect, c){
+  const tgt = $$('[data-r="msg"]').find(e => e.offsetParent && visible(e)); if (!tgt || reduced()) return;
+  const t = tgt.getBoundingClientRect(), g = document.createElement('div'); g.className = 'cf-fly c-' + c; const w = 120, h = 80;
+  g.style.cssText = `left:${rect.left + rect.width/2 - w/2}px;top:${rect.top + rect.height/2 - h/2}px;width:${w}px;height:${h}px`; document.body.appendChild(g);
+  const dx = t.left + t.width/2 - (rect.left + rect.width/2), dy = t.top + t.height/2 - (rect.top + rect.height/2);
+  g.animate([{transform:'none', opacity:1}, {transform:`translate(${dx*.5}px,${dy*.5 - 80}px) rotate(-12deg) scale(.7)`, opacity:1, offset:.5}, {transform:`translate(${dx}px,${dy}px) rotate(8deg) scale(.12)`, opacity:.6}], {duration:640, easing:'cubic-bezier(.5,0,.4,1)'}).onfinish = () => { g.remove(); fxPop(tgt, 'fx-up', 600); fxRing(t.left + t.width/2, t.top + t.height/2, INK.pink); };
+}
+/* ---------- 订单事件：写进订单记录 + 私信会话 ---------- */
+function coCardPush(o, by){ const e = {k:'card', v:o.v, by, ts:Date.now()}; o.log.push(e); const u = coOther(o); (CHATS[u] ||= []).push({me:by === ME, t:'co', ref:o.id, v:o.v, ts:e.ts, coe:e}); }
+function coSys(o, text){ const e = {k:'sys', text, ts:Date.now()}; o.log.push(e); const u = coOther(o); (CHATS[u] ||= []).push({me:false, t:'cosys', ref:o.id, text, ts:e.ts, coe:e}); }
+/* 状态变了：存档、刷新正在看的界面（私信会话 / 工作室 / 主页），状态标签翻一下；不在这个会话就记未读 */
+function coRefresh(o, fx){
+  coSave(); const u = coOther(o);
+  if (CUR.key === 'msg|' + u){ refreshConv(u); requestAnimationFrame(() => { const cs = $$(`#cvB .co-card[data-co="${o.id}"]:not(.old)`), c = cs.at(-1); if (c){ fxPop(c.querySelector('.co-st'), 'fx-flip', 600); if (fx) fxPop(c, fx, 600); } }); }
+  else if (CUR.key?.startsWith('seller') || CUR.key?.startsWith('user|') || CUR.key?.startsWith('me')){ rerender(); requestAnimationFrame(() => { const c = $(`#app .co-card[data-co="${o.id}"]:not(.old)`); if (c){ fxPop(c.querySelector('.co-st'), 'fx-flip', 600); if (fx) fxPop(c, fx, 600); } }); }
+  else { const s = $('.m-side .m-list'); if (s) s.outerHTML = msgList().replace(/^[\s\S]*?(<div class="m-list">)/, '$1'); }
+  const sb = $$('.snav [data-v="collab"] .n'); sb.forEach(x => x.textContent = coTodo().length || '');
+}
+/* 对方的动作（原型里模拟）：先显示「正在输入」，再落地 */
+function coLater(o, ms, fn){
+  const u = coOther(o); setTimeout(() => { TYPING[u] = true; if (CUR.key === 'msg|' + u) refreshConv(u);
+    setTimeout(() => { TYPING[u] = false; fn(); if (CUR.key !== 'msg|' + u){ CHAT_UNREAD[u] = (CHAT_UNREAD[u] || 0) + 1; msgBadge(); toast(`${USERS[u].name}：${o.title} · ${CO_ST[o.st]?.[1] || ''}`, 'blue', 'chat'); } coRefresh(o, 'fx-thud'); }, 1200); }, ms);
+}
+function coSim(o, ev){
+  const u = coOther(o), x = (USVC[u] || []).find(s => s.k === o.svc), from = x?.from ?? null, nm = USERS[u].name;
+  if (ev === 'sent') coLater(o, 1400, () => { if (o.st !== 'sent') return;
+    if (o.svc === 'co' || (o.budget != null && (from == null || o.budget >= from))){ o.st = o.price == null ? 'paid' : 'accepted'; coSys(o, `${nm} 接下了邀约${o.price == null ? ' · 分成合作，直接开工' : ` · 等你担保付款 ${cny(o.price)}`}`); }
+    else { const p = Math.max(from || 0, Math.round(((o.budget || from || 1000)*1.2)/100)*100); (o.offers ||= []).push({by:u, price:p, note:'按工作量算，这个价比较合适～', ts:Date.now()}); o.v++; o.st = 'counter'; coCardPush(o, u); } });
+  if (ev === 'paid') { coLater(o, 900, () => coSys(o, `${nm} 开工了`)); coLater(o, 5200, () => coDeliverBy(o, u)); }
+  if (ev === 'revise') coLater(o, 3000, () => coDeliverBy(o, u));
+  if (ev === 'done' || ev === 'rated') coLater(o, 1800, () => coRateBy(o, u));
+  if (ev === 'accepted') coLater(o, 1600, () => { if (o.st !== 'accepted') return; o.st = 'paid'; o.paidAt = Date.now(); coSys(o, `${nm} 已担保付款 ${cny(o.price)} · 钱在平台，验收后打给你（到手 ${cny(coNet(o.price))}）`); });
+  if (ev === 'counter') coLater(o, 1600, () => { if (o.st !== 'counter') return; const p = o.offers.at(-1).price;
+    if (o.budget == null || p <= o.budget*1.5){ o.price = p; o.st = 'accepted'; coSys(o, `${nm} 同意了新报价 ${cny(p)}`); coSim(o, 'accepted'); } else { o.st = 'declined'; coSys(o, `${nm}：超出预算了，下次再合作～`); } });
+  if (ev === 'delivered') coLater(o, 2200, () => { if (o.st !== 'delivered') return; o.st = 'done'; o.doneAt = Date.now(); coSys(o, `${nm} 确认验收 · ${cny(coNet(o.price))} 已进入你的待结算`); coSim(o, 'done'); });
+}
+function coDeliverBy(o, u){ if (!['paid','revising'].includes(o.st)) return; const n = (o.deliv?.ver || 0) + 1;
+  o.deliv = {ver:n, by:u, links:[{n:`工程文件 · 第 ${n} 版`, url:`https://pan.example.com/s/ctrlz-${o.id}-v${n}`, code:'8k2m'}], texts:[{n:'交付说明', v:n > 1 ? '按你说的改好了，主要调整在副歌部分。' : '按需求做好了，有想改的地方直接在验收里提。'}], files:[]};
+  o.st = 'delivered'; o.delivAt = Date.now(); coSys(o, `${USERS[u].name} 提交了交付（第 ${n} 版）· ${coDay(o.delivAt + CO_AUTO_DAYS*24*H)}前不处理会自动验收`); }
+function coRateBy(o, u){ if (o.rated?.[u]) return; (o.rated ||= {})[u] = true; const tg = o.from === u ? ['质量高','准时'] : ['付款快','需求清晰'];
+  repOf(ME); REP[ME].reviews.push({u, s:5, svc:o.svc, t:o.from === u ? '交付很快，效果超出预期！' : '需求清楚，付款爽快，合作愉快～', tags:tg, ts:Date.now()}); if (o.to === ME) REP[ME].done++;
+  coSys(o, `${USERS[u].name} 给你打了 ★5`); }
+/* 交付满 7 天没验收 → 自动确认（每次打开页面检查一次） */
+function coAuto(){ CO.orders.forEach(o => { if (o.st === 'delivered' && Date.now() > o.delivAt + CO_AUTO_DAYS*24*H){ o.st = 'done'; o.doneAt = Date.now(); coSys(o, `交付已满 ${CO_AUTO_DAYS} 天，系统自动验收`); } }); coSave(); }
+coAuto();
+/* ---------- 卡片按钮 ---------- */
+const coSum = (o, p) => `<div class="sum co-sum"><div><span class="mut">合作金额</span><span class="num">${cny(p)}</span></div><div><span class="mut">平台服务费 ${CO_FEE*100}%（创作者承担）</span><span class="num">−${cny(p*CO_FEE)}</span></div><div class="tot"><span>${o.to === ME ? '你到手' : 'TA 到手'}</span><b class="num">${cny(coNet(p))}</b></div></div>`;
+Object.assign(ACTIONS, {
+  'co-new': b => { if (needLogin()) return; const u = b.dataset.u, k = b.dataset.k; fxPop(b, 'fx-jelly', 500); haptic(8);
+    if (u === ME){ fxPop(b, 'fx-shake', 300); toast('这是预览：别人点这里会给你发邀约', 'blue', 'user'); return; }
+    const p = CO.orders.find(o => o.from === ME && o.to === u && o.svc === k && ['sent','counter','accepted','paid','delivered','revising'].includes(o.st));
+    if (p){ go('msg-' + u); return; }
+    coForm(u, k, b); },
+  'cf-chip': b => { const g = b.dataset.g, m = b.dataset.m; if (g === 'due') CF.due = b.dataset.v;
+    if (m){ const a = CF.f[g] ||= [], i = a.indexOf(b.dataset.v); i < 0 ? a.push(b.dataset.v) : a.splice(i, 1); b.classList.toggle('on', i < 0); }
+    else { $$(`[data-act="cf-chip"][data-g="${g}"]`).forEach(c => c.classList.toggle('on', c === b)); if (g !== 'due') CF.f[g] = b.dataset.v; }
+    fxPop(b, 'fx-jelly', 400); },
+  'cf-bud': b => { const i = $('#cfB'); i.value = b.dataset.v; $$('[data-act="cf-bud"]').forEach(c => c.classList.toggle('on', c === b)); fxPop(b, 'fx-jelly', 400); fxPop(i, 'fx-up', 400); coBudHint(); },
+  'co-view': b => coView(CO_BY(b.dataset.id)),
+  'co-a': (b, e) => { const o = CO_BY(b.dataset.id); if (!o) return; const a = b.dataset.a, u = coOther(o), nm = esc(USERS[u].name); haptic(8);
+    if (a === 'chat'){ closeSheet(); const fill = () => { const i = $('#cvIn'); if (i){ i.value = `关于「${o.title}」：`; autoGrow(i); i.focus(); i.setSelectionRange(i.value.length, i.value.length); } };
+      if (CUR.key === 'msg|' + u) fill(); else { go('msg-' + u); setTimeout(fill, 450); } return; }
+    if (a === 'accept') return sheet(`<h3>接下「${esc(o.title)}」</h3>${o.price == null ? `<p class="mut">${o.svc === 'co' ? '分成合作不经过托管，接下后直接开工。' : '对方没写预算，接下前先改价报个价吧。'}</p>` : coSum(o, o.price)}<p class="co-safe">${IC.lock}对方付款后钱由平台托管，验收后打给你 · 含 ${CO_FREE_REV} 次免费修改</p>${o.price == null && o.svc !== 'co' ? `<button class="pill lg" data-act="co-a" data-a="counter" data-id="${o.id}">报个价</button>` : `<button class="pill lg" data-act="co-do" data-a="accept" data-id="${o.id}">确认接下</button>`}`);
+    if (a === 'decline') return sheet(`<h3>婉拒邀约</h3><p class="mut" style="font-size:14px">选个理由，${nm} 会收到一条礼貌的回复</p><div class="chips">${['时间排不开','预算不太合适','不太擅长这个方向','其他'].map((v, i) => `<button class="chip ${i ? '' : 'on'}" data-act="co-why" data-v="${v}">${v}</button>`).join('')}</div><button class="pill lg" data-act="co-do" data-a="decline" data-id="${o.id}">婉拒</button>`);
+    if (a === 'counter'){ const cur = o.offers?.at(-1)?.price ?? o.budget, x = svcsOf(ME).find(s => s.k === o.svc), base = cur || x?.from || 1000;
+      return sheet(`<h3>改价</h3><p class="mut" style="font-size:14px">${nm} 的预算 ${cny(o.budget)}${x?.from ? ` · 你的起价 ${cny(x.from)}` : ''}</p><div class="cf-bud"><i>¥</i><input class="inp num" id="coCp" inputmode="numeric" value="${base}" aria-label="新报价"></div>
+        <div class="chips">${[[x?.from, '我的起价'], [Math.round(base*1.1/100)*100, '+10%'], [Math.round(base*1.2/100)*100, '+20%']].filter(([v]) => v).map(([v, l]) => `<button class="chip" data-act="co-cpq" data-v="${v}">${l} ¥${v.toLocaleString()}</button>`).join('')}</div>
+        <textarea class="inp" id="coCn" rows="2" placeholder="说一下为什么（可选）：工作量、修改次数、交付时间…"></textarea><div id="coCs"></div><button class="pill lg" data-act="co-do" data-a="counter" data-id="${o.id}">发送新报价</button>`, d => { const i = $('#coCp', d), s = $('#coCs', d); const up = () => { i.value = i.value.replace(/\D/g, '').slice(0, 7); s.innerHTML = +i.value ? coSum(o, +i.value) : ''; }; i.addEventListener('input', up); up(); }); }
+    if (a === 'withdraw') return sheet(`<h3>撤回邀约？</h3><p class="mut" style="font-size:14px">${nm} 那边的卡片会显示「已撤回」</p><button class="pill lg" data-act="co-do" data-a="withdraw" data-id="${o.id}">撤回</button>`);
+    if (a === 'agree'){ const p = o.offers.at(-1).price; o.price = p; o.st = 'accepted'; coSys(o, `你同意了新报价 ${cny(p)}`); coRefresh(o); burst(e.clientX, e.clientY, ['pink','yellow']); return; }
+    if (a === 'reject'){ o.st = 'declined'; coSys(o, '你没有接受新报价'); coRefresh(o, 'fx-dn'); return; }
+    if (a === 'pay') return coPay(o);
+    if (a === 'deliver') return coDeliverForm(o);
+    if (a === 'deliv') return coDelivView(o);
+    if (a === 'confirm') return sheet(`<h3>确认验收</h3>${coSum(o, o.price)}<p class="mut" style="font-size:13px;line-height:1.6">确认后平台把钱打给 ${nm}，这一步不能撤回。还想改的话先「申请修改」（剩 ${Math.max(0, CO_FREE_REV - o.rev)} 次免费）。</p><button class="pill lg" data-act="co-do" data-a="confirm" data-id="${o.id}">确认验收，打款给 TA</button>`);
+    if (a === 'revise'){ if (o.rev >= CO_FREE_REV){ fxPop(b, 'fx-shake', 300); toast('免费修改用完了，可以在私信里和 TA 商量加价', 'orange', 'chat'); return; }
+      return sheet(`<h3>申请修改 · 第 ${o.rev + 1} 次</h3><p class="mut" style="font-size:14px">还剩 ${CO_FREE_REV - o.rev} 次免费修改</p><textarea class="inp" id="coRv" rows="4" placeholder="具体要改哪里：时间点、参考、想要的感觉…"></textarea><button class="pill lg" data-act="co-do" data-a="revise" data-id="${o.id}">发给 TA</button>`); }
+    if (a === 'rate') return coRateForm(o);
+    if (a === 'dispute') return sheet(`<h3>申请平台介入</h3><p class="mut" style="font-size:14px;line-height:1.6">托管的钱会先冻结，客服 24 小时内联系双方，根据聊天记录和交付内容处理。</p><div class="chips">${['对方迟迟不交付','交付和约定不符','对方不验收也不回复','其他'].map((v, i) => `<button class="chip ${i ? '' : 'on'}" data-act="co-why" data-v="${v}">${v}</button>`).join('')}</div><textarea class="inp" id="coDp" rows="3" placeholder="补充说明（可选）"></textarea><button class="pill lg" data-act="co-do" data-a="dispute" data-id="${o.id}">提交申请</button>`);
+  },
+  'co-why': b => { $$('[data-act="co-why"]').forEach(c => c.classList.toggle('on', c === b)); fxPop(b, 'fx-jelly', 400); },
+  'co-cpq': b => { const i = $('#coCp'); i.value = b.dataset.v; i.dispatchEvent(new Event('input')); fxPop(b, 'fx-jelly', 400); },
+  /* 在面板里确认后的真正动作 */
+  'co-do': (b, e) => { const o = CO_BY(b.dataset.id), a = b.dataset.a, u = coOther(o), nm = USERS[u].name, r = b.getBoundingClientRect(), X = e?.clientX || r.left + r.width/2, Y = e?.clientY || r.top + r.height/2;
+    if (a === 'accept'){ o.st = o.price == null ? 'paid' : 'accepted'; coSys(o, o.price == null ? '你接下了邀约 · 分成合作，直接开工' : `你接下了邀约 · 等 ${nm} 担保付款 ${cny(o.price)}`); closeSheet(); burst(X, Y, ['pink','yellow','blue']); coRefresh(o, 'fx-jelly'); if (o.price != null) coSim(o, 'accepted'); return; }
+    if (a === 'decline'){ const why = $('[data-act="co-why"].on')?.dataset.v || ''; o.st = 'declined'; coSys(o, `你婉拒了邀约${why ? '：' + why : ''}`); closeSheet(); coRefresh(o, 'fx-dn'); return; }
+    if (a === 'counter'){ const p = +$('#coCp').value; if (!p){ fxPop($('#coCp'), 'fx-shake', 300); return; } (o.offers ||= []).push({by:ME, price:p, note:$('#coCn').value.trim(), ts:Date.now()}); o.v++; o.st = 'counter'; coCardPush(o, ME); closeSheet(); coRefresh(o); coSim(o, 'counter'); return; }
+    if (a === 'withdraw'){ o.st = 'withdrawn'; coSys(o, '你撤回了邀约'); closeSheet(); coRefresh(o, 'fx-dn'); return; }
+    if (a === 'confirm'){ o.st = 'done'; o.doneAt = Date.now(); coSys(o, `你确认验收 · ${cny(coNet(o.price))} 已打给 ${nm}`); coRefresh(o); coSim(o, 'done');
+      const sh = $('#layer .sheet'); sh.innerHTML = `<button class="x-close" data-act="close" aria-label="关闭">${IC.x}</button><div class="done"><span class="stamp big pop" style="--sc:var(--green)">DONE<small>合作完成</small></span><b style="font-size:18px;margin-top:10px">「${esc(o.title)}」完成了</b><span class="mut" style="font-size:14px">给 ${esc(nm)} 打个分吧，好评度会显示在 TA 的主页</span></div>${coRateBody(o)}`;
+      setTimeout(() => { const s = $('#layer .stamp'); if (s){ const q = s.getBoundingClientRect(); fxShapes(q.left + q.width/2, q.top + q.height/2, 28, 170, ['pink','blue','yellow','orange','green'], 70); fxPop($('#layer .sheet'), 'fx-thud', 400); haptic(16); } }, 140); return; }
+    if (a === 'revise'){ o.rev++; o.st = 'revising'; coSys(o, `你申请了第 ${o.rev} 次修改${$('#coRv').value.trim() ? '：' + $('#coRv').value.trim() : ''}`); closeSheet(); coRefresh(o); coSim(o, 'revise'); return; }
+    if (a === 'dispute'){ o.st = 'dispute'; coSys(o, `已申请平台介入：${$('[data-act="co-why"].on')?.dataset.v || ''} · 托管的钱已冻结`); closeSheet(); coRefresh(o); return; }
+  },
+  'co-paygo': b => { const o = CO_BY(b.dataset.id), sh = $('#layer .sheet');
+    sh.innerHTML = `<div class="done"><div class="ring-p" id="rp" style="--p:0"></div><b style="font-size:18px">正在等待${UI.pay}…</b></div>`;
+    const t0 = performance.now(), tick = now => { const k = Math.min(1, (now - t0)/1200), r = $('#rp'); if (!r) return; r.style.setProperty('--p', k*100); if (k < 1) requestAnimationFrame(tick); else done(); }; requestAnimationFrame(tick);
+    const done = () => { o.st = 'paid'; o.paidAt = Date.now(); o.pay = UI.pay; coSys(o, `你已担保付款 ${cny(o.price)} · 钱在平台，验收后才打给 ${USERS[coOther(o)].name}`); coRefresh(o); coSim(o, 'paid'); sfx('ok');
+      sh.innerHTML = `<button class="x-close" data-act="close" aria-label="关闭">${IC.x}</button><div class="done"><span class="stamp big pop" style="--sc:var(--blue)">HELD<small>平台托管</small></span><b style="font-size:20px;margin-top:10px">${cny(o.price)} 已托管</b><span class="mut" style="font-size:14px;text-align:center">验收后才会打给 ${esc(USERS[coOther(o)].name)} · 交付后 ${CO_AUTO_DAYS} 天不处理自动验收</span></div><button class="pill lg lt" data-act="close">好的</button>`;
+      setTimeout(() => { const s = $('#layer .stamp'); if (s){ const q = s.getBoundingClientRect(); fxShapes(q.left + q.width/2, q.top + q.height/2, 22, 150, ['blue','yellow','pink'], 70); fxPop($('#layer .sheet'), 'fx-thud', 400); haptic(16); } }, 140); }; },
+  'co-dsend': b => { const o = CO_BY(b.dataset.id), url = $('#cdU').value.trim(), code = $('#cdC').value.trim(), txt = $('#cdT').value.trim(), f = $('#cdF').files?.[0];
+    if (!url && !txt && !f){ fxPop($('#cdU'), 'fx-shake', 300); toast('至少放一个链接、文件或文字说明', 'orange', 'link'); return; }
+    const n = (o.deliv?.ver || 0) + 1; o.deliv = {ver:n, by:ME, links:url ? [{n:`交付 · 第 ${n} 版`, url, code}] : [], texts:txt ? [{n:'交付说明', v:txt}] : [], files:f ? [f.name] : []};
+    o.st = 'delivered'; o.delivAt = Date.now(); coSys(o, `你提交了交付（第 ${n} 版）· ${coDay(o.delivAt + CO_AUTO_DAYS*24*H)}前 TA 不处理会自动验收`);
+    const r = b.getBoundingClientRect(); closeSheet(); coFlyToMsg(r, SVC_DEF[o.svc].c); coRefresh(o, 'fx-jelly'); coSim(o, 'delivered'); },
+  'co-star': b => { const n = +b.dataset.v; $$('.co-rate [data-act="co-star"]').forEach((s, i) => { const on = i < n; s.classList.toggle('on', on); if (on) setTimeout(() => fxPop(s, 'fx-up', 500), i*60); }); $('.co-rate').dataset.s = n; haptic(6);
+    const l = $('#coRl'); if (l) l.textContent = ['', '不太满意', '一般', '还不错', '很满意', '超出预期'][n]; },
+  'co-tag': b => { b.classList.toggle('on'); fxPop(b, 'fx-jelly', 400); },
+  'co-rsend': b => { const o = CO_BY(b.dataset.id), box = $('.co-rate'), s = +box.dataset.s, u = coOther(o); if (!s){ fxPop(box.querySelector('.co-sts'), 'fx-shake', 300); toast('先点星星打分', 'orange', 'star'); return; }
+    repOf(u); REP[u].reviews.push({u:ME, s, svc:o.svc, t:$('#coRt').value.trim() || ['', '不太满意', '一般', '还不错', '很满意', '超出预期'][s], tags:$$('.co-rate [data-act="co-tag"].on').map(t => t.textContent), ts:Date.now()}); if (o.from === ME) REP[u].done++;
+    (o.rated ||= {})[ME] = true; coSys(o, `你给 ${USERS[u].name} 打了 ★${s}`); const r = b.getBoundingClientRect(); burst(r.left + r.width/2, r.top + r.height/2, ['yellow','pink']); closeSheet(); toast('评价已发布，会显示在 TA 的主页', 'green'); coRefresh(o); if (!o.rated[u]) coSim(o, 'rated'); }
+});
+function coPay(o){ UI.pay = UI.pay || '微信支付';
+  sheet(`<h3>担保付款</h3><div class="co-pay c-${SVC_DEF[o.svc].c}"><span class="co-g">${svcIcon(o.svc)}</span><div style="min-width:0"><b>${esc(o.title)}</b><span class="mut2">${SVC_DEF[o.svc].n} · ${esc(USERS[coOther(o)].name)}</span></div></div>
+    <div class="pays">${[['微信支付','green'],['支付宝','blue'],['银行卡','ink']].map(([m, c]) => `<button data-act="paym" data-m="${m}" class="${UI.pay === m ? 'on' : ''}"><i style="background:${INK[c]}"></i>${m}</button>`).join('')}</div>
+    <div class="sum"><div><span class="mut">合作金额</span><span class="num">${cny(o.price)}</span></div><div><span class="mut">平台服务费</span><span class="num">由创作者承担</span></div><div class="tot"><span>你需支付</span><b class="num">${cny(o.price)}</b></div></div>
+    <p class="co-safe">${IC.lock}钱先放在平台，你确认验收后才打给 TA · 含 ${CO_FREE_REV} 次免费修改 · 交付后 ${CO_AUTO_DAYS} 天不处理自动验收 · 有问题可以申请平台介入</p>
+    <button class="pill lg" data-act="co-paygo" data-id="${o.id}" id="payBtn">${payVerb(UI.pay)} ${cny(o.price)}</button>`); }
+function coDeliverForm(o){
+  sheet(`<h3>${o.st === 'revising' ? `提交修改版（第 ${(o.deliv?.ver || 0) + 1} 版）` : '提交交付'}</h3><p class="mut" style="font-size:14px">链接、文件、文字说明至少放一样；TA 验收后平台打款，${CO_AUTO_DAYS} 天不处理自动验收</p>
+    <label class="cf-l"><span>网盘 / 下载链接</span><input class="inp" id="cdU" placeholder="https://" autocomplete="off"></label>
+    <label class="cf-l"><span>提取码<em>可选</em></span><input class="inp" id="cdC" autocomplete="off" style="max-width:160px"></label>
+    <label class="cf-l"><span>文件<em>可选</em></span><input type="file" id="cdF" class="inp" style="padding-top:11px"></label>
+    <label class="cf-l"><span>交付说明</span><textarea class="inp" id="cdT" rows="3" placeholder="改了什么、文件怎么用…"></textarea></label>
+    <button class="pill lg" data-act="co-dsend" data-id="${o.id}">${IC.up}提交交付</button>`); }
+function coDelivView(o){ const d = o.deliv; if (!d){ toast('还没有交付', 'orange'); return; }
+  sheet(`<h3>交付 · 第 ${d.ver} 版</h3><div class="dlx" style="margin:0">${d.links.map(l => `<div class="dlx-r"><div class="dlx-h"><b>${esc(l.n)}</b>${l.code ? `<span class="dlx-code">提取码 <b>${esc(l.code)}</b></span>` : ''}</div><div class="dlx-v">${esc(l.url)}</div><div class="dlx-a"><button class="pill sm" data-act="dl-copy" data-v="${esc(l.url + (l.code ? ' 提取码：' + l.code : ''))}" data-t="链接">复制链接</button></div></div>`).join('')}
+    ${d.files.map(f => `<div class="dlx-r"><div class="dlx-h"><b>${esc(f)}</b></div><div class="dlx-a"><button class="pill sm" data-act="fake-dl">${IC.dl}下载</button></div></div>`).join('')}
+    ${d.texts.map(x => `<div class="dlx-r"><div class="dlx-h"><b>${esc(x.n)}</b></div><div class="dlx-v">${esc(x.v)}</div></div>`).join('')}</div>
+    ${o.st === 'delivered' && o.from === ME ? `<div class="co-a">${coActs(o)}</div>` : ''}`); }
+function coRateBody(o){ const u = coOther(o);
+  return `<div class="co-rate" data-s="0"><div class="co-sts">${[1,2,3,4,5].map(i => `<button data-act="co-star" data-v="${i}" aria-label="${i} 星">${RIC.starF}</button>`).join('')}</div><span class="co-rl" id="coRl">点星星打分</span>
+    <div class="chips">${CO_TAGS.filter(t => o.from === ME ? !['付款快','需求清晰'].includes(t) : !['质量高','专业'].includes(t)).map(t => `<button class="chip" data-act="co-tag">${t}</button>`).join('')}</div>
+    <textarea class="inp" id="coRt" rows="2" placeholder="说两句（可选）"></textarea><button class="pill lg" data-act="co-rsend" data-id="${o.id}">发布评价</button></div>`; }
+function coRateForm(o){ sheet(`<h3>评价 ${esc(USERS[coOther(o)].name)}</h3><p class="mut" style="font-size:14px">「${esc(o.title)}」· 评价会显示在 TA 主页的「合作」里</p>${coRateBody(o)}`); }
+function coView(o){ if (!o) return; const D = SVC_DEF[o.svc], u = coOther(o), sys = o.log.filter(e => e.k === 'sys');
+  sheet(`<div class="cf-top"><span class="co-g c-${D.c}">${svcIcon(o.svc)}</span><div style="min-width:0"><span class="lab">${D.n} · ${o.from === ME ? '我发出的' : '我收到的'}</span><h3>${esc(o.title)}</h3></div></div>
+    <div class="co-dt"><span class="tag ${CO_ST[o.st][0]}">${CO_ST[o.st][1]}</span><span>${o.from === ME ? '发给' : '来自'} ${esc(USERS[u].name)} · ${coDay(o.ts)}</span></div>
+    ${o.note ? `<p style="font-size:14.5px;line-height:1.65;white-space:pre-line">${esc(o.note)}</p>` : ''}
+    <dl class="co-f full">${[[o.svc === 'co' ? '方式' : '预算', o.svc === 'co' ? '分成合作' : cny(o.budget)], ['成交价', o.price != null && !['sent','counter'].includes(o.st) ? cny(o.price) : null], ['截止', o.due], ...D.f.map(([k, l]) => [l, coFv(o, k)]), ['修改', `已用 ${o.rev} / ${CO_FREE_REV} 次免费`]].filter(([, v]) => v).map(([l, v]) => `<div><dt>${l}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
+    ${o.price != null && !['sent','counter','declined','withdrawn'].includes(o.st) ? coSum(o, o.price) : ''}
+    ${sys.length ? `<div class="co-tl">${sys.map(e => `<div><i></i><span>${esc(e.text)}</span><time>${ago(e.ts)}</time></div>`).join('')}</div>` : ''}
+    <div class="co-a">${coActs(o)}${CUR.key === 'msg|' + u ? '' : `<a class="pill sm lt" data-go="msg-${u}">去私信</a>`}</div>
+    ${['paid','delivered','revising'].includes(o.st) && o.price != null ? `<button class="co-dsp" data-act="co-a" data-a="dispute" data-id="${o.id}">遇到问题？申请平台介入</button>` : ''}`); }
+
 /* ================= 我 ================= */
 function myComments(){ const out = []; POSTS.forEach(p => { (COMMENTS[p.id] || []).concat(UI.newCmts[p.id] || []).forEach(c => { if (c.u === ME) out.push({p, c}); }); }); return out.reverse(); }
 function meHead(){
@@ -5286,6 +5749,7 @@ function meHead(){
     </div></div>`;
 }
 function meTabBody(t){
+  if (t === 'collab') return coProfile(ME);   // 自己主页上的「合作」= 别人看到的样子（预览，不放编辑入口）
   if (t === 'works'){ const ws = POSTS.filter(p => p.author === ME); return ws.length ? `<div class="mason">${ws.map(postCard).join('')}</div>` : `<div class="empty"><div class="x">空</div><span>还没有作品</span><button class="pill" data-act="compose">${IC.plus}发第一篇</button></div>`; }
   if (t === 'cmts'){ const cs = myComments(); return cs.length ? `<div class="mcl">${cs.map(({p, c}) => `<a class="mc" data-act="goto-cmt" data-p="${p.id}" data-t="${esc(c.t)}"><span class="mc-t"><p>${esc(c.t)}</p><span>评论了 ${esc(USERS[p.author].name)} 的${inStream(p) ? '声音' : '帖子'} · ${c.time} · ♥ ${c.likes}</span></span>${miniThumb(p, 'mc-th')}</a>`).join('')}</div>` : `<div class="empty"><div class="x">空</div><span>还没有评论过</span></div>`; }
   if (t === 'favs'){ const fs = POSTS.filter(p => STATE.favs.has(p.id)), fp = PRODUCTS.filter(p => STATE.favs.has(p.id) && onSale(p)); const sub = UI.favSub || 'post';
@@ -5298,11 +5762,11 @@ function meTabBody(t){
   return '';
 }
 function meProfile(){
-  const t = ['works','cmts','favs','hist'].includes(UI.meTab) ? UI.meTab : 'works';
+  const co = svcsOf(ME).length, t = ['works','cmts','favs','hist'].includes(UI.meTab) || (UI.meTab === 'collab' && co) ? UI.meTab : 'works';
   onMount(root => mountWaves(root));
-  const n = {works:POSTS.filter(p => p.author === ME).length, cmts:myComments().length, favs:[...STATE.favs].length, hist:(STATE.hist || []).length};
+  const n = {works:POSTS.filter(p => p.author === ME).length, collab:co, cmts:myComments().length, favs:[...STATE.favs].length, hist:(STATE.hist || []).length};
   return `<div class="wrap mep">${meHead()}
-    <div class="mtabs" role="tablist">${[['works','作品'],['cmts','评论'],['favs','收藏'],['hist','历史']].map(([k, l]) => `<button role="tab" class="${t === k ? 'on' : ''}" data-act="me-tab" data-v="${k}">${l}<i>${n[k]}</i></button>`).join('')}</div>
+    <div class="mtabs" role="tablist">${[['works','作品'], ...(co ? [['collab','合作']] : []), ['cmts','评论'],['favs','收藏'],['hist','历史']].map(([k, l]) => `<button role="tab" class="${t === k ? 'on' : ''}" data-act="me-tab" data-v="${k}">${l}<i>${n[k]}</i></button>`).join('')}</div>
     <div class="mtb">${meTabBody(t)}</div></div>`;
 }
 Object.assign(ACTIONS, {
@@ -5326,7 +5790,7 @@ Object.assign(ACTIONS, {
 
 ROUTES.me = arg => {
   if (STATE.role === 'guest' || STATE.role === 'admin' || ['lib','orders','settings','edit'].includes(arg)) return meLegacy(arg || 'lib');
-  if (['works','cmts','favs','hist'].includes(arg)) UI.meTab = arg;
+  if (['works','cmts','favs','hist','collab'].includes(arg)) UI.meTab = arg;
   return meProfile();
 };
 /* ================= 账号：登录 / 注册 / 切换 / 退出（全部模拟） =================
@@ -5627,7 +6091,7 @@ function dismissSheet(sh){
   document.addEventListener('touchstart', e => {
     s = null; if (!isMob() || e.touches.length !== 1) return; const sh = target(e.target); if (!sh) return;
     const t = e.touches[0], r = sh.getBoundingClientRect(), kind = sh.classList.contains('drw') ? 'drw' : sh.classList.contains('rl-cm') ? 'rcm' : 'sheet';
-    const sc = kind === 'rcm' ? $('.rl-cm-l', sh) : (e.target.closest && e.target.closest('.pk-pane')) || sh;
+    const sc = kind === 'rcm' ? $('.rl-cm-l', sh) : (e.target.closest && e.target.closest('.pk-pane, .cf-body')) || sh;
     s = {sh, kind, sc, x:t.clientX, y:t.clientY, top:t.clientY - r.top < 64, d:0, on:false, dead:false, lt:performance.now(), ld:0, v:0};
   }, {passive:true});
   document.addEventListener('touchmove', e => {
