@@ -4680,7 +4680,7 @@ function shareSheet(k, id){
   sheet(`<h3>分享给</h3>
     <div class="shr-card ${k === 'user' ? 'u' : ''}">${card}</div>
     <div class="shr-to">${to.length ? to.map(uid => `<button data-act="shr-pick" data-id="${uid}">${av(uid, 'md')}<span>${esc(USERS[uid].name)}</span><i>${IC.check}</i></button>`).join('') : '<p class="mut2" style="font-size:13px;margin:8px 0">还没有私信联系人，可以先复制链接发给朋友</p>'}</div>
-    <div class="shr-msg"><input class="inp" id="shrMsg" placeholder="先选人，再附一句话（可不填）" autocomplete="off" disabled><button class="pill pk" data-act="shr-send" id="shrGo" disabled>发送</button></div>
+    <div class="shr-msg"><input class="inp" id="shrMsg" aria-label="附言（可不填）" autocomplete="off" disabled><button class="pill pk" data-act="shr-send" id="shrGo" disabled>发送</button></div>
     <div class="shr-apps">
       <button data-act="shr-copy"><span class="g">${IC.link}</span>复制链接</button>
       <button data-act="shr-sys"><span class="g">${IC.share}</span>其它 App</button>
@@ -4694,7 +4694,7 @@ Object.assign(ACTIONS, {
   'shr-sys': b => { const {k, id} = b.closest('.sheet')._obj, u = shareUrl(k, id), o = k === 'user' ? USERS[id] : k === 'post' ? POST(id) : P(id), title = k === 'user' ? `${o.name} 的主页 · CTRL Z` : `${o.title} · CTRL Z`;
     if (navigator.share){ navigator.share({title, text:title, url:u}).then(() => closeSheet(), () => {}); return; }
     (fallbackCopy(u) ? toast('链接已复制，粘贴到其它 App 就能分享') : toast(u, 'blue')); closeSheet(); },
-  'shr-pick': b => { const d = b.closest('.sheet'), id = b.dataset.id; d._pick.has(id) ? d._pick.delete(id) : d._pick.add(id); b.classList.toggle('on', d._pick.has(id)); const g = $('#shrGo'), m = $('#shrMsg'); g.disabled = m.disabled = !d._pick.size; m.placeholder = d._pick.size ? '附一句话（可不填）' : '先选人，再附一句话（可不填）'; g.textContent = d._pick.size > 1 ? `发送 ${d._pick.size}` : '发送'; },
+  'shr-pick': b => { const d = b.closest('.sheet'), id = b.dataset.id; d._pick.has(id) ? d._pick.delete(id) : d._pick.add(id); b.classList.toggle('on', d._pick.has(id)); const g = $('#shrGo'), m = $('#shrMsg'); g.disabled = m.disabled = !d._pick.size; g.textContent = d._pick.size > 1 ? `发送 ${d._pick.size}` : '发送'; },
   'shr-send': b => { const d = b.closest('.sheet'), {k, id} = d._obj, msg = $('#shrMsg').value.trim(), to = [...d._pick];
     to.forEach(uid => { const c = CHATS[uid] ||= []; c.push(k === 'user' ? {me:true, t:'text', text:`推荐个主页：${USERS[id].name} ${shareUrl(k, id)}`, ts:Date.now()} : {me:true, t:k, ref:id, ts:Date.now()}); if (msg) c.push({me:true, t:'text', text:msg, ts:Date.now() + 1}); autoReply(uid); });
     closeSheet(); toast(`已发送给 ${to.map(u => USERS[u].name).join('、')}`, 'pink'); msgBadge(); if (CUR.key?.startsWith('msg|')) rerender(); }
