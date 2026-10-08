@@ -71,6 +71,20 @@
 - 版权：举报原因含「版权」必须附证明；下架时通知里带 `{act:'counter', rp}`，作者在官方通知里提交反通知（`counter`）→ 后台举报队列「反通知」→ 恢复内容 / 维持下架，结果通知双方。`notify(uid, 标题, 正文, extra)` 的 extra 会合进消息
 - 媒体机审接口位 `modScan()`：带图片 / 音频的帖子先发后审进「待审核」，接内容安全接口后由回调决定
 
+## 功能补齐（第二轮）
+- 个性化推荐开关 `STATE.settings.pers`（设置「账号与隐私」）：关掉后首页「推荐」按发布时间排（`byTime` / `relTs` 把「2 小时前 / 昨天 / 10-02」换成时间戳），页顶提示 `.pers-off`
+- 不存在 / 已下架：`missing(标题, 说明, 按钮)` 出 404 页，不要悄悄跳走。商品不存在 / 已下架（没买过）→ 404；已下架但买过或是自己的 → 正常显示 + 「已下架」提示；不存在的用户 → 404（以前会显示成自己的主页）；不存在的帖子 → toast
+- 上架「原创 / 授权承诺」`#upOrig` 默认不勾，提交时必须勾
+- 自己的帖子：「⋯」里编辑 / 删除（`post-edit` / `post-del`，存 `MINE`）；自己的评论能删（`STATE.cdel`，`cmtsOf` 过滤），别人的评论能举报（`report` data-k="cmt" data-p=帖子），评论操作统一用 `cmtCtl(pid, c)`
+- 卖家商品管理：工作室「我的产品」→「管理」（`sp-manage`）：改价、上下架（`p.selfOff`，`onSale` 已排除）、改标题介绍（进复审）、上传新版本（`sp-ver`，`p.ver` / `p.vlog`）。改动存 `PE`，启动时套回 `PRODUCTS`。已购资源「有新版本」用 `verNew(p)`，下载过（`dlMark`）就算看过
+- 商品评价：买过才能写（`prv-write`，复用合作评价的 `.co-rate` 星星），`PRV` 存本地；商品页 `prvBox(p)`，示例评价由 `prvOf` 固定生成
+- 订单：整行点开详情 `ordSheet(no)`（查看资源 / 保存凭证 `receiptPNG` / 申请发票 / 联系卖家 / 退款）；发票 `ADM.invoices`，后台「发票」页签（财务）开具或驳回并通知；付款成功给买家发「购买成功」、给卖家发「有新订单」（在 `grant`）
+- 下载文件名一律用英文（部分浏览器会丢掉中文下载名）；生成文件要在点击手势里同步触发下载
+- 账号安全：换绑手机号（`acc-phone`，复用登录的短信下拉 `smsShow`）、登录设备（`acc-devs` / `DEVS`）
+- 私信：自己发的文字 / 图片 2 分钟内可撤回（`msg-rc`，`m.rc`）；会话「⋯」里删除聊天记录 / 举报 / 拉黑，删过的会话记在 `DELC`，启动时 `delcApply()`（要在合作卡片注入私信之后）
+- 别人主页的「关注者 / 关注中」可点开（`u-list` / `relList`），自己的仍用 `me-list`
+- 点击分发是「data-act 优先于 data-go」：整行可点的列表里不要再放 data-go 链接，放到详情里
+
 ## 材质层（液态玻璃 / 毛玻璃 / 3D）
 - 液态玻璃折射 `LG`：思路来自 shuding/liquid-glass（MIT），SVG 位移贴图做 `backdrop-filter:url()`，只有 Chromium 生效；其它浏览器用 CSS 版（`.lgx` / `.lg-rim` / 高光边）。要加折射的元素登记在 `LG` 的 `SPEC` 里
 - **坑**：带 `view-transition-name`（`.tb`、`.hd`、`.player`）或 filter / opacity / mask 的元素是「背景根」，它里面的子元素用 backdrop-filter 看不到页面。所以底栏的模糊和折射加在 `.tb` 自己身上，`.tb-glass` 只负责着色
