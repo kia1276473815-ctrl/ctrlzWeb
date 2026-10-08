@@ -2193,10 +2193,22 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 
 /* ---- 商城分类：选中的那张包一层果冻玻璃（厚边折射 + 高光），戳一下压扁回弹、滑动列表会滞后晃动 ---- */
 .cat.on,.cat.all.on{box-shadow:0 10px 22px -12px var(--lg-sh);transform:translateX(var(--jx,0px)) skewX(var(--jsk,0deg)) scale(var(--jsx,1),var(--jsy,1));transform-origin:var(--jox,50%) var(--joy,50%);transition:none}
-.cjelly{position:absolute;inset:0;z-index:3;border-radius:inherit;pointer-events:none;background:rgba(255,255,255,.05);backdrop-filter:blur(.4px) saturate(1.25) brightness(1.04);-webkit-backdrop-filter:blur(.4px) saturate(1.25) brightness(1.04);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.5),inset 0 2px 1px rgba(255,255,255,.9),inset 0 -2px 1px rgba(255,255,255,.3),inset 0 12px 18px -12px rgba(255,255,255,.65),inset 0 -16px 22px -14px rgba(20,20,24,.35),inset 8px 0 14px -10px rgba(255,255,255,.45)}
-.cjelly::before{content:"";position:absolute;left:9%;top:3%;width:48%;height:15%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.5),rgba(255,255,255,0));transform:rotate(-8deg)}
-.cjelly .lg-rim{padding:7px}
+/* 选中的分类卡 = 一块液态玻璃盖在纸上：中间几乎全透明（不加乳白、不加大块高光，避免塑料感），
+   只有边缘折射（LG）+ 发丝级的镜面高光边 + 一点点粉蓝色散，外圈一道墨色描边表示选中 */
+.cjelly{position:absolute;inset:0;z-index:3;border-radius:inherit;pointer-events:none;overflow:hidden;background:none;backdrop-filter:saturate(1.15) brightness(1.03);-webkit-backdrop-filter:saturate(1.15) brightness(1.03);
+  box-shadow:inset 0 0 0 2.5px var(--ink),inset 0 0 0 3.5px rgba(255,255,255,.55),inset 2px 2px 0 2.5px rgba(255,255,255,.75),inset -1px -1.5px 0 3px rgba(255,255,255,.22),inset 5px 0 7px -3px rgba(255,79,167,.35),inset -5px 0 7px -3px rgba(46,91,255,.35)}
+/* 选中那一下的一道光：斜着扫过玻璃一次 */
+.cjelly::before{content:"";position:absolute;inset:-10% -70%;background:linear-gradient(112deg,transparent 42%,rgba(255,255,255,.5) 50%,transparent 58%);opacity:0;pointer-events:none}
+.cjelly .lg-rim{padding:6px}
+/* 从纸变成玻璃：纸面颗粒退下去，玻璃淡入并从略大落到贴合，一道光扫过（只动 opacity / transform） */
+.cat.on.grain::after{opacity:.14}
+.cat.fx-in.grain::after{animation:fx-paper .6s ease-out both}
+.cat.fx-in .cjelly{animation:fx-glass .5s cubic-bezier(.2,.8,.2,1) both}
+.cat.fx-in .cjelly::before{animation:fx-sweep .95s .12s cubic-bezier(.3,.6,.3,1) both}
+@keyframes fx-paper{from{opacity:.4}to{opacity:.14}}
+@keyframes fx-glass{from{opacity:0;transform:scale(1.04)}to{opacity:1;transform:none}}
+@keyframes fx-sweep{0%{opacity:0;transform:translateX(-60%)}25%{opacity:1}100%{opacity:0;transform:translateX(60%)}}
+html.rm .cat.fx-in *,html.rm .cat.fx-in::after,html.rm .cat.fx-in .cjelly::before{animation:none}
 
 /* 不支持 backdrop-filter 的浏览器：玻璃退回半透明纸色，保证可读 */
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
@@ -2216,14 +2228,13 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 .cat svg.sh .rub-g{transform-box:view-box}
 .cat.on svg.sh.rub{mix-blend-mode:normal;opacity:1;overflow:visible;transform:perspective(320px) rotateX(var(--rrx,0deg)) rotateY(var(--rry,0deg));transition:none}
 
-/* ---- 私信三个快捷入口：果冻玻璃小方块（彩色半透明胶体 + 顶部高光 + 底部透光，按下压扁、松手回弹）。纯 CSS ---- */
-.mq .g{position:relative;width:26px;height:26px;border-radius:8px;isolation:isolate;
-  background:radial-gradient(120% 90% at 50% 105%,color-mix(in srgb,var(--c) 55%,#fff) 0%,transparent 55%),linear-gradient(165deg,color-mix(in srgb,var(--c) 78%,#fff) 0%,var(--c) 48%,color-mix(in srgb,var(--c) 82%,#000) 100%);
-  box-shadow:inset 0 1px 1px rgba(255,255,255,.9),inset 0 0 0 .5px rgba(255,255,255,.55),inset 0 -3px 4px -1px color-mix(in srgb,var(--c) 60%,#000),0 4px 8px -3px color-mix(in srgb,var(--c) 70%,transparent);
-  transition:transform .34s cubic-bezier(.3,1.8,.5,1)}
-.mq .g::after{content:"";position:absolute;z-index:1;left:3px;right:3px;top:2px;height:42%;border-radius:6px 6px 50% 50%/6px 6px 45% 45%;background:linear-gradient(rgba(255,255,255,.75),rgba(255,255,255,.08));pointer-events:none}
-.mq .g svg{position:relative;z-index:2;filter:drop-shadow(0 .5px 0 rgba(255,255,255,.5))}
-.mq:active .g{transform:scale(1.16,.8);transition-duration:.12s}
+/* ---- 私信三个快捷入口：奶油软胶小方块（和发布按钮同一种材质：哑光、上亮下暗的柔和体积，没有玻璃反光），按下压扁、松手回弹 ---- */
+.mq .g{position:relative;width:26px;height:26px;border-radius:9px;
+  background:radial-gradient(140% 120% at 50% 0%,color-mix(in srgb,var(--c) 62%,#fff) 0%,var(--c) 52%,color-mix(in srgb,var(--c) 90%,#000) 100%);
+  box-shadow:inset 0 1.5px 2px rgba(255,255,255,.4),inset 0 -2.5px 4px color-mix(in srgb,var(--c) 55%,rgba(60,10,40,.6)),inset 0 0 0 .5px color-mix(in srgb,var(--c) 70%,#000),0 1px 1.5px rgba(20,20,24,.12),0 4px 8px -5px rgba(20,20,24,.35);
+  transition:transform .3s cubic-bezier(.3,1.7,.5,1)}
+.mq .g svg{position:relative}
+.mq:active .g{transform:scale(1.12,.86);transition-duration:.1s}
 html.rm .mq .g{transition:none}
 
 /* 「我」头像后的颗粒渐变色块（和原来的黄色块同位置），加载好之前和不支持时仍是 ::before 的纯黄 */
@@ -2247,6 +2258,9 @@ html.rm .fx-em *{animation:none}
 /* 「我」页签在极窄屏（320）不折行：字不换行，间距收紧 */
 .mtabs button{white-space:nowrap;flex:none}
 @media (max-width:359px){ .mtabs{gap:14px} .mtabs button{font-size:15px;gap:3px} }
+
+/* CONCRETE 海报：被波纹推动的标题字母 */
+.bn-txt h2 .fx-wl{display:inline-block}
 </style>
 
 </head>
@@ -3348,6 +3362,22 @@ SCENES.drums = B => {
   const P = d => ({x:G.x(d.x), y:G.y(d.y), r:d.r*G.u});
   const find = (x, y) => { for (let i = D.length - 1; i >= 0; i--){ const p = P(D[i]); if (Math.hypot(x - p.x, y - p.y) < p.r) return D[i]; } return null; };
   const strike = (d, sound) => { d.s = .9; const p = P(d); ripple(rip, p.x, p.y, p.r, INK[d.c], sound ? 1 : .45); if (sound && AU.init()) AU.drum(d.d, AU.ctx.currentTime, d.tone || 0, AU.bus('tap', .9), 1); };
+  /* 波纹真的会推开周围的东西：每一道波前经过的地方，沿着离开波心的方向鼓出去一下（高斯形的波包，随波纹寿命衰减）。
+     鼓面轮廓、刻纹、鼓名都按点位移；下面的大标题逐个字母、副标题和按钮也被波推一下（只动 transform） */
+  const wv = (x, y) => { let dx = 0, dy = 0; for (const r of rip){ const ex = x - r.x, ey = y - r.y, d = Math.hypot(ex, ey) || 1, k = (d - r.r)/(G.u*.42), a = Math.exp(-k*k)*Math.min(1, Math.max(0, r.life))*G.u*.3; dx += ex/d*a; dy += ey/d*a; } return [dx, dy]; };
+  const ring = (g, cx, cy, R) => { if (!rip.length){ g.beginPath(); g.arc(cx, cy, R, 0, Math.PI*2); return; }
+    const n = Math.max(36, Math.min(96, R*.8|0)); g.beginPath(); for (let i = 0; i < n; i++){ const a = i/n*Math.PI*2, x = cx + Math.cos(a)*R, y = cy + Math.sin(a)*R, [dx, dy] = wv(x, y); i ? g.lineTo(x + dx, y + dy) : g.moveTo(x + dx, y + dy); } g.closePath(); };
+  let TX = null;
+  const txtWave = () => {
+    const h2 = $('.bn-txt h2', B.box); if (!h2 || reduced()) return;
+    if (!TX || TX.h2 !== h2 || B.resized){
+      if (!h2.dataset.wl && !h2.firstElementChild){ h2.innerHTML = [...h2.textContent].map(c => `<span class="fx-wl">${c}</span>`).join(''); h2.dataset.wl = 1; }
+      const els = [...h2.querySelectorAll('.fx-wl'), ...$$('.bn-txt p, .bn-txt .row', B.box)]; els.forEach(e => e.style.transform = '');
+      const br = B.box.getBoundingClientRect();
+      TX = {h2, els: els.map(e => { const r = e.getBoundingClientRect(); return {e, x: r.left + r.width/2 - br.left - B.F.x, y: r.top + r.height/2 - br.top - B.F.y, on: false}; })};
+    }
+    for (const o of TX.els){ const [dx, dy] = wv(o.x, o.y); if (Math.abs(dx) + Math.abs(dy) > .25){ o.e.style.transform = `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px)`; o.on = true; } else if (o.on){ o.e.style.transform = ''; o.on = false; } }
+  };
   return {
     draw(g, W, H, t, dt){
       if (B.resized || lw !== W) layout();
@@ -3355,12 +3385,13 @@ SCENES.drums = B => {
       g.globalCompositeOperation = BL();
       for (const d of D){ d.v += (1 - d.s)*.32; d.v *= .68; d.s += d.v; d.h += ((d === hover ? 1 : 0) - d.h)*.25;
         const p = P(d), r = p.r*d.s*(1 + d.h*.03);
-        g.fillStyle = INK[d.c]; g.beginPath(); g.arc(p.x, p.y, r, 0, Math.PI*2); g.fill();
-        g.strokeStyle = inkA(.28); g.lineWidth = 1.5; for (let k=1;k<4;k++){ g.beginPath(); g.arc(p.x, p.y, r*(1 - k*.2), 0, Math.PI*2); g.stroke(); }
+        g.fillStyle = INK[d.c]; ring(g, p.x, p.y, r); g.fill();
+        g.strokeStyle = inkA(.28); g.lineWidth = 1.5; for (let k=1;k<4;k++){ ring(g, p.x, p.y, r*(1 - k*.2)); g.stroke(); }
         if (d.h > .02){ g.save(); g.globalCompositeOperation = 'source-over'; g.globalAlpha = d.h; g.strokeStyle = INKC(); g.lineWidth = 2.5; g.setLineDash([7, 6]); g.lineDashOffset = -t/40; g.beginPath(); g.arc(p.x, p.y, r + 7, 0, Math.PI*2); g.stroke(); g.restore(); }
-        g.fillStyle = '#141418'; g.font = `800 ${Math.max(10, r*.2)}px Archivo, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(d.l, p.x, p.y); }
+        const [lx, ly] = wv(p.x, p.y); g.fillStyle = '#141418'; g.font = `800 ${Math.max(10, r*.2)}px Archivo, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(d.l, p.x + lx, p.y + ly); }
       g.textAlign = 'start'; g.textBaseline = 'alphabetic';
       drawRipples(g, rip, dt); g.globalCompositeOperation = 'source-over';
+      txtWave();
     },
     hot(x, y){ hover = find(x, y); return hover ? 'sound' : null; },
     down(x, y){ const d = find(x, y); if (d) strike(d, true); },
@@ -3878,6 +3909,9 @@ function mountBanner(root){
       g.drawImage(B.trans.snap, off, 0); g.fillStyle = INK[SLIDES[B.i].c]; g.fillRect(d > 0 ? off + w : off - 14*dpr, 0, 14*dpr, h);
       if (k >= 1) B.trans = null; }
     if (!isDark()) grainify(g, w, h, .5);
+    // 底边渐隐到页面底色：海报的颗粒纸面不再一刀切地接到下面的分类卡上
+    const dk = isDark(); if (B.pcK !== dk){ B.pcK = dk; B.pc = (getComputedStyle(document.body).backgroundColor.match(/\d+/g) || [242, 242, 238]).slice(0, 3).join(','); }
+    const fh = Math.min(h*.16, 80*dpr), fg = g.createLinearGradient(0, h - fh, 0, h); fg.addColorStop(0, `rgba(${B.pc},0)`); fg.addColorStop(.55, `rgba(${B.pc},.6)`); fg.addColorStop(1, `rgb(${B.pc})`); g.fillStyle = fg; g.fillRect(0, h - fh, w, fh);
   }));
 }
 /* ================= 商品封面：模板 × 配色，播放时随音频律动 =================
@@ -4926,7 +4960,7 @@ const LG = (() => {
     ['.tb', {r: 999, bev: 14, amt: .16, extra: 'blur(20px) saturate(1.5) brightness(1.04)'}],
     ['.vbadge, .acv .tag.k', {r: 999, bev: 9, amt: .3, extra: 'blur(1.5px) saturate(1.8) brightness(1.06)'}],
     ['.cv .pbtn, .acv .pbtn', {bev: 16, amt: .34, extra: 'saturate(1.7) brightness(1.08)'}],
-    ['.cjelly', {r: 16, bev: 12, amt: .1, extra: 'saturate(1.25) brightness(1.04)'}]
+    ['.cjelly', {r: 16, bev: 16, amt: .16, extra: 'saturate(1.15) brightness(1.03)'}]
   ];
   function scan(root = document){ if (!ok) return; for (const [sel, o] of SPEC) root.querySelectorAll(sel).forEach(el => apply(el, Object.assign({}, o, {r: Math.min(o.r ?? 999, el.offsetHeight / 2)}))); }
   if (ok) document.documentElement.classList.add('lg-ok');
@@ -5058,6 +5092,66 @@ function foil(st, tone = 'gold'){
 
 /* 「我」头像后面的黄色孔版色块 → 慢慢流动的颗粒渐变（Paper Shaders grainGradient）。
    色块很小，像素数封顶；离开屏幕 Paper 自己暂停；页面重绘后旧的释放掉。FX.can() 不通过就保留原来的纯黄色块 */
+
+/* ================= 内容变化补动效（MORPH） =================
+   很多按钮 / 小标签换内容时是「直接换 innerHTML / 文字」或「整块软重绘」：图标瞬间跳变、胶囊宽度一下子变长变短。这里统一补上：
+   · 图标：同一个按钮里的图标换了（播放 ↔ 暂停、空心 ↔ 实心心形……）→ 新图标从小转着弹进来
+   · 宽度：小胶囊的文字变长变短（声音 · 0:33 ↔ 0:01 / 0:33、关注 ↔ 已关注……）→ 宽度从旧值弹性过渡到新值
+   原地换内容：MutationObserver 看图标，ResizeObserver 记住每个胶囊上一次的宽度；
+   软重绘（rerender / renderPost）：重绘前按 data-act + data-id（或 data-wt）记下宽度和图标，重绘后同一个控件对上号再补动效 */
+const MORPH = (() => {
+  const PILL = '.tag, .vbadge, .rl-tc, .rl-fo, .pill.sm, [data-act="follow"], [data-act="pv-loop"], [data-act="au-fol"], .chip';
+  const KEYED = '[data-act][data-id], [data-act][data-v], [data-wt]';
+  const W = new WeakMap(); let resizedAt = -1e9, snap = null;
+  addEventListener('resize', () => { resizedAt = performance.now(); }, {passive: true});
+  const keyOf = el => el.dataset.wt ? 'wt|' + el.dataset.wt : el.dataset.act + '|' + (el.dataset.id || el.dataset.v);
+  const sig = el => { const s = el.querySelector(':scope > svg'); return s ? s.innerHTML.length + ':' + s.innerHTML.slice(0, 80) : ''; };
+  // 窗口刚改过尺寸、页面刚打开（字体还在加载，所有胶囊宽度都会变）时不补动效
+  const quiet = () => reduced() || performance.now() - resizedAt < 600 || performance.now() < 2500 || document.fonts?.status === 'loading';
+  // 宽度弹性过渡：动画期间锁住不换行、裁掉溢出的字，结束后玻璃折射按新尺寸重算
+  function grow(el, from, to){
+    if (quiet() || Math.abs(from - to) < 1.5 || from < 4 || to < 4 || !el.isConnected) return;
+    const st = el.style, keep = [st.overflow, st.whiteSpace, st.boxSizing];
+    el._grow?.cancel(); st.overflow = 'hidden'; st.whiteSpace = 'nowrap'; st.boxSizing = 'border-box';
+    const a = el.animate([{width: from + 'px'}, {width: to + 'px'}], {duration: 300, easing: 'cubic-bezier(.3,1.3,.5,1)'});
+    el._grow = a;   // 动画本身也在改宽度：动画期间 ResizeObserver 不再接力，结束后记下最终宽度
+    const done = () => { if (el._grow !== a) return; el._grow = null; [st.overflow, st.whiteSpace, st.boxSizing] = keep; W.set(el, el.offsetWidth); el._lg = null; LG.scan(el.parentElement || document); };
+    a.onfinish = done; a.oncancel = done;
+  }
+  function pop(svg){
+    if (quiet() || !svg || !svg.isConnected) return;
+    svg.animate([{transform: 'scale(.35) rotate(-80deg)', opacity: 0}, {transform: 'scale(1.12) rotate(6deg)', opacity: 1, offset: .65}, {transform: 'none', opacity: 1}], {duration: 280, easing: 'cubic-bezier(.3,1,.5,1)'});
+  }
+  // 宽度一律用布局宽度（不受入场缩放之类的 transform 影响）
+  const ro = new ResizeObserver(es => { for (const e of es){ const el = e.target; if (el._grow) continue; const w = e.borderBoxSize?.[0]?.inlineSize ?? el.offsetWidth, w0 = W.get(el); W.set(el, w); if (w0 != null && !el._mph) grow(el, w0, w); } });
+  const watch = root => { if (root.matches?.(PILL)) ro.observe(root); root.querySelectorAll?.(PILL).forEach(el => ro.observe(el)); };
+  // 原地换图标：同一个元素里旧 svg 被换成新 svg
+  new MutationObserver(ms => { for (const m of ms){
+    if (m.type !== 'childList') continue;
+    const add = [...m.addedNodes], rem = [...m.removedNodes];
+    const a = add.find(n => n.nodeName === 'svg'), b = rem.find(n => n.nodeName === 'svg');
+    if (a && b && a.innerHTML !== b.innerHTML && !m.target.closest?.('#thmBtn, .drw-thm')) pop(a);   // 同一个图标重新赋值不算
+    add.forEach(n => n.nodeType === 1 && watch(n));
+  } }).observe(document.body, {childList: true, subtree: true});
+  watch(document.body);
+  return {grow, pop,
+    // 软重绘前：记下屏幕里这些控件的宽度和图标
+    snap(root){ snap = new Map(); if (!root || quiet()) return; let n = 0;
+      for (const el of root.querySelectorAll(KEYED)){ if (n > 240) break; const r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight || !r.width) continue;
+        const k = keyOf(el); if (!snap.has(k)){ snap.set(k, {w: el.offsetWidth, s: sig(el)}); n++; } } },
+    // 软重绘后：同一个控件对上号，补宽度 / 图标动效（这一帧的 ResizeObserver 不再重复做）
+    apply(root){ if (!snap || !snap.size || !root) { snap = null; return; }
+      for (const el of root.querySelectorAll(KEYED)){ const o = snap.get(keyOf(el)); if (!o) continue;
+        const r = el.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) continue;
+        if (o.s && sig(el) && o.s !== sig(el)) pop(el.querySelector(':scope > svg'));
+        if (el.matches(PILL)){ el._mph = true; W.set(el, el.offsetWidth); setTimeout(() => { el._mph = false; }, 50); grow(el, o.w, el.offsetWidth); } }
+      snap = null; }
+  };
+})();
+// 软重绘包一层：重绘前记、重绘后补（换页的硬重绘不补，避免跨页面误配）
+{ const rb = renderBase; renderBase = function(r, arg, soft){ if (soft) MORPH.snap($('#app')); const v = rb.apply(this, arguments); if (soft) MORPH.apply($('#app')); return v; };
+  const rp = renderPost; renderPost = function(id, fresh){ const same = !fresh && CUR.post === id, box = () => $('#post') || document.body; if (same) MORPH.snap(box()); const v = rp.apply(this, arguments); if (same) MORPH.apply(box()); return v; }; }
+
 const MH_GG = {m:null, el:null};
 document.addEventListener('rendered', () => {
   if (MH_GG.el && !MH_GG.el.isConnected){ try { MH_GG.m?.dispose(); } catch(e){} MH_GG.m = MH_GG.el = null; }
@@ -5075,8 +5169,19 @@ document.addEventListener('rendered', () => {
 
 /* 商城分类卡的果冻物理：一个弹簧，只在有动静时跑 rAF。
    滑动列表 → 卡片按速度往后拖、停下晃几下；按住 → 以手指位置为中心压扁，松手回弹 */
+let CAT_LAST = null;
+/* 换了选中的分类：播放「纸 → 液态玻璃」，折射强度也从 0 长到目标值 */
+function catGlassIn(card){
+  const k = card.dataset.v; if (k === CAT_LAST) return; CAT_LAST = k; if (reduced()) return;
+  card.classList.add('fx-in'); setTimeout(() => card.classList.remove('fx-in'), 1200);
+  requestAnimationFrame(() => requestAnimationFrame(() => {   // 等 LG.scan 给玻璃挂上滤镜
+    const cj = $('.cjelly', card), id = cj && (cj.style.backdropFilter.match(/#(lgf-[^)"]+)/) || [])[1], fd = id && document.getElementById(id)?.querySelector('feDisplacementMap');
+    if (!fd) return; const to = +fd.getAttribute('scale'), t0 = performance.now();
+    const step = now => { const k = Math.min(1, (now - t0)/520), e = 1 - Math.pow(1 - k, 3); fd.setAttribute('scale', (to*e).toFixed(1)); if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step); }));
+}
 function catJelly(){
-  const row = $('.cats'), card = row && $('.cat.on', row); if (!card || reduced() || row._jl === card) return; row._jl = card;
+  const row = $('.cats'), card = row && $('.cat.on', row); if (card) catGlassIn(card); if (!card || reduced() || row._jl === card) return; row._jl = card;
   const st = {x:0, vx:0, tx:0, q:0, vq:0, tq:0, raf:0, sx:row.scrollLeft, t:performance.now()};
   const set = () => { card.style.setProperty('--jx', st.x.toFixed(2) + 'px'); card.style.setProperty('--jsk', (st.x * -.35).toFixed(2) + 'deg');
     card.style.setProperty('--jsx', (1 + st.q * .05).toFixed(4)); card.style.setProperty('--jsy', (1 - st.q * .08).toFixed(4)); };
@@ -5180,9 +5285,16 @@ document.addEventListener('gen', () => {
   $$('[data-act="aplay"],[data-act="qplay"]').forEach(b => { const on = GEN.on && (GEN.owner === 'post:' + b.dataset.id || GEN.owner === 'q:' + b.dataset.id); b.classList.toggle('on', on); b.innerHTML = on ? IC.pause : IC.play; });
   const pl = $('#player');
   document.body.classList.toggle('playing', !!(GEN.on && GEN.meta));
+  // 迷你播放器：第一次出现才播放入场；换曲目时不重播入场，宽度从旧的平滑变到新的；停止时滑下淡出再移除
+  const old = pl.querySelector('.player:not(.fx-out)'), w0 = old ? old.offsetWidth : 0;
   if (GEN.on && GEN.meta){ pl.innerHTML = `<div class="player c-${GEN.meta.c}"><div class="eq"><i></i><i></i><i></i><i></i></div><div class="t" data-go="${GEN.meta.go}"><b>${esc(GEN.meta.title)}</b><span>${esc(GEN.meta.sub)}</span></div><span class="pring"><button class="pbtn on" data-act="gen-stop" aria-label="停止" style="background:var(--paper);color:var(--ink);display:grid">${IC.pause}</button></span></div>`;
-    if (!_plOff) _plOff = loopAdd(() => { const bars = $$('#player .eq i'), r = $('#player .pring'); if (!bars.length || !AU.an) return; AU.an.getByteFrequencyData(FREQ); bars.forEach((b, i) => b.style.height = Math.max(12, FREQ[2 + i*14]/255*100) + '%'); if (r) r.style.setProperty('--p', GEN.frac()); }); }
-  else { pl.innerHTML = ''; if (_plOff){ _plOff(); _plOff = null; } }
+    if (!_plOff) _plOff = loopAdd(() => { const bars = $$('#player .eq i'), r = $('#player .pring'); if (!bars.length || !AU.an) return; AU.an.getByteFrequencyData(FREQ); bars.forEach((b, i) => b.style.height = Math.max(12, FREQ[2 + i*14]/255*100) + '%'); if (r) r.style.setProperty('--p', GEN.frac()); });
+    const np = pl.querySelector('.player'); if (w0 && np){ np.style.animation = 'none'; MORPH.grow(np, w0, np.offsetWidth); }
+  }
+  else { const cur = pl.querySelector('.player');
+    if (cur && !reduced() && !cur.classList.contains('fx-out')){ cur.classList.add('fx-out'); cur.animate([{opacity: 1, transform: getComputedStyle(cur).transform}, {opacity: 0, transform: getComputedStyle(cur).transform + ' translateY(22px) scale(.94)'}], {duration: 220, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards'}).onfinish = () => { if (!(GEN.on && GEN.meta) && cur.isConnected) pl.innerHTML = ''; }; }
+    else if (!cur || reduced()) pl.innerHTML = '';
+    if (_plOff){ _plOff(); _plOff = null; } }
 });
 
 /* 外链视频：就地播放（原型中以模拟画面代替第三方播放器） */

@@ -50,11 +50,14 @@
 ## 材质层（液态玻璃 / 毛玻璃 / 3D）
 - 液态玻璃折射 `LG`：思路来自 shuding/liquid-glass（MIT），SVG 位移贴图做 `backdrop-filter:url()`，只有 Chromium 生效；其它浏览器用 CSS 版（`.lgx` / `.lg-rim` / 高光边）。要加折射的元素登记在 `LG` 的 `SPEC` 里
 - **坑**：带 `view-transition-name`（`.tb`、`.hd`、`.player`）或 filter / opacity / mask 的元素是「背景根」，它里面的子元素用 backdrop-filter 看不到页面。所以底栏的模糊和折射加在 `.tb` 自己身上，`.tb-glass` 只负责着色
-- 用在哪：底栏胶囊、侧栏毛玻璃 + 果冻选中、时长 / 声音标签、封面播放键、封面上的商品条、商城搜索条、商城选中分类卡（`.cjelly` + `catJelly` 弹簧）。**数据展示（票根虚线数据条、图表）不加材质**
+- 用在哪：底栏胶囊、侧栏毛玻璃 + 果冻选中、时长 / 声音标签、封面播放键、封面上的商品条、商城搜索条、商城选中分类卡（`.cjelly`：墨色描边 + 透明液态玻璃，只有边缘折射 / 发丝高光 / 粉蓝色散，**不要乳白和大块高光**——用户觉得像塑料；换选中时 `catGlassIn` 播放「纸 → 玻璃」：颗粒退下、玻璃淡入、一道光扫过、折射从 0 长起；按压弹簧仍在 `catJelly`）。**数据展示（票根虚线数据条、图表）不加材质**
 - 3D / 着色器统一走 `FX`：three.js 和 Paper Shaders 打包后放在 `vendor/`（只含用到的部分，不走第三方 CDN），按需 `import()`；`FX.can()` 不通过（减少动效 / 省流量 / 内存或核心少 / 没有 WebGL2）就用 2D 版。一种效果一个 WebGL 上下文，不动不重画，离开屏幕就停，手机像素比封顶（`FX.lite`）
 - 商城海报的 3D 样品包：`SCENES.pack` + `packBag(THREE)`，背景是 Paper 的 grainGradient；手机上没人碰时 30 帧
 - 液态金属 `METAL`：argentui 的 mountMetal（MIT）原生内核；`foil(stamp, 'gold' | 'silver')` 把章变成烫金 / 烫银，按章底下的实际底色自动选浅底 / 深底方案。PAID、DONE 烫金，HELD 烫银
 - 软胶（`RUB`）：SVG 光照滤镜（模糊轮廓当高度 + 漫反射 + 高光 + 投影）把图形「鼓起来」，不开 WebGL。`#fx-rub` 点光源跟光标 / 陀螺仪（商城选中分类卡插画 `catRub`，插画整体包进 `<g class="rub-g">`，原有敲击动画照常）；`#fx-rub2` 固定光源（空状态的四个漂浮几何 `EMPTY_RUB`，自动插进 `.empty`，带印章的不插）
-- 私信三个快捷入口的小图标是纯 CSS 果冻玻璃方块，按下压扁回弹
+- 私信三个快捷入口的小图标是纯 CSS 奶油软胶方块（和发布按钮同材质，哑光无玻璃反光——玻璃高光会像老 iPhone 图标），按下压扁回弹
 - 「我」头像后面的色块是 Paper grainGradient 流动渐变（`MH_GG`，加载好之前 / 不支持时是 `::before` 纯黄）
 - 更新 vendor 包：在临时目录 `npm i three@x @paper-design/shaders@x esbuild`，用 esbuild 只导出用到的名字打包（见 `vendor/*.js` 文件头注释）
+- 内容变化补动效 `MORPH`：按钮里图标原地换掉（播放 ↔ 暂停等）自动弹入；小胶囊（`.tag` / `.vbadge` / 关注 / 演示循环……，见 `PILL`）宽度变化自动弹性过渡（ResizeObserver 记上一次宽度，动画期间不接力）；软重绘（`rerender` / `renderPost`）前后按 `data-act + data-id` 对号补同样的动效。新增「会变长短的胶囊」加进 `PILL` 即可；页面刚打开 2.5 秒内、窗口刚改尺寸时不补
+- 迷你播放器：只在第一次出现时入场，换曲目宽度过渡，停止时滑下淡出
+- 商城海报：底边渐隐到页面底色（和分类卡衔接）；CONCRETE 海报的波纹会真的推开周围（鼓面轮廓 / 刻纹 / 鼓名按点位移，标题逐字母、副标题、按钮被推一下，`wv()`）
