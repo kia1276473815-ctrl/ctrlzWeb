@@ -510,10 +510,22 @@ main{min-height:80vh}
 .prs button{flex:none;height:32px;padding:0 13px;border-radius:999px;background:rgba(255,255,255,.55);font:700 12px/1 var(--f-b);font-stretch:105%;transition:all .18s;white-space:nowrap}
 .prs button:hover{background:var(--paper)}
 .prs button.on{background:var(--ink);color:var(--paper)}
-.kb{display:flex;height:clamp(84px,10vw,120px);position:relative;margin-top:10px;user-select:none;-webkit-user-select:none;touch-action:none;gap:3px}
-.kb .w{flex:1;background:var(--paper);border-radius:0 0 8px 8px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;font:700 10px/1 var(--f-b);color:var(--ink-3);transition:background .15s}
+.kb{display:flex;height:clamp(118px,15vw,150px);position:relative;user-select:none;-webkit-user-select:none;touch-action:none;gap:3px}
+.kb .w{flex:1;background:var(--paper);border-radius:0 0 9px 9px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;padding-bottom:9px;font:700 10px/1 var(--f-b);color:var(--ink-3);transition:background .15s}
+.kb kbd{display:none;font:inherit;opacity:.7}
+@media (hover:hover) and (pointer:fine){ .kb kbd{display:block} }
+.kb .nn{font-style:normal;font-size:11px;letter-spacing:.02em}
+/* 八度切换：‹ C4 – C5 › */
+.kbh{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;margin-bottom:8px;position:relative;z-index:2}
+.kbh .oct{display:flex;align-items:center;gap:6px}
+.kbh .oct button{width:40px;height:40px;border-radius:12px;background:var(--ink);color:var(--paper);display:grid;place-items:center;font:800 18px/1 var(--f-b);transition:transform .2s var(--spring),opacity .2s}
+.kbh .oct button:active{transform:scale(.9)}
+.kbh .oct button:disabled{opacity:.3}
+.kbh .oct b{min-width:86px;text-align:center;font:800 15px/1 var(--f-b);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.kbh .hint{display:none;font-size:12px;font-weight:600;opacity:.7}
+@media (hover:hover) and (pointer:fine){ .kbh .hint{display:block} }
 .kb .w.hit{background:var(--ink);color:var(--paper);transition:none}
-.kb .b{position:absolute;top:0;width:5.2%;height:60%;background:var(--ink);border-radius:0 0 6px 6px;z-index:2;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font:700 9px/1 var(--f-b);color:rgba(255,255,255,.45)}
+.kb .b{position:absolute;top:0;width:7.6%;height:60%;background:var(--ink);border-radius:0 0 6px 6px;z-index:2;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font:700 9px/1 var(--f-b);color:rgba(255,255,255,.45)}
 .kb .b.hit{background:var(--paper);color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}
 .vbox{position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#0d0d10;cursor:pointer}
 .vbox canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -874,7 +886,7 @@ footer p{font-size:13px;color:var(--ink-3);text-align:right;line-height:1.8}
 .wbox,.pad,.syn-r,.xy,.kb .w{background:var(--sheet)}
 .pad.hit,.kb .w.hit{background:var(--on);color:var(--sheet)}
 .pad kbd{color:#8E8F98;border-color:rgba(20,20,24,.15)}
-.kb .b{background:var(--on)}
+.kb .b{background:var(--on)} .kbh .oct button{background:var(--on);color:var(--sheet)}
 .kb .b.hit{background:var(--sheet);color:var(--on);box-shadow:inset 0 0 0 2px var(--on)}
 .prs button{color:var(--on)}
 .prs button.on,.stage .seg button.on{background:var(--on);color:var(--sheet)}
@@ -4395,43 +4407,62 @@ function pvSample(pr){
 
 /* --- 弹奏试听（预设）：XY 板 + 滑杆 + 键盘 --- */
 function pvPreset(pr){
-  const base = pr.id === 'p4' ? 36 : 48, ids = {}; const st = {cur:0, p:{...pr.presets[0][1]}};
+  const base = pr.id === 'p4' ? 36 : 48, ids = {}; const st = {cur:0, oct:0, hitT:-1e9, p:{...pr.presets[0][1]}};
+  const kroot = () => base + 12 + st.oct*12, ON = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'], nn = m => ON[m % 12] + (Math.floor(m/12) - 1);
+  const OMIN = Math.ceil((24 - base - 12)/12), OMAX = Math.floor((84 - base - 12)/12);   // 键盘范围 C1 ～ C7
   const KMAP = 'AWSEDFTGYHUJK';
   const out = () => { AU.init(); const b = AU.bus('syn', .9); AU.send('syn', st.p.spc*.8); return b; };
-  const play = (m, dur=.3, t) => { if (!AU.init()) return; AU.note(m, t || AU.ctx.currentTime, dur, {...st.p, gain:.2, sub: base === 36}, out()); };
+  const play = (m, dur=.3, t) => { if (!AU.init()) return; st.hitT = performance.now() + (t ? (t - AU.ctx.currentTime)*1000 : 0); AU.note(m, t || AU.ctx.currentTime, dur, {...st.p, gain:.2, sub: base === 36}, out()); };
   const mk = (k, label, fmt) => { const h = slider({label, val:st.p[k], fmt, onChange:x => { st.p[k] = x; }}); ids[k] = lastId(); return h; };
   ACTIONS.preset = b => {
     const i = +b.dataset.i, target = pr.presets[i][1]; st.cur = i; st.p.wav = target.wav; $$('.prs button').forEach((x, k) => x.classList.toggle('on', k === i));
     $('#synName').textContent = pr.presets[i][0].replace(/^\w+ \d+ /, '');
     const from = {...st.p}, t0 = performance.now();
     const step = now => { const k = Math.min(1, (now - t0)/260), e = 1 - Math.pow(1-k, 3); ['cut','res','atk','rel','spc'].forEach(key => { st.p[key] = from[key] + (target[key] - from[key])*e; if (ids[key]) rngSet(ids[key], st.p[key], false); }); st.p.det = target.det; if (k < 1) requestAnimationFrame(step); };
-    requestAnimationFrame(step); play(base + 12, .35);
+    requestAnimationFrame(step); play(kroot(), .35);
   };
-  ACTIONS.phrase = () => { if (!AU.init()) return; const t = AU.ctx.currentTime + .05; const seq = base === 36 ? [0,0,12,0,3,0,7,5] : [0,7,12,15,19,15,12,7]; seq.forEach((n, i) => play(base + 12 + n, .15, t + i*.17)); };
+  ACTIONS.phrase = () => { if (!AU.init()) return; const t = AU.ctx.currentTime + .05; const seq = base === 36 ? [0,0,12,0,3,0,7,5] : [0,7,12,15,19,15,12,7]; seq.forEach((n, i) => play(kroot() + n, .15, t + i*.17)); };
+  // 切换八度：键盘只有一个八度（C～C），‹ › 或电脑键盘 Z / X 上下移
+  const octSet = d => { const o = clamp(st.oct + d, OMIN, OMAX); if (o === st.oct){ fxPop($(`.kbh [data-act="oct"][data-d="${d}"]`), 'fx-shake', 400); return; } st.oct = o; octSync(d); play(kroot(), .25); };
+  const octSync = d => { const lb = $('#octLb'); if (lb) lb.textContent = nn(kroot()) + ' – ' + nn(kroot() + 12); $$('.kbh [data-act="oct"]').forEach(b => b.disabled = st.oct + +b.dataset.d < OMIN || st.oct + +b.dataset.d > OMAX); $$('#kb .nn').forEach(x => x.textContent = nn(kroot() + +x.parentNode.dataset.k));
+    const kb = $('#kb'); if (d && kb && !reduced()) kb.animate([{transform:`translateX(${d*18}px)`, opacity:.35}, {transform:'none', opacity:1}], {duration:220, easing:'cubic-bezier(.2,.9,.3,1.2)'}); };
+  ACTIONS.oct = b => octSet(+b.dataset.d);
   onMount(root => {
     const xy = $('#xy', root), knob = $('.knob', xy), cv = $('canvas', xy), g = cv.getContext('2d');
     const place = () => { knob.style.left = (st.p.cut*100) + '%'; knob.style.top = ((1 - st.p.res)*100) + '%'; };
     let down = false, lastNote = 0;
-    const setXY = e => { const r = xy.getBoundingClientRect(); st.p.cut = clamp((e.clientX - r.left)/r.width, 0, 1); st.p.res = clamp(1 - (e.clientY - r.top)/r.height, 0, 1); place(); sfx('tick'); if (performance.now() - lastNote > 180){ lastNote = performance.now(); play(base + 12 + [0,3,7,10,12][Math.floor(st.p.cut*4.99)], .16); } };
+    const setXY = e => { const r = xy.getBoundingClientRect(); st.p.cut = clamp((e.clientX - r.left)/r.width, 0, 1); st.p.res = clamp(1 - (e.clientY - r.top)/r.height, 0, 1); place(); sfx('tick'); if (performance.now() - lastNote > 180){ lastNote = performance.now(); play(kroot() + [0,3,7,10,12][Math.floor(st.p.cut*4.99)], .16); } };
     xy.addEventListener('pointerdown', e => { down = true; xy.setPointerCapture(e.pointerId); xy.classList.add('drag'); setXY(e); });
     xy.addEventListener('pointermove', e => { if (down) setXY(e); });
     xy.addEventListener('pointerup', () => { down = false; xy.classList.remove('drag'); });
     onClean(loopAdd(t => { if (!visible(cv)) return; place(); const {w, h, dpr} = fitCanvas(cv); g.clearRect(0,0,w,h); g.globalCompositeOperation = 'multiply';
-      const cx = st.p.cut*w, cy = (1 - st.p.res)*h; g.fillStyle = INK.pink; g.beginPath(); g.arc(cx, cy, (40 + st.p.spc*90)*dpr, 0, Math.PI*2); g.fill();
+      const cx = st.p.cut*w, cy = (1 - st.p.res)*h;
+      // 红色图形：起音越短越接近三角形（尖），尾音 / 空间越大图形越大、越模糊；每次发声跟着包络鼓一下
+      const A = (.003 + st.p.atk*1.2)*1000, Rl = (.05 + st.p.rel*2.2)*1000, dt = performance.now() - st.hitT, env = dt < 0 ? 0 : dt < A ? dt/A : Math.max(0, 1 - (dt - A)/Rl);
+      const r = (42 + st.p.rel*56 + st.p.spc*24)*(1 + env*.16)*dpr, tri = clamp(1 - st.p.atk*1.6, 0, 1), bl = (st.p.rel*16 + st.p.spc*8)*dpr;
+      g.save(); g.fillStyle = INK.pink;
+      if (bl > .6){ g.shadowColor = INK.pink; g.shadowBlur = bl; g.shadowOffsetX = w*3; g.translate(-w*3, 0); }   // 只留阴影 = 高斯模糊（各浏览器都支持）
+      g.beginPath(); for (let i = 0; i <= 90; i++){ const a = i/90*Math.PI*2 - Math.PI/2, d = ((a - Math.PI/2 + Math.PI/3) % (Math.PI*2/3) + Math.PI*2/3) % (Math.PI*2/3) - Math.PI/3, rt = r*.66/Math.cos(d), rr = r*(1 - tri) + rt*tri; const x = cx + Math.cos(a)*rr, y = cy + Math.sin(a)*rr; i ? g.lineTo(x, y) : g.moveTo(x, y); }
+      g.closePath(); g.fill(); g.restore();
       g.fillStyle = INK.yellow; g.fillRect(0, cy, cx, h - cy);
       if (AU.an){ AU.an.getByteTimeDomainData(WAVE); g.globalCompositeOperation = 'source-over'; g.strokeStyle = INK.ink; g.lineWidth = 2*dpr; g.beginPath(); for (let i=0;i<512;i+=2){ const x = i/512*w, y = h*.5 + (WAVE[i]-128)/128*h*.4; i ? g.lineTo(x,y) : g.moveTo(x,y); } g.stroke(); }
       g.globalCompositeOperation = 'source-over'; }));
-    const kb = $('#kb', root); let kdn = false;
-    const keyDown = el => { if (!el) return; play(+el.dataset.m); el.classList.add('hit'); setTimeout(() => el.classList.remove('hit'), 150); };
-    kb.addEventListener('pointerdown', e => { kdn = true; keyDown(e.target.closest('[data-m]')); });
-    kb.addEventListener('pointerover', e => { if (kdn) keyDown(e.target.closest('[data-m]')); });
-    const up = () => kdn = false; document.addEventListener('pointerup', up); onClean(() => document.removeEventListener('pointerup', up));
-    const kd = e => { if (e.target.closest('input,textarea,select') || e.repeat || e.metaKey || e.ctrlKey || CUR.post) return; const i = KMAP.indexOf(e.key.toUpperCase()); if (i >= 0){ keyDown($(`[data-m="${base + 12 + i}"]`)); e.preventDefault(); } };
+    // 键盘：按下发声；手指按住滑过别的键也能连着弹（触屏的指针会被按下的键捕获，所以用坐标找键）
+    const kb = $('#kb', root); let kdn = null, last = null;
+    const keyDown = el => { if (!el) return; play(kroot() + +el.dataset.k); el.classList.add('hit'); setTimeout(() => el.classList.remove('hit'), 150); };
+    const keyAt = e => { const el = document.elementFromPoint(e.clientX, e.clientY); return el && kb.contains(el) ? el.closest('[data-k]') : null; };
+    kb.addEventListener('pointerdown', e => { e.preventDefault(); kdn = e.pointerId; try { kb.setPointerCapture(e.pointerId); } catch(_){} last = keyAt(e); keyDown(last); });
+    kb.addEventListener('pointermove', e => { if (kdn !== e.pointerId) return; const k = keyAt(e); if (k && k !== last){ last = k; keyDown(k); } });
+    const up = e => { if (kdn === e.pointerId){ kdn = null; last = null; } }; kb.addEventListener('pointerup', up); kb.addEventListener('pointercancel', up);
+    const kd = e => { if (e.target.closest('input,textarea,select') || e.repeat || e.metaKey || e.ctrlKey || CUR.post) return; const K = e.key.toUpperCase();
+      if (K === 'Z' || K === 'X'){ octSet(K === 'Z' ? -1 : 1); e.preventDefault(); return; }
+      const i = KMAP.indexOf(K); if (i >= 0){ keyDown($(`#kb [data-k="${i}"]`)); e.preventDefault(); } };
     document.addEventListener('keydown', kd); onClean(() => document.removeEventListener('keydown', kd));
   });
-  const whites = [0,2,4,5,7,9,11], blacks = {1:0,3:1,6:3,8:4,10:5}; let keys = '', bl = '';
-  for (let o=0;o<2;o++) whites.forEach(s => { const ki = o*12 + s; keys += `<div class="w" data-m="${base + 12 + ki}">${ki < 13 ? KMAP[ki] : ''}</div>`; });
-  for (let o=0;o<2;o++) Object.entries(blacks).forEach(([s, wi]) => { const ki = o*12 + +s; bl += `<div class="b" data-m="${base + 12 + ki}" style="left:calc(${(o*7 + wi + 1)/14*100}% - 2.6%)">${ki < 13 ? KMAP[ki] : ''}</div>`; });
+  // 一个八度 C～C：8 个白键 + 5 个黑键，键更宽好按
+  const whites = [0,2,4,5,7,9,11,12], blacks = {1:0,3:1,6:3,8:4,10:5};
+  const keys = whites.map(k => `<div class="w" data-k="${k}">${k % 12 === 0 ? `<i class="nn">${nn(kroot() + k)}</i>` : ''}<kbd>${KMAP[k]}</kbd></div>`).join('');
+  const bl = Object.entries(blacks).map(([k, wi]) => `<div class="b" data-k="${k}" style="left:calc(${(wi + 1)/8*100}% - 3.8%)"><kbd>${KMAP[k]}</kbd></div>`).join('');
   return `<div class="stage grain"><div class="stage-h"><span class="x">${esc(pr.en)}</span><button class="pill sm" data-act="phrase">${IC.play}听一句</button></div>
     <div class="syn" style="position:relative;z-index:2">
       <div class="xy" id="xy"><canvas></canvas><span class="ax" style="left:12px;bottom:10px">暗</span><span class="ax" style="right:12px;bottom:10px">亮 →</span><span class="ax" style="left:12px;top:10px">↑ 尖</span><span class="knob"></span></div>
@@ -4439,6 +4470,7 @@ function pvPreset(pr){
         ${mk('atk','起音', x => Math.round((.003 + x*1.2)*1000) + 'ms')}${mk('rel','尾音', x => Math.round((.05 + x*2.2)*1000) + 'ms')}${mk('spc','空间')}</div>
     </div>
     <div class="prs" style="position:relative;z-index:2">${pr.presets.map(([n], i) => `<button class="${i===0?'on':''}" data-act="preset" data-i="${i}">${esc(n.replace(/^\w+ /, ''))}</button>`).join('')}</div>
+    <div class="kbh"><div class="oct"><button data-act="oct" data-d="-1" aria-label="低八度"${st.oct <= OMIN ? ' disabled' : ''}>‹</button><b id="octLb">${nn(kroot())} – ${nn(kroot() + 12)}</b><button data-act="oct" data-d="1" aria-label="高八度"${st.oct >= OMAX ? ' disabled' : ''}>›</button></div><span class="hint">Z / X 切换八度</span></div>
     <div class="kb" id="kb" style="z-index:2">${keys}${bl}</div></div>`;
 }
 
