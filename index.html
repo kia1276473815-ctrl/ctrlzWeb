@@ -1830,6 +1830,26 @@ html.rm .fx-shp{display:none}
 .mqc-prod:hover .g svg,.mqc-prod:active .g svg{animation:jelly .5s var(--ease)}
 .mqc-lib:hover .g svg,.mqc-lib:active .g svg{animation:dlbob .5s var(--ease)}
 .co-svc{transition:box-shadow .2s}
+/* ===== 第三批：全局小细节 ===== */
+/* 空状态的大字轻轻浮动 */
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.empty .x{animation:floaty 3.6s ease-in-out infinite}
+/* 提示条的小图标弹出来 */
+@keyframes icpop{0%{transform:scale(0) rotate(-40deg)}70%{transform:scale(1.2) rotate(6deg)}100%{transform:none}}
+.toast i{animation:icpop .45s var(--spring) .08s backwards}
+/* 未读数字出现时弹一下 */
+@keyframes bdgin{0%{transform:scale(0)}70%{transform:scale(1.25)}100%{transform:none}}
+.bdg{animation:bdgin .4s var(--spring)}
+/* 侧边菜单：选项依次滑入 */
+@keyframes drwitem{from{opacity:0;transform:translateX(-14px)}}
+.drw > *{animation:drwitem .32s var(--ease) backwards}
+.drw > :nth-child(2){animation-delay:.04s} .drw > :nth-child(3){animation-delay:.07s} .drw > :nth-child(4){animation-delay:.1s} .drw > :nth-child(5){animation-delay:.13s}
+.drw > :nth-child(6){animation-delay:.16s} .drw > :nth-child(7){animation-delay:.19s} .drw > :nth-child(8){animation-delay:.22s} .drw > :nth-child(n+9){animation-delay:.25s}
+/* 深浅色切换：图标转一圈 */
+@keyframes spin1{from{transform:rotate(-180deg) scale(.4)}to{transform:none}}
+.fx-spin{animation:spin1 .55s var(--spring)}
+html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
+@media (prefers-reduced-motion:reduce){ .empty .x,.toast i,.bdg,.drw > *{animation:none} }
 </style>
 
 </head>
@@ -3876,7 +3896,9 @@ Object.assign(ACTIONS, {
   'ave-bg': b => { AVE.bg = b.dataset.c; avePick(b); AVE.draw(); },
   'ave-add': b => { if (AVE.sh.length >= 5){ toast('最多放 5 个图形', 'orange', 'x'); return; }
     const n = AVE.sh.length, c = AV_FILL.filter(x => x !== AVE.bg)[n % (AV_FILL.length - 1)];
-    AVE.sh.push({t:b.dataset.t, x:256 + (n % 3 - 1) * 60, y:256 + (n % 2 ? 50 : -30), s:200 - n * 18, r:0, c}); AVE.sel = AVE.sh.length - 1; AVE.sync(); },
+    const x = {t:b.dataset.t, x:256 + (n % 3 - 1) * 60, y:256 + (n % 2 ? 50 : -30), s:200 - n * 18, r:0, c}; AVE.sh.push(x); AVE.sel = AVE.sh.length - 1; AVE.sync(); fxPop(b, 'fx-jelly');
+    if (!reduced()){ const S = x.s, t0 = performance.now(), back = k => 1 + 2.4*Math.pow(k - 1, 3) + 1.4*Math.pow(k - 1, 2);   // 新图形从 0 长到目标大小，略微冲过头再回来
+      const step = now => { const k = Math.min(1, (now - t0)/380); x.s = Math.max(1, S * back(k)); AVE.draw(); if (k < 1) requestAnimationFrame(step); else { x.s = S; AVE.sync(); } }; x.s = 1; requestAnimationFrame(step); } },
   'ave-col': b => { const x = AVE.sh[AVE.sel]; if (!x) return; x.c = b.dataset.c; AVE.sync(); },
   'ave-del': () => { if (AVE.sel < 0) return; AVE.sh.splice(AVE.sel, 1); AVE.sel = -1; AVE.sync(); },
   'ave-top': () => { if (AVE.sel < 0) return; const x = AVE.sh.splice(AVE.sel, 1)[0]; AVE.sh.push(x); AVE.sel = AVE.sh.length - 1; AVE.sync(); },
@@ -5443,7 +5465,7 @@ Object.assign(ACTIONS, {
   compose: b => { if (needLogin()) return; const r = b?.getBoundingClientRect(); composeSheet(); $$('[data-act="compose"]').forEach(x => x.classList.add('fx-open'));
     const sh = $('#layer .sheet'); if (sh && r && !reduced()){ const s = sh.getBoundingClientRect(), dx = r.left + r.width/2 - (s.left + s.width/2), dy = r.top + r.height/2 - (s.top + s.height/2);
       sh.animate([{transform:`translate(${dx}px, ${dy}px) scale(.12)`, opacity:0, borderRadius:'50%'}, {transform:'none', opacity:1}], {duration:420, easing:'cubic-bezier(.3,1.25,.5,1)'}); } },
-  theme: () => { STATE.settings.theme = isDark() ? 'light' : 'dark'; applySettings(); applyTheme(true);
+  theme: () => { STATE.settings.theme = isDark() ? 'light' : 'dark'; applySettings(); applyTheme(true); setTimeout(() => $$('#thmBtn svg, .drw-thm svg').forEach(x => fxPop(x, 'fx-spin', 600)));
     const t = $('.drw-thm'); if (t) t.innerHTML = (isDark() ? IC.sun : IC.moon) + (isDark() ? '浅色模式' : '深色模式'); },   // 侧边菜单里的按钮文字跟着变
   'set-theme': b => { STATE.settings.theme = b.dataset.v; applySettings(); applyTheme(true); rerender(); },
   search: b => openSearch(b && b.dataset.v ? b.dataset.v : undefined),
