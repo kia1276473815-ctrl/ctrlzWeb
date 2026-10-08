@@ -407,6 +407,7 @@ main{min-height:80vh}
 .cmt .code{margin-top:8px;font-size:12px}
 .cmt .ctl{display:flex;gap:14px;margin-top:6px;font-size:12px;color:var(--ink-3)}
 .cmt .ctl button:hover{color:var(--ink)}
+.ctl button.on,.ctl button.on:hover{color:var(--pink)}
 .cmt.best{background:var(--green-t);margin-inline:-20px;padding-inline:20px;border-top-color:transparent}
 .used{display:flex;flex-direction:column;gap:8px;margin-top:18px}
 .used a{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px;border-radius:12px;background:var(--paper);transition:background .2s}
@@ -535,7 +536,7 @@ main{min-height:80vh}
 .facts b{font-size:14px;font-weight:600;line-height:1.4}
 .facts .wide{grid-column:1/-1}
 .lic{display:flex;flex-wrap:wrap;gap:6px}
-.lic span{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;font-size:13px;background:var(--green-t)}
+.lic span{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;font-size:13px;background:var(--green-t);color:var(--ink)}   /* 浅色模式浅绿底深字，深色模式深绿底浅字 */
 .lic span.no{background:var(--card);box-shadow:inset 0 0 0 1px var(--rule);color:var(--ink-2);text-decoration:line-through;text-decoration-color:var(--pink);text-decoration-thickness:1.5px}
 .files{font:12.5px/1.85 ui-monospace,Menlo,monospace;background:var(--card);border-radius:14px;padding:14px 16px;white-space:pre;overflow-x:auto;color:var(--ink-2)}
 .seller{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;background:var(--card);transition:box-shadow .2s}
@@ -609,8 +610,8 @@ table.t{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
 .up{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
 .stepper{display:flex;flex-direction:column;gap:12px}
 .step{border-radius:18px;background:var(--card);padding:18px;display:grid;grid-template-columns:40px minmax(0,1fr);gap:14px}
-.step .no{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font:900 15px/1 var(--f-b);background:var(--paper)}
-.step.ok .no{background:var(--green);color:var(--paper)}
+.step > .no{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font:900 15px/1 var(--f-b);background:var(--paper)}
+.step.ok > .no{background:var(--green);color:var(--paper)}
 .step h4{font-size:16px;font-weight:800;margin:8px 0 12px}
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .fg .full{grid-column:1/-1}
@@ -864,7 +865,7 @@ footer p{font-size:13px;color:var(--ink-3);text-align:right;line-height:1.8}
   --pink-t:#3B1A2C; --blue-t:#192146; --yellow-t:#383114; --orange-t:#3C2015; --green-t:#11301E; --violet-t:#281F45;
 }
 /* 压在彩色色块上的文字，两种模式都用深墨 */
-.tag,.pill.pk,.pill.cc,.cat:not(.all),.card .cv,.post .media,.stage,.shopband,.kpi.cc,.catband a,.stk,.av,.lic span:not(.no),.flag,mark,.pays button i,.toast i,.sellrow:hover,.tplp button .ic{color:var(--on)}
+.tag,.pill.pk,.pill.cc,.cat:not(.all),.card .cv,.post .media,.stage,.shopband,.kpi.cc,.catband a,.stk,.av,.flag,mark,.pays button i,.toast i,.sellrow:hover,.tplp button .ic{color:var(--on)}
 .stamp{color:var(--sc,var(--on))}
 /* 试听台是印在纸上的实物：两种模式都保持纸色 */
 .wbox,.pad,.syn-r,.xy,.kb .w{background:var(--sheet)}
@@ -1887,7 +1888,7 @@ const COMMENTS = {
 /* 当前用户（rin.wav）的订单与资源库 */
 const STATE = {
   role:'user', owned:new Set(['p1','p4','p10']), favs:new Set(['p5','p7','s10']), liked:new Set(['s8']),
-  solved:{}, follows:new Set(['merc']), cart:[], libNew:0, seller:false,
+  solved:{}, follows:new Set(['merc']), clikes:new Set(), cart:[], libNew:0, seller:false,
   orders:[
     {no:'CZ20260928-0412', pid:'p1', price:68, pay:'微信支付', time:'2026-09-28 21:14', st:'已完成'},
     {no:'CZ20260917-1180', pid:'p4', price:39, pay:'支付宝', time:'2026-09-17 13:02', st:'已完成'},
@@ -2562,14 +2563,15 @@ SCENES.beat = B => {
         if (s.hv > .02){ g.save(); g.globalCompositeOperation = 'source-over'; g.globalAlpha = s.hv; g.strokeStyle = INKC(); g.lineWidth = 2.5; g.lineJoin = 'round'; g.setLineDash([7, 6]); g.lineDashOffset = -t/40; outline(g, s, k, 6 + s.hv*4); g.stroke(); g.restore(); } }
       drawRipples(g, rip, dt);
       g.globalCompositeOperation = 'source-over';
-      // 唱片中心：播放 / 暂停的“镂空”
+      // 唱片中心孔（点一下只发一声，不再画播放 / 暂停图标）
       const c = geo(S[0]), z = G.u*.3*(1 + S[0].hv*.18 + S[0].p*.1); g.fillStyle = B.bg;
-      if (on){ g.fillRect(c.x - z*.75, c.y - z, z*.5, z*2); g.fillRect(c.x + z*.25, c.y - z, z*.5, z*2); }
-      else { g.beginPath(); g.moveTo(c.x - z*.7, c.y - z); g.lineTo(c.x + z*1.05, c.y); g.lineTo(c.x - z*.7, c.y + z); g.closePath(); g.fill(); }
+      g.beginPath(); g.arc(c.x, c.y, z*.5, 0, Math.PI*2); g.fill();
     },
-    hot(x, y){ hover = find(x, y); return hover ? (hover.play ? (playing() ? 'pause' : 'play') : 'sound') : null; },
+    hot(x, y){ hover = find(x, y); return hover ? 'sound' : null; },
     down(x, y){ const s = find(x, y); if (!s) return; const c = geo(s);
-      if (s.play){ if (playing()) GEN.stop(); else GEN.start('home', {style:'stage', seed:3, bpm:100}, {title:'本期节拍', sub:'首页海报 · 100 BPM', c:'pink', go:'home'}); ripple(rip, c.x, c.y, c.r*.3, INKC()); s.p = 1; return; }
+      if (s.play){ // 大圆（唱片）：和其他图形一样，点一下发一声（底鼓 + 低音），不再开启循环
+        if (playing()) GEN.stop(); ripple(rip, c.x, c.y, c.r*.3, INKC()); s.p = 1; if (!AU.init()) return; const now = AU.ctx.currentTime, bus = AU.bus('tap', .9);
+        AU.drum('kick', now, 0, bus, 1); AU.note(43, now, .35, {cut:.5, res:.3, atk:0, rel:.6, det:.12, wav:'triangle', gain:.26}, bus); return; }
       s.p = 1; s.jr += s.t === 'rect' ? .08 : s.t === 'tri' ? .35 : 0; ripple(rip, x, y, 8, PALETTES[B.pal].map(k => INK[k])[s.c]);
       if (!AU.init()) return; const now = AU.ctx.currentTime;
       if (s.d) AU.drum(s.d, now, .2, AU.bus('tap', .9), 1); else { AU.send('tap', .4); AU.note(s.n, now, .2, {cut:.6, res:.35, atk:0, rel:.5, det:.18, wav:'triangle', gain:.24}, AU.bus('tap', .9)); }
@@ -2721,7 +2723,8 @@ function mountBanner(root){
     txt.style.setProperty('--dx', (dir || 0)*48 + 'px'); txt.classList.toggle('anim', !!dir);
     $$('.bn-seg button', box).forEach((b, k) => { b.classList.toggle('on', k === B.i); b.style.setProperty('--p', k < B.i ? 1 : 0); });
     $('.bn-cnt', box).innerHTML = `<b>${pad2(B.i + 1)}</b> / ${pad2(SLIDES.length)}`;
-    SLIDES.forEach(x => box.classList.remove('c-' + x.c)); box.classList.add('c-' + s.c); // 只换颜色类，保留 in / paused，否则光标会被隐藏 UI.bi = B.i; fitText(box);
+    SLIDES.forEach(x => box.classList.remove('c-' + x.c)); box.classList.add('c-' + s.c); // 只换颜色类，保留 in / paused，否则光标会被隐藏
+    UI.bi = B.i; fitText(box);   // 标题太长（手机上的 FIELD/GRID、CONCRETE…）缩到放得下
   };
   const goTo = (n, dir) => {
     if (B.trans) return; n = (n + SLIDES.length) % SLIDES.length; if (n === B.i) return;
@@ -2731,7 +2734,8 @@ function mountBanner(root){
   };
   /* 图形区：宽屏放在右侧并限制长宽比；竖屏放在上方，文字在下方 */
   function frame(CW, CH){ const cs = getComputedStyle(box), top = parseFloat(cs.paddingTop) || 0, gut = parseFloat(cs.paddingLeft) || 16;
-    if (top > 60) return {x:10, y:10, w:CW - 20, h:top - 16};
+    if (top > 60){ const sq = $('.bn-sq', box), y0 = sq && sq.offsetParent ? sq.offsetTop + sq.offsetHeight + 8 : 10;   // 手机：图形区让开顶部的搜索条
+      return {x:10, y:y0, w:CW - 20, h:top - 6 - y0}; }
     // 宽屏：左 46% 给文字，右侧从 52% 起是图形区，两者互不覆盖
     const short = CH < 520, inner = CW - gut*2, fx = gut + inner*.52, fy = short ? 14 : 58, fw = CW - fx - gut, fh = CH - fy - (short ? 66 : 92);
     return {x:fx, y:fy, w:fw, h:fh}; }
@@ -2743,6 +2747,8 @@ function mountBanner(root){
   box.addEventListener('pointermove', e => {
     const [x, y] = pos(e); B.ptr.x = x; B.ptr.y = y; B.ptr.in = e.pointerType !== 'touch' || B.ptr.down; if (e.pointerType !== 'touch') box.classList.add('in');
     cur.style.transform = `translate(${x + B.F.x}px,${y + B.F.y}px)`;
+    if (sw && sw.touch && !sw.moved && Math.hypot(x - sw.x, y - sw.y) > 10){ sw.moved = true;
+      if (sw.claimed && !B.trans && Math.abs(x - sw.x) > Math.abs(y - sw.y)){ sw.live = true; B.ptr.down = true; B.touched = true; scene(B.i).down?.(sw.x, sw.y); } }
     if (sw){ const dx = x - sw.x, dy = y - sw.y; if (!sw.drag && Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy)*1.3 && !sw.claimed) sw.drag = true; if (sw.drag){ const r = dx*.35; cv.style.transform = `translateX(${r}px)`; txt.style.transform = `translateX(${r*.6}px)`; return; } }
     if (onUI(e)) { setCur(null); return; }
     setCur(B.trans ? null : scene(B.i).hot?.(x, y)); scene(B.i).move?.(x, y, B.ptr.down);
@@ -2751,12 +2757,16 @@ function mountBanner(root){
   box.addEventListener('pointerleave', () => { B.ptr.in = false; box.classList.remove('in'); scene(B.i).leave?.(); setCur(null); });
   const drop = () => { B.ptr.in = false; B.ptr.down = false; box.classList.remove('in'); setCur(null); };
   addEventListener('blur', drop); onClean(() => removeEventListener('blur', drop)); box.addEventListener('lostpointercapture', () => setCur(null));
+  /* 触屏：手指按下时先不发声 —— 松手时手指没怎么动（轻点）才触发；手指一动就当成滚动 / 翻页，不会误触。
+     需要拖动的海报（拨弦）只有横向拖动时才开始拨，竖向照常滚动页面。鼠标 / 触控笔仍然按下即触发 */
   box.addEventListener('pointerdown', e => {
-    if (onUI(e)) return; const [x, y] = pos(e); B.ptr.down = true; B.ptr.x = x; B.ptr.y = y;
-    sw = {x, y, drag:false, claimed: e.pointerType === 'touch' ? !!scene(B.i).claims?.(x, y) : true};
-    if (!B.trans){ B.touched = true; scene(B.i).down?.(x, y); setCur(scene(B.i).hot?.(x, y)); }
+    if (onUI(e)) return; const [x, y] = pos(e), touch = e.pointerType === 'touch'; B.ptr.x = x; B.ptr.y = y;
+    sw = {x, y, drag:false, touch, moved:false, live:false, t0:performance.now(), claimed: touch ? !!scene(B.i).claims?.(x, y) : true};
+    if (touch) return;
+    B.ptr.down = true; if (!B.trans){ B.touched = true; scene(B.i).down?.(x, y); setCur(scene(B.i).hot?.(x, y)); }
   });
-  const end = e => { B.ptr.down = false; if (e.pointerType === 'touch') B.ptr.in = false; if (sw && sw.drag){ const dx = pos(e)[0] - sw.x; cv.style.transition = txt.style.transition = 'transform .3s var(--ease)'; cv.style.transform = txt.style.transform = ''; setTimeout(() => { cv.style.transition = txt.style.transition = ''; }, 320); if (Math.abs(dx) > 60) goTo(B.i + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1); } sw = null; };
+  const end = e => { if (e.type === 'pointerup' && sw && sw.touch && !sw.moved && !B.trans && performance.now() - sw.t0 < 600){ const [x, y] = pos(e); B.touched = true; scene(B.i).down?.(x, y); }   // 轻点 = 触发一次
+    B.ptr.down = false; if (e.pointerType === 'touch') B.ptr.in = false; if (sw && sw.drag){ const dx = pos(e)[0] - sw.x; cv.style.transition = txt.style.transition = 'transform .3s var(--ease)'; cv.style.transform = txt.style.transform = ''; setTimeout(() => { cv.style.transition = txt.style.transition = ''; }, 320); if (Math.abs(dx) > 60) goTo(B.i + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1); } sw = null; };
   box.addEventListener('pointerup', end); box.addEventListener('pointercancel', end);
   box.addEventListener('keydown', e => { if (e.key === 'ArrowRight') { goTo(B.i + 1, 1); e.preventDefault(); } else if (e.key === 'ArrowLeft') { goTo(B.i - 1, -1); e.preventDefault(); } else if (scene(B.i).key?.(e.key)) { B.touched = true; e.preventDefault(); } });
   ACTIONS['bn-next'] = () => goTo(B.i + 1, 1);
@@ -3752,7 +3762,7 @@ function renderPost(id, fresh){
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px">${p.tags.map(t => `<a class="chip" data-act="tagjump" data-v="${esc(t)}" style="height:28px;font-size:12.5px">#${esc(t)}</a>`).join('')}</div>
         ${p.attach.filter(a => onSale(P(a))).length ? `<div class="used"><span class="lab">这件作品用到</span>${p.attach.filter(a => onSale(P(a))).map(pid => { const pr = P(pid); return `<a class="c-${CATS[pr.cat].c}" data-go="item-${pid}"><img src="${cover(pr.cover, hash(pr.id)%50, 160, 160)}" alt=""><span style="min-width:0"><b style="font-size:13px;display:block">${esc(pr.en)}</b><span style="font-size:13.5px">${esc(pr.title)}</span></span><span class="pill sm cc">${yuan(pr.price)}</span></a>`; }).join('')}</div>` : ''}
         <div style="margin-top:22px"><span class="lab">${p.type === 'question' ? '回答' : '评论'} ${cm.length}</span>
-        ${cm.map((c, ci) => `<div class="cmt ${c.best ? 'best' : ''} ${UI.freshCmt === p.id && ci === cm.length - 1 ? 'fresh' : ''} ${UI.flashCmt && UI.flashCmt.p === p.id && UI.flashCmt.t === c.t ? 'flash' : ''}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">楼主</span>' : ''}${c.best ? '<span class="tag c-green" style="height:18px;font-size:10px">最佳</span>' : ''}<span>${c.time}</span></div><p>${esc(c.t)}</p>${c.code ? `<pre class="code">${esc(CODE[c.code])}</pre>` : ''}<div class="ctl"><button data-act="clike">♥ ${c.likes}</button><button data-act="reply" data-v="${esc(USERS[c.u]?.name || '')}">回复</button></div></div></div>`).join('')}</div>
+        ${cm.map((c, ci) => `<div class="cmt ${c.best ? 'best' : ''} ${UI.freshCmt === p.id && ci === cm.length - 1 ? 'fresh' : ''} ${UI.flashCmt && UI.flashCmt.p === p.id && UI.flashCmt.t === c.t ? 'flash' : ''}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">楼主</span>' : ''}${c.best ? '<span class="tag c-green" style="height:18px;font-size:10px">最佳</span>' : ''}<span>${c.time}</span></div><p>${esc(c.t)}</p>${c.code ? `<pre class="code">${esc(CODE[c.code])}</pre>` : ''}<div class="ctl"><button data-act="clike" data-k="${p.id}:${ci}" class="${STATE.clikes.has(p.id + ':' + ci) ? 'on' : ''}" aria-pressed="${STATE.clikes.has(p.id + ':' + ci)}">♥ ${c.likes + (STATE.clikes.has(p.id + ':' + ci) ? 1 : 0)}</button><button data-act="reply" data-v="${esc(USERS[c.u]?.name || '')}">回复</button></div></div></div>`).join('')}</div>
       </div>
       <div class="foot"><input id="cmtIn" placeholder="${STATE.role === 'guest' ? '登录后参与' : p.type === 'question' ? '你会怎么解决？' : '说点什么…'}" autocomplete="off" enterkeyhint="send"><button class="pill sm ic" data-act="cmt" data-id="${p.id}" aria-label="发送">${IC.arrow}</button>
         <button class="pill sm ic lt" data-act="like" data-id="${p.id}" aria-label="喜欢" style="${STATE.liked.has(p.id) ? 'color:var(--pink)' : ''}">${STATE.liked.has(p.id) ? IC.heartF : IC.heart}</button>
@@ -4906,7 +4916,9 @@ Object.assign(ACTIONS, {
   share: () => { closeSheet(); try { navigator.clipboard.writeText(location.href).then(() => toast('链接已复制'), () => toast('复制失败，请从地址栏复制', 'orange', 'x')); } catch(e){ toast('复制失败，请从地址栏复制', 'orange', 'x'); } },
   copy: b => { try { navigator.clipboard.writeText(b.dataset.v).then(() => toast('已复制 ' + b.dataset.v), () => toast(b.dataset.v, 'blue')); } catch(e){ toast(b.dataset.v, 'blue'); } },
   cmt: b => { if (needLogin()) return; const i = $('#cmtIn'), v = i.value.trim(); if (!v){ i.focus(); i.animate([{transform:'translateX(-5px)'},{transform:'translateX(5px)'},{transform:'none'}], {duration:220}); return; } (UI.newCmts[b.dataset.id] ||= []).push({u: STATE.role === 'admin' ? 'admin' : ME, t:v, time:'刚刚', likes:0}); POST(b.dataset.id).cmts++; UI.freshCmt = b.dataset.id; renderPost(CUR.post); UI.freshCmt = null; UI.dirty = true; const sc = $('#post .scroll'); sc && sc.scrollTo({top:sc.scrollHeight, behavior:'smooth'}); if (IS_MOBILE) scrollTo({top:document.body.scrollHeight}); },
-  clike: b => { b.style.color = 'var(--pink)'; const n = parseInt(b.textContent.replace(/\D/g,'')) || 0; b.textContent = '♥ ' + (n + 1); sfx('pop'); },
+  /* 评论点赞：再点一次取消 */
+  clike: b => { const k = b.dataset.k, on = !STATE.clikes.has(k); on ? STATE.clikes.add(k) : STATE.clikes.delete(k);
+    const n = (parseInt(b.textContent.replace(/\D/g,'')) || 0) + (on ? 1 : -1); b.textContent = '♥ ' + Math.max(0, n); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); if (on) sfx('pop'); },
   solve: b => { const p = POST(b.dataset.id); if (curUser() !== p.author) return; const now = !isSolved(p); STATE.solved[p.id] = now; UI.justStamped = now; sfx(now ? 'ok' : 'click'); renderPost(p.id); UI.dirty = true; if (now){ const s = $('.stamp.big'); if (s){ const r = s.getBoundingClientRect(); setTimeout(() => burst(r.left + r.width/2, r.top + r.height/2, ['green','yellow']), 250); } } },
   report: () => sheet(`<h3>举报原因</h3><div style="display:flex;flex-direction:column;gap:8px">${['侵犯了我的版权','分享盗版资源','广告引流','不友善'].map(r => `<button class="pill lt lg" style="justify-content:flex-start" data-act="do-report">${r}</button>`).join('')}</div>`),
   'do-report': () => { closeSheet(); toast('收到，我们会尽快处理'); },
