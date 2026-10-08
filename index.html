@@ -640,7 +640,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .flag.w{background:var(--orange-t)}
 .qact{display:flex;gap:8px;margin-top:auto;flex-wrap:wrap}
 .qact .pill kbd{background:transparent;border-color:currentColor;color:inherit;opacity:.6;margin-left:4px}
-.lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;align-items:start}   /* 一张卡片展开时，同排的不跟着拉高 */
 .li{display:grid;grid-template-columns:88px minmax(0,1fr);gap:14px;padding:12px;border-radius:18px;background:var(--card);align-items:center}
 .li img{width:88px;height:88px;border-radius:10px;object-fit:cover}
 .li h4{font-size:15px;line-height:1.35}
@@ -1699,6 +1699,21 @@ html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
 .avq-i img{width:120px;height:120px;border-radius:50%;object-fit:cover}
 .avq-i b{display:block;font-size:15px} .avq-i span{display:block;font-size:12.5px;color:var(--ink-3);margin-top:3px}
 .avq-a{display:flex;gap:8px}
+/* 已购资源：链接 / 文本类资源原地展开 */
+.li-b{display:flex;gap:8px;flex-wrap:wrap}
+.lib .li{align-items:start}
+.dlx{grid-column:1/-1;display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.dlx-r{padding:12px 14px;border-radius:14px;background:var(--paper)}
+.dlx-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.dlx-h b{font-size:13.5px}
+.dlx-code{font-size:12.5px;color:var(--ink-2);padding:3px 8px;border-radius:999px;background:var(--yellow-t)}
+.dlx-code b{font:700 13px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em}
+.dlx-v{margin-top:6px;font-size:13px;color:var(--ink-2);overflow-wrap:anywhere;line-height:1.5}
+.dlx-v.mono{font:600 14px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;color:var(--ink)}
+.dlx-a{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.dlx-n{margin:0;font-size:12.5px;color:var(--ink-3)}
+.dlx-c{display:inline-block;width:7px;height:7px;margin-left:2px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .2s}
+[data-act="dl-x"].open .dlx-c{transform:rotate(225deg) translate(-1px,-1px)}
 </style>
 
 </head>
@@ -1833,6 +1848,15 @@ const PRESETS_COLD = [
   ['CB 32 Neon Sub',{cut:.28,res:.3,atk:.0,rel:.4,det:.2,spc:.1,wav:'saw'}]
 ];
 
+/* 资源的交付方式：file = 平台托管的文件（下载按钮）；links = 网盘等外部链接（可带提取码）；texts = 授权码、使用说明等文本。
+   可以组合；没写的资源默认只有文件下载。示例里的链接都是占位地址 */
+const DELIVER = {
+  p4:{file:false, links:[{n:'网盘 · 主链接', url:'https://share.example.com/s/ctrlz-cold-bass', code:'cb32'}, {n:'网盘 · 备用', url:'https://mirror.example.com/s/cold-bass-v2', code:'v2ok'}], note:'链接失效或下载慢，可以直接私信卖家补发'},
+  p10:{file:true, texts:[{n:'使用说明', v:'把 .tox 拖进网络编辑器即可；HUD 颜色在 Custom 页 → Theme 里统一改。'}], links:[{n:'更新地址', url:'https://code.example.com/merc/hud-parts'}]},
+  p6:{file:true, texts:[{n:'授权码', v:'CTRLZ-STAGE-8F2K-Q7M1', mono:true}]},
+  p7:{file:false, links:[{n:'网盘 · 4K ProRes 全集', url:'https://share.example.com/s/crt-glitch-4k', code:'crt4'}], note:'4K 原片约 38 GB，建议用网盘客户端下载'}
+};
+const dlOf = id => ({file:true, links:[], texts:[], ...(DELIVER[id] || {})});
 const PRODUCTS = [
   {id:'p1', kind:'鼓组', cat:'sample', title:'混凝土鼓组', en:'CONCRETE KIT', seller:'nova', price:68, orig:88, count:'128 个 WAV', format:'WAV 24bit / 48kHz', compat:'任意 DAW · 附 Ableton / FL / Logic 鼓机映射', size:'412 MB', sales:1290, rating:4.9, cover:{tpl:'orbit', pal:'pb', txt:'CONCRETE KIT'}, pads:PADS_CONCRETE, bpm:92,
    desc:'在工地废料场实录的混凝土管、钢筋和石板。每个音色都有 3 个力度层，适合工业、Hip-hop、实验节拍。', files:'CONCRETE_KIT/\n├─ 01_Kicks/        (24)\n├─ 02_Snares/       (20)\n├─ 03_Hats/         (18)\n├─ 04_Perc/         (36)\n├─ 05_FX/           (14)\n├─ 06_Loops_92bpm/  (16)\n└─ README_授权说明.pdf'},
@@ -4031,7 +4055,7 @@ ROUTES.item = id => {
   const used = POSTS.filter(p => p.attach.includes(pr.id));
   const same = PRODUCTS.filter(p => p.seller === pr.seller && p.id !== pr.id).slice(0, 4);
   const T = tplOf(pr), stage = T === 'sample' ? pvSample(pr) : T === 'preset' ? pvPreset(pr) : pvVideo(pr);
-  const buyBtn = own ? `<button class="pill lg" data-act="dl" data-id="${pr.id}">${IC.dl}下载</button>` : `<button class="pill lg" data-act="buy" data-id="${pr.id}">${pr.price ? '购买' : '免费领取'}</button>`;
+  const buyBtn = own ? `<span class="li-b">${dlBtns(pr, 'lg', true)}</span>` : `<button class="pill lg" data-act="buy" data-id="${pr.id}">${pr.price ? '购买' : '免费领取'}</button>`;
   const favBtn = `<button class="pill lg ic lt" data-act="fav" data-id="${pr.id}" aria-label="收藏" style="width:54px;${STATE.favs.has(pr.id) ? 'color:var(--blue)' : ''}">${STATE.favs.has(pr.id) ? IC.saveF : IC.save}</button>`;
   onMount(root => mountWaves(root));
   return `<div class="wrap c-${c.c}">
@@ -4193,6 +4217,23 @@ ACTIONS.dl = b => {
     () => { const iv = setInterval(() => { const s = Math.max(0, (exp - Date.now())/1000|0); const el = $('#dlCd'), r = $('#dlRing'); if (el) el.textContent = `${pad2(s/60|0)}:${pad2(s%60)}`; if (r) r.style.setProperty('--p', s/900*100); }, 1000); return () => clearInterval(iv); });
 };
 ACTIONS['fake-dl'] = () => { closeSheet(); toast('开始下载', 'blue', 'dl'); };
+/* 已购资源的获取按钮：有文件就有「下载」；有链接 / 文本就有「展开链接」（资源库里原地展开，详情页用面板） */
+function dlBtns(p, size, sheetMode){ const d = dlOf(p.id), more = d.links.length || d.texts.length, lab = d.links.length ? '展开链接' : '查看内容';
+  return (d.file ? `<button class="pill ${size}" data-act="dl" data-id="${p.id}">${IC.dl}下载</button>` : '')
+    + (more ? `<button class="pill ${size} ${d.file ? 'lt' : ''}" data-act="${sheetMode ? 'dl-sheet' : 'dl-x'}" data-id="${p.id}" aria-expanded="false" ${sheetMode ? '' : `aria-controls="dlx-${p.id}"`}>${IC.link}${lab}${sheetMode ? '' : '<i class="dlx-c"></i>'}</button>` : ''); }
+function dlPanel(p){ const d = dlOf(p.id);
+  return d.links.map(l => `<div class="dlx-r"><div class="dlx-h"><b>${esc(l.n)}</b>${l.code ? `<span class="dlx-code">提取码 <b>${esc(l.code)}</b></span>` : ''}</div><div class="dlx-v">${esc(l.url)}</div>
+      <div class="dlx-a"><button class="pill sm" data-act="dl-copy" data-v="${esc(l.url + (l.code ? ' 提取码：' + l.code : ''))}" data-t="${l.code ? '链接和提取码' : '链接'}">复制${l.code ? '链接和提取码' : '链接'}</button><a class="pill sm lt" href="${esc(l.url)}" target="_blank" rel="noopener">打开</a></div></div>`).join('')
+    + d.texts.map(x => `<div class="dlx-r"><div class="dlx-h"><b>${esc(x.n)}</b></div><div class="dlx-v ${x.mono ? 'mono' : ''}">${esc(x.v)}</div><div class="dlx-a"><button class="pill sm" data-act="dl-copy" data-v="${esc(x.v)}" data-t="${esc(x.n)}">复制</button></div></div>`).join('')
+    + (d.note ? `<p class="dlx-n">${esc(d.note)}</p>` : ''); }
+Object.assign(ACTIONS, {
+  'dl-x': b => { const box = $('#dlx-' + b.dataset.id); if (!box) return; const on = box.hidden; box.hidden = !on; b.setAttribute('aria-expanded', on); b.classList.toggle('open', on);
+    if (on && !reduced()) box.animate([{opacity:0, transform:'translateY(-6px)'}, {opacity:1, transform:'none'}], {duration:200, easing:'ease-out'}); },
+  'dl-sheet': b => { const pr = P(b.dataset.id); if (!STATE.owned.has(pr.id)){ toast('购买后才能查看', 'orange', 'lock'); return; } sheet(`<h3>${esc(pr.title)}</h3><div class="dlx" style="margin:0">${dlPanel(pr)}</div>`); },
+  'dl-copy': b => { const v = b.dataset.v, t = b.dataset.t || '内容', ok = () => toast(`已复制${t}`);
+    try { navigator.clipboard.writeText(v).then(ok, () => fallbackCopy(v) ? ok() : toast(v, 'blue')); } catch(e){ fallbackCopy(v) ? ok() : toast(v, 'blue'); } }
+});
+function fallbackCopy(v){ try { const t = document.createElement('textarea'); t.value = v; t.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(t); t.select(); const ok = document.execCommand('copy'); t.remove(); return ok; } catch(e){ return false; } }
 /* ================= 个人主页 ================= */
 ROUTES.user = id => {
   const u = USERS[id] || USERS[ME]; const isMe = curUser() === u.id;
@@ -4221,7 +4262,7 @@ function meLegacy(arg){
   const t = arg, u = USERS[ME]; const owned = PRODUCTS.filter(p => STATE.owned.has(p.id)); if (t === 'lib' && STATE.libNew){ STATE.libNew = 0; setTimeout(badge); }
   const nav = [['lib','资源库', owned.length],['orders','订单', 0],['favs','收藏', 0],['settings','设置', 0]];
   let body = '';
-  if (t === 'lib') body = `<div class="lib">${owned.map(p => `<div class="li c-${CATS[p.cat].c}"><img src="${cover(p.cover, hash(p.id)%50, 180, 180)}" alt="" data-go="item-${p.id}" style="cursor:pointer"><div style="min-width:0"><div class="lab" style="display:flex;gap:6px;align-items:center"><span class="dot"></span>${esc(p.en)}</div><h4>${esc(p.title)}</h4><div class="m">${esc(p.size)}${p.id === 'p1' ? ' · <b style="color:var(--pink)">有新版本 v1.1</b>' : ''}</div><button class="pill sm" data-act="dl" data-id="${p.id}">${IC.dl}下载</button></div></div>`).join('')}</div>`;
+  if (t === 'lib') body = `<div class="lib">${owned.map(p => `<div class="li c-${CATS[p.cat].c}"><img src="${cover(p.cover, hash(p.id)%50, 180, 180)}" alt="" data-go="item-${p.id}" style="cursor:pointer"><div style="min-width:0"><div class="lab" style="display:flex;gap:6px;align-items:center"><span class="dot"></span>${esc(p.en)}</div><h4>${esc(p.title)}</h4><div class="m">${esc(p.size)}${p.id === 'p1' ? ' · <b style="color:var(--pink)">有新版本 v1.1</b>' : ''}</div><div class="li-b">${dlBtns(p, 'sm')}</div></div>${dlOf(p.id).links.length || dlOf(p.id).texts.length ? `<div class="dlx" id="dlx-${p.id}" hidden>${dlPanel(p)}</div>` : ''}</div>`).join('')}</div>`;
   if (t === 'orders') body = `<div class="box"><div class="tw"><table class="t"><thead><tr><th>资源</th><th>付款方式</th><th class="r">金额</th><th>时间</th><th>状态</th><th></th></tr></thead><tbody>${STATE.orders.map(o => { const p = P(o.pid); return `<tr><td><a data-go="item-${p.id}" style="cursor:pointer;font-weight:600">${esc(p.title)}</a>${o.fresh ? ' <span class="tag c-pink">新</span>' : ''}<div class="mut2" style="font-size:11.5px;font-family:var(--f-b)">${o.no}</div></td><td>${o.pay}</td><td class="r n">${yuan2(o.price)}</td><td class="mut2 n">${o.time}</td><td><span class="st"><span class="dot c-${o.st === '已完成' ? 'green' : o.st === '退款中' ? 'orange' : 'violet'}"></span>${o.st}</span></td><td class="r">${o.st === '已完成' && o.price > 0 ? `<button class="pill sm lt" data-act="refund" data-no="${o.no}">退款</button>` : ''}</td></tr>`; }).join('')}</tbody></table></div></div>`;
   if (t === 'favs'){ const fp = PRODUCTS.filter(p => STATE.favs.has(p.id)), fs = POSTS.filter(p => STATE.favs.has(p.id)); onMount(root => mountWaves(root));
     body = `${fp.length ? `<div class="grid-p">${fp.map(sleeve).join('')}</div>` : ''}${fs.length ? `<div class="mason" style="margin-top:32px">${fs.map(postCard).join('')}</div>` : ''}${!fp.length && !fs.length ? '<div class="empty"><div class="x">空</div><span>看到喜欢的就点书签</span></div>' : ''}`; }
