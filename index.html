@@ -2211,6 +2211,42 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 .stamp.foil.dk{color:#fff;background:#000;box-shadow:0 0 0 9px #000;mix-blend-mode:screen}
 .stamp.foil .foil-c{position:absolute;left:-9px;top:-9px;width:calc(100% + 18px);height:calc(100% + 18px);pointer-events:none;mix-blend-mode:screen}
 .stamp.foil.dk .foil-c{mix-blend-mode:multiply}
+
+/* ---- 选中分类卡插画：软胶小物件（RUB：SVG 光照滤镜 + 跟光倾斜） ---- */
+.cat svg.sh .rub-g{transform-box:view-box}
+.cat.on svg.sh.rub{mix-blend-mode:normal;opacity:1;overflow:visible;transform:perspective(320px) rotateX(var(--rrx,0deg)) rotateY(var(--rry,0deg));transition:none}
+
+/* ---- 私信三个快捷入口：果冻玻璃小方块（彩色半透明胶体 + 顶部高光 + 底部透光，按下压扁、松手回弹）。纯 CSS ---- */
+.mq .g{position:relative;width:26px;height:26px;border-radius:8px;isolation:isolate;
+  background:radial-gradient(120% 90% at 50% 105%,color-mix(in srgb,var(--c) 55%,#fff) 0%,transparent 55%),linear-gradient(165deg,color-mix(in srgb,var(--c) 78%,#fff) 0%,var(--c) 48%,color-mix(in srgb,var(--c) 82%,#000) 100%);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.9),inset 0 0 0 .5px rgba(255,255,255,.55),inset 0 -3px 4px -1px color-mix(in srgb,var(--c) 60%,#000),0 4px 8px -3px color-mix(in srgb,var(--c) 70%,transparent);
+  transition:transform .34s cubic-bezier(.3,1.8,.5,1)}
+.mq .g::after{content:"";position:absolute;z-index:1;left:3px;right:3px;top:2px;height:42%;border-radius:6px 6px 50% 50%/6px 6px 45% 45%;background:linear-gradient(rgba(255,255,255,.75),rgba(255,255,255,.08));pointer-events:none}
+.mq .g svg{position:relative;z-index:2;filter:drop-shadow(0 .5px 0 rgba(255,255,255,.5))}
+.mq:active .g{transform:scale(1.16,.8);transition-duration:.12s}
+html.rm .mq .g{transition:none}
+
+/* 「我」头像后的颗粒渐变色块（和原来的黄色块同位置），加载好之前和不支持时仍是 ::before 的纯黄 */
+.mh-gg{position:absolute;inset:0;z-index:-1;border-radius:50%;overflow:hidden;transform:translate(7px,6px);pointer-events:none;opacity:0;transition:opacity .4s}
+.mh-gg canvas{border-radius:50%}
+.mh-av.gg-on .mh-gg{opacity:1}
+
+/* ---- 空状态软胶几何 ---- */
+.fx-em{width:min(200px,60vw);height:auto;overflow:visible;margin-bottom:-4px}
+.empty[style*="flex-start"] .fx-em{width:min(160px,48vw)}
+.fx-em .em-f{transform-box:fill-box;transform-origin:50% 100%;animation:emf 3.4s ease-in-out infinite}
+.fx-em .em-2{animation-delay:-.9s} .fx-em .em-3{animation-delay:-1.8s} .fx-em .em-4{animation-delay:-2.6s}
+.fx-em .em-sh{fill:var(--ink);opacity:.1}
+.fx-em .em-sh ellipse{transform-box:fill-box;transform-origin:center;animation:ems 3.4s ease-in-out infinite}
+.fx-em .em-sh ellipse:nth-child(2){animation-delay:-.9s} .fx-em .em-sh ellipse:nth-child(3){animation-delay:-1.8s} .fx-em .em-sh ellipse:nth-child(4){animation-delay:-2.6s}
+@keyframes emf{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-7px) rotate(4deg)}}
+@keyframes ems{0%,100%{transform:scaleX(1);opacity:1}50%{transform:scaleX(.72);opacity:.6}}
+html.rm .fx-em *{animation:none}
+@media (prefers-reduced-motion:reduce){ .fx-em *{animation:none} }
+
+/* 「我」页签在极窄屏（320）不折行：字不换行，间距收紧 */
+.mtabs button{white-space:nowrap;flex:none}
+@media (max-width:359px){ .mtabs{gap:14px} .mtabs button{font-size:15px;gap:3px} }
 </style>
 
 </head>
@@ -4890,7 +4926,7 @@ const LG = (() => {
     ['.tb', {r: 999, bev: 14, amt: .16, extra: 'blur(20px) saturate(1.5) brightness(1.04)'}],
     ['.vbadge, .acv .tag.k', {r: 999, bev: 9, amt: .3, extra: 'blur(1.5px) saturate(1.8) brightness(1.06)'}],
     ['.cv .pbtn, .acv .pbtn', {bev: 16, amt: .34, extra: 'saturate(1.7) brightness(1.08)'}],
-    ['.cjelly', {r: 16, bev: 18, amt: .3, extra: 'saturate(1.25) brightness(1.04)'}]
+    ['.cjelly', {r: 16, bev: 12, amt: .1, extra: 'saturate(1.25) brightness(1.04)'}]
   ];
   function scan(root = document){ if (!ok) return; for (const [sel, o] of SPEC) root.querySelectorAll(sel).forEach(el => apply(el, Object.assign({}, o, {r: Math.min(o.r ?? 999, el.offsetHeight / 2)}))); }
   if (ok) document.documentElement.classList.add('lg-ok');
@@ -4975,7 +5011,9 @@ void main(){
 }`;
   const TONES = {
     gold:   {light:'#ffe9a8', dark:'#6e5408', repetition:1.8, angle:68, softness:.34, dispersion:.028, distortion:.36},
-    silver: {light:'#f8fafc', dark:'#23262b', repetition:1.8, angle:68, softness:.34, dispersion:.03, distortion:.38}
+    silver: {light:'#f8fafc', dark:'#23262b', repetition:1.8, angle:68, softness:.34, dispersion:.03, distortion:.38},
+    // 浅色纸上用的银：最亮的条纹压暗一点，不然白条纹叠在白纸上就看不见了
+    silverInk: {light:'#c4cad3', dark:'#24282f', repetition:1.8, angle:68, softness:.34, dispersion:.03, distortion:.38}
   };
   const rgb = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16 & 255)/255, (n >> 8 & 255)/255, (n & 255)/255]; };
   function mount(canvas, tone = 'gold', o = {}){
@@ -5010,9 +5048,30 @@ void main(){
 function foil(st, tone = 'gold'){
   if (!st || !FX.can()) return;
   const c = document.createElement('canvas'); c.className = 'foil-c'; c.setAttribute('aria-hidden', 'true'); st.prepend(c);
+  // 看章底下的实际底色（不是只看深浅模式）：浅底用 multiply 方案，深底用 screen 方案
+  let bg = null; for (let e = st.parentElement; e && !bg; e = e.parentElement){ const m = getComputedStyle(e).backgroundColor.match(/[\d.]+/g); if (m && (m[3] === undefined || +m[3] > .5)) bg = m; }
+  const dark = bg ? (.299*bg[0] + .587*bg[1] + .114*bg[2]) < 128 : isDark();
+  if (tone === 'silver' && !dark) tone = 'silverInk';
   if (!METAL.mount(c, tone, {speed: .55})){ c.remove(); return; }
-  st.classList.add('foil', isDark() ? 'dk' : 'lt');
+  st.classList.add('foil', dark ? 'dk' : 'lt');
 }
+
+/* 「我」头像后面的黄色孔版色块 → 慢慢流动的颗粒渐变（Paper Shaders grainGradient）。
+   色块很小，像素数封顶；离开屏幕 Paper 自己暂停；页面重绘后旧的释放掉。FX.can() 不通过就保留原来的纯黄色块 */
+const MH_GG = {m:null, el:null};
+document.addEventListener('rendered', () => {
+  if (MH_GG.el && !MH_GG.el.isConnected){ try { MH_GG.m?.dispose(); } catch(e){} MH_GG.m = MH_GG.el = null; }
+  const btn = $('#app .mh-av'); if (!btn || btn.querySelector('.mh-gg') || !FX.can()) return;
+  const el = document.createElement('span'); el.className = 'mh-gg'; el.setAttribute('aria-hidden', 'true'); btn.prepend(el); MH_GG.el = el;
+  FX.paper().then(P => { const nz = P.getShaderNoiseTexture(); return nz.decode().then(() => [P, nz]); }).then(([P, nz]) => {
+    if (!el.isConnected) return;
+    const C = P.getShaderColorFromString;
+    MH_GG.m = new P.ShaderMount(el, P.grainGradientFragmentShader, {u_colorBack: C('#FFE14A'), u_colors: ['#FFE14A', '#FFB21F', '#FF6B2C', '#FFF4B0'].map(C), u_colorsCount: 4,
+      u_softness: .6, u_intensity: .5, u_noise: .55, u_shape: P.GrainGradientShapes.ripple, u_noiseTexture: nz, u_fit: P.ShaderFitOptions.cover, u_scale: 1.4, u_rotation: 0,
+      u_offsetX: 0, u_offsetY: 0, u_originX: .5, u_originY: .5, u_worldWidth: 0, u_worldHeight: 0}, {premultipliedAlpha: false}, .35, 0, 1, 1.2e5);
+    btn.classList.add('gg-on');
+  }).catch(() => el.remove());
+});
 
 /* 商城分类卡的果冻物理：一个弹簧，只在有动静时跑 rAF。
    滑动列表 → 卡片按速度往后拖、停下晃几下；按住 → 以手指位置为中心压扁，松手回弹 */
@@ -5032,6 +5091,69 @@ function catJelly(){
   card.addEventListener('pointerup', up); card.addEventListener('pointerleave', up); card.addEventListener('pointercancel', up);
 }
 document.addEventListener('rendered', catJelly);
+/* 选中分类卡的插画 = 软胶小物件：SVG 光照滤镜把图形「鼓起来」（轮廓模糊后当高度图），
+   点光源跟着光标 / 手指 / 陀螺仪走，高光在胶面上滑动，整个物件跟着往光的方向微微倾斜。
+   纯 SVG 滤镜 + CSS，不开 WebGL；原来的敲鼓 / 拧旋钮动画照常播放 */
+const RUB = (() => {
+  let L = null;
+  function host(){
+    if (L) return L;
+    const d = document.createElement('div'); d.setAttribute('aria-hidden', 'true'); d.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
+    d.innerHTML = `<svg width="0" height="0"><filter id="fx-rub" x="-20%" y="-20%" width="140%" height="150%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2.6" result="b"/>
+      <feDiffuseLighting in="b" surfaceScale="4" diffuseConstant="1.18" lighting-color="#fff" result="df"><feDistantLight azimuth="235" elevation="58"/></feDiffuseLighting>
+      <feComposite in="SourceGraphic" in2="df" operator="arithmetic" k1="1" result="lit"/>
+      <feSpecularLighting in="b" surfaceScale="4" specularConstant="1.05" specularExponent="20" lighting-color="#fff" result="sp"><fePointLight x="20" y="10" z="90"/></feSpecularLighting>
+      <feComposite in="sp" in2="SourceAlpha" operator="in" result="spi"/>
+      <feComposite in="spi" in2="lit" operator="arithmetic" k2=".85" k3="1" result="rub"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3.2" result="sb"/><feOffset in="sb" dx="2" dy="6" result="so"/>
+      <feComponentTransfer in="so" result="sh"><feFuncA type="linear" slope=".26"/></feComponentTransfer>
+      <feMerge><feMergeNode in="sh"/><feMergeNode in="rub"/></feMerge></filter>
+      <filter id="fx-rub2" x="-25%" y="-25%" width="150%" height="170%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2.4" result="b"/>
+      <feDiffuseLighting in="b" surfaceScale="4" diffuseConstant="1.15" lighting-color="#fff" result="df"><feDistantLight azimuth="235" elevation="58"/></feDiffuseLighting>
+      <feComposite in="SourceGraphic" in2="df" operator="arithmetic" k1="1" result="lit"/>
+      <feSpecularLighting in="b" surfaceScale="4" specularConstant="1" specularExponent="18" lighting-color="#fff" result="sp"><feDistantLight azimuth="235" elevation="40"/></feSpecularLighting>
+      <feComposite in="sp" in2="SourceAlpha" operator="in" result="spi"/>
+      <feComposite in="spi" in2="lit" operator="arithmetic" k2=".8" k3="1"/></filter></svg>`;
+    document.body.appendChild(d); return (L = d.querySelector('fePointLight'));
+  }
+  // nx / ny：-1 ~ 1，光从哪边来
+  function light(svg, nx, ny){
+    const l = host(), vb = svg.viewBox.baseVal, w = vb?.width || 100, h = vb?.height || 100;   // 滤镜挂在 svg 里的 <g> 上，坐标用 viewBox 单位
+    l.setAttribute('x', ((nx + 1)/2*w).toFixed(1)); l.setAttribute('y', ((ny + 1)/2*h).toFixed(1));
+    svg.style.setProperty('--rry', (nx*14).toFixed(2) + 'deg'); svg.style.setProperty('--rrx', (-ny*12).toFixed(2) + 'deg');
+  }
+  return {host, light};
+})();
+function catRub(){
+  const card = $('.cats .cat.on'), svg = card && !card.classList.contains('all') && $('svg.sh', card);
+  if (!svg || card._rub) return; card._rub = true; RUB.host(); svg.classList.add('rub');
+  // 把插画整体包进一个 <g filter>：光照 / 投影在 viewBox 坐标里算，各尺寸一致；svg 本身只负责倾斜
+  const wrap = document.createElementNS('http://www.w3.org/2000/svg', 'g'); wrap.setAttribute('filter', 'url(#fx-rub)'); wrap.setAttribute('class', 'rub-g');
+  while (svg.firstChild) wrap.appendChild(svg.firstChild); svg.appendChild(wrap);
+  const st = {x:-.5, y:-.8, tx:-.5, ty:-.8, raf:0};
+  const tick = () => { st.raf = 0; if (!svg.isConnected) return; st.x += (st.tx - st.x)*.18; st.y += (st.ty - st.y)*.18; RUB.light(svg, st.x, st.y);
+    if (Math.abs(st.tx - st.x) + Math.abs(st.ty - st.y) > .004) st.raf = requestAnimationFrame(tick); };
+  const aim = (x, y) => { st.tx = Math.max(-1.2, Math.min(1.2, x)); st.ty = Math.max(-1.2, Math.min(1.2, y)); if (reduced()){ st.x = st.tx; st.y = st.ty; RUB.light(svg, st.x, st.y); } else if (!st.raf) st.raf = requestAnimationFrame(tick); };
+  RUB.light(svg, st.x, st.y);
+  card.addEventListener('pointermove', e => { const r = svg.getBoundingClientRect(); aim((e.clientX - r.left)/r.width*2 - 1, (e.clientY - r.top)/r.height*2 - 1); }, {passive: true});
+  card.addEventListener('pointerleave', () => aim(-.5, -.8));
+  // 手机：陀螺仪倾斜手机，高光跟着跑（只在卡片在屏幕里时看）
+  if (GRAV.on || IS_MOBILE){ const off = loopAdd(() => { if (!svg.isConnected){ off(); return; } if (!GRAV.on || !visible(svg)) return;
+    const x = GRAV.tx*1.6 - .2, y = -(1 - GRAV.ty)*1.6 - .5; if (Math.abs(x - st.tx) + Math.abs(y - st.ty) > .03) aim(x, y); }); }
+}
+document.addEventListener('rendered', catRub);
+
+/* 空状态：四个孔版几何（圆 / 方 / 三角 / 半圆）做成软胶小物件，各自轻轻漂浮、错开节奏；
+   和分类卡同一套 SVG 光照滤镜（不开 WebGL），地上的影子跟着物件一起一呼一吸 */
+const EMPTY_RUB = `<svg class="fx-em" viewBox="0 0 168 74" aria-hidden="true">
+  <g class="em-sh"><ellipse cx="28" cy="68" rx="15" ry="2.6"/><ellipse cx="68" cy="68" rx="13" ry="2.4"/><ellipse cx="106" cy="68" rx="14" ry="2.4"/><ellipse cx="144" cy="68" rx="14" ry="2.4"/></g>
+  <g class="em-f em-1"><g filter="url(#fx-rub2)"><circle cx="28" cy="38" r="16" fill="#FF4FA7"/></g></g>
+  <g class="em-f em-2"><g filter="url(#fx-rub2)"><rect x="56" y="30" width="24" height="24" rx="4" fill="#2E5BFF" transform="rotate(-10 68 42)"/></g></g>
+  <g class="em-f em-3"><g filter="url(#fx-rub2)"><path d="M106 22 L122 50 Q123 53 120 53 L92 53 Q89 53 90 50 Z" fill="#FFE14A"/></g></g>
+  <g class="em-f em-4"><g filter="url(#fx-rub2)"><path d="M128 52 A16 16 0 0 1 160 52 Z" fill="#FF6B2C"/></g></g></svg>`;
+document.addEventListener('rendered', () => { $$('#app .empty').forEach(e => { if (e.querySelector('.fx-em, .stamp')) return; RUB.host(); e.insertAdjacentHTML('afterbegin', EMPTY_RUB); }); });
 function flip(mutate){
   const before = new Map($$('#app [data-flip]').map(el => [el.dataset.flip, el.getBoundingClientRect()]));
   mutate(); if (reduced()) return;
@@ -6351,7 +6473,7 @@ Object.assign(ACTIONS, {
     if (a === 'counter'){ const p = +$('#coCp').value; if (!p){ fxPop($('#coCp'), 'fx-shake', 300); return; } (o.offers ||= []).push({by:ME, price:p, note:$('#coCn').value.trim(), ts:Date.now()}); o.v++; o.st = 'counter'; coCardPush(o, ME); closeSheet(); coRefresh(o); coSim(o, 'counter'); return; }
     if (a === 'withdraw'){ o.st = 'withdrawn'; coSys(o, '你撤回了邀约'); closeSheet(); coRefresh(o, 'fx-dn'); return; }
     if (a === 'confirm'){ o.st = 'done'; o.doneAt = Date.now(); coSys(o, `你确认验收 · ${cny(coNet(o.price))} 已打给 ${nm}`); coRefresh(o); coSim(o, 'done');
-      const sh = $('#layer .sheet'); sh.innerHTML = `<button class="x-close" data-act="close" aria-label="关闭">${IC.x}</button><div class="done"><span class="stamp big pop" style="--sc:var(--green)">DONE<small>合作完成</small></span><b style="font-size:18px;margin-top:10px">「${esc(o.title)}」完成了</b><span class="mut" style="font-size:14px">给 ${esc(nm)} 打个分吧，好评度会显示在 TA 的主页</span></div>${coRateBody(o)}`;
+      const sh = $('#layer .sheet'); sh.innerHTML = `<button class="x-close" data-act="close" aria-label="关闭">${IC.x}</button><div class="done"><span class="stamp big pop" style="--sc:var(--green)">DONE<small>合作完成</small></span><b style="font-size:18px;margin-top:10px">「${esc(o.title)}」完成了</b><span class="mut" style="font-size:14px">给 ${esc(nm)} 打个分吧，好评度会显示在 TA 的主页</span></div>${coRateBody(o)}`; foil($('#layer .stamp'), 'gold');
       setTimeout(() => { const s = $('#layer .stamp'); if (s){ const q = s.getBoundingClientRect(); fxShapes(q.left + q.width/2, q.top + q.height/2, 28, 170, ['pink','blue','yellow','orange','green'], 70); fxPop($('#layer .sheet'), 'fx-thud', 400); haptic(16); } }, 140); return; }
     if (a === 'revise'){ o.rev++; o.st = 'revising'; coSys(o, `你申请了第 ${o.rev} 次修改${$('#coRv').value.trim() ? '：' + $('#coRv').value.trim() : ''}`); closeSheet(); coRefresh(o); coSim(o, 'revise'); return; }
     if (a === 'dispute'){ o.st = 'dispute'; coSys(o, `已申请平台介入：${$('[data-act="co-why"].on')?.dataset.v || ''} · 托管的钱已冻结`); closeSheet(); coRefresh(o); return; }
@@ -6360,7 +6482,7 @@ Object.assign(ACTIONS, {
     sh.innerHTML = `<div class="done"><div class="ring-p" id="rp" style="--p:0"></div><b style="font-size:18px">正在等待${UI.pay}…</b></div>`;
     const t0 = performance.now(), tick = now => { const k = Math.min(1, (now - t0)/1200), r = $('#rp'); if (!r) return; r.style.setProperty('--p', k*100); if (k < 1) requestAnimationFrame(tick); else done(); }; requestAnimationFrame(tick);
     const done = () => { o.st = 'paid'; o.paidAt = Date.now(); o.pay = UI.pay; coSys(o, `你已担保付款 ${cny(o.price)} · 钱在平台，验收后才打给 ${USERS[coOther(o)].name}`); coRefresh(o); coSim(o, 'paid'); sfx('ok');
-      sh.innerHTML = `<button class="x-close" data-act="close" aria-label="关闭">${IC.x}</button><div class="done"><span class="stamp big pop" style="--sc:var(--blue)">HELD<small>平台托管</small></span><b style="font-size:20px;margin-top:10px">${cny(o.price)} 已托管</b><span class="mut" style="font-size:14px;text-align:center">验收后才会打给 ${esc(USERS[coOther(o)].name)} · 交付后 ${CO_AUTO_DAYS} 天不处理自动验收</span></div><button class="pill lg lt" data-act="close">好的</button>`;
+      sh.innerHTML = `<button class="x-close" data-act="close" aria-label="关闭">${IC.x}</button><div class="done"><span class="stamp big pop" style="--sc:var(--blue)">HELD<small>平台托管</small></span><b style="font-size:20px;margin-top:10px">${cny(o.price)} 已托管</b><span class="mut" style="font-size:14px;text-align:center">验收后才会打给 ${esc(USERS[coOther(o)].name)} · 交付后 ${CO_AUTO_DAYS} 天不处理自动验收</span></div><button class="pill lg lt" data-act="close">好的</button>`; foil($('#layer .stamp'), 'silver');
       setTimeout(() => { const s = $('#layer .stamp'); if (s){ const q = s.getBoundingClientRect(); fxShapes(q.left + q.width/2, q.top + q.height/2, 22, 150, ['blue','yellow','pink'], 70); fxPop($('#layer .sheet'), 'fx-thud', 400); haptic(16); } }, 140); }; },
   'co-dsend': b => { const o = CO_BY(b.dataset.id), url = $('#cdU').value.trim(), code = $('#cdC').value.trim(), txt = $('#cdT').value.trim(), f = $('#cdF').files?.[0];
     if (!url && !txt && !f){ fxPop($('#cdU'), 'fx-shake', 300); toast('至少放一个链接、文件或文字说明', 'orange', 'link'); return; }
