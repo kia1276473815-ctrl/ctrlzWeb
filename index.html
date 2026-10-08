@@ -1862,15 +1862,15 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 .ht-no i{font:600 10px/1 var(--f-b);font-style:normal;color:var(--ink-3);letter-spacing:.1em}
 @media (min-width:761px){ .ht-no{left:var(--g)} }
 @media (max-width:339px){ .ht-no{display:none} }
-/* C. 底部导航：发布是圆形按键；选中页签图标后面垫一块对应的几何图形 */
+/* C. 底部导航：发布是圆形按键；选中页签图标后面居中垫一块对应的几何图形 */
 @media (max-width:760px){
   .tb .plus span{width:46px;height:46px;border-radius:50%;transition:transform .15s var(--spring),background .2s,color .2s}
   .tb .plus:active span{transform:scale(.9)}
   .tb a svg{box-sizing:content-box;padding:4px;margin:-4px;background:no-repeat center/100% 100%;transition:background-size .25s var(--spring)}
-  .tb a.on[data-r="home"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Ccircle cx='17' cy='17' r='12' fill='%23FF4FA7'/%3E%3C/svg%3E")}
-  .tb a.on[data-r="shop"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Crect x='6' y='6' width='22' height='22' rx='2' fill='%232E5BFF' opacity='.75'/%3E%3C/svg%3E")}
-  .tb a.on[data-r="msg"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath d='M17 3L30 27H4z' fill='%23FFE14A'/%3E%3C/svg%3E")}
-  .tb a.on[data-r="me"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath d='M4 26a13 13 0 0126 0z' fill='%23FF6B2C'/%3E%3C/svg%3E")}
+  .tb a.on[data-r="home"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Ccircle cx='15' cy='15' r='13' fill='%23FF4FA7'/%3E%3C/svg%3E")}
+  .tb a.on[data-r="shop"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Crect x='4' y='4' width='22' height='22' rx='3' fill='%232E5BFF' opacity='.75'/%3E%3C/svg%3E")}
+  .tb a.on[data-r="msg"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath d='M15 2L28.5 26H1.5z' fill='%23FFE14A'/%3E%3C/svg%3E")}
+  .tb a.on[data-r="me"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath d='M2 22a13 13 0 0126 0z' fill='%23FF6B2C'/%3E%3C/svg%3E")}
 }
 @media (max-width:760px) and (max-height:430px), (max-height:430px) and (min-aspect-ratio:3/2){ .tb .plus span{width:34px;height:34px} }
 #hd .pill.post-btn{border-radius:50%}
@@ -3769,7 +3769,7 @@ function render(force){
   if (r === 'v' || (r === 'post' && inStream(POST(arg)))){ if (!CUR.key) renderBase('home', ''); if (CUR.post) closePostLayer(); openReels(arg); return; }
   if (RL.on) closeReels();
   if (r === 'post'){ if (!CUR.key) renderBase('home', ''); openPost(arg); return; }
-  if (CUR.post) closePostLayer();
+  if (CUR.post){ postExit(() => { if (CUR.post) closePostLayer(); render(force); }); return; }   // 先播关帖子动画，再继续换页
   const key = r + '|' + arg;
   if (!force && CUR.key === key) { if (UI.dirty){ UI.dirty = false; renderBase(r, arg, true); } return; }
   renderBase(r, arg, force === 'soft' || NAVX.inpage);
@@ -4201,7 +4201,7 @@ function openPost(id){
     $('#post .side').animate([{opacity:0},{opacity:1}], {duration:260, delay:220, fill:'backwards'}); $('#post .pback').animate([{opacity:0},{opacity:1}], {duration:200, delay:300, fill:'backwards'}); }
   else UI.from = null;
 }
-function closePostLayer(){ PCLEAN.forEach(f => { try { f(); } catch(e){} }); PCLEAN = []; $('#post').innerHTML = ''; document.documentElement.style.overflow = ''; document.body.classList.remove('post-open'); CUR.post = null; fabUpdate(); if (UI.dirty){ UI.dirty = false; const {r, arg} = parseHash(); renderBase(r, arg, true); } }
+function closePostLayer(){ PCLEAN.forEach(f => { try { f(); } catch(e){} }); PCLEAN = []; $('#post').innerHTML = ''; document.documentElement.style.overflow = ''; document.body.classList.remove('post-open'); CUR.post = null; fabUpdate(); if (UI.dirty){ UI.dirty = false; const run = () => { if (CUR.post) return; const {r, arg} = parseHash(); renderBase(r, arg, true); }; window.requestIdleCallback ? requestIdleCallback(run, {timeout:400}) : setTimeout(run, 60); } }   // 列表刷新放到空闲时，关帖子那一帧不卡
 function renderPost(id, fresh){
   PCLEAN.forEach(f => { try { f(); } catch(e){} }); PCLEAN = [];
   const keep = !fresh && postScroller() ? postScroller().scrollTop : 0; // 点赞 / 评论 / 关注后重绘不跳回顶部
@@ -4250,15 +4250,22 @@ function renderPost(id, fresh){
   document.dispatchEvent(new CustomEvent('gen'));
   const inp = $('#cmtIn'); inp.addEventListener('keydown', e => { if (e.key === 'Enter') ACTIONS.cmt($('[data-act="cmt"]')); });
 }
-ACTIONS.pclose = () => {
-  const f = UI.from, post = $('#post .post'), card = f && $(`#app [data-flip="p-${f.id}"] .cv`);
-  if (f && card && post && f.id === CUR.post && !reduced() && visible(card)){
-    const s = card.getBoundingClientRect(), R = post.getBoundingClientRect(); post.style.transformOrigin = '0 0'; $('#post .side').style.opacity = 0; $('#post .pback').style.opacity = 0; $$('#post .navp').forEach(x => x.remove());
-    $('#post .ov').animate([{background:'rgba(20,20,24,.42)'},{background:'rgba(20,20,24,0)'}], {duration:300, fill:'forwards'});
-    post.animate([{transform:'none'},{transform:`translate(${s.left - R.left}px,${s.top - R.top}px) scale(${s.width/R.width},${s.height/R.height})`, borderRadius:'14px'}], {duration:320, easing:'cubic-bezier(.4,0,.2,1)', fill:'forwards'}).onfinish = () => { UI.from = null; navUp(CUR.hash); };
-    return; }
-  UI.from = null; navUp(CUR.hash);
-};
+/* 关闭帖子：只负责回到上一层；动画统一在 render() 里做，所以点 ← 和安卓返回手势效果一样 */
+ACTIONS.pclose = () => navUp(CUR.hash);
+/* 关帖子的动画：来源卡片还在屏幕上 → 等比缩回卡片中心并淡出（不压扁文字），卡片轻轻落位；不在 → 往下滑一点淡出。动画结束后才调 done */
+function postExit(done){
+  const post = $('#post .post'); if (!post || reduced() || UI.pExit){ done(); return; }
+  UI.pExit = true; const id = CUR.post, card = $(`#app [data-flip="p-${id}"] .cv`), R = post.getBoundingClientRect();
+  $$('#post .navp').forEach(x => x.remove()); [$('#post .side'), $('#post .pback')].forEach(x => x && x.animate([{opacity:1}, {opacity:0}], {duration:140, fill:'forwards'}));
+  $('#post .ov')?.animate([{background:'rgba(20,20,24,.42)'}, {background:'rgba(20,20,24,0)'}], {duration:280, fill:'forwards'});
+  let kf, hit = card && visible(card);
+  if (hit){ const s = card.getBoundingClientRect(), k = Math.min(s.width / R.width, s.height / R.height), cx = s.left + s.width/2 - (R.left + R.width/2), cy = s.top + s.height/2 - (R.top + R.height/2);
+    kf = [{transform:'none', opacity:1}, {transform:`translate(${cx*.8}px,${cy*.8}px) scale(${k + (1 - k)*.2})`, opacity:.85, offset:.7}, {transform:`translate(${cx}px,${cy}px) scale(${k})`, opacity:0}]; }
+  else kf = [{transform:'none', opacity:1}, {transform:'translateY(56px) scale(.96)', opacity:0}];
+  post.style.animation = 'none'; post.style.transformOrigin = '50% 50%';
+  post.animate(kf, {duration:hit ? 320 : 260, easing:'cubic-bezier(.4,0,.2,1)', fill:'forwards'}).onfinish = () => { UI.pExit = false; UI.from = null; done();
+    if (hit && card.isConnected) card.animate([{transform:'scale(.96)'}, {transform:'none'}], {duration:260, easing:'cubic-bezier(.3,1.4,.5,1)'}); };
+}
 /* 点话题 = 用这个话题搜帖子 */
 ACTIONS.tagjump = b => { closeSearch(); openSearch('all', 'post'); const q = $('#sq'); q.value = b.dataset.v.replace(/^#/, ''); q.dispatchEvent(new Event('input')); };
 ACTIONS.reply = b => { const i = $('#cmtIn'); i.value = '@' + b.dataset.v + ' '; i.focus(); };
