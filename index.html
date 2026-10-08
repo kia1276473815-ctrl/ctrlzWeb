@@ -7000,8 +7000,15 @@ Object.assign(ACTIONS, {
   report: () => sheet(`<h3>举报原因</h3><div style="display:flex;flex-direction:column;gap:8px">${['侵犯了我的版权','分享盗版资源','广告引流','不友善'].map(r => `<button class="pill lt lg" style="justify-content:flex-start" data-act="do-report">${r}</button>`).join('')}</div>`),
   'do-report': () => { closeSheet(); toast('收到，我们会尽快处理'); },
   compose: b => { if (needLogin()) return; const r = b?.getBoundingClientRect(); composeSheet(); $$('[data-act="compose"]').forEach(x => x.classList.add('fx-open'));
-    const sh = $('#layer .sheet'); if (sh && r && !reduced()){ const s = sh.getBoundingClientRect(), dx = r.left + r.width/2 - (s.left + s.width/2), dy = r.top + r.height/2 - (s.top + s.height/2);
-      sh.animate([{transform:`translate(${dx}px, ${dy}px) scale(.12)`, opacity:0, borderRadius:'50%'}, {transform:'none', opacity:1}], {duration:420, easing:'cubic-bezier(.3,1.25,.5,1)'}); } },
+    const sh = $('#layer .sheet'); if (sh && r && !reduced()){ sh.getAnimations().forEach(x => x.cancel());   // 停掉面板自带的上滑动画，换成从按钮长出来
+      const s = sh.getBoundingClientRect(), tO = sh.style.transformOrigin, bx = r.left + r.width/2, by = r.top + r.height/2;
+      // 只做等比缩放（横竖一起缩），中途不会出现被压扁 / 拉长的形状。
+      // 手机：底部面板以按钮为原点往上长出来；大屏：居中对话框从侧栏按钮的位置放大飞到中间
+      const bottom = s.bottom >= innerHeight - 2;
+      sh.style.transformOrigin = bottom ? `${bx - s.left}px 100%` : '50% 50%';
+      const from = bottom ? 'translateY(28px) scale(.5)' : `translate(${bx - (s.left + s.width/2)}px, ${by - (s.top + s.height/2)}px) scale(.1)`;
+      sh.animate([{transform:from, opacity:0}, {opacity:1, offset:.3}, {transform:'none', opacity:1}], {duration:400, easing:'cubic-bezier(.3,1.2,.5,1)'}).finished.then(() => { sh.style.transformOrigin = tO; }, () => { sh.style.transformOrigin = tO; });
+      [...sh.children].forEach(k => k.animate([{opacity:0}, {opacity:0, offset:.25}, {opacity:1}], {duration:400, easing:'ease-out'})); } },
   theme: () => { STATE.settings.theme = isDark() ? 'light' : 'dark'; applySettings(); applyTheme(true); setTimeout(() => $$('#thmBtn svg, .drw-thm svg').forEach(x => fxPop(x, 'fx-spin', 600)));
     const t = $('.drw-thm'); if (t) t.innerHTML = (isDark() ? IC.sun : IC.moon) + (isDark() ? '浅色模式' : '深色模式'); },   // 侧边菜单里的按钮文字跟着变
   'set-theme': b => { STATE.settings.theme = b.dataset.v; applySettings(); applyTheme(true); rerender(); },
