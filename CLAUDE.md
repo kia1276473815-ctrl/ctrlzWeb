@@ -61,6 +61,16 @@
 - 用户端入驻申请 `apply-open`：只存打码后的实名信息，正式版走实名认证接口
 - 后台页签 ≤1020px 横排（隐藏分组标题），以上是左侧竖排
 
+## 用户权益与合规
+- 协议页 `#doc-<key>`（`DOCS` / `DOC_ORD`：用户协议、隐私政策、个人信息收集清单、第三方信息共享清单、社区规范、版权投诉指引、退款规则），协议之间切换原地换网址（`doc-tab`）；登录面板里用 `docSheet` 面板打开，不打断登录。**文本是草案，上线前要律师审定**；主体名、费率、客服邮箱用 getter 取当前值
+- 主体与备案（公司全称 / ICP / 公安备案 / 客服邮箱）在后台「平台参数」填，存 `ADM.site`，页脚 `#ftLegal` 由 `footLegal()` 生成，没填就不显示
+- 设置页新增：通知开关（`STATE.settings.nt`，关掉的类别不计入未读数，官方通知不能关）、黑名单 `#me-blocks`、导出个人信息（`exportMine`，JSON）、协议入口、注销 `#me-close`（`closeChecks` 条件检查 + `CLOSE_DAYS` 冷静期，`ADM.closing`，可撤销）
+- 拉黑 `STATE.blocks` / `blocked(uid)`：首页、推荐关注、评论（`cmtsOf`）、私信列表、分享对象都过滤；`sendMsg` 拦截；入口在分享面板（用户）和黑名单页
+- 退款：订单状态一律用 `ordSt(o)`（由 `REFUNDS` 推出来，`refundSync()` 同步订单和已购）；下载 / 查看链接用 `dlMark(pid)` 计数；未下载且 7 天内极速退款，否则进后台审核
+- 收款账户 `ADM.payee[uid]`（只存打码后的信息）：工作室概览最上面 `payeeBox()`（含结算记录）；后台没绑定的不能打款，会通知对方去绑定
+- 版权：举报原因含「版权」必须附证明；下架时通知里带 `{act:'counter', rp}`，作者在官方通知里提交反通知（`counter`）→ 后台举报队列「反通知」→ 恢复内容 / 维持下架，结果通知双方。`notify(uid, 标题, 正文, extra)` 的 extra 会合进消息
+- 媒体机审接口位 `modScan()`：带图片 / 音频的帖子先发后审进「待审核」，接内容安全接口后由回调决定
+
 ## 材质层（液态玻璃 / 毛玻璃 / 3D）
 - 液态玻璃折射 `LG`：思路来自 shuding/liquid-glass（MIT），SVG 位移贴图做 `backdrop-filter:url()`，只有 Chromium 生效；其它浏览器用 CSS 版（`.lgx` / `.lg-rim` / 高光边）。要加折射的元素登记在 `LG` 的 `SPEC` 里
 - **坑**：带 `view-transition-name`（`.tb`、`.hd`、`.player`）或 filter / opacity / mask 的元素是「背景根」，它里面的子元素用 backdrop-filter 看不到页面。所以底栏的模糊和折射加在 `.tb` 自己身上，`.tb-glass` 只负责着色
