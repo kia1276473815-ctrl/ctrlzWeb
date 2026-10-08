@@ -1671,6 +1671,8 @@ html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
 .avs-o .g svg{width:20px;height:20px}
 .avs-o b{font-size:15px} .avs-o > span:last-child{font-size:12.5px;color:var(--ink-3)}
 .ave-c{position:relative;width:min(100%,300px);aspect-ratio:1;margin:0 auto 6px;border-radius:18px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--rule)}
+/* 矮屏手机：画布缩小，并且在面板里滚动时一直贴在顶部，调颜色大小时始终看得到 */
+@media (max-height:760px){ .ave-c{width:min(100%,300px,max(170px,calc(100svh - 420px)));position:sticky;top:0;z-index:3;box-shadow:inset 0 0 0 1px var(--rule),0 6px 0 var(--card)} }
 .ave-c canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
 #avcC{cursor:grab}
 .ave-ring{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 400px rgba(20,20,24,.28);pointer-events:none}
@@ -1687,6 +1689,9 @@ html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
 .ave-n{position:absolute;right:10px;top:10px;font:700 12px/1 var(--f-b);padding:6px 9px;border-radius:999px;background:rgba(20,20,24,.62);color:#fff;pointer-events:none}
 .ave-row input[type=range]{flex:1;min-width:0;accent-color:var(--ink)}
 .ave-sel .ave-row .pill{flex:none}
+.ave-sel{transition:opacity .15s}
+.ave-sel.off{opacity:.38}
+.ave-tip{font-size:12.5px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #aveC{cursor:pointer}
 .ave-end{margin-top:18px;flex-wrap:wrap}
 .avq{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:12px}
@@ -3649,8 +3654,13 @@ Object.assign(ACTIONS, {
     sheet(`<h3>拼一个头像</h3><div class="ave"><div class="ave-c"><canvas id="aveC" width="512" height="512" aria-label="头像画布：拖动图形调整位置"></canvas><i class="ave-ring"></i><span class="ave-n" id="aveN">0 / 5</span></div>
       <div class="ave-row"><span class="lab">底色</span><div class="ave-sw" id="aveBg">${AV_BG.map((c, i) => `<button class="${i === 0 ? 'on' : ''}" data-act="ave-bg" data-c="${c}" style="--sw:${c}" aria-label="底色 ${c}"></button>`).join('')}</div></div>
       <div class="ave-row"><span class="lab">添加</span><div class="ave-add">${Object.entries(AV_SHAPES).map(([k, x]) => `<button data-act="ave-add" data-t="${k}" aria-label="添加${x.n}"><svg viewBox="0 0 24 24">${x.ic}</svg></button>`).join('')}</div></div>
-      <div class="ave-sel" id="aveSel"></div>
-      <div class="ave-row ave-end"><span class="mut2" style="font-size:12.5px">点选图形后可以改颜色、大小和角度</span><span style="flex:1"></span><button class="pill" data-act="ave-save">用这个头像</button></div></div>`, d => avEditor($('#aveC', d)));
+      <div class="ave-sel off" id="aveSel">
+        <div class="ave-row"><span class="lab">颜色</span><div class="ave-sw">${AV_FILL.map(c => `<button data-act="ave-col" data-c="${c}" style="--sw:${c}" aria-label="颜色 ${c}"></button>`).join('')}</div></div>
+        <div class="ave-row"><span class="lab">大小</span><input type="range" id="aveS" min="40" max="460" value="200"></div>
+        <div class="ave-row"><span class="lab">角度</span><input type="range" id="aveR" min="0" max="359" value="0"></div>
+        <div class="ave-row"><span class="lab"></span><button class="pill sm lt" data-act="ave-top">放到最上层</button><button class="pill sm lt" data-act="ave-del">删除</button></div>
+      </div>
+      <div class="ave-row ave-end"><span class="mut2 ave-tip" id="aveTip">先加一个图形，最多 5 个</span><button class="pill" data-act="ave-save">用这个头像</button></div></div>`, d => avEditor($('#aveC', d)));
   },
   'ave-bg': b => { AVE.bg = b.dataset.c; avePick(b); AVE.draw(); },
   'ave-add': b => { if (AVE.sh.length >= 5){ toast('最多放 5 个图形', 'orange', 'x'); return; }
@@ -3688,15 +3698,15 @@ function avEditor(cv){
         if (outline && i === AVE.sel){ ctx.setLineDash([10, 8]); ctx.lineWidth = 3; ctx.strokeStyle = '#141418'; ctx.strokeRect(-x.s/2 - 10, -x.s/2 - 10, x.s + 20, x.s + 20); ctx.strokeStyle = '#FFFFFF'; ctx.lineDashOffset = 9; ctx.strokeRect(-x.s/2 - 10, -x.s/2 - 10, x.s + 20, x.s + 20); }
         ctx.restore(); }); ctx.restore(); },
     draw(){ AVE.paint(g, 1, true); },
-    /* 画布 + 计数 + 选中图形的工具条一起刷新 */
+    /* 画布 + 计数 + 选中图形的工具条一起刷新。工具条一直在（没选中时变灰），只改状态和数值，面板高度不变 */
     sync(){ AVE.draw(); const n = $('#aveN'); if (n) n.textContent = `${AVE.sh.length} / 5`; $$('[data-act="ave-add"]').forEach(b => b.disabled = AVE.sh.length >= 5);
       const x = AVE.sh[AVE.sel], box = $('#aveSel'); if (!box) return;
-      box.innerHTML = x ? `<div class="ave-row"><span class="lab">颜色</span><div class="ave-sw">${AV_FILL.map(c => `<button class="${c === x.c ? 'on' : ''}" data-act="ave-col" data-c="${c}" style="--sw:${c}" aria-label="颜色 ${c}"></button>`).join('')}</div></div>
-        <div class="ave-row"><span class="lab">大小</span><input type="range" id="aveS" min="40" max="460" value="${x.s}"></div>
-        <div class="ave-row"><span class="lab">角度</span><input type="range" id="aveR" min="0" max="359" value="${(Math.round(x.r) % 360 + 360) % 360}"></div>
-        <div class="ave-row"><span class="lab"></span><button class="pill sm lt" data-act="ave-top">放到最上层</button><button class="pill sm lt" data-act="ave-del">删除这个${AV_SHAPES[x.t].n}</button></div>`
-        : `<p class="mut2" style="font-size:13px;margin:12px 0 0">${AVE.sh.length ? '点画布上的图形来选中它，拖动可以挪位置' : '从上面选一个图形加进来，最多 5 个'}</p>`;
-      if (x){ $('#aveS').addEventListener('input', e => { x.s = +e.target.value; AVE.draw(); }); $('#aveR').addEventListener('input', e => { x.r = +e.target.value; AVE.draw(); }); } }};
+      box.classList.toggle('off', !x); box.querySelectorAll('button,input').forEach(el => el.disabled = !x);
+      box.querySelectorAll('[data-act="ave-col"]').forEach(b => b.classList.toggle('on', !!x && b.dataset.c === x.c));
+      if (x){ $('#aveS').value = x.s; $('#aveR').value = (Math.round(x.r) % 360 + 360) % 360; }
+      const tip = $('#aveTip'); if (tip) tip.textContent = x ? '拖动图形可以挪位置' : AVE.sh.length ? '点图形来选中它' : '先加一个图形，最多 5 个'; }};
+  $('#aveS').addEventListener('input', e => { const x = AVE.sh[AVE.sel]; if (x){ x.s = +e.target.value; AVE.draw(); } });
+  $('#aveR').addEventListener('input', e => { const x = AVE.sh[AVE.sel]; if (x){ x.r = +e.target.value; AVE.draw(); } });
   AVE.sync();
   const pt = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * 512 / r.width, (e.clientY - r.top) * 512 / r.height]; };
   const hitAt = (px, py) => { for (let i = AVE.sh.length - 1; i >= 0; i--){ const x = AVE.sh[i], a = -x.r * Math.PI / 180, dx = px - x.x, dy = py - x.y;
