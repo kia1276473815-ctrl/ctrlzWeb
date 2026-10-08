@@ -1730,6 +1730,63 @@ html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
 .shr-apps .g svg{width:22px;height:22px}
 .pill.sq-ic{width:40px;padding:0}
 .pill.sq-ic svg{width:18px;height:18px}
+/* ===== 交互动效：点赞、收藏、关注、页签、商城 ===== */
+@keyframes hpop{0%{transform:scale(1)}20%{transform:scale(.62) rotate(-12deg)}55%{transform:scale(1.42) rotate(8deg)}78%{transform:scale(.92)}100%{transform:scale(1)}}
+@keyframes hdrop{0%{transform:scale(1)}45%{transform:scale(.68)}100%{transform:scale(1)}}
+@keyframes jelly{0%{transform:scale(1)}30%{transform:scale(1.12,.88)}50%{transform:scale(.92,1.08)}70%{transform:scale(1.04,.96)}100%{transform:scale(1)}}
+@keyframes fxring{from{transform:scale(.3);opacity:.95}to{transform:scale(2.4);opacity:0}}
+@keyframes bumpdn{from{transform:translateY(70%);opacity:0}}
+.bump.dn{animation-name:bumpdn}
+.fx-ring{position:fixed;pointer-events:none;z-index:130;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:2.5px solid var(--pink);animation:fxring .55s var(--ease) forwards}
+.ctl [data-act="clike"]{display:inline-flex;align-items:center;gap:5px;padding:6px 8px;margin:-6px -2px -6px -8px;border-radius:999px;font-variant-numeric:tabular-nums;transition:background .2s}
+.ctl [data-act="clike"] .hk{display:inline-block;font-style:normal;font-size:15px;line-height:1;transform-origin:50% 60%}
+.ctl [data-act="clike"].on{background:var(--pink-t)}
+.fx-up .hk,.fx-up > svg,svg.fx-up{animation:hpop .55s var(--spring)}
+.fx-dn .hk,.fx-dn > svg{animation:hdrop .3s var(--ease)}
+.fx-jelly{animation:jelly .5s var(--ease)}
+/* 分类卡：点一下（电脑上悬停）插画就动起来 */
+@keyframes stl{0%,100%{transform:none}35%{transform:rotate(26deg)}60%{transform:rotate(-4deg)}}
+@keyframes str{0%,100%{transform:none}45%{transform:rotate(-26deg)}70%{transform:rotate(4deg)}}
+@keyframes dbody{0%,100%{transform:none}38%,52%{transform:scale(1.04,.9)}}
+@keyframes knob{to{transform:rotate(300deg)}}
+@keyframes fader{0%,100%{transform:none}50%{transform:translateX(9px)}}
+@keyframes wire{from{stroke-dashoffset:0}to{stroke-dashoffset:-40}}
+@keyframes sun{0%,100%{transform:none}45%{transform:translateY(-12px) scale(1.15)}}
+@keyframes wave{0%,100%{opacity:1}30%{opacity:.15}60%{opacity:1;transform:translateX(3px)}}
+@keyframes hop{0%,100%{transform:none}40%{transform:translateY(-12px)}}
+.cat svg.sh *{transform-box:fill-box;transform-origin:center}
+.cat svg.sh .a-stl{transform-origin:0 0} .cat svg.sh .a-str{transform-origin:100% 0} .cat svg.sh .a-body{transform-origin:50% 100%}
+.cat svg.sh .a-k1,.cat svg.sh .a-k2,.cat svg.sh .a-k3{transform-box:view-box} .cat svg.sh .a-k1{transform-origin:18px 44px} .cat svg.sh .a-k2{transform-origin:36px 44px} .cat svg.sh .a-k3{transform-origin:54px 44px}
+.cat svg.sh .a-dial{transform-box:view-box;transform-origin:70px 22px}
+.cat.hit svg.sh{animation:jelly .5s var(--ease)}
+.cat.hit .a-stl,.cat:hover .a-stl{animation:stl .5s var(--ease)} .cat.hit .a-str,.cat:hover .a-str{animation:str .5s var(--ease) .08s}
+.cat.hit .a-body,.cat:hover .a-body{animation:dbody .5s var(--ease)}
+.cat.hit [class^="a-k"],.cat:hover [class^="a-k"]{animation:knob .7s var(--ease)} .cat.hit .a-f1,.cat:hover .a-f1{animation:fader .6s var(--ease)}
+.cat svg.sh .a-wire{stroke-dasharray:6 4}
+.cat.hit .a-wire,.cat:hover .a-wire{animation:wire .8s linear 2}
+.cat.hit .a-sun,.cat:hover .a-sun{animation:sun .6s var(--spring)}
+.cat.hit .a-w1,.cat:hover .a-w1{animation:wave .6s var(--ease)} .cat.hit .a-w2,.cat:hover .a-w2{animation:wave .6s var(--ease) .12s}
+.cat.hit .a-dial,.cat:hover .a-dial{animation:knob .7s var(--ease)} .cat.hit .a-pdot,.cat:hover .a-pdot{animation:hop .5s var(--spring)}
+.cat.hit .a-s1,.cat:hover .a-s1{animation:hop .45s var(--spring)} .cat.hit .a-s2,.cat:hover .a-s2{animation:hop .45s var(--spring) .07s} .cat.hit .a-s3,.cat:hover .a-s3{animation:hop .45s var(--spring) .14s} .cat.hit .a-s4,.cat:hover .a-s4{animation:hop .45s var(--spring) .21s}
+/* 商品卡：按下回弹；电脑上跟着鼠标倾斜 + 高光 */
+.slv .cv{transition:transform .3s var(--ease),box-shadow .3s}
+.slv:active .cv{transform:scale(.97)}
+.slv .cv.tilt{transition:transform .08s linear,box-shadow .3s;box-shadow:0 18px 34px -16px rgba(20,20,24,.45)}
+.slv .cv::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),rgba(255,255,255,.38),transparent 55%)}
+.slv .cv.tilt::after{opacity:1}
+.slv .price{transition:transform .25s var(--spring)} .slv:hover .price{transform:scale(1.08)}
+/* 试听按钮：轻轻「呼吸」，提示可以点 */
+@keyframes breathe{0%{transform:scale(1);opacity:.55}70%,100%{transform:scale(1.45);opacity:0}}
+.slv .pbtn{position:relative}
+.slv .pbtn::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--paper);animation:breathe 2.6s var(--ease) infinite;pointer-events:none}
+.grid-p .slv:nth-child(3n+2) .pbtn::after{animation-delay:.8s} .grid-p .slv:nth-child(3n) .pbtn::after{animation-delay:1.6s}
+.slv .pbtn:hover{transform:scale(1.1)}
+/* 购买按钮：隔一会儿扫过一道光 */
+@keyframes sheen{0%,72%{transform:translateX(-120%) skewX(-20deg)}100%{transform:translateX(320%) skewX(-20deg)}}
+.pill.cta{position:relative;overflow:hidden}
+.pill.cta::after{content:"";position:absolute;top:0;bottom:0;left:0;width:34%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:sheen 3.6s var(--ease) infinite;pointer-events:none}
+@media (prefers-reduced-motion:reduce){ .slv .pbtn::after,.pill.cta::after{animation:none;opacity:0} }
+html.rm .slv .pbtn::after,html.rm .pill.cta::after{animation:none;opacity:0}
 </style>
 
 </head>
@@ -2160,21 +2217,21 @@ const GLYPH = {
 const CAT_ART = {
   // 小军鼓 + 两根鼓棒
   sample:`<svg viewBox="0 0 100 100" fill="none" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M28 6l20 30M78 8L56 36" stroke="currentColor" stroke-width="6"/><circle cx="28" cy="6" r="5" fill="currentColor"/><circle cx="78" cy="8" r="5" fill="currentColor"/>
+    <g class="a-stl"><path d="M28 6l20 30" stroke="currentColor" stroke-width="6"/><circle cx="28" cy="6" r="5" fill="currentColor"/></g><g class="a-str"><path d="M78 8L56 36" stroke="currentColor" stroke-width="6"/><circle cx="78" cy="8" r="5" fill="currentColor"/></g><g class="a-body">
     <path d="M12 50v30c0 7 17 12 38 12s38-5 38-12V50" fill="currentColor"/>
     <path d="M24 58v28M40 61v30M60 61v30M76 58v28" stroke="#fff" stroke-width="3"/>
-    <ellipse cx="50" cy="50" rx="38" ry="12" fill="#fff" stroke="currentColor" stroke-width="5"/></svg>`,
+    <ellipse cx="50" cy="50" rx="38" ry="12" fill="#fff" stroke="currentColor" stroke-width="5"/></g></svg>`,
   // 合成器：一排旋钮 + 推子 + 琴键
   preset:`<svg viewBox="0 0 100 100">
     <rect x="4" y="30" width="92" height="60" rx="6" fill="currentColor"/>
     <g fill="#fff"><circle cx="18" cy="44" r="6"/><circle cx="36" cy="44" r="6"/><circle cx="54" cy="44" r="6"/><rect x="68" y="38" width="20" height="4" rx="2"/><rect x="68" y="46" width="20" height="4" rx="2"/>
     <rect x="10" y="58" width="80" height="26" rx="2"/></g>
-    <g fill="currentColor"><path d="M18 44l0-6M36 44l4-4.5M54 44l-5 3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><rect x="74" y="36" width="4" height="8" rx="1"/><rect x="80" y="44" width="4" height="8" rx="1"/>
+    <g fill="currentColor"><g stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path class="a-k1" d="M18 44l0-6"/><path class="a-k2" d="M36 44l4-4.5"/><path class="a-k3" d="M54 44l-5 3"/></g><rect class="a-f1" x="74" y="36" width="4" height="8" rx="1"/><rect class="a-f2" x="80" y="44" width="4" height="8" rx="1"/>
     <rect x="20" y="58" width="5" height="15"/><rect x="31" y="58" width="5" height="15"/><rect x="48" y="58" width="5" height="15"/><rect x="59" y="58" width="5" height="15"/><rect x="70" y="58" width="5" height="15"/>
     <path d="M26.6 75v9M42.6 75v9M58.6 75v9M74.6 75v9" stroke="currentColor" stroke-width="1.6"/></g></svg>`,
   // TouchDesigner：算子框用曲线连成网络
   td:`<svg viewBox="0 0 100 100" fill="none" stroke-linecap="round">
-    <path d="M36 24c16 0 10 26 26 26M38 78c14 0 10-22 24-22" stroke="currentColor" stroke-width="4"/>
+    <path class="a-wire" d="M36 24c16 0 10 26 26 26M38 78c14 0 10-22 24-22" stroke="currentColor" stroke-width="4"/>
     <g fill="currentColor"><rect x="4" y="12" width="32" height="24" rx="4"/><rect x="62" y="40" width="34" height="26" rx="4"/><rect x="6" y="66" width="32" height="24" rx="4"/></g>
     <g fill="#fff"><rect x="9" y="17" width="22" height="9" rx="1.5"/><rect x="67" y="45" width="24" height="10" rx="1.5"/><rect x="11" y="71" width="22" height="9" rx="1.5"/>
     <circle cx="36" cy="24" r="2.6"/><circle cx="62" cy="50" r="2.6"/><circle cx="38" cy="78" r="2.6"/><circle cx="62" cy="56" r="2.6"/></g></svg>`,
@@ -2182,14 +2239,14 @@ const CAT_ART = {
   visual:`<svg viewBox="0 0 100 100">
     <rect x="4" y="14" width="92" height="64" rx="6" fill="currentColor"/>
     <rect x="11" y="21" width="78" height="50" rx="2" fill="#fff"/>
-    <circle cx="66" cy="38" r="9" fill="currentColor"/><path d="M11 71l24-26 16 16 10-9 28 19z" fill="currentColor"/>
+    <circle class="a-sun" cx="66" cy="38" r="9" fill="currentColor"/><path d="M11 71l24-26 16 16 10-9 28 19z" fill="currentColor"/>
     <path d="M42 78h16l4 12H38z" fill="currentColor"/><rect x="28" y="88" width="44" height="6" rx="3" fill="currentColor"/></svg>`,
   // Max：对象框、直连线、旋钮、扬声器（ezdac~）
   max:`<svg viewBox="0 0 100 100" fill="none" stroke-linecap="round">
     <path d="M18 26v18M22 52l20 16M70 34v22M64 66l-14 6" stroke="currentColor" stroke-width="3.5"/>
     <g fill="currentColor"><rect x="4" y="12" width="34" height="14" rx="2"/><rect x="4" y="44" width="40" height="14" rx="2"/><circle cx="70" cy="22" r="13"/><path d="M38 66h12l14-12v36L50 78H38z"/></g>
     <g fill="#fff"><rect x="8" y="15" width="3.5" height="3" /><rect x="8" y="47" width="3.5" height="3"/><rect x="36" y="47" width="3.5" height="3"/></g>
-    <path d="M70 22l7-7" stroke="#fff" stroke-width="3.5"/><path d="M72 66c5 4 5 12 0 16M80 60c9 8 9 22 0 30" stroke="currentColor" stroke-width="3.5"/></svg>`,
+    <path class="a-dial" d="M70 22l7-7" stroke="#fff" stroke-width="3.5"/><path class="a-w1" d="M72 66c5 4 5 12 0 16" stroke="currentColor" stroke-width="3.5"/><path class="a-w2" d="M80 60c9 8 9 22 0 30" stroke="currentColor" stroke-width="3.5"/></svg>`,
   // Pure Data：消息框（右边缺口）+ 数字框（切角）+ 对象框
   pd:`<svg viewBox="0 0 100 100" fill="none" stroke-linecap="round">
     <path d="M22 28v16M60 58v14M30 58l22 16" stroke="currentColor" stroke-width="3.5"/>
@@ -2197,9 +2254,9 @@ const CAT_ART = {
     <path d="M10 44h32l6 7v7H10z" fill="currentColor"/>
     <rect x="44" y="72" width="52" height="18" rx="2" fill="currentColor"/>
     <g fill="#fff"><rect x="9" y="17" width="20" height="6" rx="1"/><rect x="15" y="48" width="16" height="6" rx="1"/><rect x="50" y="77" width="30" height="8" rx="1"/></g>
-    <circle cx="78" cy="30" r="14" fill="currentColor"/><circle cx="78" cy="30" r="5" fill="#fff"/></svg>`,
+    <circle cx="78" cy="30" r="14" fill="currentColor"/><circle class="a-pdot" cx="78" cy="30" r="5" fill="#fff"/><path class="a-pmsg" d="M4 12h44l-6 8 6 8H4z" fill="currentColor" opacity="0"/></svg>`,
   // 全部：四个小图形
-  all:`<svg viewBox="0 0 100 100"><circle cx="28" cy="28" r="22" fill="currentColor"/><rect x="56" y="6" width="42" height="42" rx="3" fill="currentColor"/><path d="M28 54l24 42H4z" fill="currentColor"/><path d="M54 96a22 22 0 0144 0z" fill="currentColor"/></svg>`
+  all:`<svg viewBox="0 0 100 100"><circle class="a-s1" cx="28" cy="28" r="22" fill="currentColor"/><rect class="a-s2" x="56" y="6" width="42" height="42" rx="3" fill="currentColor"/><path class="a-s3" d="M28 54l24 42H4z" fill="currentColor"/><path class="a-s4" d="M54 96a22 22 0 0144 0z" fill="currentColor"/></svg>`
 };
 
 /* ================= 孔版印刷：颗粒、半调、封面 ================= */
@@ -2488,6 +2545,17 @@ function sheet(html, mount){
   const f = $('#layer [autofocus]'); f && setTimeout(() => f.focus(), 60);
 }
 function closeSheet(){ if (_sheetClean){ try { _sheetClean(); } catch(e){} _sheetClean = null; } $('#layer').innerHTML = ''; }
+/* ---------- 交互动效小工具 ---------- */
+/* 给元素重新播放一次动效类（pop 弹起 / drop 缩回 / jelly 果冻 / hit 分类插画动起来） */
+function fxPop(el, cls='fx-up', ms=600){ if (!el || reduced()) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); clearTimeout(el._fx); el._fx = setTimeout(() => el.classList.remove(cls), ms); }
+/* 从一点扩散的圆环 */
+function fxRing(x, y, c){ if (reduced()) return; const r = document.createElement('i'); r.className = 'fx-ring'; r.style.cssText = `left:${x}px;top:${y}px;border-color:${c || INK.pink}`; document.body.appendChild(r); setTimeout(() => r.remove(), 560); }
+/* 点分类时的一声（只在设置里开了音效时响） */
+function catSound(k){ if (!STATE.settings.snd || !AU.init()) return; const t = AU.ctx.currentTime, bus = AU.bus('tap', .7);
+  if (k === 'sample'){ AU.drum('snare', t, .3, bus, .8); return; }
+  if (k === 'all'){ AU.drum('kick', t, 0, bus, .7); return; }
+  const n = {preset:[60, 64, 67], td:[67, 74], visual:[72, 76, 79], max:[48, 55], pd:[62, 69]}[k] || [60];
+  n.forEach((m, i) => AU.note(m, t + i*.06, .18, {cut:.55, res:.3, atk:0, rel:.4, det:.1, wav:'triangle', gain:.16}, bus)); }
 function burst(x, y, colors=['pink','blue','yellow']){
   if (STATE.settings.rm) return;
   for (let i=0;i<10;i++){ const d = document.createElement('i'); d.className = 'burst'; const a = Math.PI*2*i/10 + Math.random()*.4, r = 26 + Math.random()*26; d.style.cssText = `left:${x-4}px;top:${y-4}px;background:${INK[colors[i%colors.length]]};--dx:${Math.cos(a)*r}px;--dy:${Math.sin(a)*r}px`; document.body.appendChild(d); setTimeout(() => d.remove(), 650); }
@@ -4040,7 +4108,7 @@ function renderPost(id, fresh){
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px">${p.tags.map(t => `<a class="chip" data-act="tagjump" data-v="${esc(t)}" style="height:28px;font-size:12.5px">#${esc(t)}</a>`).join('')}</div>
         ${p.attach.filter(a => onSale(P(a))).length ? `<div class="used"><span class="lab">这件作品用到</span>${p.attach.filter(a => onSale(P(a))).map(pid => { const pr = P(pid); return `<a class="c-${CATS[pr.cat].c}" data-go="item-${pid}"><img src="${cover(pr.cover, hash(pr.id)%50, 160, 160)}" alt=""><span style="min-width:0"><b style="font-size:13px;display:block">${esc(pr.en)}</b><span style="font-size:13.5px">${esc(pr.title)}</span></span><span class="pill sm cc">${yuan(pr.price)}</span></a>`; }).join('')}</div>` : ''}
         <div style="margin-top:22px"><span class="lab">${p.type === 'question' ? '回答' : '评论'} ${cm.length}</span>
-        ${cm.map((c, ci) => `<div class="cmt ${c.best ? 'best' : ''} ${UI.freshCmt === p.id && ci === cm.length - 1 ? 'fresh' : ''} ${UI.flashCmt && UI.flashCmt.p === p.id && UI.flashCmt.t === c.t ? 'flash' : ''}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">楼主</span>' : ''}${c.best ? '<span class="tag c-green" style="height:18px;font-size:10px">最佳</span>' : ''}<span>${c.time}</span></div><p>${esc(c.t)}</p>${c.code ? `<pre class="code">${esc(CODE[c.code])}</pre>` : ''}<div class="ctl"><button data-act="clike" data-k="${p.id}:${ci}" class="${STATE.clikes.has(p.id + ':' + ci) ? 'on' : ''}" aria-pressed="${STATE.clikes.has(p.id + ':' + ci)}">♥ ${c.likes + (STATE.clikes.has(p.id + ':' + ci) ? 1 : 0)}</button><button data-act="reply" data-v="${esc(USERS[c.u]?.name || '')}">回复</button></div></div></div>`).join('')}</div>
+        ${cm.map((c, ci) => `<div class="cmt ${c.best ? 'best' : ''} ${UI.freshCmt === p.id && ci === cm.length - 1 ? 'fresh' : ''} ${UI.flashCmt && UI.flashCmt.p === p.id && UI.flashCmt.t === c.t ? 'flash' : ''}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">楼主</span>' : ''}${c.best ? '<span class="tag c-green" style="height:18px;font-size:10px">最佳</span>' : ''}<span>${c.time}</span></div><p>${esc(c.t)}</p>${c.code ? `<pre class="code">${esc(CODE[c.code])}</pre>` : ''}<div class="ctl"><button data-act="clike" data-k="${p.id}:${ci}" class="${STATE.clikes.has(p.id + ':' + ci) ? 'on' : ''}" aria-pressed="${STATE.clikes.has(p.id + ':' + ci)}"><i class="hk">${STATE.clikes.has(p.id + ':' + ci) ? '♥' : '♡'}</i><span>${c.likes + (STATE.clikes.has(p.id + ':' + ci) ? 1 : 0)}</span></button><button data-act="reply" data-v="${esc(USERS[c.u]?.name || '')}">回复</button></div></div></div>`).join('')}</div>
       </div>
       <div class="foot"><input id="cmtIn" placeholder="${STATE.role === 'guest' ? '登录后参与' : p.type === 'question' ? '你会怎么解决？' : '说点什么…'}" autocomplete="off" enterkeyhint="send"><button class="pill sm ic" data-act="cmt" data-id="${p.id}" aria-label="发送">${IC.arrow}</button>
         <button class="pill sm ic lt" data-act="like" data-id="${p.id}" aria-label="喜欢" style="${STATE.liked.has(p.id) ? 'color:var(--pink)' : ''}">${STATE.liked.has(p.id) ? IC.heartF : IC.heart}</button>
@@ -4104,7 +4172,11 @@ ROUTES.shop = arg => {
   </div></div>
   <div style="margin-top:22px">${list.length ? `<div class="grid-p">${list.map(sleeve).join('')}</div>` : `<div class="empty"><div class="x">空</div><span>这个价格区间里还没有东西</span><button class="pill ol" data-act="sf" data-k="price" data-v="all">看全部价格</button></div>`}</div></div>`;
 };
-ACTIONS.sf = b => { UI.shop[b.dataset.k] = b.dataset.v; if (b.dataset.k === 'cat') UI.shop.sub = 'all'; if (!CUR.key.startsWith('shop|')) go('shop'); else flip(rerender); };
+ACTIONS.sf0 = b => { UI.shop[b.dataset.k] = b.dataset.v; if (b.dataset.k === 'cat') UI.shop.sub = 'all'; if (!CUR.key.startsWith('shop|')) go('shop'); else flip(rerender); };
+/* 商城筛选：先照常切换，再给新画出来的那张分类卡 / 那颗筛选按钮补上动效（重绘后元素是新的，所以切换完再找） */
+ACTIONS.sf = (b, e) => { const k = b.dataset.k, v = b.dataset.v, r = b.getBoundingClientRect(), x = e?.clientX || r.left + r.width/2, y = e?.clientY || r.top + r.height/2;
+  ACTIONS.sf0(b, e); const t = $(`[data-act="sf"][data-k="${k}"][data-v="${v}"]`); if (!t) return;
+  if (k === 'cat'){ fxPop(t, 'hit', 900); burst(x, y, v === 'all' ? ['ink', 'pink', 'blue'] : [CATS[v].c, 'ink', CATS[v].c]); catSound(v); haptic(8); } else fxPop(t, 'fx-jelly'); };
 
 /* 卡片上的快速试听：任何资源都有声音，封面随之律动 */
 ACTIONS.qplay = b => toggleDemo(b.dataset.id);
@@ -4116,7 +4188,7 @@ ROUTES.item = id => {
   const used = POSTS.filter(p => p.attach.includes(pr.id));
   const same = PRODUCTS.filter(p => p.seller === pr.seller && p.id !== pr.id).slice(0, 4);
   const T = tplOf(pr), stage = T === 'sample' ? pvSample(pr) : T === 'preset' ? pvPreset(pr) : pvVideo(pr);
-  const buyBtn = own ? `<span class="li-b">${dlBtns(pr, 'lg', true)}</span>` : `<button class="pill lg" data-act="buy" data-id="${pr.id}">${pr.price ? '购买' : '免费领取'}</button>`;
+  const buyBtn = own ? `<span class="li-b">${dlBtns(pr, 'lg', true)}</span>` : `<button class="pill lg cta" data-act="buy" data-id="${pr.id}">${pr.price ? '购买' : '免费领取'}</button>`;
   const favBtn = `<button class="pill lg ic lt" data-act="fav" data-id="${pr.id}" aria-label="收藏" style="width:54px;${STATE.favs.has(pr.id) ? 'color:var(--blue)' : ''}">${STATE.favs.has(pr.id) ? IC.saveF : IC.save}</button>`;
   onMount(root => mountWaves(root));
   return `<div class="wrap c-${c.c}">
@@ -4244,7 +4316,7 @@ function grant(pr, pay, price){
   STATE.owned.add(pr.id); const d = new Date();
   STATE.orders.unshift({no:`CZ${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}-${String(Math.random()*9999|0).padStart(4,'0')}`, pid:pr.id, price, pay, time:`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`, st:'已完成', fresh:true});
 }
-ACTIONS.buy = b => {
+ACTIONS.buy0 = b => {
   if (needLogin()) return; const pr = P(b.dataset.id);
   if (pr.price === 0){ grant(pr, '免费领取', 0); const cv = b.closest('.pp') ? $('.stage') : b; flyTo(cv.getBoundingClientRect(), cover(pr.cover, hash(pr.id)%50, 200, 200), () => { STATE.libNew++; badge(); }); toast('已放进你的资源库', 'green'); rerender(); return; }
   UI.pay = UI.pay || '微信支付';
@@ -4295,6 +4367,15 @@ Object.assign(ACTIONS, {
     try { navigator.clipboard.writeText(v).then(ok, () => fallbackCopy(v) ? ok() : toast(v, 'blue')); } catch(e){ fallbackCopy(v) ? ok() : toast(v, 'blue'); } }
 });
 function fallbackCopy(v){ try { const t = document.createElement('textarea'); t.value = v; t.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(t); t.select(); const ok = document.execCommand('copy'); t.remove(); return ok; } catch(e){ return false; } }
+ACTIONS.buy = (b, e) => { const r = b.getBoundingClientRect(); if (STATE.role !== 'guest') burst(e?.clientX || r.left + r.width/2, e?.clientY || r.top + r.height/2, ['pink', 'yellow', 'blue']); haptic(12); ACTIONS.buy0(b, e); };
+/* 商品卡（电脑）：鼠标在封面上移动时轻轻倾斜，带一道跟着走的高光 */
+(() => { if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return; let cur = null;
+  document.addEventListener('pointermove', e => { const cv = e.target.closest?.('.slv .cv'); if (cur && cur !== cv){ cur.style.transform = ''; cur.classList.remove('tilt'); cur = null; }
+    if (!cv || reduced()) return; cur = cv; const r = cv.getBoundingClientRect(), px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+    cv.classList.add('tilt'); cv.style.transform = `perspective(700px) rotateX(${(.5 - py) * 9}deg) rotateY(${(px - .5) * 11}deg) translateY(-4px)`; cv.style.setProperty('--gx', px * 100 + '%'); cv.style.setProperty('--gy', py * 100 + '%'); }, {passive:true});
+})();
+/* 切换底部页签 / 侧边栏导航时，图标跳一下 */
+document.addEventListener('rendered', () => { const k = routeOf(CUR.hash); if (k === UI._tabFx) return; UI._tabFx = k; $$('.tb a.on svg, #hd .nav a.on svg').forEach(x => fxPop(x, 'fx-up')); });
 /* ================= 个人主页 ================= */
 ROUTES.user = id => {
   const u = USERS[id] || USERS[ME]; const isMe = curUser() === u.id;
@@ -5247,19 +5328,22 @@ Object.assign(ACTIONS, {
   like: (b, e) => {
     if (needLogin()) return; const id = b.dataset.id; const on = !STATE.liked.has(id); on ? STATE.liked.add(id) : STATE.liked.delete(id);
     if (on) burst(e.clientX || b.getBoundingClientRect().left + 12, e.clientY || b.getBoundingClientRect().top + 12); sfx('pop');
-    if (CUR.post){ renderPost(CUR.post); UI.dirty = true; return; }
-    const p = POST(id); $$(`[data-act="like"][data-id="${id}"]`).forEach(x => { x.classList.toggle('on', on); x.innerHTML = `${on ? IC.heartF : IC.heart}<span class="bump">${likes(p)}</span>`; });
+    if (CUR.post){ renderPost(CUR.post); UI.dirty = true; if (on) $$(`#post [data-act="like"][data-id="${id}"]`).forEach(x => fxPop(x)); return; }
+    const p = POST(id); $$(`[data-act="like"][data-id="${id}"]`).forEach(x => { x.classList.toggle('on', on); x.innerHTML = `${on ? IC.heartF : IC.heart}<span class="bump ${on ? '' : 'dn'}">${likes(p)}</span>`; fxPop(x, on ? 'fx-up' : 'fx-dn'); });
   },
   fav: b => { if (needLogin()) return; const id = b.dataset.id; const on = !STATE.favs.has(id); on ? STATE.favs.add(id) : STATE.favs.delete(id);
     if (on){ const pr = P(id), po = POST(id); const srcEl = (CUR.post && $('#post .media')) || (CUR.key?.startsWith('item|') && $('.stage')) || b; const img = pr ? cover(pr.cover, hash(pr.id)%50, 200, 200) : po?.cover ? cover(po.cover, hash(po.id)%50, 200, 200) : cover('topo', 1, 200, 200); flyTo(srcEl.getBoundingClientRect(), img); }
-    else toast('已移出书签', 'blue', 'save'); rerender(); },
-  follow: b => { if (needLogin()) return; const id = b.dataset.id; const on = !STATE.follows.has(id); on ? STATE.follows.add(id) : STATE.follows.delete(id); if (on){ const r = b.getBoundingClientRect(); burst(r.left + r.width/2, r.top + r.height/2, [USERS[id].c, 'ink']); } rerender(); },
+    else toast('已移出书签', 'blue', 'save'); rerender(); $$(`[data-act="fav"][data-id="${id}"]`).forEach(x => fxPop(x, on ? 'fx-up' : 'fx-dn')); },
+  follow: b => { if (needLogin()) return; const id = b.dataset.id; const on = !STATE.follows.has(id); on ? STATE.follows.add(id) : STATE.follows.delete(id); if (on){ const r = b.getBoundingClientRect(); burst(r.left + r.width/2, r.top + r.height/2, [USERS[id].c, 'ink']); } rerender(); if (on) $$(`[data-act="follow"][data-id="${id}"]`).forEach(x => fxPop(x, 'fx-jelly')); },
   share: () => { closeSheet(); try { navigator.clipboard.writeText(location.href).then(() => toast('链接已复制'), () => toast('复制失败，请从地址栏复制', 'orange', 'x')); } catch(e){ toast('复制失败，请从地址栏复制', 'orange', 'x'); } },
   copy: b => { try { navigator.clipboard.writeText(b.dataset.v).then(() => toast('已复制 ' + b.dataset.v), () => toast(b.dataset.v, 'blue')); } catch(e){ toast(b.dataset.v, 'blue'); } },
   cmt: b => { if (needLogin()) return; const i = $('#cmtIn'), v = i.value.trim(); if (!v){ i.focus(); i.animate([{transform:'translateX(-5px)'},{transform:'translateX(5px)'},{transform:'none'}], {duration:220}); return; } (UI.newCmts[b.dataset.id] ||= []).push({u: STATE.role === 'admin' ? 'admin' : ME, t:v, time:'刚刚', likes:0}); POST(b.dataset.id).cmts++; UI.freshCmt = b.dataset.id; renderPost(CUR.post); UI.freshCmt = null; UI.dirty = true; const sc = $('#post .scroll'); sc && sc.scrollTo({top:sc.scrollHeight, behavior:'smooth'}); if (IS_MOBILE) scrollTo({top:document.body.scrollHeight}); },
   /* 评论点赞：再点一次取消 */
   clike: b => { const k = b.dataset.k, on = !STATE.clikes.has(k); on ? STATE.clikes.add(k) : STATE.clikes.delete(k);
-    const n = (parseInt(b.textContent.replace(/\D/g,'')) || 0) + (on ? 1 : -1); b.textContent = '♥ ' + Math.max(0, n); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); if (on) sfx('pop'); },
+    const n = Math.max(0, (parseInt(b.textContent.replace(/\D/g,'')) || 0) + (on ? 1 : -1));
+    b.innerHTML = `<i class="hk">${on ? '♥' : '♡'}</i><span class="bump ${on ? '' : 'dn'}">${n}</span>`; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+    if (on){ const r = b.querySelector('.hk').getBoundingClientRect(), x = r.left + r.width/2, y = r.top + r.height/2; fxPop(b, 'fx-up'); fxRing(x, y); burst(x, y, ['pink', 'yellow', 'pink']); haptic(10); sfx('pop'); }
+    else fxPop(b, 'fx-dn'); },
   solve: b => { const p = POST(b.dataset.id); if (curUser() !== p.author) return; const now = !isSolved(p); STATE.solved[p.id] = now; UI.justStamped = now; sfx(now ? 'ok' : 'click'); renderPost(p.id); UI.dirty = true; if (now){ const s = $('.stamp.big'); if (s){ const r = s.getBoundingClientRect(); setTimeout(() => burst(r.left + r.width/2, r.top + r.height/2, ['green','yellow']), 250); } } },
   report: () => sheet(`<h3>举报原因</h3><div style="display:flex;flex-direction:column;gap:8px">${['侵犯了我的版权','分享盗版资源','广告引流','不友善'].map(r => `<button class="pill lt lg" style="justify-content:flex-start" data-act="do-report">${r}</button>`).join('')}</div>`),
   'do-report': () => { closeSheet(); toast('收到，我们会尽快处理'); },
