@@ -1815,6 +1815,21 @@ html.rm .slv .pbtn::after,html.rm .pill.cta::after{animation:none;opacity:0}
 @keyframes inkslide{from{transform:translateX(var(--ix,0)) scaleX(var(--isx,1))}}
 .fx-ink::after{animation:inkslide .34s cubic-bezier(.3,1.2,.5,1) !important;transform-origin:left center}
 html.rm .fx-shp{display:none}
+/* ===== 第二批动效 ===== */
+.mason > .card,.grid-p > .slv{transition:opacity .55s var(--ease),transform .55s var(--ease)}
+.fx-rv{opacity:0;transform:translateY(26px)}
+@keyframes rowflash{0%,30%{background:var(--yellow-t)}100%{background:transparent}}
+.mrow.fx-flash{animation:rowflash 1.1s var(--ease)}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.fx-shake{animation:shake .26s}
+@keyframes flipin{0%{transform:rotateX(90deg)}100%{transform:none}}
+.tag.fx-flip{animation:flipin .5s cubic-bezier(.3,1.3,.5,1)}
+.fx-ghost{position:fixed;z-index:131;pointer-events:none;font-size:14px;font-weight:600;color:var(--ink);background:var(--yellow);padding:4px 10px;border-radius:999px;max-width:70vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 「我」的两张快捷卡：图标各自动一下 */
+@keyframes dlbob{0%,100%{transform:none}35%{transform:translateY(5px)}60%{transform:translateY(-2px)}}
+.mqc-prod:hover .g svg,.mqc-prod:active .g svg{animation:jelly .5s var(--ease)}
+.mqc-lib:hover .g svg,.mqc-lib:active .g svg{animation:dlbob .5s var(--ease)}
+.co-svc{transition:box-shadow .2s}
 </style>
 
 </head>
@@ -4405,7 +4420,7 @@ function dlPanel(p){ const d = dlOf(p.id);
     + (d.note ? `<p class="dlx-n">${esc(d.note)}</p>` : ''); }
 Object.assign(ACTIONS, {
   'dl-x': b => { const box = $('#dlx-' + b.dataset.id); if (!box) return; const on = box.hidden; box.hidden = !on; b.setAttribute('aria-expanded', on); b.classList.toggle('open', on);
-    if (on && !reduced()) box.animate([{opacity:0, transform:'translateY(-6px)'}, {opacity:1, transform:'none'}], {duration:200, easing:'ease-out'}); },
+    if (on && !reduced()) box.querySelectorAll('.dlx-r, .dlx-n').forEach((r, k) => r.animate([{opacity:0, transform:'translateY(-10px)'}, {opacity:1, transform:'none'}], {duration:280, delay:k*80, easing:'cubic-bezier(.3,1.2,.5,1)', fill:'backwards'})); },
   'dl-sheet': b => { const pr = P(b.dataset.id); if (!STATE.owned.has(pr.id)){ toast('购买后才能查看', 'orange', 'lock'); return; } sheet(`<h3>${esc(pr.title)}</h3><div class="dlx" style="margin:0">${dlPanel(pr)}</div>`); },
   'dl-copy': b => { const v = b.dataset.v, t = b.dataset.t || '内容', ok = () => toast(`已复制${t}`);
     try { navigator.clipboard.writeText(v).then(ok, () => fallbackCopy(v) ? ok() : toast(v, 'blue')); } catch(e){ fallbackCopy(v) ? ok() : toast(v, 'blue'); } }
@@ -4422,6 +4437,16 @@ ACTIONS.buy = (b, e) => { const r = b.getBoundingClientRect(); if (STATE.role !=
 })();
 /* 私信页：有新消息的快捷入口，进页面时依次招一下手 */
 document.addEventListener('rendered', () => { if (CUR.key !== 'msg|' || reduced()) return; $$('#app .mq').forEach((b, i) => { if (b.querySelector('.bdg')) setTimeout(() => fxPop(b, 'fx-go', 700), 260 + i*160); }); });
+/* 往下滑时，新进入视野的卡片依次浮上来；只在真正换页时布置，首屏不播放，点赞等局部重绘也不重播 */
+const RVS = {key:null, seen:new Set()};   // 本页已经露过面的卡片（按卡片 id 记），重绘出来的新元素不会再藏起来重播
+const rvId = el => el.dataset.flip || el.dataset.go || '';
+const rvShow = el => { RV && RV.unobserve(el); RVS.seen.add(rvId(el)); el.classList.remove('fx-rv'); };
+/* 兜底：一下子跳过去的（快速甩动、回到顶部）不会触发进入视野，滚动时把已经在屏幕上方的直接显示出来 */
+addEventListener('scroll', () => { if (!document.querySelector('.fx-rv')) return; clearTimeout(RVS.t); RVS.t = setTimeout(() => $$('.fx-rv').forEach(el => { if (el.getBoundingClientRect().top < innerHeight) rvShow(el); }), 120); }, {passive:true});
+const RV = 'IntersectionObserver' in window ? new IntersectionObserver(es => { let k = 0; es.forEach(en => { if (!en.isIntersecting) return; const el = en.target; RV.unobserve(el); RVS.seen.add(rvId(el));
+  el.style.transitionDelay = (k++ * 70) + 'ms'; el.classList.remove('fx-rv'); setTimeout(() => { el.style.transitionDelay = ''; }, 900); }); }, {rootMargin:'0px 0px -5% 0px'}) : null;
+document.addEventListener('rendered', () => { if (!RV || reduced()) return; if (RVS.key !== CUR.key){ RVS.key = CUR.key; RVS.seen = new Set(); } const vh = innerHeight;
+  $$('#app .mason > .card, #app .grid-p > .slv').forEach(el => { const id = rvId(el); if (!id || RVS.seen.has(id)) return; if (el.getBoundingClientRect().top > vh){ el.classList.add('fx-rv'); RV.observe(el); } else RVS.seen.add(id); }); });
 /* 商品卡（电脑）：鼠标在封面上移动时轻轻倾斜，带一道跟着走的高光 */
 (() => { if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return; let cur = null;
   document.addEventListener('pointermove', e => { const cv = e.target.closest?.('.slv .cv'); if (cur && cur !== cv){ cur.style.transform = ''; cur.classList.remove('tilt'); cur = null; }
@@ -4518,7 +4543,7 @@ ROUTES.seller = arg => {
     body = `<div class="box" style="margin-top:0"><div class="box-h"><h3>我接的业务</h3><span class="mut2" style="font-size:13px">开启后会显示在你的主页，别人可以向你发起合作</span></div>
       <div class="co-svcs">${COLLAB.svcs.map(x => `<div class="co-svc ${x.on ? 'on' : ''}"><button class="co-sw" data-act="co-svc" data-k="${x.k}" role="switch" aria-checked="${x.on}"><i></i>${x.n}</button><button class="co-p" data-act="co-price" data-k="${x.k}" aria-label="设置${x.n}的价格">${x.from == null ? '面议' : '¥' + x.from.toLocaleString() + ' 起'}${RIC.pen}</button></div>`).join('')}</div></div>
     <div class="box"><div class="box-h"><h3>合作邀约</h3><span class="mut2" style="font-size:13px">${COLLAB.reqs.filter(r => r.st === 'new').length} 条待回复</span></div>
-      <div class="co-list">${COLLAB.reqs.map(r => `<div class="co-req"><div class="co-top">${av(r.u, 'md')}<div style="min-width:0;flex:1"><b>${esc(r.title)}</b><span class="co-m">${esc(USERS[r.u].name)} · ${SV[r.svc]?.n || ''} · ${r.quote != null ? `报价 ¥${r.quote.toLocaleString()}` : `预算 ${esc(r.budget)}`} · ${esc(r.due)}</span></div><span class="tag ${stc[r.st][0]}">${stc[r.st][1]}</span></div>
+      <div class="co-list">${COLLAB.reqs.map(r => `<div class="co-req" data-id="${r.id}"><div class="co-top">${av(r.u, 'md')}<div style="min-width:0;flex:1"><b>${esc(r.title)}</b><span class="co-m">${esc(USERS[r.u].name)} · ${SV[r.svc]?.n || ''} · ${r.quote != null ? `报价 ¥${r.quote.toLocaleString()}` : `预算 ${esc(r.budget)}`} · ${esc(r.due)}</span></div><span class="tag ${stc[r.st][0]}">${stc[r.st][1]}</span></div>
         <p>${esc(r.note)}</p><div class="co-acts">${r.st === 'new' ? `<button class="pill sm" data-act="co-ok" data-id="${r.id}">接受</button><button class="pill sm lt" data-act="co-no" data-id="${r.id}">婉拒</button>` : ''}<a class="pill sm lt" data-go="msg-${r.u}">发私信</a></div></div>`).join('') || '<div class="rnone">还没有合作邀约</div>'}</div></div>`; }
   if (t === 'upload') body = uploadView();
   return `<div class="wrap"><div class="ph"><h1 class="x">工作室<span class="s">studio</span></h1><p class="sub">${esc(u.shop)}</p></div>
@@ -4527,7 +4552,8 @@ ROUTES.seller = arg => {
 ACTIONS['edit-store'] = () => { const u = USERS[ME]; sheet(`<h3>编辑店铺</h3><div class="fg"><div class="fl full"><label for="st-n">店名</label><input class="inp" id="st-n" value="${esc(u.shop)}"></div><div class="fl full"><label for="st-b">介绍</label><textarea class="inp" id="st-b">${esc(u.bio)}</textarea></div></div><button class="pill" data-act="save-store" style="margin-top:14px">保存</button>`); };
 ACTIONS['save-store'] = () => { USERS[ME].shop = $('#st-n').value || USERS[ME].shop; USERS[ME].bio = $('#st-b').value; closeSheet(); toast('店铺已更新'); rerender(); };
 Object.assign(ACTIONS, {
-  'co-svc': b => { const x = COLLAB.svcs.find(v => v.k === b.dataset.k); x.on = !x.on; b.setAttribute('aria-checked', x.on); b.parentElement.classList.toggle('on', x.on); },
+  'co-svc': b => { const x = COLLAB.svcs.find(v => v.k === b.dataset.k); x.on = !x.on; b.setAttribute('aria-checked', x.on); b.parentElement.classList.toggle('on', x.on); fxPop(b.parentElement, 'fx-jelly');
+    if (x.on){ const r = b.querySelector('i').getBoundingClientRect(); burst(r.right - 8, r.top + r.height/2, ['green', 'ink']); } },
   /* 设置一项业务的起价；也可以设成「面议」 */
   'co-price': b => { const x = COLLAB.svcs.find(v => v.k === b.dataset.k);
     sheet(`<h3>${x.n} · 价格</h3><div class="fg"><div class="fl full"><label for="coP">起价（元）</label><input class="inp" id="coP" type="number" inputmode="numeric" min="0" step="50" placeholder="比如 800" value="${x.from ?? ''}" ${x.from == null ? 'disabled' : ''}></div></div>
@@ -4543,7 +4569,7 @@ Object.assign(ACTIONS, {
     sheet(`<h3>接下「${esc(r.title)}」</h3><p class="mut2" style="margin:-4px 0 14px;font-size:13.5px">${esc(USERS[r.u].name)} 的预算：${esc(r.budget)}</p><div class="fg"><div class="fl full"><label for="coQ">你的报价（元）</label><input class="inp" id="coQ" type="number" inputmode="numeric" min="0" step="50" value="${n}" placeholder="按分成合作可以留空"></div></div>
       <button class="pill" data-act="co-okgo" data-id="${r.id}" style="margin-top:16px">确认接下</button>`); },
   'co-okgo': b => { const r = COLLAB.reqs.find(v => v.id === b.dataset.id), v = Math.round(+$('#coQ').value); r.quote = v > 0 ? v : null; r.st = 'doing'; closeSheet();
-    toast(`接下了「${r.title}」${r.quote ? '，报价 ¥' + r.quote.toLocaleString() : ''}，去私信里聊细节吧`); rerender(); },
+    toast(`接下了「${r.title}」${r.quote ? '，报价 ¥' + r.quote.toLocaleString() : ''}，去私信里聊细节吧`); rerender(); fxPop($(`.co-req[data-id="${r.id}"] .tag`), 'fx-flip', 600); },
   'co-no': b => { const r = COLLAB.reqs.find(v => v.id === b.dataset.id); COLLAB.reqs.splice(COLLAB.reqs.indexOf(r), 1); toast('已婉拒', 'blue'); rerender(); }
 });
 function ordersTable(list){ return `<table class="t"><tbody>${list.map(o => `<tr class="${o.st === 'refund' ? 'dim' : ''}"><td>${av(USERS[o.buyer] ? o.buyer : 'x','sm').replace('AZ', esc((o.buyer[0] || '?').toUpperCase()))}</td><td style="font-weight:600">雨夜磁带 Lo-Fi 采样包</td><td class="mut2">@${esc(USERS[o.buyer]?.name || o.buyer)}</td><td>${o.pay}</td><td class="r n">${yuan2(o.amt)}</td><td class="mut2 n">${o.time}</td></tr>`).join('')}</tbody></table>`; }
@@ -4847,7 +4873,7 @@ Object.assign(ACTIONS, {
   'rl-send': () => { if (needLogin()) return; const p = reelCur(), i = $('#rlIn'), v = i.value.trim(); if (!v){ i.focus(); return; } (UI.newCmts[p.id] ||= []).push({u:ME, t:v, time:'刚刚', likes:0}); p.cmts++; openReelCm(); const l = $('.rl-cm-l', RL.el); l.scrollTop = l.scrollHeight; reelBar(); UI.dirty = true; },
   'rl-cl': b => { const n = parseInt(b.textContent.replace(/\D/g, '')) || 0, on = !b.classList.contains('on'); b.classList.toggle('on', on); b.textContent = '♥ ' + (n + (on ? 1 : -1)); },
   'rl-re': b => { const i = $('#rlIn'); i.value = '@' + b.dataset.v + ' '; i.focus(); },
-  'rl-follow': b => { if (needLogin()) return; const id = b.dataset.id, on = !STATE.follows.has(id); on ? STATE.follows.add(id) : STATE.follows.delete(id); $$(`.rl-fo[data-id="${id}"]`, RL.el).forEach(x => { x.classList.toggle('on', on); x.textContent = on ? '已关注' : '关注'; }); UI.dirty = true; },
+  'rl-follow': b => { if (needLogin()) return; const id = b.dataset.id, on = !STATE.follows.has(id); on ? STATE.follows.add(id) : STATE.follows.delete(id); $$(`.rl-fo[data-id="${id}"]`, RL.el).forEach(x => { x.classList.toggle('on', on); x.textContent = on ? '已关注' : '关注'; fxPop(x, 'fx-jelly'); }); if (on){ const r = b.getBoundingClientRect(); burst(r.left + r.width/2, r.top + r.height/2, [USERS[id].c, 'yellow']); haptic(8); } UI.dirty = true; },
   'rl-share': () => { const p = reelCur(); p && shareSheet('post', p.id); }
 });
 
@@ -4927,10 +4953,13 @@ function refreshConv(uid){ const b = $('#cvB'); if (b && CUR.key === 'msg|' + ui
 function autoReply(uid){
   const R = CHAT_REPLY[uid]; if (!R || TYPING[uid]) return; const n = CHATS[uid].filter(m => !m.me).length;
   setTimeout(() => { TYPING[uid] = true; refreshConv(uid); setTimeout(() => { TYPING[uid] = false; CHATS[uid].push({me:false, t:'text', text:R[n % R.length], ts:Date.now()});
-    if (CUR.key === 'msg|' + uid) refreshConv(uid); else { CHAT_UNREAD[uid] = (CHAT_UNREAD[uid] || 0) + 1; msgBadge(); toast(`${USERS[uid].name}：${R[n % R.length]}`, 'blue'); if (CUR.key === 'msg|') rerender(); } }, 1300); }, 700);
+    if (CUR.key === 'msg|' + uid){ refreshConv(uid); const last = $$('#cvB .msg:not(.me)').pop(); if (last && !reduced()) last.animate([{transform:'translate(-16px, 10px) scale(.7)', opacity:0}, {transform:'none', opacity:1}], {duration:320, easing:'cubic-bezier(.3,1.3,.5,1)'}); }
+    else { CHAT_UNREAD[uid] = (CHAT_UNREAD[uid] || 0) + 1; msgBadge(); toast(`${USERS[uid].name}：${R[n % R.length]}`, 'blue'); if (CUR.key === 'msg|'){ rerender(); const row = $(`.mrow[data-go="msg-${uid}"]`); fxPop(row, 'fx-flash', 1100); fxPop(row?.querySelector('.bdg'), 'fx-up'); } } }, 1300); }, 700);
 }
 Object.assign(ACTIONS, {
-  'cv-send': b => { const uid = b.dataset.id, i = $('#cvIn'), v = i.value.trim(); if (!v) return; i.value = ''; sendMsg(uid, {t:'text', text:v}); i.focus(); },
+  'cv-send': b => { const uid = b.dataset.id, i = $('#cvIn'), v = i.value.trim(); if (!v){ fxPop(i, 'fx-shake', 300); return; } i.value = ''; sendMsg(uid, {t:'text', text:v});
+    if (!reduced()){ const last = $$('#cvB .msg.me').pop(); last && last.animate([{transform:'translate(18px, 22px) scale(.55)', opacity:0}, {transform:'none', opacity:1}], {duration:340, easing:'cubic-bezier(.3,1.3,.5,1)'});
+      const ic = b.querySelector('svg'); ic && ic.animate([{transform:'none'}, {transform:'translate(18px,-14px) rotate(-25deg)', opacity:0, offset:.45}, {transform:'translate(-12px,10px)', opacity:0, offset:.46}, {transform:'none', opacity:1}], {duration:520, easing:'ease-out'}); } i.focus(); },
   'cv-pick': b => { const uid = b.dataset.id, mine = POSTS.filter(p => p.author === ME), fav = [...POSTS.filter(p => STATE.favs.has(p.id)), ...PRODUCTS.filter(p => STATE.favs.has(p.id))], own = PRODUCTS.filter(p => STATE.owned.has(p.id) || p.seller === ME);
     const item = (k, o) => `<button class="pk-it" data-act="cv-share" data-uid="${uid}" data-k="${k}" data-id="${o.id}">${k === 'post' ? miniThumb(o) : `<img src="${cover(o.cover, hash(o.id) % 50, 160, 160)}" alt="">`}<span>${esc(o.title)}</span></button>`;
     const sec = (t, arr) => arr.length ? `<span class="lab">${t}</span><div class="pk-g">${arr.map(([k, o]) => item(k, o)).join('')}</div>` : '';
@@ -4950,10 +4979,10 @@ function meHead(){
     <div class="mh-top"><button class="rl-ic dk" data-act="me-menu" aria-label="更多">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>'}</button><span style="flex:1"></span><button class="rl-ic dk" data-act="me-share" aria-label="分享主页">${RIC.fwd}</button></div>
     <div class="mh-id"><button class="mh-av" data-act="av-tap" aria-label="更换头像">${av(ME, 'xl')}<i class="mh-cam">${RIC.pen}</i>${AVQ.some(q => q.uid === ME) ? '<span class="mh-pend">审核中</span>' : ''}</button><div style="min-width:0"><h1>${esc(u.name)}</h1><span class="mut2">${['CTRL Z 号 · ' + esc(u.id), esc(u.city || '')].filter(Boolean).join(' · ')}</span></div></div>
     <p class="mh-bio">${esc(u.bio)}</p>
-    <div class="mh-st"><button data-act="me-list" data-v="follow"><b>${u.follow + STATE.follows.size}</b>关注</button><button data-act="me-list" data-v="fans"><b>${u.fans.toLocaleString()}</b>粉丝</button><span><b>${u.likes}</b>获赞与收藏</span></div>
+    <div class="mh-st"><button data-act="me-list" data-v="follow"><b data-roll="${u.follow + STATE.follows.size}">${u.follow + STATE.follows.size}</b>关注</button><button data-act="me-list" data-v="fans"><b data-roll="${u.fans}">${u.fans.toLocaleString()}</b>粉丝</button><span><b>${u.likes}</b>获赞与收藏</span></div>
     <div class="mh-q">
-      <a class="mqc" href="#seller-products"><span class="g c-pink">${GLYPH.sample}</span><span><b>我的产品</b><span>${STATE.seller ? nProd + ' 件在售 · 上架新作品' : '开店需要邀请码'}</span></span></a>
-      <a class="mqc" href="#me-lib"><span class="g c-blue">${IC.dl}</span><span><b>已购资源</b><span>${owned} 件可下载${STATE.libNew ? ` · <em>${STATE.libNew} 件新到</em>` : ''}</span></span></a>
+      <a class="mqc mqc-prod" href="#seller-products"><span class="g c-pink">${GLYPH.sample}</span><span><b>我的产品</b><span>${STATE.seller ? nProd + ' 件在售 · 上架新作品' : '开店需要邀请码'}</span></span></a>
+      <a class="mqc mqc-lib" href="#me-lib"><span class="g c-blue">${IC.dl}</span><span><b>已购资源</b><span>${owned} 件可下载${STATE.libNew ? ` · <em>${STATE.libNew} 件新到</em>` : ''}</span></span></a>
     </div></div>`;
 }
 function meTabBody(t){
@@ -5392,10 +5421,16 @@ Object.assign(ACTIONS, {
   fav: b => { if (needLogin()) return; const id = b.dataset.id; const on = !STATE.favs.has(id); on ? STATE.favs.add(id) : STATE.favs.delete(id);
     if (on){ const pr = P(id), po = POST(id); const srcEl = (CUR.post && $('#post .media')) || (CUR.key?.startsWith('item|') && $('.stage')) || b; const img = pr ? cover(pr.cover, hash(pr.id)%50, 200, 200) : po?.cover ? cover(po.cover, hash(po.id)%50, 200, 200) : cover('topo', 1, 200, 200); flyTo(srcEl.getBoundingClientRect(), img); }
     else toast('已移出书签', 'blue', 'save'); rerender(); $$(`[data-act="fav"][data-id="${id}"]`).forEach(x => fxPop(x, on ? 'fx-up' : 'fx-dn')); },
-  follow: b => { if (needLogin()) return; const id = b.dataset.id; const on = !STATE.follows.has(id); on ? STATE.follows.add(id) : STATE.follows.delete(id); if (on){ const r = b.getBoundingClientRect(); burst(r.left + r.width/2, r.top + r.height/2, [USERS[id].c, 'ink']); } rerender(); if (on) $$(`[data-act="follow"][data-id="${id}"]`).forEach(x => fxPop(x, 'fx-jelly')); },
+  follow: b => { if (needLogin()) return; const id = b.dataset.id; const on = !STATE.follows.has(id); on ? STATE.follows.add(id) : STATE.follows.delete(id);
+    const sg = on && !reduced() && b.closest('.sg');   // 推荐关注的小卡：按钮先画出对勾，卡片再缩小移走
+    if (sg){ const r = b.getBoundingClientRect(); b.innerHTML = IC.check.replace('<svg', '<svg width="13" height="13"') + '已关注'; b.classList.add('lt'); fxPop(b, 'fx-jelly'); burst(r.left + r.width/2, r.top + r.height/2, [USERS[id].c, 'ink']); haptic(8);
+      sg.animate([{transform:'none', opacity:1}, {transform:'scale(1.05)', opacity:1, offset:.3}, {transform:'scale(.55) translateY(14px)', opacity:0}], {duration:440, delay:260, easing:'cubic-bezier(.4,0,.6,1)', fill:'forwards'}).onfinish = () => rerender(); return; }
+    if (on){ const r = b.getBoundingClientRect(); burst(r.left + r.width/2, r.top + r.height/2, [USERS[id].c, 'ink']); } rerender(); if (on) $$(`[data-act="follow"][data-id="${id}"]`).forEach(x => fxPop(x, 'fx-jelly')); },
   share: () => { closeSheet(); try { navigator.clipboard.writeText(location.href).then(() => toast('链接已复制'), () => toast('复制失败，请从地址栏复制', 'orange', 'x')); } catch(e){ toast('复制失败，请从地址栏复制', 'orange', 'x'); } },
   copy: b => { try { navigator.clipboard.writeText(b.dataset.v).then(() => toast('已复制 ' + b.dataset.v), () => toast(b.dataset.v, 'blue')); } catch(e){ toast(b.dataset.v, 'blue'); } },
-  cmt: b => { if (needLogin()) return; const i = $('#cmtIn'), v = i.value.trim(); if (!v){ i.focus(); i.animate([{transform:'translateX(-5px)'},{transform:'translateX(5px)'},{transform:'none'}], {duration:220}); return; } (UI.newCmts[b.dataset.id] ||= []).push({u: STATE.role === 'admin' ? 'admin' : ME, t:v, time:'刚刚', likes:0}); POST(b.dataset.id).cmts++; UI.freshCmt = b.dataset.id; renderPost(CUR.post); UI.freshCmt = null; UI.dirty = true; const sc = $('#post .scroll'); sc && sc.scrollTo({top:sc.scrollHeight, behavior:'smooth'}); if (IS_MOBILE) scrollTo({top:document.body.scrollHeight}); },
+  cmt: b => { if (needLogin()) return; const i = $('#cmtIn'), v = i.value.trim(), ir = i.getBoundingClientRect(); if (v && !reduced()){ const g = document.createElement('span'); g.className = 'fx-ghost'; g.textContent = v; g.style.cssText = `left:${ir.left + 14}px;top:${ir.top + ir.height/2}px`; document.body.appendChild(g);
+      g.animate([{transform:'translateY(-50%)', opacity:1}, {transform:'translateY(-260%) scale(.92)', opacity:0}], {duration:460, easing:'cubic-bezier(.3,.7,.4,1)'}).onfinish = () => g.remove(); setTimeout(() => { const c = $$('#post .cmt.fresh').pop(); c && c.animate([{transform:'translateY(-14px) scale(.97)', opacity:0}, {transform:'none', opacity:1}], {duration:380, easing:'cubic-bezier(.3,1.25,.5,1)'}); }, 30); }
+    if (!v){ i.focus(); i.animate([{transform:'translateX(-5px)'},{transform:'translateX(5px)'},{transform:'none'}], {duration:220}); return; } (UI.newCmts[b.dataset.id] ||= []).push({u: STATE.role === 'admin' ? 'admin' : ME, t:v, time:'刚刚', likes:0}); POST(b.dataset.id).cmts++; UI.freshCmt = b.dataset.id; renderPost(CUR.post); UI.freshCmt = null; UI.dirty = true; const sc = $('#post .scroll'); sc && sc.scrollTo({top:sc.scrollHeight, behavior:'smooth'}); if (IS_MOBILE) scrollTo({top:document.body.scrollHeight}); },
   /* 评论点赞：再点一次取消 */
   clike: b => { const k = b.dataset.k, on = !STATE.clikes.has(k); on ? STATE.clikes.add(k) : STATE.clikes.delete(k);
     const n = Math.max(0, (parseInt(b.textContent.replace(/\D/g,'')) || 0) + (on ? 1 : -1));
