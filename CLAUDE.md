@@ -57,6 +57,7 @@
 - 平台参数 `PLAT / CO_FEE / CO_FREE_REV / CO_AUTO_DAYS` 是 `let`，由 `applyParams()` 从 `ADM.params` 读，后台改了马上生效（有上限 `PM_MAX`）
 - 合作纠纷裁决：全额放款 / 部分退款 / 全额退款，写进 `o.ruling`、订单状态 done 或 refunded，双方收到通知、私信卡片显示裁决
 - 运营配置：商城海报（`slidesConf` / `applySlides`）和分类（`catsConf` / `applyCats`，`c.off` 的分类不显示）；首页公告条 `annBar()`（含被禁言 / 封禁时的受限提示）
+- 用户端举报（`report` / `do-report`，data-k = post / prod / user）进 `REPORTS` 队列，入口：帖子「⋯」、分享面板（不是自己的东西才显示）、商品页「举报 · 版权投诉」
 - 用户端入驻申请 `apply-open`：只存打码后的实名信息，正式版走实名认证接口
 - 后台页签 ≤1020px 横排（隐藏分组标题），以上是左侧竖排
 

@@ -5710,7 +5710,7 @@ function postExit(done){
 /* 点话题 = 用这个话题搜帖子 */
 ACTIONS.tagjump = b => { closeSearch(); openSearch('all', 'post'); const q = $('#sq'); q.value = b.dataset.v.replace(/^#/, ''); q.dispatchEvent(new Event('input')); };
 ACTIONS.reply = b => { const i = $('#cmtIn'); i.value = '@' + b.dataset.v + ' '; i.focus(); };
-ACTIONS['more-post'] = b => sheet(`<h3>这篇帖子</h3><button class="pill lt lg" data-act="shr-open" data-k="post" data-id="${b.dataset.id}">${IC.share}分享</button><button class="pill lt lg" data-act="report" data-id="${b.dataset.id}">${IC.flag}举报</button>`);
+ACTIONS['more-post'] = b => sheet(`<h3>这篇帖子</h3><button class="pill lt lg" data-act="shr-open" data-k="post" data-id="${b.dataset.id}">${IC.share}分享</button><button class="pill lt lg" data-act="report" data-k="post" data-id="${b.dataset.id}">${IC.flag}举报</button>`);
 document.addEventListener('keydown', e => {
   if (!CUR.post || e.target.closest('input,textarea')) return;
   if (e.key === 'Escape') ACTIONS.pclose();
@@ -5781,6 +5781,7 @@ ROUTES.item = id => {
       <div><span class="lab" style="display:block;margin-bottom:10px">可以怎么用</span><div class="lic"><span>${IC.check.replace('<svg','<svg width="13" height="13"')}发行作品</span><span>${IC.check.replace('<svg','<svg width="13" height="13"')}演出与直播</span><span>${IC.check.replace('<svg','<svg width="13" height="13"')}切片改编</span><span class="no">转售原文件</span><span class="no">再打包出售</span></div></div>
       <details><summary class="lab" style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px">文件结构 <span style="font-size:14px">+</span></summary><div class="files" style="margin-top:10px">${esc(pr.files)}</div></details>
       <a class="seller" data-go="user-${u.id}" data-tab="shop">${av(u.id,'md')}<span style="flex:1;min-width:0"><b style="display:block">${esc(u.shop)}</b><span class="mut2" style="font-size:12.5px">${esc(u.name)} · ${PRODUCTS.filter(p => p.seller === u.id).length} 件资源</span></span>${IC.arrow.replace('<svg','<svg width="18" height="18"')}</a>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="pill sm lt" data-act="shr-open" data-k="prod" data-id="${pr.id}">${IC.share}分享</button>${own || pr.seller === ME ? '' : `<button class="pill sm lt" data-act="report" data-k="prod" data-id="${pr.id}">${IC.flag}举报 · 版权投诉</button>`}</div>
     </div>
   </div>
   ${used.length ? `<section class="sec"><div class="sh"><h2 class="x">用它做的<span class="s">made with</span></h2></div><div class="mason">${used.map(postCard).join('')}</div></section>` : ''}
@@ -6472,7 +6473,7 @@ Object.assign(ACTIONS, {
       if (r.ref && r.kind === '帖子') takeDown('post', r.ref, '审核驳回：' + why, true);
       notify(r.who, '审核没有通过', `你提交的${r.kind}「${r.title}」没有通过审核。原因：${why}。修改后可以重新提交。`); admSave(); toast(`已驳回：${esc(r.title)}`, 'orange', 'x'); rerender(); }); },
   // 举报
-  'rp-view': b => { const r = REPORTS.find(x => x.id === b.dataset.id); if (!r) return; if (r.kind === 'prod') go('item-' + r.ref); else if (r.kind === 'post') openPost(r.ref); },
+  'rp-view': b => { const r = REPORTS.find(x => x.id === b.dataset.id); if (!r) return; if (r.kind === 'prod') go('item-' + r.ref); else if (r.kind === 'user') go('user-' + r.ref); else if (POST(r.ref)) openPost(r.ref); else toast('内容已经不在了', 'blue'); },
   'rp-do': b => { if (!admGuard('reports')) return; const r = REPORTS.find(x => x.id === b.dataset.id), v = b.dataset.v; if (!r) return; const au = repAuthor(r), lab = repLabel(r);
     const done = (st, msg) => { r.st = '已处理 · ' + st; admLog('处理举报', lab, st); notify(r.who, '你的举报有结果了', `你举报的${lab}：${msg}。谢谢你帮社区变得更好。`); admSave(); toast('已处理：' + st); rerender(); };
     if (v === 'dismiss') return done('不成立', '经核实暂未发现违规');
@@ -6828,6 +6829,7 @@ function shareSheet(k, id){
     <div class="shr-apps">
       <button data-act="shr-copy"><span class="g">${IC.link}</span>复制链接</button>
       <button data-act="shr-sys"><span class="g">${IC.share}</span>其它 App</button>
+      ${(k === 'user' ? id : k === 'post' ? obj.author : obj.seller) !== ME ? `<button data-act="report" data-k="${k}" data-id="${esc(id)}"><span class="g">${IC.flag}</span>举报</button>` : ''}
     </div>`,
     d => { d._pick = pick; d._obj = {k, id}; });
 }
@@ -7795,8 +7797,15 @@ Object.assign(ACTIONS, {
     if (on){ const r = b.querySelector('.hk').getBoundingClientRect(), x = r.left + r.width/2, y = r.top + r.height/2; fxPop(b, 'fx-up'); fxRing(x, y); burst(x, y, ['pink', 'yellow', 'pink']); haptic(10); sfx('pop'); }
     else fxPop(b, 'fx-dn'); },
   solve: b => { const p = POST(b.dataset.id); if (curUser() !== p.author) return; const now = !isSolved(p); STATE.solved[p.id] = now; UI.justStamped = now; sfx(now ? 'ok' : 'click'); renderPost(p.id); UI.dirty = true; if (now){ const s = $('.stamp.big'); if (s){ const r = s.getBoundingClientRect(); setTimeout(() => burst(r.left + r.width/2, r.top + r.height/2, ['green','yellow']), 250); } } },
-  report: () => sheet(`<h3>举报原因</h3><div style="display:flex;flex-direction:column;gap:8px">${['侵犯了我的版权','分享盗版资源','广告引流','不友善'].map(r => `<button class="pill lt lg" style="justify-content:flex-start" data-act="do-report">${r}</button>`).join('')}</div>`),
-  'do-report': () => { closeSheet(); toast('收到，我们会尽快处理'); },
+  report: b => { if (needLogin()) return; const k = b.dataset.k || 'post', id = b.dataset.id;
+    if (REPORTS.some(r => r.kind === k && r.ref === id && r.who === ME && r.st === '待处理')){ closeSheet(); toast('已经举报过了，正在处理', 'blue'); return; }
+    const R = {post:['侵犯了我的版权', '分享盗版资源', '广告引流', '不友善', '色情低俗 / 违法'], prod:['侵犯了我的版权', '素材来源不明 / 盗版', '和描述不符', '广告引流'], user:['冒充他人', '私信骚扰 / 引流', '发布违规内容', '欺诈']}[k] || ['违反社区规范'];
+    sheet(`<h3>举报原因</h3><div class="ad-rs" id="rpR">${R.map((r, i) => `<button class="pill lt ${i ? '' : 'on'}" data-act="rs-pick">${r}</button>`).join('')}</div>
+      <label class="ad-lab">补充说明（版权投诉请附上原作链接或权属证明）</label><textarea class="inp" id="rpX" placeholder="可选"></textarea>
+      <button class="pill lg" data-act="do-report" data-k="${k}" data-id="${esc(id)}">提交举报</button>`); },
+  'do-report': b => { const why = $('#rpR .on')?.textContent || '违反社区规范', x = $('#rpX')?.value.trim();
+    REPORTS.unshift({id:'rp' + Date.now().toString(36), kind:b.dataset.k, ref:b.dataset.id, reason:why + (x ? '：' + x : ''), who:ME, time:fmtDT(Date.now()).slice(0, 5), st:'待处理'}); admSave();
+    closeSheet(); toast('收到，处理结果会通过「CTRL Z 官方」通知你'); },
   compose: b => { if (needLogin()) return; const r = b?.getBoundingClientRect(); composeSheet(); $$('[data-act="compose"]').forEach(x => x.classList.add('fx-open'));
     const sh = $('#layer .sheet'); if (sh && r && !reduced()){ sh.getAnimations().forEach(x => x.cancel());   // 停掉面板自带的上滑动画，换成从按钮长出来
       const s = sh.getBoundingClientRect(), tO = sh.style.transformOrigin, bx = r.left + r.width/2, by = r.top + r.height/2;
