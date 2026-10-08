@@ -2115,6 +2115,93 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 .mh-st > * + *{border-left:1.5px dashed var(--rule-2)}
 .mh-st > :first-child{padding-left:2px}
 .mh-st b{font:900 22px/1 var(--f-x);font-stretch:112%}
+
+/* ===================== 材质层：液态玻璃 / 毛玻璃 / 奶油软胶（设计系统 MATERIAL LAB） ===================== */
+/* 液态玻璃：Chromium 里由 LG（SVG 位移贴图，思路来自 shuding/liquid-glass，MIT）真折射背后的内容；
+   其它浏览器只用下面这套 CSS：几乎不模糊 + 边缘一圈提亮增饱和（颜色随背后内容变）+ 发丝高光边 */
+:root{--lg-tint:rgba(255,255,255,.2);--lg-hi:rgba(255,255,255,.95);--lg-ln:rgba(255,255,255,.7);--lg-lo:rgba(255,255,255,.35);--lg-sh:rgba(20,20,24,.28);
+  --fr-a:color-mix(in srgb,var(--paper) 64%,transparent);--fr-b:color-mix(in srgb,var(--paper) 46%,transparent)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--lg-tint:rgba(255,255,255,.07);--lg-hi:rgba(255,255,255,.42);--lg-ln:rgba(255,255,255,.2);--lg-lo:rgba(255,255,255,.12);--lg-sh:rgba(0,0,0,.6)} }
+:root[data-theme="dark"]{--lg-tint:rgba(255,255,255,.07);--lg-hi:rgba(255,255,255,.42);--lg-ln:rgba(255,255,255,.2);--lg-lo:rgba(255,255,255,.12);--lg-sh:rgba(0,0,0,.6)}
+.lgx{background:var(--lg-tint);backdrop-filter:blur(2px) saturate(1.8) brightness(1.06);-webkit-backdrop-filter:blur(2px) saturate(1.8) brightness(1.06);
+  box-shadow:inset 0 1px 0 var(--lg-hi),inset 0 0 0 .5px var(--lg-ln),inset 0 -1px 0 var(--lg-lo),inset 0 -8px 14px -10px rgba(20,20,24,.22),0 6px 16px -8px var(--lg-sh)}
+/* 边缘响应色：一圈环把背后的颜色吸进来、提亮增饱和（和背后内容实时联动，不用固定色） */
+.lg-rim{position:absolute;inset:0;border-radius:inherit;padding:5px;pointer-events:none;backdrop-filter:blur(1px) saturate(3) brightness(1.14);-webkit-backdrop-filter:blur(1px) saturate(3) brightness(1.14);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);box-shadow:inset 0 1px 0 var(--lg-hi),inset 0 0 0 .5px var(--lg-ln)}
+
+/* ---- 手机底栏：悬浮液态玻璃胶囊 ---- */
+@media (max-width:760px){
+  :root{--tbcap:64px;--tbgap:12px;--tbh:calc(var(--tbcap) + var(--tbgap) + 2px)}
+  .tb{left:var(--tbgap);right:var(--tbgap);bottom:calc(var(--tbgap) + env(safe-area-inset-bottom,0px));height:var(--tbcap);padding:0 4px;border:0;border-radius:999px;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;isolation:isolate;box-shadow:0 0 0 .5px rgba(20,20,24,.1),0 18px 40px -16px var(--lg-sh)}
+  .tb > a,.tb > button{position:relative;z-index:3;color:var(--ink-2)}
+  .tb .on{color:var(--ink)}
+  /* 玻璃面：底栏要比一般液态玻璃「实」一点，文字图标才清楚 */
+  .tb-glass{position:absolute;inset:0;z-index:0;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,color-mix(in srgb,var(--paper) 82%,transparent),color-mix(in srgb,var(--paper) 70%,transparent));backdrop-filter:blur(20px) saturate(1.5) brightness(1.04);-webkit-backdrop-filter:blur(16px) saturate(1.5) brightness(1.04)}
+  .tb > .lg-rim{z-index:1}
+  /* 光标 / 手指在玻璃上的一团柔光 */
+  .tb-sheen{position:absolute;z-index:1;top:-10px;left:var(--mx,30%);width:110px;height:84px;margin-left:-55px;border-radius:50%;pointer-events:none;background:radial-gradient(closest-side,rgba(255,255,255,.4),rgba(255,255,255,0));opacity:0;transition:opacity .3s}
+  .tb.hov .tb-sheen{opacity:1}
+  /* 选中项 = 一块果冻：切换时拉长滑过去，按住压扁，松手回弹 */
+  .tb-blob{position:absolute;z-index:2;top:5px;bottom:5px;left:0;width:0;border-radius:999px;pointer-events:none;opacity:0;transform-origin:50% 50%;
+    background:var(--lg-tint);backdrop-filter:blur(1.5px) saturate(2.2) brightness(1.1);-webkit-backdrop-filter:blur(1.5px) saturate(2.2) brightness(1.1);
+    box-shadow:inset 0 1px 0 var(--lg-hi),inset 0 -1px 0 var(--lg-lo),inset 0 0 0 .5px var(--lg-ln),inset 0 -8px 14px -10px rgba(20,20,24,.2),0 6px 14px -6px var(--lg-sh);
+    transition:left .46s cubic-bezier(.3,1.35,.5,1),width .46s cubic-bezier(.3,1.35,.5,1),transform .26s cubic-bezier(.3,1.7,.5,1),opacity .2s}
+  .tb-blob.fx-mv{transform:scaleX(1.3) scaleY(.86)}
+  .tb.prs .tb-blob{transform:scaleX(1.06) scaleY(.9)}
+  .tb a svg{transition:transform .26s cubic-bezier(.3,1.7,.5,1)}
+  .tb a.on svg{transform:scale(1.08)}
+  .tb .bdg{z-index:4}
+}
+@media (max-width:760px) and (max-height:430px), (max-height:430px) and (min-aspect-ratio:3/2){ @media (max-width:760px){ :root{--tbcap:48px;--tbgap:8px} .tb-blob{top:4px;bottom:4px} } }
+
+/* ---- 发布按钮 = 奶油软胶：哑光、柔和体积，按下被压扁、松手果冻回弹 ---- */
+.tb .plus span,#hd .pill.post-btn{background:radial-gradient(140% 120% at 50% 0%,#ff86c2 0%,#FF4FA7 48%,#ef3f98 100%);color:#fff;
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.35),inset 0 -3px 6px rgba(150,10,80,.22),inset 0 0 0 .5px rgba(150,20,90,.25),0 1px 2px rgba(20,20,24,.14),0 6px 14px -8px rgba(20,20,24,.32);
+  transition:transform .26s cubic-bezier(.3,1.7,.5,1),background .2s,color .2s}
+.tb .plus:active span,#hd .pill.post-btn:active{transform:scale(1.07,.88)}
+.tb .plus.fx-open span,#hd .pill.post-btn.fx-open{background:radial-gradient(140% 120% at 50% 0%,#3a3a42 0%,#18181c 60%,#0e0e11 100%);color:#fff}
+
+/* ---- 电脑 / 平板侧栏：毛玻璃 + 选中项是果冻 ---- */
+@media (min-width:761px){
+  #hd{background:linear-gradient(180deg,var(--fr-a),var(--fr-b));backdrop-filter:blur(22px) saturate(1.6);-webkit-backdrop-filter:blur(22px) saturate(1.6);box-shadow:inset -1px 0 0 var(--lg-hi),1px 0 0 var(--rule)}
+  #hd .nav-ink{background:var(--lg-tint);backdrop-filter:blur(1.5px) saturate(2.2) brightness(1.1);-webkit-backdrop-filter:blur(1.5px) saturate(2.2) brightness(1.1);
+    box-shadow:inset 0 1px 0 var(--lg-hi),inset 0 -1px 0 var(--lg-lo),inset 0 0 0 .5px var(--lg-ln),inset 0 -10px 16px -12px rgba(20,20,24,.22),0 6px 14px -6px var(--lg-sh),0 0 0 1px var(--rule)}
+  #hd .nav a.on{color:var(--ink)}
+  #hd .nav a.on svg{transform:scale(1.08)}
+  #hd .nav a svg{transition:transform .26s cubic-bezier(.3,1.7,.5,1)}
+}
+
+/* ---- 时长标签 / 声音标签：透明液态玻璃小胶囊（深色字，压在任何封面上都清楚） ---- */
+.vbadge,.acv .tag.k{position:relative;background:var(--lg-tint);color:#141418;backdrop-filter:blur(2.5px) saturate(1.8) brightness(1.06);-webkit-backdrop-filter:blur(2.5px) saturate(1.8) brightness(1.06);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(255,255,255,.75),inset 0 -1px 0 rgba(255,255,255,.4),inset 0 -6px 10px -8px rgba(20,20,24,.22),0 4px 10px -4px rgba(20,20,24,.28)}
+.vbadge{position:absolute}
+/* 封面上的播放键：透明液态玻璃圆 */
+.cv .pbtn,.acv .pbtn{background:rgba(255,255,255,.08);color:#141418;backdrop-filter:blur(.6px) saturate(1.7) brightness(1.08);-webkit-backdrop-filter:blur(.6px) saturate(1.7) brightness(1.08);
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),inset 0 0 0 .6px rgba(255,255,255,.8),inset 0 -2px 0 rgba(255,255,255,.35),inset 0 -10px 14px -10px rgba(20,20,24,.3),0 8px 18px -8px rgba(20,20,24,.4)}
+
+/* ---- 商品条：毛玻璃，压在封面下沿；背后的封面颜色化成一团光 ---- */
+.cv .att{position:absolute;z-index:2;left:8px;right:8px;bottom:8px;color:var(--ink);background:linear-gradient(180deg,color-mix(in srgb,var(--paper) 80%,transparent),color-mix(in srgb,var(--paper) 66%,transparent));backdrop-filter:blur(16px) saturate(1.6);-webkit-backdrop-filter:blur(16px) saturate(1.6);
+  box-shadow:inset 0 1px 0 var(--lg-hi),inset 0 0 0 .5px var(--lg-ln),0 8px 18px -10px rgba(20,20,24,.4)}
+.cv .att:hover{box-shadow:inset 0 1px 0 var(--lg-hi),inset 0 0 0 1px var(--ink),0 8px 18px -10px rgba(20,20,24,.4)}
+.cv.has-att .vbadge{top:10px;bottom:auto}
+
+/* ---- 商城海报搜索条：毛玻璃 ---- */
+.bn-sq{background:linear-gradient(180deg,var(--fr-a),var(--fr-b));backdrop-filter:blur(20px) saturate(1.6);-webkit-backdrop-filter:blur(20px) saturate(1.6);box-shadow:inset 0 1px 0 var(--lg-hi),inset 0 0 0 .5px var(--lg-ln),0 12px 28px -16px var(--lg-sh)}
+
+/* ---- 页签选中：荧光笔色块不再倾斜，保留不规则圆角 ---- */
+.ht-t button.on::after,.mtabs button.on::after,.s-tabs button.on::after{transform:none}
+
+/* ---- 商城分类：选中的那张包一层果冻玻璃（厚边折射 + 高光），戳一下压扁回弹、滑动列表会滞后晃动 ---- */
+.cat.on,.cat.all.on{box-shadow:0 10px 22px -12px var(--lg-sh);transform:translateX(var(--jx,0px)) skewX(var(--jsk,0deg)) scale(var(--jsx,1),var(--jsy,1));transform-origin:var(--jox,50%) var(--joy,50%);transition:none}
+.cjelly{position:absolute;inset:0;z-index:3;border-radius:inherit;pointer-events:none;background:rgba(255,255,255,.05);backdrop-filter:blur(.4px) saturate(1.25) brightness(1.04);-webkit-backdrop-filter:blur(.4px) saturate(1.25) brightness(1.04);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.5),inset 0 2px 1px rgba(255,255,255,.9),inset 0 -2px 1px rgba(255,255,255,.3),inset 0 12px 18px -12px rgba(255,255,255,.65),inset 0 -16px 22px -14px rgba(20,20,24,.35),inset 8px 0 14px -10px rgba(255,255,255,.45)}
+.cjelly::before{content:"";position:absolute;left:9%;top:3%;width:48%;height:15%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.5),rgba(255,255,255,0));transform:rotate(-8deg)}
+.cjelly .lg-rim{padding:7px}
+
+/* 不支持 backdrop-filter 的浏览器：玻璃退回半透明纸色，保证可读 */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .tb-glass,.tb-blob,.vbadge,.acv .tag.k,.cv .att,#hd .nav-ink{background:color-mix(in srgb,var(--paper) 88%,transparent)}
+}
 </style>
 
 </head>
@@ -2142,7 +2229,7 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
   <div class="x">CTRL<span>Z</span></div>
   <p>FOR GEN Z BY GEN Z<br>声音 · 视觉 · 资源 · 创作者店铺<br>原型 · 所有内容为示例<br>正文字体 HarmonyOS Sans · © Huawei Device Co., Ltd. · <a href="fonts/HarmonyOS_Sans_LICENSE.txt" target="_blank" rel="noopener" style="text-decoration:underline;text-underline-offset:3px">字体授权</a></p>
 </footer>
-<nav class="tb" aria-label="手机导航">
+<nav class="tb" aria-label="手机导航"><span class="tb-glass" aria-hidden="true"></span><span class="lg-rim" aria-hidden="true"></span><span class="tb-sheen" aria-hidden="true"></span><span class="tb-blob" aria-hidden="true"></span>
   <a href="#home" data-r="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20h-5.5v-5.5h-5V20H4z"/></svg>首页</a>
   <a href="#shop" data-r="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8h16l-1.2 12H5.2z"/><path d="M9 8a3 3 0 016 0"/></svg>商城</a>
   <button class="plus" data-act="compose" aria-label="发布"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M12 5v14M5 12h14"/></svg></span></button>
@@ -4273,7 +4360,9 @@ function postCard(p){
   else if (p.type === 'video') cv = `<div class="cv vcard ${p.failed ? 'failed' : ''}"><img src="${cover(p.cover, hash(p.id) % 50, 480, Math.round(480*Math.max(1.15, p.h||1)))}" alt="" width="480" height="${Math.round(480*Math.max(1.15, p.h||1))}">${p.failed ? '<span class="vgone">视频已失效</span>' : `<span class="vbadge">${IC.play}${p.dur}</span>`}</div>`;
   else if (p.type === 'audio'){ const pr = p.attach[0] && P(p.attach[0]); cv = `<div class="cv grain"><div class="acv"><div class="row"><span class="tag k">声音 · <span data-wt="${p.id}">${p.dur}</span></span></div><canvas data-wave="${p.id}" data-seed="${p.seed}" tabindex="0" role="slider" aria-label="播放进度"></canvas><div class="row"><span class="t">${esc(pr ? pr.en.split(' ')[0] : (p.word || 'SOUND'))}</span><button class="pbtn" data-act="aplay" data-id="${p.id}" aria-label="试听">${IC.play}</button></div></div></div>`; }
   else { const s = isSolved(p); cv = `<div class="cv grain"><div class="qcv"><div style="display:flex;justify-content:space-between;align-items:flex-start"><span class="q">?</span>${s ? '<span class="stamp">SOLVED<small>已解决</small></span>' : `<span class="tag k">Q.${p.qn}</span>`}</div><p>${esc(p.ex)}</p></div></div>`; }
-  return `<article class="card ${postCls(p)} ${p.tcover && p.type === 'image' ? 'tpost' : ''}" data-t="${p.type}" data-go="${p.failed ? 'post-' + p.id : postHref(p)}" data-flip="p-${p.id}">${cv}<div class="bd"><h3>${esc(p.title)}</h3>${p.attach.length ? attachChip(p.attach[0]) : ''}<div class="meta"><a class="who" data-go="user-${u.id}">${av(u.id,'sm')}<span>${esc(u.name)}</span></a>${likeBtn(p)}</div></div></article>`;
+  const onCv = p.attach.length && (p.type === 'image' || p.type === 'video') && !p.failed && cv && attachChip(p.attach[0]);   // 图片 / 视频封面：商品条做成毛玻璃压在封面下沿
+  if (onCv) cv = cv.replace(/^<div class="cv/, '<div class="cv has-att').replace(/<\/div>$/, onCv + '</div>');
+  return `<article class="card ${postCls(p)} ${p.tcover && p.type === 'image' ? 'tpost' : ''}" data-t="${p.type}" data-go="${p.failed ? 'post-' + p.id : postHref(p)}" data-flip="p-${p.id}">${cv}<div class="bd"><h3>${esc(p.title)}</h3>${p.attach.length && !onCv ? attachChip(p.attach[0]) : ''}<div class="meta"><a class="who" data-go="user-${u.id}">${av(u.id,'sm')}<span>${esc(u.name)}</span></a>${likeBtn(p)}</div></div></article>`;
 }
 function sleeve(pr){
   const u = USERS[pr.seller], c = CATS[pr.cat], own = STATE.owned.has(pr.id);
@@ -4360,6 +4449,111 @@ let _fitT; addEventListener('resize', () => { clearTimeout(_fitT); _fitT = setTi
 function navInk(){ const ink = $('.nav-ink'), a = $('.nav a.on'); if (!ink) return; if (a){ Object.assign(ink.style, {left:a.offsetLeft + 'px', top:a.offsetTop + 'px', width:a.offsetWidth + 'px', height:a.offsetHeight + 'px', opacity:1}); } else ink.style.opacity = 0; }
 addEventListener('resize', navInk);
 const reduced = () => STATE.settings.rm || matchMedia('(prefers-reduced-motion:reduce)').matches;
+/* ================= 液态玻璃折射（LG） =================
+   思路来自 Shu Ding 的 liquid-glass（https://github.com/shuding/liquid-glass，MIT License）：
+   用圆角矩形 SDF 算一张位移贴图，越靠边越往中心取样，再用 SVG feDisplacementMap 作为 backdrop-filter，
+   让玻璃真实折射背后的页面内容。没有 WebGL、不截图，每种尺寸只算一次贴图并缓存，开销很小。
+   只有 Chromium 支持 backdrop-filter: url()；Safari / iOS / Firefox 保持 CSS 版液态玻璃（边缘提亮增饱和 + 高光边）。 */
+const LG = (() => {
+  const UA = navigator.userAgent;
+  const ok = /Chrome\/\d+/.test(UA) && !/CriOS|FxiOS|EdgiOS/.test(UA) && (navigator.hardwareConcurrency || 4) >= 4;
+  const NSV = 'http://www.w3.org/2000/svg', made = new Set();
+  let defs = null;
+  const ss = (a, b, t) => { t = Math.max(0, Math.min(1, (t - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const sdRR = (x, y, hw, hh, r) => { const qx = Math.abs(x) - hw + r, qy = Math.abs(y) - hh + r; return Math.min(Math.max(qx, qy), 0) + Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) - r; };
+  function host(){
+    if (defs) return defs;
+    const svg = document.createElementNS(NSV, 'svg'); svg.setAttribute('width', 0); svg.setAttribute('height', 0); svg.setAttribute('aria-hidden', 'true');
+    svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
+    defs = document.createElementNS(NSV, 'defs'); svg.appendChild(defs); document.body.appendChild(svg); return defs;
+  }
+  // 位移贴图：bev = 折射带宽度（px），amt = 边缘往里吸的比例
+  function filter(w, h, r, bev, amt){
+    const id = `lgf-${w}x${h}-${r}-${bev}-${Math.round(amt * 100)}`;
+    if (made.has(id)) return id;
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const g = cv.getContext('2d'), img = g.createImageData(w, h), d = img.data, dx = new Float32Array(w * h), dy = new Float32Array(w * h);
+    let m = 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++){
+      const ix = x + .5 - w / 2, iy = y + .5 - h / 2, e = -sdRR(ix, iy, w / 2, h / 2, r);
+      const k = (1 - ss(0, bev, e)) * amt, i = y * w + x;      // 越靠边 k 越大：往中心取样 → 边缘被放大、向内弯
+      dx[i] = -ix * k; dy[i] = -iy * k; m = Math.max(m, Math.abs(dx[i]), Math.abs(dy[i]));
+    }
+    m = m || 1;
+    for (let i = 0; i < w * h; i++){ d[i*4] = (dx[i] / (2*m) + .5) * 255; d[i*4+1] = (dy[i] / (2*m) + .5) * 255; d[i*4+2] = 0; d[i*4+3] = 255; }
+    g.putImageData(img, 0, 0);
+    const f = document.createElementNS(NSV, 'filter');
+    f.setAttribute('id', id); f.setAttribute('filterUnits', 'userSpaceOnUse'); f.setAttribute('color-interpolation-filters', 'sRGB');
+    f.setAttribute('x', 0); f.setAttribute('y', 0); f.setAttribute('width', w); f.setAttribute('height', h);
+    const fi = document.createElementNS(NSV, 'feImage'); fi.setAttribute('width', w); fi.setAttribute('height', h); fi.setAttribute('result', 'map');
+    fi.setAttribute('href', cv.toDataURL());
+    const fd = document.createElementNS(NSV, 'feDisplacementMap');
+    fd.setAttribute('in', 'SourceGraphic'); fd.setAttribute('in2', 'map'); fd.setAttribute('scale', (2 * m).toFixed(1)); fd.setAttribute('xChannelSelector', 'R'); fd.setAttribute('yChannelSelector', 'G');
+    f.append(fi, fd); host().appendChild(f); made.add(id);
+    return id;
+  }
+  // 给一个元素加上折射。extra = 折射之后再叠的 CSS 滤镜（模糊、饱和度……）
+  function apply(el, o = {}){
+    if (!ok || !el || !el.isConnected) return;
+    const w = Math.round(el.offsetWidth), h = Math.round(el.offsetHeight);
+    if (w < 8 || h < 8) return;
+    const r = Math.min(o.r ?? Math.min(w, h) / 2, w / 2, h / 2), bev = o.bev ?? Math.min(w, h) * .32, amt = o.amt ?? .22;
+    const key = `${w}x${h}`;
+    if (el._lg === key) return; el._lg = key;
+    const id = filter(w, h, Math.round(r), Math.round(bev), amt), v = `url(#${id}) ${o.extra || 'saturate(1.6) brightness(1.06)'}`;
+    el.style.backdropFilter = v; el.style.webkitBackdropFilter = v;
+  }
+  // 页面重绘后给液态玻璃元素补上折射（同尺寸共用一张贴图）
+  const SPEC = [
+    ['.tb-glass', {r: 999, bev: 14, amt: .16, extra: 'blur(20px) saturate(1.5) brightness(1.04)'}],
+    ['.tb-blob', {r: 999, bev: 12, amt: .28, extra: 'blur(1px) saturate(2.1) brightness(1.1)'}],
+    ['.vbadge, .acv .tag.k', {r: 999, bev: 9, amt: .3, extra: 'blur(1.5px) saturate(1.8) brightness(1.06)'}],
+    ['.cv .pbtn, .acv .pbtn', {bev: 16, amt: .34, extra: 'saturate(1.7) brightness(1.08)'}],
+    ['.cjelly', {r: 16, bev: 18, amt: .3, extra: 'saturate(1.25) brightness(1.04)'}]
+  ];
+  function scan(root = document){ if (!ok) return; for (const [sel, o] of SPEC) root.querySelectorAll(sel).forEach(el => apply(el, Object.assign({}, o, {r: Math.min(o.r ?? 999, el.offsetHeight / 2)}))); }
+  if (ok) document.documentElement.classList.add('lg-ok');
+  return {ok, apply, scan};
+})();
+
+/* 手机底栏的果冻：跟着选中页签走，切换时拉长、按住压扁 */
+function tbBlob(){
+  const tb = $('.tb'), b = $('.tb-blob'), a = $('.tb a.on'); if (!tb || !b) return;
+  if (!a || !tb.offsetWidth){ b.style.opacity = 0; return; }
+  const w = Math.min(a.offsetWidth - 8, 76), x = a.offsetLeft + (a.offsetWidth - w) / 2, moved = b.style.opacity === '1' && parseFloat(b.style.left) !== x;
+  Object.assign(b.style, {left: x + 'px', width: w + 'px', opacity: 1});
+  if (moved && !reduced()){ b.classList.add('fx-mv'); clearTimeout(b._t); b._t = setTimeout(() => b.classList.remove('fx-mv'), 180); }
+  LG.apply(b, {r: 999, bev: 12, amt: .28, extra: 'blur(1px) saturate(2.1) brightness(1.1)'});
+}
+(() => {
+  const tb = $('.tb'); if (!tb) return;
+  // 柔光跟着手指 / 光标；按住时果冻压扁
+  tb.addEventListener('pointermove', e => { const r = tb.getBoundingClientRect(); tb.style.setProperty('--mx', (e.clientX - r.left) + 'px'); tb.classList.add('hov'); }, {passive: true});
+  tb.addEventListener('pointerleave', () => tb.classList.remove('hov', 'prs'));
+  tb.addEventListener('pointerdown', e => { const r = tb.getBoundingClientRect(); tb.style.setProperty('--mx', (e.clientX - r.left) + 'px'); tb.classList.add('hov', 'prs'); }, {passive: true});
+  addEventListener('pointerup', () => { tb.classList.remove('prs'); if (matchMedia('(hover:none)').matches) tb.classList.remove('hov'); }, {passive: true});
+  addEventListener('resize', () => { tbBlob(); LG.scan(); });
+})();
+document.addEventListener('rendered', () => { tbBlob(); requestAnimationFrame(() => LG.scan()); });
+
+/* 商城分类卡的果冻物理：一个弹簧，只在有动静时跑 rAF。
+   滑动列表 → 卡片按速度往后拖、停下晃几下；按住 → 以手指位置为中心压扁，松手回弹 */
+function catJelly(){
+  const row = $('.cats'), card = row && $('.cat.on', row); if (!card || reduced() || row._jl === card) return; row._jl = card;
+  const st = {x:0, vx:0, tx:0, q:0, vq:0, tq:0, raf:0, sx:row.scrollLeft, t:performance.now()};
+  const set = () => { card.style.setProperty('--jx', st.x.toFixed(2) + 'px'); card.style.setProperty('--jsk', (st.x * -.35).toFixed(2) + 'deg');
+    card.style.setProperty('--jsx', (1 + st.q * .05).toFixed(4)); card.style.setProperty('--jsy', (1 - st.q * .08).toFixed(4)); };
+  const tick = () => { st.raf = 0; st.tx *= .82;
+    st.vx = st.vx * .8 + (st.tx - st.x) * .16; st.x += st.vx; st.vq = st.vq * .74 + (st.tq - st.q) * .22; st.q += st.vq; set();
+    if (Math.abs(st.x) + Math.abs(st.vx) + Math.abs(st.tx) + Math.abs(st.tq - st.q) + Math.abs(st.vq) > .01) st.raf = requestAnimationFrame(tick); else { st.x = st.q = 0; set(); } };
+  const kick = () => { if (!st.raf) st.raf = requestAnimationFrame(tick); };
+  row.addEventListener('scroll', () => { const t = performance.now(), dx = row.scrollLeft - st.sx, dt = Math.max(8, t - st.t); st.sx = row.scrollLeft; st.t = t;
+    if (!card.isConnected) return; st.tx = Math.max(-14, Math.min(14, st.tx + dx / dt * 9)); kick(); }, {passive: true});
+  card.addEventListener('pointerdown', e => { const r = card.getBoundingClientRect(); card.style.setProperty('--jox', (e.clientX - r.left) + 'px'); card.style.setProperty('--joy', (e.clientY - r.top) + 'px'); st.tq = 1; kick(); }, {passive: true});
+  const up = () => { if (st.tq){ st.tq = 0; kick(); } };
+  card.addEventListener('pointerup', up); card.addEventListener('pointerleave', up); card.addEventListener('pointercancel', up);
+}
+document.addEventListener('rendered', catJelly);
 function flip(mutate){
   const before = new Map($$('#app [data-flip]').map(el => [el.dataset.flip, el.getBoundingClientRect()]));
   mutate(); if (reduced()) return;
@@ -4592,7 +4786,7 @@ ROUTES.shop = arg => {
   let list = PRODUCTS.filter(p => onSale(p) && (s.cat === 'all' || p.cat === s.cat) && (!CATS[s.cat]?.subs || !s.sub || s.sub === 'all' || p.sub === s.sub) && (s.price === 'all' || (s.price === 'free' && p.price === 0) || (s.price === 'lt50' && p.price > 0 && p.price < 50) || (s.price === '50' && p.price >= 50 && p.price <= 100) || (s.price === 'gt100' && p.price > 100)));
   const sorts = {hot:(a,b) => b.sales - a.sales, new:(a,b) => PRODUCTS.indexOf(b) - PRODUCTS.indexOf(a), asc:(a,b) => a.price - b.price};
   list = [...list].sort(sorts[s.sort]);
-  const tile = (k, c, en, cn, n) => `<button class="cat ${c ? 'c-' + c : 'all'} ${c ? 'grain' : ''} ${s.cat===k?'on':''}" data-act="sf" data-k="cat" data-v="${k}"><span class="x">${en}<sup class="ct">${n}</sup></span><span class="cn">${cn}</span>${CAT_ART[k].replace('<svg', `<svg class="sh${k === 'all' ? ' all' : ''}" aria-hidden="true" style="color:${k === 'all' ? 'var(--paper)' : INK[c === 'yellow' ? 'blue' : c === 'blue' ? 'yellow' : 'ink']}"`)}</button>`;
+  const tile = (k, c, en, cn, n) => `<button class="cat ${c ? 'c-' + c : 'all'} ${c ? 'grain' : ''} ${s.cat===k?'on':''}" data-act="sf" data-k="cat" data-v="${k}">${s.cat===k ? '<span class="cjelly" aria-hidden="true"><span class="lg-rim"></span></span>' : ''}<span class="x">${en}<sup class="ct">${n}</sup></span><span class="cn">${cn}</span>${CAT_ART[k].replace('<svg', `<svg class="sh${k === 'all' ? ' all' : ''}" aria-hidden="true" style="color:${k === 'all' ? 'var(--paper)' : INK[c === 'yellow' ? 'blue' : c === 'blue' ? 'yellow' : 'ink']}"`)}</button>`;
   onMount(root => { const bn = $('.bn', root); bn && mountBanner(root); });
   return `<section class="bn c-pink" tabindex="0" aria-roledescription="carousel" aria-label="精选海报">
     <canvas></canvas><div class="bcur" aria-hidden="true"></div>
