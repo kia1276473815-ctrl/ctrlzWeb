@@ -1630,6 +1630,27 @@ html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
 /* 商城（手机）：海报顶部的搜索条 */
 .bn-sq{position:absolute;z-index:6;top:calc(12px + env(safe-area-inset-top,0px));left:var(--g);right:var(--g);height:42px;display:flex;align-items:center;gap:10px;padding:0 16px;border-radius:999px;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:var(--ink-3);font-size:14px;box-shadow:0 2px 12px rgba(20,20,24,.1)}
 .bn-sq svg{width:18px;height:18px;flex:none;color:var(--ink-2)}
+/* 工作室 · 我的产品 / 我的合作 */
+.sp-shop{margin-bottom:0;align-items:center}
+.sp-shop .x{font-size:clamp(26px,5vw,40px);overflow-wrap:anywhere}
+.sp-acts{position:relative;z-index:2;display:flex;gap:8px;flex-wrap:wrap}
+.sp-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:22px 0 12px}
+.sp-h h3{font-size:17px}
+.co-svcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:0 18px 18px}
+.co-svc{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:14px;background:var(--paper);box-shadow:inset 0 0 0 1px var(--rule)}
+.co-svc.on{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.co-sw{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;text-align:left;min-height:28px}
+.co-sw i{position:relative;flex:none;width:34px;height:20px;border-radius:999px;background:var(--rule-2);transition:background .2s}
+.co-sw i::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--card);transition:transform .2s var(--spring)}
+.co-svc.on .co-sw i{background:var(--green)} .co-svc.on .co-sw i::after{transform:translateX(14px)}
+.co-p{font-size:12.5px;color:var(--ink-3)} .co-svc.on .co-p{color:var(--ink-2)}
+.co-list{display:flex;flex-direction:column}
+.co-req{padding:14px 18px;border-top:1px solid var(--rule)}
+.co-top{display:flex;align-items:center;gap:12px}
+.co-top b{display:block;font-size:15px}
+.co-top .co-m{display:block;font-size:12.5px;color:var(--ink-3);margin-top:3px}
+.co-req p{margin:10px 0 0;font-size:14px;color:var(--ink-2)}
+.co-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 </style>
 
 </head>
@@ -1905,6 +1926,18 @@ const SELLER_PRODUCTS = [
   {title:'城市噪声 CITY NOISE', cat:'sample', st:'审核中', views:0, sales:0, conv:'—', cover:'topo', note:'提交于 10-04 · 预计 1–2 个工作日'},
   {title:'磁带饱和 · 鼓组处理链', cat:'preset', st:'已驳回', views:0, sales:0, conv:'—', cover:'rings', note:'驳回原因：未标注兼容的合成器版本'}
 ];
+/* 合作业务（编曲 / 混音 / 演唱 / 合作…）：卖家能接的活和收到的邀约，全部是示例数据 */
+const COLLAB = {
+  svcs:[
+    {k:'arr', n:'编曲', on:true, from:800}, {k:'mix', n:'混音', on:true, from:500}, {k:'master', n:'母带', on:false, from:300},
+    {k:'vocal', n:'演唱', on:false, from:600}, {k:'lyric', n:'作词', on:false, from:300}, {k:'co', n:'联名合作', on:true, from:null}
+  ],
+  reqs:[
+    {id:'c1', u:'mio', svc:'mix', title:'第一首单曲的混音', note:'人声 + 吉他 + 鼓机，大概 3 分半，想要偏暖的 lo-fi 质感', budget:'¥800', due:'10 月 20 日前', st:'new'},
+    {id:'c2', u:'lowf', svc:'co', title:'一起做一张 lo-fi EP', note:'4 首，你出节奏，我出和声与混音，收入五五分', budget:'分成', due:'年底', st:'doing'},
+    {id:'c3', u:'nova', svc:'arr', title:'采样包 demo 曲编曲', note:'用 CONCRETE KIT 做一首 1 分钟的 demo', budget:'¥1,200', due:'已交付', st:'done'}
+  ]
+};
 const SELLER_ORDERS = [
   {no:'CZ20260930-1932', buyer:'mio', amt:45, pay:'微信支付', time:'09-30', st:'paid'},
   {no:'CZ20260927-0811', buyer:'k_tape', amt:45, pay:'支付宝', time:'09-27', st:'paid'},
@@ -3504,7 +3537,8 @@ function parentOf(h){
   if (r === 'msg') return arg ? 'msg' : null;
   if (r === 'user') return arg === ME ? 'me' : (UI.lastTab || 'home');
   if (r === 'me') return arg && !['works','cmts','favs','hist'].includes(arg) ? 'me' : null;
-  if (r === 'seller' || r === 'admin') return 'me';
+  if (r === 'seller') return arg === 'upload' ? 'seller-products' : 'me';
+  if (r === 'admin') return 'me';
   if (r === 'creators' || r === 'feed') return 'home';
   return null;
 }
@@ -4056,7 +4090,7 @@ ACTIONS['save-prof'] = () => { USERS[ME].name = $('#pf-n').value || USERS[ME].na
 /* ================= 工作室（卖家） ================= */
 const calcOrder = o => { if (o.st === 'refund') return {fee:0, plat:0, net:0}; const fee = o.amt*FEE[o.pay], plat = o.amt*.01; return {fee, plat, net:o.amt - fee - plat}; };
 ROUTES.seller = arg => {
-  if (arg) UI.sellerTab = arg;
+  if (arg) UI.sellerTab = {settle:'overview', store:'products'}[arg] || arg;   // 旧链接：收入与结算并进了概览，店铺并进了我的产品
   if (STATE.role === 'guest') return gate('工作室', '先登录，再用邀请码开店。', `<button class="pill lg" data-act="login">登录</button>`);
   if (STATE.role === 'admin') return gate('工作室', '工作室属于创作者。', `<button class="pill lg" data-act="role" data-v="user">切回用户身份</button>`);
   if (!STATE.seller) return onboarding();
@@ -4065,7 +4099,7 @@ ROUTES.seller = arg => {
   const tot = SELLER_ORDERS.reduce((a,o) => { const c = calcOrder(o); a.fee += c.fee; a.plat += c.plat; a.net += c.net; return a; }, {fee:0, plat:0, net:0});
   MONTHLY[5][1] = gross;
   const pend = SELLER_PRODUCTS.filter(x => x.st === '审核中').length;
-  const nav = [['overview','概览'],['products','我的资源', pend],['upload','上架新资源'],['settle','收入与结算'],['store','店铺']];
+  const nav = [['overview','概览'],['products','我的产品', pend],['collab','我的合作', COLLAB.reqs.filter(r => r.st === 'new').length]], cur = t === 'upload' ? 'products' : t;   // 上架是「我的产品」下面的子页
   let body = '';
   if (t === 'overview'){ const max = Math.max(...MONTHLY.map(m => m[1]));
     body = `<div class="kpis"><div class="kpi cc c-pink grain"><span class="lab" style="color:var(--ink);position:relative;z-index:2">九月预计到手</span><b data-roll="${tot.net.toFixed(2)}" data-pre="¥" style="position:relative;z-index:2">¥${tot.net.toFixed(2)}</b><span class="d" style="color:var(--ink);position:relative;z-index:2">已扣 1% 平台费与支付手续费</span></div>
@@ -4073,25 +4107,36 @@ ROUTES.seller = arg => {
       <div class="kpi"><span class="lab">30 天浏览</span><b data-roll="5210">5,210</b><span class="d" style="color:var(--green);font-weight:600">比上月多 18%</span></div>
       <div class="kpi"><span class="lab">下单率</span><b>6.6%</b><span class="d">每 100 次浏览约 7 单</span></div></div>
     <div class="box"><div class="box-h"><h3>每月收入</h3><span class="mut2" style="font-size:13px">元</span></div><div class="bars">${MONTHLY.map(([m,v], i) => `<div class="b ${i === MONTHLY.length-1 ? 'cur' : ''}"><em>${v}</em><i style="height:${Math.max(4, v/max*120)}px"></i><span>${+m}月</span></div>`).join('')}</div></div>
-    <div class="box"><div class="box-h"><h3>最近的订单</h3><button class="more" data-act="stab" data-v="settle">看结算${IC.arrow}</button></div><div class="tw">${ordersTable(SELLER_ORDERS.slice(0,4))}</div></div>`; }
-  if (t === 'products') body = `<div style="display:flex;flex-direction:column;gap:10px">${SELLER_PRODUCTS.map(sp => { const p = sp.pid ? P(sp.pid) : null; const title = p ? p.title : sp.title, cat = p ? p.cat : sp.cat, cv = p ? p.cover : sp.cover; const sc = {'已上架':'green','审核中':'yellow','已驳回':'orange'}[sp.st];
-      return `<div class="li c-${CATS[cat].c}" style="grid-template-columns:72px minmax(0,1fr) auto"><img src="${cover(cv, 3, 160, 160)}" alt="" style="width:72px;height:72px"><div style="min-width:0"><h4>${esc(title)}</h4><div class="m" style="margin:4px 0 0">${sp.note ? esc(sp.note) : `${sp.views.toLocaleString()} 次浏览 · ${sp.sales} 单 · 下单率 ${sp.conv}`}</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="tag c-${sc}">${sp.st}</span>${p ? `<a class="pill sm lt" data-go="item-${p.id}">查看</a>` : sp.st === '已驳回' ? `<button class="pill sm" data-act="stab" data-v="upload">去修改</button>` : ''}</div></div>`; }).join('')}</div>`;
-  if (t === 'upload') body = uploadView();
-  if (t === 'settle') body = `<div class="kpis k3"><div class="kpi"><span class="lab">销售额</span><b class="num">${yuan2(gross)}</b></div><div class="kpi"><span class="lab">平台 1% + 支付手续费</span><b class="num" style="color:var(--ink-3)">−${yuan2(tot.fee + tot.plat)}</b></div><div class="kpi cc c-green grain"><span class="lab" style="color:var(--ink);position:relative;z-index:2">到手</span><b class="num" style="position:relative;z-index:2">${yuan2(tot.net)}</b></div></div>
     <div class="box"><div class="box-h"><h3>九月结算单</h3><span class="tag c-yellow">月底结算</span></div>
     <div class="tw"><table class="t"><thead><tr><th>订单</th><th>付款方式</th><th class="r">金额</th><th class="r">支付手续费</th><th class="r">平台 1%</th><th class="r">到手</th></tr></thead><tbody>
     ${SELLER_ORDERS.map(o => { const c = calcOrder(o); return `<tr class="${o.st === 'refund' ? 'dim' : ''}"><td><span class="n">${o.time}</span> <span class="mut2" style="font-size:12px">@${esc(USERS[o.buyer]?.name || o.buyer)}</span>${o.st === 'refund' ? ' <span class="tag c-violet" style="text-decoration:none">已退款</span>' : ''}</td><td>${o.pay} <span class="mut2" style="font-size:12px">${o.st === 'refund' ? '' : (FEE[o.pay]*100).toFixed(1) + '%'}</span></td><td class="r n">${yuan2(o.amt)}</td><td class="r n neg">−${yuan2(c.fee)}</td><td class="r n neg">−${yuan2(c.plat)}</td><td class="r n">${yuan2(c.net)}</td></tr>`; }).join('')}</tbody>
     <tfoot><tr><td colspan="2">合计 ${paid.length} 单</td><td class="r n">${yuan2(gross)}</td><td class="r n">−${yuan2(tot.fee)}</td><td class="r n">−${yuan2(tot.plat)}</td><td class="r n" style="font-size:16px">${yuan2(tot.net)}</td></tr></tfoot></table></div></div>
-    <div class="box"><div class="box-h"><h3>往月</h3></div><div class="tw"><table class="t"><tbody>${[['八月',59,2640],['七月',38,1720],['六月',51,2310]].map(([m,n,g]) => `<tr><td style="font-weight:600">${m}</td><td class="n">${n} 单</td><td class="r n">${yuan2(g)}</td><td class="r n neg">−${yuan2(g*.0172)}</td><td class="r n">${yuan2(g*(1-.0172))}</td><td class="r"><span class="tag c-green">已到账</span></td></tr>`).join('')}</tbody></table></div></div>`;
-  if (t === 'store') body = `<div class="shopband grain c-pink"><div style="position:relative;z-index:2"><span class="lab" style="color:var(--ink)">店铺预览</span><div class="x" style="margin-top:8px" id="stPrev">${esc(u.shop)}</div></div><a class="pill" data-go="user-${ME}" data-tab="shop" style="position:relative;z-index:2">看看买家眼中的店</a></div>
-    <div class="box" style="margin-top:0"><div class="box-b" style="padding-top:18px"><div class="fg"><div class="fl full"><label for="st-n">店名</label><input class="inp" id="st-n" value="${esc(u.shop)}" oninput="document.getElementById('stPrev').textContent=this.value||'…'"></div><div class="fl full"><label for="st-b">介绍</label><textarea class="inp" id="st-b">${esc(u.bio)}</textarea></div></div><button class="pill" data-act="save-store" style="margin-top:14px">保存</button></div></div>`;
+    <div class="box"><div class="box-h"><h3>往月</h3></div><div class="tw"><table class="t"><tbody>${[['八月',59,2640],['七月',38,1720],['六月',51,2310]].map(([m,n,g]) => `<tr><td style="font-weight:600">${m}</td><td class="n">${n} 单</td><td class="r n">${yuan2(g)}</td><td class="r n neg">−${yuan2(g*.0172)}</td><td class="r n">${yuan2(g*(1-.0172))}</td><td class="r"><span class="tag c-green">已到账</span></td></tr>`).join('')}</tbody></table></div></div>`; }
+  if (t === 'products') body = `<div class="shopband grain c-pink sp-shop"><div style="position:relative;z-index:2;min-width:0"><span class="lab" style="color:var(--ink)">我的店铺</span><div class="x" style="margin-top:8px">${esc(u.shop)}</div></div><div class="sp-acts"><button class="pill sm lt" data-act="edit-store">编辑店铺</button><a class="pill sm" data-go="user-${ME}" data-tab="shop">买家眼中的店</a></div></div>
+    <div class="sp-h"><h3>${SELLER_PRODUCTS.length} 件资源</h3><a class="pill" data-go="seller-upload">${IC.plus}上架新资源</a></div>
+    <div style="display:flex;flex-direction:column;gap:10px">${SELLER_PRODUCTS.map(sp => { const p = sp.pid ? P(sp.pid) : null; const title = p ? p.title : sp.title, cat = p ? p.cat : sp.cat, cv = p ? p.cover : sp.cover; const sc = {'已上架':'green','审核中':'yellow','已驳回':'orange'}[sp.st];
+      return `<div class="li c-${CATS[cat].c}" style="grid-template-columns:72px minmax(0,1fr) auto"><img src="${cover(cv, 3, 160, 160)}" alt="" style="width:72px;height:72px"><div style="min-width:0"><h4>${esc(title)}</h4><div class="m" style="margin:4px 0 0">${sp.note ? esc(sp.note) : `${sp.views.toLocaleString()} 次浏览 · ${sp.sales} 单 · 下单率 ${sp.conv}`}</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="tag c-${sc}">${sp.st}</span>${p ? `<a class="pill sm lt" data-go="item-${p.id}">查看</a>` : sp.st === '已驳回' ? `<button class="pill sm" data-go="seller-upload">去修改</button>` : ''}</div></div>`; }).join('')}</div>`;
+  if (t === 'collab'){ const SV = Object.fromEntries(COLLAB.svcs.map(x => [x.k, x])), stc = {new:['c-pink','待回复'], doing:['c-blue','进行中'], done:['c-green','已完成']};
+    body = `<div class="box" style="margin-top:0"><div class="box-h"><h3>我接的业务</h3><span class="mut2" style="font-size:13px">开启后会显示在你的主页，别人可以向你发起合作</span></div>
+      <div class="co-svcs">${COLLAB.svcs.map(x => `<div class="co-svc ${x.on ? 'on' : ''}"><button class="co-sw" data-act="co-svc" data-k="${x.k}" role="switch" aria-checked="${x.on}"><i></i>${x.n}</button><span class="co-p">${x.from == null ? '面议' : '¥' + x.from.toLocaleString() + ' 起'}</span></div>`).join('')}</div></div>
+    <div class="box"><div class="box-h"><h3>合作邀约</h3><span class="mut2" style="font-size:13px">${COLLAB.reqs.filter(r => r.st === 'new').length} 条待回复</span></div>
+      <div class="co-list">${COLLAB.reqs.map(r => `<div class="co-req"><div class="co-top">${av(r.u, 'md')}<div style="min-width:0;flex:1"><b>${esc(r.title)}</b><span class="co-m">${esc(USERS[r.u].name)} · ${SV[r.svc]?.n || ''} · ${esc(r.budget)} · ${esc(r.due)}</span></div><span class="tag ${stc[r.st][0]}">${stc[r.st][1]}</span></div>
+        <p>${esc(r.note)}</p><div class="co-acts">${r.st === 'new' ? `<button class="pill sm" data-act="co-ok" data-id="${r.id}">接受</button><button class="pill sm lt" data-act="co-no" data-id="${r.id}">婉拒</button>` : ''}<a class="pill sm lt" data-go="msg-${r.u}">发私信</a></div></div>`).join('') || '<div class="rnone">还没有合作邀约</div>'}</div></div>`; }
+  if (t === 'upload') body = uploadView();
   return `<div class="wrap"><div class="ph"><h1 class="x">工作室<span class="s">studio</span></h1><p class="sub">${esc(u.shop)}</p></div>
-  <div class="dash"><nav class="snav">${nav.map(([k,l,n]) => `<button class="${t===k?'on':''}" data-act="stab" data-v="${k}">${l}${n ? `<span class="n" style="background:var(--yellow)">${n}</span>` : ''}</button>`).join('')}</nav><div style="min-width:0">${body}</div></div></div>`;
+  <div class="dash"><nav class="snav">${nav.map(([k,l,n]) => `<button class="${cur===k?'on':''}" data-act="stab" data-v="${k}">${l}${n ? `<span class="n" style="background:var(--yellow)">${n}</span>` : ''}</button>`).join('')}</nav><div style="min-width:0">${body}</div></div></div>`;
 };
-ACTIONS['save-store'] = () => { USERS[ME].shop = $('#st-n').value || USERS[ME].shop; USERS[ME].bio = $('#st-b').value; toast('店铺已更新'); };
+ACTIONS['edit-store'] = () => { const u = USERS[ME]; sheet(`<h3>编辑店铺</h3><div class="fg"><div class="fl full"><label for="st-n">店名</label><input class="inp" id="st-n" value="${esc(u.shop)}"></div><div class="fl full"><label for="st-b">介绍</label><textarea class="inp" id="st-b">${esc(u.bio)}</textarea></div></div><button class="pill" data-act="save-store" style="margin-top:14px">保存</button>`); };
+ACTIONS['save-store'] = () => { USERS[ME].shop = $('#st-n').value || USERS[ME].shop; USERS[ME].bio = $('#st-b').value; closeSheet(); toast('店铺已更新'); rerender(); };
+Object.assign(ACTIONS, {
+  'co-svc': b => { const x = COLLAB.svcs.find(v => v.k === b.dataset.k); x.on = !x.on; b.setAttribute('aria-checked', x.on); b.parentElement.classList.toggle('on', x.on); },
+  'co-ok': b => { const r = COLLAB.reqs.find(v => v.id === b.dataset.id); r.st = 'doing'; toast(`接下了「${r.title}」，去私信里聊细节吧`); rerender(); },
+  'co-no': b => { const r = COLLAB.reqs.find(v => v.id === b.dataset.id); COLLAB.reqs.splice(COLLAB.reqs.indexOf(r), 1); toast('已婉拒', 'blue'); rerender(); }
+});
 function ordersTable(list){ return `<table class="t"><tbody>${list.map(o => `<tr class="${o.st === 'refund' ? 'dim' : ''}"><td>${av(USERS[o.buyer] ? o.buyer : 'x','sm').replace('AZ', esc((o.buyer[0] || '?').toUpperCase()))}</td><td style="font-weight:600">雨夜磁带 Lo-Fi 采样包</td><td class="mut2">@${esc(USERS[o.buyer]?.name || o.buyer)}</td><td>${o.pay}</td><td class="r n">${yuan2(o.amt)}</td><td class="mut2 n">${o.time}</td></tr>`).join('')}</tbody></table>`; }
 /* 工作室页签是页内切换：原地替换网址（不新增返回记录）、不翻页、不跳回顶部 */
-ACTIONS.stab = b => { const h = '#seller-' + b.dataset.v; if (curH() === h) return; NAVX.inpage = true; navReplace(h); };
+ACTIONS.stab = b => { const h = '#seller-' + b.dataset.v; if (curH() === h) return; NAVX.inpage = true;
+  if (HST.d > 0 && routeOf(HST.stk[HST.d - 1]) === 'seller') navBackTo(HST.d - 1, h); else navReplace(h); };   // 在「上架」子页点页签：先退回再切换
 
 /* 上架：一页填完，右侧实时看到买家视角 */
 const GROUP_CATS = {sound:['sample','preset','max','pd'], visual:['visual','td','max']};
@@ -4121,7 +4166,7 @@ ACTIONS['up-vlab'] = () => visLab({tpl:UI.up.look.tpl, pal:UI.up.look.pal, onPic
 ACTIONS['up-look'] = b => { UI.up.look[b.dataset.k] = b.dataset.v; rerender(); };
 ACTIONS['up-set'] = b => { UI.up[b.dataset.k] = b.dataset.v; if (b.dataset.k === 'cat') UI.up.tpl = upTpl(b.dataset.v, UI.up.group || (GROUP_CATS.visual.includes(b.dataset.v) && !GROUP_CATS.sound.includes(b.dataset.v) ? 'visual' : 'sound')); rerender(); };
 ACTIONS['up-file'] = () => { if (UI.up.file) return; const d = $('[data-act="up-file"]'); d.innerHTML = `<div class="ring-p" id="upR" style="--p:0;width:56px;height:56px"></div><b>上传中…</b>`; const t0 = performance.now(); const s = n => { const k = Math.min(1, (n - t0)/1100); const r = $('#upR'); if (!r) return; r.style.setProperty('--p', k*100); if (k < 1) requestAnimationFrame(s); else { UI.up.file = true; rerender(); } }; requestAnimationFrame(s); };
-ACTIONS['up-submit'] = () => { SELLER_PRODUCTS.unshift({title:UI.up.title + ' ' + UI.up.en, cat:UI.up.cat, sub:CATS[UI.up.cat].subs ? (UI.up.group === 'visual' ? 'vis' : 'aud') : undefined, st:'审核中', views:0, sales:0, conv:'—', cover:{...UI.up.look, txt:UI.up.en}, note:'刚刚提交 · 通常 1–2 个工作日'}); UI.up.file = false; toast('已提交，审核通过后自动上架', 'yellow'); go('seller-products'); };
+ACTIONS['up-submit'] = () => { SELLER_PRODUCTS.unshift({title:UI.up.title + ' ' + UI.up.en, cat:UI.up.cat, sub:CATS[UI.up.cat].subs ? (UI.up.group === 'visual' ? 'vis' : 'aud') : undefined, st:'审核中', views:0, sales:0, conv:'—', cover:{...UI.up.look, txt:UI.up.en}, note:'刚刚提交 · 通常 1–2 个工作日'}); UI.up.file = false; toast('已提交，审核通过后自动上架', 'yellow'); navUp('seller-products'); };
 document.addEventListener('input', e => { const k = e.target.dataset?.up; if (!k) return; UI.up[k] = k === 'price' ? (parseFloat(e.target.value) || 0) : e.target.value; const m = {title:'pv-t', en:'pv-en'}; if (m[k]) $('#' + m[k]).textContent = e.target.value; if (k === 'price'){ $('#pv-p').textContent = '¥' + UI.up.price; $('#up-est').textContent = `每单到手约 ¥${(UI.up.price*.98).toFixed(2)}（扣 1% 平台费和支付手续费）`; } });
 
 function onboarding(){
