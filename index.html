@@ -2119,10 +2119,10 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 /* ===================== 材质层：液态玻璃 / 毛玻璃 / 奶油软胶（设计系统 MATERIAL LAB） ===================== */
 /* 液态玻璃：Chromium 里由 LG（SVG 位移贴图，思路来自 shuding/liquid-glass，MIT）真折射背后的内容；
    其它浏览器只用下面这套 CSS：几乎不模糊 + 边缘一圈提亮增饱和（颜色随背后内容变）+ 发丝高光边 */
-:root{--lg-tint:rgba(255,255,255,.2);--lg-hi:rgba(255,255,255,.95);--lg-ln:rgba(255,255,255,.7);--lg-lo:rgba(255,255,255,.35);--lg-sh:rgba(20,20,24,.28);
+:root{--lg-tint:rgba(255,255,255,.2);--lg-hi:rgba(255,255,255,.95);--lg-ln:rgba(255,255,255,.7);--lg-lo:rgba(255,255,255,.35);--lg-sh:rgba(20,20,24,.28);--lg-jel:linear-gradient(180deg,rgba(255,255,255,.62),rgba(255,255,255,.28));
   --fr-a:color-mix(in srgb,var(--paper) 64%,transparent);--fr-b:color-mix(in srgb,var(--paper) 46%,transparent)}
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--lg-tint:rgba(255,255,255,.07);--lg-hi:rgba(255,255,255,.42);--lg-ln:rgba(255,255,255,.2);--lg-lo:rgba(255,255,255,.12);--lg-sh:rgba(0,0,0,.6)} }
-:root[data-theme="dark"]{--lg-tint:rgba(255,255,255,.07);--lg-hi:rgba(255,255,255,.42);--lg-ln:rgba(255,255,255,.2);--lg-lo:rgba(255,255,255,.12);--lg-sh:rgba(0,0,0,.6)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--lg-tint:rgba(255,255,255,.07);--lg-hi:rgba(255,255,255,.42);--lg-ln:rgba(255,255,255,.2);--lg-lo:rgba(255,255,255,.12);--lg-sh:rgba(0,0,0,.6);--lg-jel:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.06))} }
+:root[data-theme="dark"]{--lg-tint:rgba(255,255,255,.07);--lg-hi:rgba(255,255,255,.42);--lg-ln:rgba(255,255,255,.2);--lg-lo:rgba(255,255,255,.12);--lg-sh:rgba(0,0,0,.6);--lg-jel:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.06))}
 .lgx{background:var(--lg-tint);backdrop-filter:blur(2px) saturate(1.8) brightness(1.06);-webkit-backdrop-filter:blur(2px) saturate(1.8) brightness(1.06);
   box-shadow:inset 0 1px 0 var(--lg-hi),inset 0 0 0 .5px var(--lg-ln),inset 0 -1px 0 var(--lg-lo),inset 0 -8px 14px -10px rgba(20,20,24,.22),0 6px 16px -8px var(--lg-sh)}
 /* 边缘响应色：一圈环把背后的颜色吸进来、提亮增饱和（和背后内容实时联动，不用固定色） */
@@ -2132,18 +2132,18 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 /* ---- 手机底栏：悬浮液态玻璃胶囊 ---- */
 @media (max-width:760px){
   :root{--tbcap:64px;--tbgap:12px;--tbh:calc(var(--tbcap) + var(--tbgap) + 2px)}
-  .tb{left:var(--tbgap);right:var(--tbgap);bottom:calc(var(--tbgap) + env(safe-area-inset-bottom,0px));height:var(--tbcap);padding:0 4px;border:0;border-radius:999px;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;isolation:isolate;box-shadow:0 0 0 .5px rgba(20,20,24,.1),0 18px 40px -16px var(--lg-sh)}
+  .tb{left:var(--tbgap);right:var(--tbgap);bottom:calc(var(--tbgap) + env(safe-area-inset-bottom,0px));height:var(--tbcap);padding:0 4px;border:0;border-radius:999px;background:none;backdrop-filter:blur(20px) saturate(1.5) brightness(1.04);-webkit-backdrop-filter:blur(20px) saturate(1.5) brightness(1.04);box-shadow:0 0 0 .5px rgba(20,20,24,.1),0 18px 40px -16px var(--lg-sh)}
+  /* 注意：.tb 有 view-transition-name，是「背景根」，它里面的子元素用 backdrop-filter 看不到页面，所以模糊 / 折射必须加在 .tb 自己身上 */
   .tb > a,.tb > button{position:relative;z-index:3;color:var(--ink-2)}
   .tb .on{color:var(--ink)}
   /* 玻璃面：底栏要比一般液态玻璃「实」一点，文字图标才清楚 */
-  .tb-glass{position:absolute;inset:0;z-index:0;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,color-mix(in srgb,var(--paper) 82%,transparent),color-mix(in srgb,var(--paper) 70%,transparent));backdrop-filter:blur(20px) saturate(1.5) brightness(1.04);-webkit-backdrop-filter:blur(16px) saturate(1.5) brightness(1.04)}
-  .tb > .lg-rim{z-index:1}
+  .tb-glass{position:absolute;inset:0;z-index:0;border-radius:inherit;pointer-events:none;background:linear-gradient(180deg,color-mix(in srgb,var(--paper) 82%,transparent),color-mix(in srgb,var(--paper) 70%,transparent))}
   /* 光标 / 手指在玻璃上的一团柔光 */
   .tb-sheen{position:absolute;z-index:1;top:-10px;left:var(--mx,30%);width:110px;height:84px;margin-left:-55px;border-radius:50%;pointer-events:none;background:radial-gradient(closest-side,rgba(255,255,255,.4),rgba(255,255,255,0));opacity:0;transition:opacity .3s}
   .tb.hov .tb-sheen{opacity:1}
   /* 选中项 = 一块果冻：切换时拉长滑过去，按住压扁，松手回弹 */
   .tb-blob{position:absolute;z-index:2;top:5px;bottom:5px;left:0;width:0;border-radius:999px;pointer-events:none;opacity:0;transform-origin:50% 50%;
-    background:var(--lg-tint);backdrop-filter:blur(1.5px) saturate(2.2) brightness(1.1);-webkit-backdrop-filter:blur(1.5px) saturate(2.2) brightness(1.1);
+    background:var(--lg-jel);
     box-shadow:inset 0 1px 0 var(--lg-hi),inset 0 -1px 0 var(--lg-lo),inset 0 0 0 .5px var(--lg-ln),inset 0 -8px 14px -10px rgba(20,20,24,.2),0 6px 14px -6px var(--lg-sh);
     transition:left .46s cubic-bezier(.3,1.35,.5,1),width .46s cubic-bezier(.3,1.35,.5,1),transform .26s cubic-bezier(.3,1.7,.5,1),opacity .2s}
   .tb-blob.fx-mv{transform:scaleX(1.3) scaleY(.86)}
@@ -2202,6 +2202,15 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   .tb-glass,.tb-blob,.vbadge,.acv .tag.k,.cv .att,#hd .nav-ink{background:color-mix(in srgb,var(--paper) 88%,transparent)}
 }
+
+/* ---- 商城海报 3D 样品包：Paper Shaders 背景层（藏在海报后面，每帧画进海报画布） ---- */
+.bn-paper{position:absolute;inset:0;z-index:-1;opacity:0;pointer-events:none}
+/* ---- 烫金章（METAL / argentui 液态金属） ---- */
+.stamp.foil{position:relative;isolation:isolate;border-color:currentColor;outline-color:currentColor}
+.stamp.foil.lt{color:#000;background:#fff;box-shadow:0 0 0 9px #fff;mix-blend-mode:multiply}
+.stamp.foil.dk{color:#fff;background:#000;box-shadow:0 0 0 9px #000;mix-blend-mode:screen}
+.stamp.foil .foil-c{position:absolute;left:-9px;top:-9px;width:calc(100% + 18px);height:calc(100% + 18px);pointer-events:none;mix-blend-mode:screen}
+.stamp.foil.dk .foil-c{mix-blend-mode:multiply}
 </style>
 
 </head>
@@ -2229,7 +2238,7 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
   <div class="x">CTRL<span>Z</span></div>
   <p>FOR GEN Z BY GEN Z<br>声音 · 视觉 · 资源 · 创作者店铺<br>原型 · 所有内容为示例<br>正文字体 HarmonyOS Sans · © Huawei Device Co., Ltd. · <a href="fonts/HarmonyOS_Sans_LICENSE.txt" target="_blank" rel="noopener" style="text-decoration:underline;text-underline-offset:3px">字体授权</a></p>
 </footer>
-<nav class="tb" aria-label="手机导航"><span class="tb-glass" aria-hidden="true"></span><span class="lg-rim" aria-hidden="true"></span><span class="tb-sheen" aria-hidden="true"></span><span class="tb-blob" aria-hidden="true"></span>
+<nav class="tb" aria-label="手机导航"><span class="tb-glass" aria-hidden="true"></span><span class="tb-sheen" aria-hidden="true"></span><span class="tb-blob" aria-hidden="true"></span>
   <a href="#home" data-r="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20h-5.5v-5.5h-5V20H4z"/></svg>首页</a>
   <a href="#shop" data-r="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8h16l-1.2 12H5.2z"/><path d="M9 8a3 3 0 016 0"/></svg>商城</a>
   <button class="plus" data-act="compose" aria-label="发布"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M12 5v14M5 12h14"/></svg></span></button>
@@ -3155,6 +3164,7 @@ function drawWave(cv, seed, prog=0, opts={}){
 const ISSUE_NO = 'NO.' + String(Math.floor((new Date() - new Date(2026,0,1))/864e5)).padStart(3,'0');   // 刊号：和海报一样，每天一期
 const SLIDES = [
   {scene:'beat',    c:'pink',   kicker:'NO.' + String(Math.floor((new Date() - new Date(2026,0,1))/864e5)).padStart(3,'0') + ' · 本期', title:'CTRL<span style="color:var(--pink)">Z</span>', sub:'声音与图像的创作者市集', cta:['逛商店','shop']},
+  {scene:'pack',    c:'blue',   kicker:'本期 · 样品包', title:'SEALED', sub:'一袋刚封好的声音：拖一拖、捏一捏', cta:['逛采样','shop-sample']},
   {scene:'field',   c:'orange', kicker:'精选 · TOUCHDESIGNER', title:'FIELD/GRID', sub:'200 万粒子，跟着底鼓跑', price:88, cta:['看这个组件','item-p5']},
   {scene:'drums',   c:'pink',   kicker:'精选 · 采样', title:'CONCRETE', sub:'在废料场敲了三天水泥管', price:68, cta:['试听整套','item-p1']},
   {scene:'strings', c:'blue',   kicker:'精选 · 合成器预设', title:'TERMINAL', sub:'64 个冷感音色', price:79, cta:['去弹一弹','item-p3']},
@@ -3354,6 +3364,375 @@ SCENES.strings = B => {
   };
 };
 
+/* 3D 样品包（three.js）：离屏画布，商城海报每帧把它画进来 */
+function packBag(THREE, opt) {
+  // 3D 样品包（商城海报）：自己的离屏画布，由海报每帧 drawImage 进去；只在有动静时重新渲染
+  opt = opt || {};
+  var canvas = document.createElement('canvas'), LITE = !!opt.lite;
+  var dpr = Math.min(LITE ? 1.5 : 2, window.devicePixelRatio || 1);
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(dpr);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(26, 1, 0.1, 100);
+  camera.position.set(0, 0, 10.5);
+
+  // ---- 环境 = 袋子周围的界面：右边是旁边那格（软胶几何块），上面是大标题，下面是说明文字，前面是屏幕光 ----
+  // 反光直接来自这些面板，所以旁边的界面一变（按下软胶键、光标移动），袋子上的反光跟着变
+  var env = new THREE.Scene();
+  env.add(new THREE.Mesh(new THREE.BoxGeometry(30, 30, 30), new THREE.MeshBasicMaterial({ color: 0xbebdb7, side: THREE.BackSide })));
+  function softbox(w, h, x, y, z, k, tint) {
+    var c = new THREE.Color(tint || 0xffffff).multiplyScalar(k);
+    var m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide }));
+    m.position.set(x, y, z); m.lookAt(0, 0, 0); env.add(m); return m;
+  }
+  function panel(w, h, x, y, z, cw, ch, draw) {
+    var c = document.createElement('canvas'); c.width = cw; c.height = ch;
+    var t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    var m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }));
+    m.position.set(x, y, z); m.lookAt(0, 0, 0); env.add(m);
+    var p = { c: c, g: c.getContext('2d'), t: t, draw: draw }; p.redraw = function (st) { p.draw(p.g, cw, ch, st); t.needsUpdate = true; }; return p;
+  }
+  var nb = { pink: 0, blue: 0, yellow: 0, orange: 0 };
+  // 右边：第二格的软胶几何块，被按下的那块会摊开变大
+  var right = panel(8, 9, 7, 0, 2.5, 256, 288, function (g, w, h, st) {
+    g.fillStyle = '#d9d8d3'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#3a3a40'; g.fillRect(0, 0, 14, h); g.fillRect(242, 0, 14, h);
+    var k = function (v) { return 1 + v * 0.35; };
+    g.fillStyle = '#FF4FA7'; g.beginPath(); g.arc(128, 100, 48 * k(st.pink), 0, 6.283); g.fill();
+    g.fillStyle = '#2E5BFF'; var bs = 40 * k(st.blue); g.fillRect(52 - bs / 2, 200 - bs / 2, bs, bs);
+    g.fillStyle = '#FFE14A'; var ts = 26 * k(st.yellow); g.beginPath(); g.moveTo(128, 200 - ts); g.lineTo(128 + ts, 200 + ts * 0.8); g.lineTo(128 - ts, 200 + ts * 0.8); g.closePath(); g.fill();
+    g.fillStyle = '#FF6B2C'; g.beginPath(); g.arc(204, 214, 26 * k(st.orange), Math.PI, 0); g.fill();
+  });
+  // 上面：大标题
+  var top = panel(14, 5, 0, 7, 2.5, 512, 180, function (g, w, h) {
+    g.fillStyle = '#F2F2EE'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#141418'; g.font = '900 120px "Archivo", sans-serif'; if ('fontStretch' in g) g.fontStretch = 'ultra-expanded';
+    g.fillText('CTRL Z', 10, 130); g.fillStyle = '#FF4FA7'; g.fillRect(470, 104, 24, 26);
+    g.fillStyle = '#141418'; g.fillRect(0, 170, w, 4);
+  });
+  // 下面：说明文字
+  var bottom = panel(12, 5, 0, -7, 2.5, 256, 100, function (g, w, h) {
+    g.fillStyle = '#F2F2EE'; g.fillRect(0, 0, w, h); g.fillStyle = '#53535C';
+    for (var i = 0; i < 6; i++) g.fillRect(12, 12 + i * 14, 140 + ((i * 53) % 90), 5);
+  });
+  // 左边：页边留白 + 定位十字
+  var left = panel(8, 9, -7, 0, 2.5, 128, 144, function (g, w, h) {
+    g.fillStyle = '#a9a8a3'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#3a3a40'; g.fillRect(18, 0, 10, h); g.fillRect(70, 0, 6, h); g.fillStyle = '#e8e7e2'; g.fillRect(40, 0, 14, h);
+    g.strokeStyle = '#141418'; g.lineWidth = 2;
+    g.beginPath(); g.arc(64, 72, 16, 0, 6.283); g.moveTo(64, 40); g.lineTo(64, 104); g.moveTo(32, 72); g.lineTo(96, 72); g.stroke();
+  });
+  // 左后 / 右后：中灰底 + 几条亮暗竖条（夹一点粉、蓝），袋子两侧掠射时映出的是有层次的条纹，而不是一片发白
+  function stripes(tint) {
+    return function (g, w, h) {
+      g.fillStyle = '#5c5b60'; g.fillRect(0, 0, w, h);
+      var bands = [[10, 14, '#f3f2ee'], [38, 6, '#2a2a2e'], [56, 10, tint], [84, 18, '#e9e8e3'], [116, 5, '#2a2a2e']];
+      for (var i = 0; i < bands.length; i++) { g.fillStyle = bands[i][2]; g.fillRect(bands[i][0], 0, bands[i][1], h); }
+    };
+  }
+  var backL = panel(9, 16, -8, 0, -5, 128, 64, stripes('#ff8cc6'));
+  var backR = panel(9, 16, 8, 0, -5, 128, 64, stripes('#8ea6ff'));
+  [right, top, bottom, left, backL, backR].forEach(function (p) { p.redraw(nb); });
+  softbox(16, 12, 0, 1, 10, 0.75);          // 屏幕前方的漫光
+  softbox(9, 1.6, -3, 7.5, 5, 3.2);         // 顶部细光条，给褶皱一点锐利高光
+  var pmrem = new THREE.PMREMGenerator(renderer);
+  var envRT = pmrem.fromScene(env, 0.03);
+  scene.environment = envRT.texture;
+
+  // ---- 高度场：枕形鼓起 + 封口角放射褶 + 封边细褶 + 细胞状压痕 ----
+  function rnd(seed) { var s = seed >>> 0; return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+  var R = rnd(opt.seed || 28);
+  var CX = 4, CY = 6, cells = [];
+  for (var j = 0; j < CY; j++) for (var i = 0; i < CX; i++) cells.push([(i + R()) / CX, (j + R()) / CY]);
+  function worley(u, v) {
+    var ci = Math.floor(u * CX), cj = Math.floor(v * CY), f1 = 9, f2 = 9;
+    for (var dj = -1; dj <= 1; dj++) for (var di = -1; di <= 1; di++) {
+      var ii = ci + di, jj = cj + dj; if (ii < 0 || jj < 0 || ii >= CX || jj >= CY) continue;
+      var p = cells[jj * CX + ii], dx = (u - p[0]) * CX, dy = (v - p[1]) * CY, d = Math.sqrt(dx * dx + dy * dy);
+      if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) f2 = d;
+    }
+    return f2 - f1;
+  }
+  var ph = []; for (var k = 0; k < 8; k++) ph.push(R() * 6.283);
+  var SEAL = 0.085; // 上下封口占比
+  function profile(u, v) {
+    var x = Math.abs(2 * u - 1), b = (v - SEAL) / (1 - 2 * SEAL);
+    if (b <= 0 || b >= 1) return 0;
+    // 两侧和上下都用平滑过渡：靠近封口处坡度从 0 起步，袋身和封边自然收拢，不再有一道折角
+    var y = Math.abs(2 * b - 1);
+    // 竖向 (1-y²)^1.4：整体是圆鼓的，到封口处坡度刚好归零；横向稍缓，两侧不再陡到只剩反光
+    return Math.pow(Math.max(0, 1 - Math.pow(x, 2.4)), 0.6) * Math.pow(Math.max(0, 1 - y * y), 1.4);
+  }
+  // squeeze: 0..1，按住时变大
+  function height(u, v, sq, micro) {
+    var p = profile(u, v), h = p * (1 - 0.2 * sq);
+    var b = (v - SEAL) / (1 - 2 * SEAL);
+    var amp = 1 + 1.8 * sq;
+    if (b > 0 && b < 1) {
+      // 四个封口角放射状褶皱
+      var corners = [[0, 0], [1, 0], [0, 1], [1, 1]];
+      for (var c = 0; c < 4; c++) {
+        var dx = (u - corners[c][0]) * 0.66, dy = b - corners[c][1], d = Math.sqrt(dx * dx + dy * dy);
+        var a = Math.atan2(dy, dx);
+        h += Math.sin(a * 9 + ph[c] + Math.sin(d * 7 + ph[c + 4]) * 1.1) * Math.exp(-d / 0.17) * 0.04 * amp * Math.min(1, d * 12);
+      }
+      // 靠近封口的竖向细褶
+      var e = Math.min(b, 1 - b);
+      h += Math.sin(u * 40 + Math.sin(u * 7 + ph[1]) * 2.5) * Math.exp(-e / 0.05) * 0.022 * amp;
+      // 两侧被压出的横向波纹
+      var s = Math.min(u, 1 - u);
+      h += Math.sin(b * 38 + ph[2] + Math.sin(b * 5) * 2) * Math.exp(-s / 0.07) * 0.025 * amp;
+      // 细胞状压痕（真塑料膜的折痕是尖的）
+      var w = worley(u, v);
+      h -= Math.exp(-w * 14) * (0.012 + 0.03 * sq) * (0.4 + p);
+      // 两三道大的斜向软褶，让大面积反光有起伏
+      h += Math.sin((u * 0.8 + b * 0.55) * 7 + ph[5]) * 0.035 * p + Math.sin((u * -0.6 + b * 0.9) * 5 + ph[6]) * 0.025 * p;
+      // 按住时中间挤出的横褶
+      h += sq * Math.sin(b * 22 + ph[3]) * 0.03 * p;
+    } else if (micro) {
+      // 热封压纹
+      h = Math.sin(u * 6.283 * 70) * 0.004;
+    }
+    if (micro) h += (Math.sin(u * 900 + v * 37) * Math.sin(v * 700 + u * 11)) * 0.0006;
+    return h;
+  }
+
+  // ---- 印刷图案 ----
+  function printTex() {
+    var c = document.createElement('canvas'); c.width = 1024; c.height = 1536;
+    var g = c.getContext('2d');
+    g.fillStyle = '#FF4FA7'; g.fillRect(0, 0, 1024, 1536);
+    g.save(); g.translate(6, -4); g.fillStyle = '#2E5BFF'; g.beginPath(); g.arc(700, 470, 230, 0, 6.283); g.fill(); g.restore();
+    g.fillStyle = '#FFE14A'; g.beginPath(); g.moveTo(150, 1230); g.lineTo(330, 920); g.lineTo(510, 1230); g.closePath(); g.fill();
+    g.fillStyle = '#FF6B2C'; g.beginPath(); g.arc(780, 1230, 120, Math.PI, 0); g.fill();
+    g.globalCompositeOperation = 'multiply'; g.fillStyle = '#2E5BFF'; g.beginPath(); g.arc(780, 1230, 70, Math.PI, 0); g.fill();
+    g.globalCompositeOperation = 'source-over';
+    var F = '"Archivo","Arial Black",sans-serif';
+    g.fillStyle = '#141418';
+    g.font = '900 ' + 200 + 'px ' + F; g.fontStretch = 'ultra-expanded';
+    g.fillText('CTRL', 110, 760); g.fillText('Z', 110, 950);
+    g.font = '700 46px ' + F; g.fillText('SAMPLE PACK', 330, 905);
+    g.font = '700 30px ' + F; g.fillText((opt.issue || 'NO.001') + '  ·  SEALED FOR FRESHNESS', 110, 300);
+    g.fillRect(110, 320, 804, 4);
+    g.font = '500 26px ' + F; g.fillText('CTRL Z — SOUND & IMAGE CREATORS MARKET', 110, 1330);
+    // 两侧未印刷的镀铝边
+    var gl = g.createLinearGradient(0, 0, 70, 0); gl.addColorStop(0, '#e9eaee'); gl.addColorStop(0.55, 'rgba(233,234,238,.85)'); gl.addColorStop(1, 'rgba(233,234,238,0)');
+    g.fillStyle = gl; g.fillRect(0, 130, 70, 1276);
+    var gr = g.createLinearGradient(1024, 0, 954, 0); gr.addColorStop(0, '#e9eaee'); gr.addColorStop(0.55, 'rgba(233,234,238,.85)'); gr.addColorStop(1, 'rgba(233,234,238,0)');
+    g.fillStyle = gr; g.fillRect(954, 130, 70, 1276);
+    // 条码
+    g.fillStyle = '#fff'; g.fillRect(640, 1300, 260, 120);
+    g.fillStyle = '#141418'; var bx = 656; var Rb = rnd(7);
+    while (bx < 884) { var bw = 2 + Math.floor(Rb() * 5); g.fillRect(bx, 1312, bw, 80); bx += bw + 2 + Math.floor(Rb() * 4); }
+    // 孔版颗粒
+    var id = g.getImageData(0, 0, 1024, 1536), d = id.data, Rg = rnd(99);
+    for (var q = 0; q < d.length; q += 4) { var n = (Rg() - 0.5) * 34; d[q] += n; d[q + 1] += n; d[q + 2] += n; }
+    g.putImageData(id, 0, 0);
+    var t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+  }
+  // 透明度：齿边、挂孔、撕口
+  function alphaTex() {
+    var c = document.createElement('canvas'); c.width = 512; c.height = 768;
+    var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 512, 768); g.fillStyle = '#000';
+    for (var x = 0; x < 512; x += 16) {
+      g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 8, 9); g.lineTo(x + 16, 0); g.fill();
+      g.beginPath(); g.moveTo(x, 768); g.lineTo(x + 8, 759); g.lineTo(x + 16, 768); g.fill();
+    }
+    g.beginPath(); g.moveTo(222, 22); g.lineTo(290, 22); g.arc(290, 33, 11, -1.571, 1.571); g.lineTo(272, 44); g.arc(256, 44, 16, 0, Math.PI); g.lineTo(222, 44); g.arc(222, 33, 11, 1.571, 4.712); g.fill();
+    g.beginPath(); g.moveTo(0, 82); g.lineTo(14, 88); g.lineTo(0, 94); g.fill();
+    g.beginPath(); g.moveTo(512, 82); g.lineTo(498, 88); g.lineTo(512, 94); g.fill();
+    var t = new THREE.CanvasTexture(c); return t;
+  }
+  // 法线贴图（含热封压纹和微观纹理）
+  function normalTex() {
+    var NW = LITE ? 256 : 512, NH = LITE ? 384 : 768, hs = new Float32Array(NW * NH), data = new Uint8Array(NW * NH * 4);
+    for (var y = 0; y < NH; y++) for (var x = 0; x < NW; x++) hs[y * NW + x] = height(x / (NW - 1), y / (NH - 1), 0, true);
+    var sc = 11;
+    for (var y2 = 0; y2 < NH; y2++) for (var x2 = 0; x2 < NW; x2++) {
+      var l = hs[y2 * NW + Math.max(0, x2 - 1)], r = hs[y2 * NW + Math.min(NW - 1, x2 + 1)];
+      var b = hs[Math.max(0, y2 - 1) * NW + x2], t = hs[Math.min(NH - 1, y2 + 1) * NW + x2];
+      var nx = (l - r) * sc * NW / 100, ny = (b - t) * sc * NH / 150, nz = 1, il = 1 / Math.sqrt(nx * nx + ny * ny + nz * nz);
+      var o = (y2 * NW + x2) * 4;
+      data[o] = (nx * il * 0.5 + 0.5) * 255; data[o + 1] = (ny * il * 0.5 + 0.5) * 255; data[o + 2] = (nz * il * 0.5 + 0.5) * 255; data[o + 3] = 255;
+    }
+    var tex = new THREE.DataTexture(data, NW, NH, THREE.RGBAFormat); tex.needsUpdate = true; return tex;
+  }
+
+  function thickTex() {
+    var c = document.createElement('canvas'); c.width = 128; c.height = 192;
+    var g = c.getContext('2d'), id = g.createImageData(128, 192), d = id.data;
+    for (var y = 0; y < 192; y++) for (var x = 0; x < 128; x++) {
+      var u = x / 127, v = y / 191;
+      var t = 0.5 + 0.25 * Math.sin(u * 5.5 + v * 3.1 + ph[0]) + 0.2 * Math.sin(v * 7.3 - u * 2.2 + ph[1]) + 0.05 * Math.sin((u + v) * 19 + ph[2]);
+      var k = (y * 128 + x) * 4, val = Math.max(0, Math.min(255, t * 255));
+      d[k] = d[k + 1] = d[k + 2] = val; d[k + 3] = 255;
+    }
+    g.putImageData(id, 0, 0);
+    var tx = new THREE.CanvasTexture(c); return tx;
+  }
+  // 镀铬区遮罩：两侧边缘和封口露出镀铝层（金属 + 彩虹干涉），中间保持印刷
+  var _edge = null;
+  function edgeTex() {
+    if (_edge) return _edge;
+    var c = document.createElement('canvas'); c.width = 128; c.height = 192;
+    var g = c.getContext('2d'), id = g.createImageData(128, 192), d = id.data;
+    for (var y = 0; y < 192; y++) for (var x = 0; x < 128; x++) {
+      var u = x / 127, v = 1 - y / 191, e = Math.min(u, 1 - u);
+      var side = Math.max(0, Math.min(1, (0.085 - e) / 0.07)) * 0.8; side = side * side * (3 - 2 * side);
+      var seal = 0;
+      var k = (y * 128 + x) * 4, val = Math.round(Math.max(side, seal) * 255);
+      d[k] = d[k + 1] = d[k + 2] = val; d[k + 3] = 255;
+    }
+    g.putImageData(id, 0, 0);
+    _edge = new THREE.CanvasTexture(c); return _edge;
+  }
+  // ---- 袋子网格：前后两片 ----
+  var BW = 2.6, BH = 3.9, SX = LITE ? 64 : 120, SY = LITE ? 96 : 180;
+  function makeGeo() { return new THREE.PlaneGeometry(BW, BH, SX, SY); }
+  var gFront = makeGeo(), gBack = makeGeo();
+  var base = gFront.attributes.position.array.slice();
+  var uvs = gFront.attributes.uv.array;
+  var nmap = normalTex(), amap = alphaTex();
+  var front = new THREE.MeshPhysicalMaterial({
+    map: printTex(), alphaMap: amap, alphaTest: 0.5, side: THREE.FrontSide,
+    roughness: 0.42,
+    clearcoat: 1.0, clearcoatRoughness: 0.07,
+    normalMap: nmap, normalScale: new THREE.Vector2(0.3, 0.3),
+    clearcoatNormalMap: nmap, clearcoatNormalScale: new THREE.Vector2(0.8, 0.8),
+    envMapIntensity: 1.15, specularIntensity: 1, ior: 1.5,
+    metalnessMap: edgeTex(), metalness: 1.0,
+    iridescence: 1.0, iridescenceMap: edgeTex(), iridescenceIOR: 1.8, iridescenceThicknessRange: [120, 1150], iridescenceThicknessMap: thickTex()
+  });
+  // 背面：镀铝内膜，侧面转过去时能看到银色
+  var back = new THREE.MeshPhysicalMaterial({ color: 0xf2f3f6, metalness: 1.0, roughness: 0.12, alphaMap: amap, alphaTest: 0.5, normalMap: nmap, normalScale: new THREE.Vector2(0.6, 0.6), side: THREE.FrontSide, envMapIntensity: 1.3, iridescence: 1.0, iridescenceIOR: 1.8, iridescenceThicknessRange: [250, 1000], iridescenceThicknessMap: thickTex() });
+  var mFront = new THREE.Mesh(gFront, front), mBack = new THREE.Mesh(gBack, back);
+  mBack.rotation.y = Math.PI;
+  var bag = new THREE.Group(); bag.add(mFront); bag.add(mBack); scene.add(bag);
+
+  function shape(sq) {
+    var pf = gFront.attributes.position.array, pb = gBack.attributes.position.array;
+    for (var i = 0, n = pf.length / 3; i < n; i++) {
+      var u = uvs[i * 2], v = uvs[i * 2 + 1];
+      var h = height(u, v, sq, false), p = profile(0.5, v);
+      var x = base[i * 3] * (1 - 0.085 * p - 0.04 * sq * p), y = base[i * 3 + 1];
+      pf[i * 3] = x; pf[i * 3 + 1] = y; pf[i * 3 + 2] = Math.max(h * 0.95, 0.004 * p + 0.0005); // 前片不能穿到后片后面
+      // 背面镜像（绕 y 轴转了 180°，所以 x 取反）
+      pb[i * 3] = x; pb[i * 3 + 1] = y; pb[i * 3 + 2] = Math.max(height(1 - u, v, sq, false) * 0.8, 0.004 * p + 0.0005);
+    }
+    gFront.attributes.position.needsUpdate = true; gBack.attributes.position.needsUpdate = true;
+    gFront.computeVertexNormals(); gBack.computeVertexNormals();
+  }
+
+  // 接触阴影
+  var sc2 = document.createElement('canvas'); sc2.width = sc2.height = 256;
+  var sg = sc2.getContext('2d'), grd = sg.createRadialGradient(128, 128, 10, 128, 128, 128);
+  grd.addColorStop(0, 'rgba(0,0,0,.55)'); grd.addColorStop(1, 'rgba(0,0,0,0)'); sg.fillStyle = grd; sg.fillRect(0, 0, 256, 256);
+  var shadow = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 4.6), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(sc2), transparent: true, depthWrite: false }));
+  shadow.position.set(0.12, -0.18, -0.9); scene.add(shadow);
+
+  // ---- 交互由海报转发：point = 指针位置（-1~1），press = 按住 / 松开 ----
+  var st = { rx: 0, ry: 0, tx: -0.08, ty: 0.22, sq: 0, tsq: 0, vsq: 0, last: -1, w: 0, h: 0, dirty: true };
+  function size(w, h) {
+    w = Math.max(40, Math.round(w)); h = Math.max(40, Math.round(h));
+    if (w === st.w && h === st.h) return; st.w = w; st.h = h;
+    renderer.setSize(w, h, false); camera.aspect = w / h;
+    camera.position.z = 10.5 * Math.max(1, 0.66 / camera.aspect);   // 画面很窄时往后退，袋子两侧不被裁掉
+    camera.updateProjectionMatrix(); st.dirty = true;
+  }
+  // 返回 true 表示画面有变化（需要重新 drawImage）
+  function frame() {
+    st.rx += (st.tx - st.rx) * 0.12; st.ry += (st.ty - st.ry) * 0.12;
+    var f = (st.tsq - st.sq) * 0.22; st.vsq = st.vsq * 0.72 + f; st.sq += st.vsq;   // 捏下去、松手回弹带一点果冻
+    var moving = Math.abs(st.tx - st.rx) + Math.abs(st.ty - st.ry) + Math.abs(st.tsq - st.sq) + Math.abs(st.vsq) > 0.001;
+    if (!moving && !st.dirty) return false;
+    bag.rotation.set(st.rx, st.ry, 0);
+    shadow.position.x = 0.12 - st.ry * 0.5; shadow.position.y = -0.18 + st.rx * 0.4;
+    if (Math.abs(st.sq - st.last) > 0.002) { shape(Math.max(0, st.sq)); st.last = st.sq; }
+    renderer.render(scene, camera); st.dirty = false;
+    return true;
+  }
+  shape(0);
+  return {
+    canvas: canvas, size: size, frame: frame,
+    point: function (nx, ny) { st.ty = Math.max(-0.6, Math.min(0.6, nx * 0.8)); st.tx = Math.max(-0.4, Math.min(0.4, ny * 0.55)); },
+    press: function (on) { st.tsq = on ? 1 : 0; },
+    dispose: function () { envRT.dispose(); pmrem.dispose(); renderer.dispose(); renderer.forceContextLoss && renderer.forceContextLoss(); }
+  };
+}
+
+/* 6 · 样品包：一袋封口的 3D 塑料袋（three.js，按需加载），背景是 Paper Shaders 的孔版颗粒渐变。
+   光标 / 手指横拖让它转，按住捏一下起皱、松手果冻回弹。没人碰时轻轻晃。
+   低端机 / 省流量 / 减少动效 / 没有 WebGL2，或者还在加载时，画一张 2D 的袋子（同样能捏） */
+const PACK_BG = {light:['#FFC9E4', '#C4D3FF', '#FFEC94'], dark:['#4a1736', '#17265f', '#3b3312']};
+SCENES.pack = B => {
+  let bag = null, pap = null, papEl = null, dk = null, papOn = false, t3 = 0, tick = 0, pressed = false, pt = 0, sq = 0, nx = 0, ny = 0;
+  let mode = FX.can() ? 'load' : 'flat';
+  const paperU = (P, dark) => ({u_colorBack: P.getShaderColorFromString(dark ? '#151518' : PAPER), u_colors: PACK_BG[dark ? 'dark' : 'light'].map(P.getShaderColorFromString), u_colorsCount: 3});
+  // 颗粒贴图要先解码完，Paper 才肯用
+  if (mode === 'load') Promise.all([FX.three(), FX.paper()]).then(([THREE, P]) => { const nz = P.getShaderNoiseTexture(); return nz.decode().then(() => [THREE, P, nz]); }).then(([THREE, P, nz]) => (window.requestIdleCallback || setTimeout)(() => {
+    if (B.dead) return;
+    try { bag = packBag(THREE, {lite: FX.lite, issue: ISSUE_NO}); } catch(e){ console.warn(e); mode = 'flat'; return; }
+    try {   // 背景：Paper Shaders grainGradient（corners），藏在海报后面，每帧画进海报画布
+      papEl = document.createElement('div'); papEl.className = 'bn-paper'; papEl.setAttribute('aria-hidden', 'true'); B.box.prepend(papEl); dk = isDark();
+      pap = new P.ShaderMount(papEl, P.grainGradientFragmentShader, Object.assign(paperU(P, dk), {u_softness: 1, u_intensity: .18, u_noise: .22, u_shape: P.GrainGradientShapes.corners, u_noiseTexture: nz,
+        u_fit: P.ShaderFitOptions.cover, u_scale: 1.15, u_rotation: 0, u_offsetX: 0, u_offsetY: 0, u_originX: .5, u_originY: .5, u_worldWidth: 0, u_worldHeight: 0}),
+        {preserveDrawingBuffer: true, premultipliedAlpha: false}, 0, 0, 1, FX.lite ? 2.2e5 : 6e5);
+      pap._P = P;
+    } catch(e){ console.warn(e); pap = null; papEl?.remove(); }
+    mode = 'gl'; t3 = performance.now();
+  }, {timeout: 600})).catch(e => { console.warn(e); mode = 'flat'; });
+  // 袋子在图形区里的大致范围（3D 和 2D 一样大）
+  const box = () => { const h = Math.min(B.H*.8, B.W*.9*1.5), w = h/1.5; return {x:B.W/2 - w/2, y:B.H/2 - h/2, w, h}; };
+  const onBag = (x, y) => { const r = box(); return x > r.x - 16 && x < r.x + r.w + 16 && y > r.y - 10 && y < r.y + r.h + 10; };
+  const crinkle = () => { if (!AU.init()) return; const n = AU.ctx.currentTime, o = AU.bus('tap', .9); AU.drum('hat', n, .7, o, .35); AU.drum('clap', n + .03, .5, o, .22); };
+  // 2D 的袋子：粉色袋身 + 锯齿封口 + 孔版几何 + 一道跟着光标走的反光
+  function flat(g, t){
+    const r = box(), k = 1 + sq*.05, cx = r.x + r.w/2, cy = r.y + r.h/2, w = r.w, h = r.h, z = Math.max(4, w/26);
+    g.save(); g.fillStyle = INKC(); g.globalAlpha = .12; g.beginPath(); g.ellipse(cx + 6, cy + h*.47, w*.46, h*.05, 0, 0, Math.PI*2); g.fill(); g.restore();
+    g.save(); g.translate(cx, cy); g.rotate(nx*.06); g.scale(k, 2 - k); g.translate(-w/2, -h/2);
+    g.beginPath(); g.moveTo(0, z); for (let x = 0; x < w; x += z*2){ g.lineTo(x + z, 0); g.lineTo(Math.min(w, x + z*2), z); }
+    g.lineTo(w, h - z); for (let x = w; x > 0; x -= z*2){ g.lineTo(x - z, h); g.lineTo(Math.max(0, x - z*2), h - z); } g.closePath();
+    g.fillStyle = INK.pink; g.fill(); g.save(); g.clip();
+    g.fillStyle = INK.blue; g.beginPath(); g.arc(w*.68, h*.3, w*.24, 0, Math.PI*2); g.fill();
+    g.fillStyle = INK.yellow; g.beginPath(); g.moveTo(w*.14, h*.8); g.lineTo(w*.32, h*.6); g.lineTo(w*.5, h*.8); g.closePath(); g.fill();
+    g.fillStyle = INK.orange; g.beginPath(); g.arc(w*.76, h*.8, w*.12, Math.PI, 0); g.fill();
+    g.fillStyle = '#141418'; g.font = `900 ${Math.round(w*.19)}px Archivo, sans-serif`; g.fillText('CTRL', w*.1, h*.5); g.fillText('Z', w*.1, h*.62);
+    g.fillStyle = 'rgba(255,255,255,.38)'; g.fillRect(0, 0, w, h*.085); g.fillRect(0, h*.915, w, h*.085);
+    const sx = w*(.5 + nx*.45), gr = g.createLinearGradient(sx - w*.3, 0, sx + w*.3, h*.3);   // 反光
+    gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(.5, 'rgba(255,255,255,.42)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, w, h); g.restore(); g.restore();
+  }
+  return {
+    draw(g, W, H, t, dt){
+      if (pressed && !B.ptr.down && performance.now() - pt > 160){ pressed = false; bag?.press(false); }
+      sq += ((pressed ? 1 : 0) - sq)*Math.min(1, dt/90);
+      const idle = !B.ptr.in && !B.ptr.down;
+      if (idle){ nx = Math.sin(t/1700)*.4; ny = Math.sin(t/2300)*.18; }
+      if (mode !== 'gl'){ flat(g, t); return; }
+      if (pap){
+        if (!papOn){ pap.setSpeed(.22); papOn = true; }
+        if (dk !== isDark()){ dk = isDark(); pap.setUniforms(paperU(pap._P, dk)); }
+        g.drawImage(pap.canvasElement, B.full.x, B.full.y, B.full.w, B.full.h);
+      }
+      bag.size(W, H); bag.point(nx, ny);
+      // 手机上没人碰时 30 帧够了，省电；有人碰就满帧
+      if (!FX.lite || !idle || pressed || (tick++ & 1) === 0) bag.frame();
+      const a = Math.min(1, (performance.now() - t3)/320);   // 3D 好了之后淡入，盖住 2D 袋子
+      if (a < 1){ flat(g, t); g.globalAlpha = a; }
+      g.drawImage(bag.canvas, 0, 0, W, H); g.globalAlpha = 1;
+    },
+    hot(x, y){ return onBag(x, y) ? 'strum' : null; },
+    claims(x, y){ return onBag(x, y); },
+    move(x, y){ nx = Math.max(-1, Math.min(1, x/B.W*2 - 1)); ny = Math.max(-1, Math.min(1, y/B.H*2 - 1)); },
+    down(x, y){ if (!onBag(x, y)) return; pressed = true; pt = performance.now(); bag?.press(true); crinkle(); },
+    leave(){ if (pap && papOn){ pap.setSpeed(0); papOn = false; } },
+    dispose(){ try { bag?.dispose(); pap?.dispose(); } catch(e){} papEl?.remove(); bag = pap = null; }
+  };
+};
+
 /* 5 · 盖章：蓝色半圆坐在底线上，粉色圆落在同一根中轴上；光标就是一枚印章 */
 SCENES.stamp = B => {
   const marks = []; let press = 0, gT = 0, gP = -1, G = GRID(B), gDone = false;
@@ -3409,6 +3788,9 @@ function mountBanner(root){
     // 宽屏：左 46% 给文字，右侧从 52% 起是图形区，两者互不覆盖
     const short = CH < 520, inner = CW - gut*2, fx = gut + inner*.52, fy = short ? 14 : 58, fw = CW - fx - gut, fh = CH - fy - (short ? 66 : 92);
     return {x:fx, y:fy, w:fw, h:fh}; }
+  B.box = box; onClean(() => { B.dead = true; B.scenes.forEach(x => x?.dispose?.()); });
+  // 有 3D 海报时，空闲下来先把 three / paper 下好，轮到它时就不用等
+  if (SLIDES.some(x => x.scene === 'pack') && FX.can()){ const pf = setTimeout(() => (window.requestIdleCallback || setTimeout)(() => { FX.three().catch(() => {}); FX.paper().catch(() => {}); }), 2500); onClean(() => clearTimeout(pf)); }
   box._B = B; B.go = goTo; setText(0); B.bg = SLIDES[B.i].bg || PAPER;
   const setCur = k => { cur.dataset.k = k || ''; box.classList.toggle('cur-on', !!k && B.ptr.in); // 只有在能交互的地方才换成自定义光标，其余地方用系统光标，失效时也不会“消失”
     const ic = {play:IC.play, pause:IC.pause, sound:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 9v6M9.5 5v14M14 8v8M18.5 10.5v3"/></svg>', strum:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg>'}[k] || ''; if (cur._k !== k){ cur.innerHTML = ic; cur._k = k; } };
@@ -4505,8 +4887,7 @@ const LG = (() => {
   }
   // 页面重绘后给液态玻璃元素补上折射（同尺寸共用一张贴图）
   const SPEC = [
-    ['.tb-glass', {r: 999, bev: 14, amt: .16, extra: 'blur(20px) saturate(1.5) brightness(1.04)'}],
-    ['.tb-blob', {r: 999, bev: 12, amt: .28, extra: 'blur(1px) saturate(2.1) brightness(1.1)'}],
+    ['.tb', {r: 999, bev: 14, amt: .16, extra: 'blur(20px) saturate(1.5) brightness(1.04)'}],
     ['.vbadge, .acv .tag.k', {r: 999, bev: 9, amt: .3, extra: 'blur(1.5px) saturate(1.8) brightness(1.06)'}],
     ['.cv .pbtn, .acv .pbtn', {bev: 16, amt: .34, extra: 'saturate(1.7) brightness(1.08)'}],
     ['.cjelly', {r: 16, bev: 18, amt: .3, extra: 'saturate(1.25) brightness(1.04)'}]
@@ -4523,7 +4904,6 @@ function tbBlob(){
   const w = Math.min(a.offsetWidth - 8, 76), x = a.offsetLeft + (a.offsetWidth - w) / 2, moved = b.style.opacity === '1' && parseFloat(b.style.left) !== x;
   Object.assign(b.style, {left: x + 'px', width: w + 'px', opacity: 1});
   if (moved && !reduced()){ b.classList.add('fx-mv'); clearTimeout(b._t); b._t = setTimeout(() => b.classList.remove('fx-mv'), 180); }
-  LG.apply(b, {r: 999, bev: 12, amt: .28, extra: 'blur(1px) saturate(2.1) brightness(1.1)'});
 }
 (() => {
   const tb = $('.tb'); if (!tb) return;
@@ -4535,6 +4915,104 @@ function tbBlob(){
   addEventListener('resize', () => { tbBlob(); LG.scan(); });
 })();
 document.addEventListener('rendered', () => { tbBlob(); requestAnimationFrame(() => LG.scan()); });
+
+/* ================= 按需加载的 3D / 着色器（FX） =================
+   three.js、Paper Shaders 打包好放在 vendor/（只含用到的部分），真正要显示 3D 时才下载，不走第三方 CDN。
+   减少动效 / 省流量 / 内存或核心数少 / 没有 WebGL2 的设备一律不加载，继续用原来的 2D 插画。
+   原则：一种效果一个 WebGL 上下文，画面不动就不重画，离开屏幕就停，手机上像素比封顶 */
+const FX = (() => {
+  let gl2 = null, three = null, paper = null;
+  const can = () => {
+    if (reduced() || navigator.connection?.saveData) return false;
+    if ((navigator.deviceMemory ?? 4) < 3 || (navigator.hardwareConcurrency ?? 4) < 4) return false;
+    if (gl2 === null){ try { const x = document.createElement('canvas').getContext('webgl2'); gl2 = !!x; x?.getExtension('WEBGL_lose_context')?.loseContext(); } catch(e){ gl2 = false; } }
+    return gl2;
+  };
+  const load = p => import(new URL(p, document.baseURI).href);
+  return {can, lite: IS_MOBILE,
+    three: () => three || (three = load('vendor/three.min.js')),
+    paper: () => paper || (paper = load('vendor/paper-shaders.min.js'))};
+})();
+
+/* ================= 液态金属（METAL） =================
+   内核来自 argentui 的 mountMetal（Sean Geng，MIT License，https://argentui.com）：原库是 React 组件，这里只取原生 WebGL2 部分。
+   一个全屏三角形 + 一段带色散的流动条纹着色器；画布很小，元素离开页面后自动销毁 */
+const METAL = (() => {
+  const VERT = `#version 300 es
+void main(){ vec2 pos = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0); }`;
+  const FRAG = `#version 300 es
+precision highp float;
+uniform vec2 u_res; uniform float u_time; uniform vec3 u_light; uniform vec3 u_dark;
+uniform float u_rep; uniform float u_angle; uniform float u_soft; uniform float u_disp; uniform float u_dist; uniform float u_scale;
+out vec4 outColor;
+// 2D simplex noise — Ashima Arts / Stefan Gustavson (webgl-noise, MIT)
+vec3 mod289(vec3 x){ return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec2 mod289(vec2 x){ return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec3 permute(vec3 x){ return mod289(((x * 34.0) + 1.0) * x); }
+float snoise(vec2 v){
+  const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+  vec2 i = floor(v + dot(v, C.yy)); vec2 x0 = v - i + dot(i, C.xx);
+  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+  vec4 x12 = x0.xyxy + C.xxzz; x12.xy -= i1; i = mod289(i);
+  vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+  vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0); m = m * m; m = m * m;
+  vec3 x = 2.0 * fract(p * C.www) - 1.0; vec3 h = abs(x) - 0.5; vec3 ox = floor(x + 0.5); vec3 a0 = x - ox;
+  m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
+  vec3 g; g.x = a0.x * x0.x + h.x * x0.y; g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+  return 130.0 * dot(m, g);
+}
+float stripe(float coord){ float f = fract(coord); float tri = abs(f * 2.0 - 1.0); return smoothstep(0.5 - u_soft, 0.5 + u_soft, tri); }
+void main(){
+  vec2 uv = (gl_FragCoord.xy / u_res - 0.5); uv.x *= u_res.x / u_res.y; uv /= max(u_scale, 0.001);
+  float t = u_time; float d = length(uv); float bulge = 1.0 - 0.45 * d * d;
+  float n = snoise(uv * 0.9 + vec2(0.0, -t * 0.28)); n += 0.35 * snoise(uv * 1.8 + vec2(t * 0.1, -t * 0.45));
+  float c = cos(u_angle), s = sin(u_angle); vec2 ruv = mat2(c, -s, s, c) * uv;
+  float coord = ruv.y * bulge * u_rep + n * u_dist * 2.2 - t * 0.22;
+  float r = stripe(coord + u_disp), g = stripe(coord), b = stripe(coord - u_disp);
+  vec3 col = vec3(mix(u_dark.r, u_light.r, r), mix(u_dark.g, u_light.g, g), mix(u_dark.b, u_light.b, b));
+  col *= 0.94 + 0.14 * smoothstep(0.25, 0.85, d);
+  outColor = vec4(col, 1.0);
+}`;
+  const TONES = {
+    gold:   {light:'#ffe9a8', dark:'#6e5408', repetition:1.8, angle:68, softness:.34, dispersion:.028, distortion:.36},
+    silver: {light:'#f8fafc', dark:'#23262b', repetition:1.8, angle:68, softness:.34, dispersion:.03, distortion:.38}
+  };
+  const rgb = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16 & 255)/255, (n >> 8 & 255)/255, (n & 255)/255]; };
+  function mount(canvas, tone = 'gold', o = {}){
+    const gl = canvas.getContext('webgl2', {antialias: true}); if (!gl) return null;
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null; };
+    const vs = sh(gl.VERTEX_SHADER, VERT), fs = sh(gl.FRAGMENT_SHADER, FRAG); if (!vs || !fs) return null;
+    const prog = gl.createProgram(); gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+    gl.useProgram(prog);
+    const p = Object.assign({speed: .5, scale: 1}, TONES[tone] || TONES.gold, o), U = n => gl.getUniformLocation(prog, n);
+    gl.uniform3fv(U('u_light'), rgb(p.light)); gl.uniform3fv(U('u_dark'), rgb(p.dark));
+    gl.uniform1f(U('u_rep'), p.repetition); gl.uniform1f(U('u_angle'), p.angle*Math.PI/180); gl.uniform1f(U('u_soft'), Math.max(.02, p.softness));
+    gl.uniform1f(U('u_disp'), p.dispersion); gl.uniform1f(U('u_dist'), p.distortion); gl.uniform1f(U('u_scale'), p.scale);
+    const uRes = U('u_res'), uTime = U('u_time');
+    let raf = 0, tA = Math.random()*40, last = performance.now(), dead = false;
+    const kill = () => { dead = true; cancelAnimationFrame(raf); gl.getExtension('WEBGL_lose_context')?.loseContext(); };
+    function draw(){
+      raf = 0; if (dead) return; if (!canvas.isConnected) return kill();   // 弹层关掉了：释放上下文
+      const dpr = Math.min(devicePixelRatio || 1, 2), w = Math.max(1, Math.round(canvas.clientWidth*dpr)), h = Math.max(1, Math.round(canvas.clientHeight*dpr));
+      if (canvas.width !== w || canvas.height !== h){ canvas.width = w; canvas.height = h; gl.viewport(0, 0, w, h); }
+      const now = performance.now(); tA += (now - last)/1e3*p.speed; last = now;
+      gl.uniform2f(uRes, w, h); gl.uniform1f(uTime, tA); gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if (p.speed > 0) raf = requestAnimationFrame(draw);
+    }
+    draw();
+    return {destroy: kill};
+  }
+  return {mount, TONES};
+})();
+/* 烫金章：液态金属从章的字和边框里透出来。做法：章变成白底黑字，金属画布用 screen 叠上去（黑处变金、白处不变），
+   整个章再 multiply 到纸上，白底就消失了；深色模式反过来（黑底白字 + multiply，整章 screen） */
+function foil(st, tone = 'gold'){
+  if (!st || !FX.can()) return;
+  const c = document.createElement('canvas'); c.className = 'foil-c'; c.setAttribute('aria-hidden', 'true'); st.prepend(c);
+  if (!METAL.mount(c, tone, {speed: .55})){ c.remove(); return; }
+  st.classList.add('foil', isDark() ? 'dk' : 'lt');
+}
 
 /* 商城分类卡的果冻物理：一个弹簧，只在有动静时跑 rAF。
    滑动列表 → 卡片按速度往后拖、停下晃几下；按住 → 以手指位置为中心压扁，松手回弹 */
@@ -4992,6 +5470,7 @@ ACTIONS['do-pay'] = b => {
     setTimeout(() => { const st = $('#layer .stamp'); if (st){ const r = st.getBoundingClientRect(); fxShapes(r.left + r.width/2, r.top + r.height/2, 28, 170, ['pink','blue','yellow','orange','green'], 70); fxPop($('#layer .sheet'), 'fx-thud', 400); haptic(16); } }, 140);
     setTimeout(() => { const st = $('#layer .stamp'); flyTo(st ? st.getBoundingClientRect() : null, cover(pr.cover, hash(pr.id)%50, 200, 200), () => { STATE.libNew++; badge(); }); }, 520);
     sh.innerHTML = `<button class="x-close" data-act="close-re" aria-label="关闭">${IC.x}</button><div class="done"><span class="stamp big pop" style="--sc:var(--blue)">PAID<small>已付款</small></span><b style="font-size:20px;margin-top:10px">${esc(pr.title)} 是你的了</b><span class="mut" style="font-size:14px">已放进资源库，随时可以下载</span></div><button class="pill lg" data-act="dl" data-id="${pr.id}">${IC.dl}现在下载</button><button class="pill lg lt" data-act="close-re">继续逛</button>`;
+    foil($('#layer .stamp'), 'gold');
   };
 };
 ACTIONS['close-re'] = () => { closeSheet(); rerender(); };
