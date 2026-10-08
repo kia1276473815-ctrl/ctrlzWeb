@@ -393,9 +393,21 @@ main{min-height:80vh}
 .post h1{font-size:23px;line-height:1.38;font-weight:900}
 .post .body{display:flex;flex-direction:column;gap:12px;font-size:15px;line-height:1.85;color:color-mix(in srgb,var(--ink) 86%,var(--card));margin-top:14px}
 .post pre,.code{font:13px/1.7 ui-monospace,"SFMono-Regular",Menlo,monospace;background:var(--paper);padding:12px 14px;border-radius:10px;overflow-x:auto;margin:0;color:var(--ink)}
-.post .foot{border-top:1px solid var(--rule);padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;align-items:center;background:var(--card)}
-.post .foot input{flex:1;min-width:0;height:42px;border-radius:999px;border:0;background:var(--paper);padding:0 16px;outline:0}
-.post .foot input:focus{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.post .foot{position:relative;border-top:1px solid var(--rule);padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;align-items:flex-end;background:var(--card)}
+.post .foot > :not(textarea){margin-bottom:5px}
+.post .foot textarea{flex:1;min-width:0;height:42px;border-radius:21px;border:0;background:var(--paper);padding:10px 16px;outline:0}
+.post .foot textarea:focus{box-shadow:inset 0 0 0 1.5px var(--ink)}
+/* 输入框：多行自动长高（最多 5 行再滚动） */
+.post .foot textarea,.cv-f textarea{display:block;resize:none;font:inherit;line-height:22px;max-height:134px;overflow-y:hidden;color:inherit}
+/* 聚焦时旁边的图标被挤走：占位宽度收成 0，图标变成在输入栏上沿滚动的小球（dockOn） */
+.dk{display:flex;align-items:center;gap:inherit;flex:none;overflow:visible;transition:width .3s var(--ease),margin .3s var(--ease),opacity .2s}
+.dk.dk-hide{opacity:0;pointer-events:none}
+.dk .dk-fl{position:absolute;left:0;top:0;margin:0;z-index:3;will-change:transform;box-shadow:0 5px 12px -6px rgba(20,20,24,.4)}
+/* 输入栏上沿长出一条「架子」，小球落在架子上，不挡输入的字也不挡上面的评论 / 消息 */
+.post .foot,.cv-f{transition:padding-top .3s var(--ease)}
+.post .foot.dk-on{padding-top:52px} .cv-f.dk-on{padding-top:56px}
+/* 小球按孔版色上色：喜欢粉 / 收藏蓝 / 更多黄；私信 图片黄 / 分享蓝 */
+.dk-fl[data-act="like"]{background:var(--pink-t)} .dk-fl[data-act="fav"],.dk-fl[data-act="cv-pick"]{background:var(--blue-t)} .dk-fl[data-act="more-post"],label.dk-fl{background:var(--yellow-t)}
 .x-close{position:absolute;top:14px;right:14px;z-index:5;width:40px;height:40px;border-radius:50%;background:var(--paper);display:grid;place-items:center;transition:transform .2s var(--spring)}
 .x-close:hover{transform:scale(1.08)}
 .x-close svg{width:16px;height:16px}
@@ -1284,8 +1296,9 @@ body.reels-open .totop{display:none}
 .bcard .by{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-3)}
 .bcard .by em{margin-left:auto;font-style:normal;font-weight:800;color:var(--ink)}
 .bcard .dot{background:var(--c);width:7px;height:7px}
-.cv-f{display:flex;align-items:center;gap:6px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule)}
-.cv-f .inp{flex:1;min-width:0;height:42px;border-radius:999px}
+.cv-f{position:relative;display:flex;align-items:flex-end;gap:6px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule)}
+.cv-f > :not(textarea){margin-bottom:1px}
+.cv-f .inp{flex:1;min-width:0;height:42px;min-height:0;border-radius:21px;padding:10px 16px;line-height:22px;resize:none}
 .cv-ic{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2);cursor:pointer;flex:none}
 .cv-ic:hover{background:var(--paper)}
 .cv-ic svg{width:22px;height:22px}
@@ -1521,7 +1534,7 @@ a,button,[data-act],[data-go],label,summary{touch-action:manipulation}
 @media (max-width:760px){
   body.sub{--tbh:0px}
   body.sub .tb{display:none}
-  .post .foot input,.cv-f .inp,.rsearch .inp,.inp,.cp-sw input,textarea{font-size:16px}
+  .post .foot textarea,.cv-f .inp,.rsearch .inp,.inp,.cp-sw input,textarea{font-size:16px}
 }
 .swb{position:fixed;left:0;top:50%;z-index:140;width:44px;height:64px;margin-top:-32px;border-radius:0 32px 32px 0;background:var(--ink);color:var(--paper);display:grid;place-items:center;transform:translateX(calc(-100% + var(--k) * 100%));opacity:calc(.3 + var(--k) * .7);pointer-events:none;transition:background .15s}
 .swb svg{width:20px;height:20px;transform:scale(calc(.6 + var(--k) * .4))}
@@ -4237,7 +4250,85 @@ function openPost(id){
   else UI.from = null;
 }
 function closePostLayer(){ PCLEAN.forEach(f => { try { f(); } catch(e){} }); PCLEAN = []; $('#post').innerHTML = ''; document.documentElement.style.overflow = ''; document.body.classList.remove('post-open'); CUR.post = null; fabUpdate(); if (UI.dirty){ UI.dirty = false; const run = () => { if (CUR.post) return; const {r, arg} = parseHash(); renderBase(r, arg, true); }; window.requestIdleCallback ? requestIdleCallback(run, {timeout:400}) : setTimeout(run, 60); } }   // 列表刷新放到空闲时，关帖子那一帧不卡
+/* ===== 输入框聚焦：右（左）边的图标被输入框挤走，弹到输入栏上沿变成会滚的小球
+   · 重力方向跟着手机倾斜（共用 GRAV 陀螺仪；iOS 首次聚焦时请求权限，拒绝就只有向下的重力）
+   · 打字时小球被震得轻轻跳一下；点小球照常能用（不收键盘）；失焦后弹簧回到原位
+   · 「减少动效」时不做物理，图标淡出 / 淡入 ===== */
+const DK = {st:null, tap:0};
+function autoGrow(t){ if (!t) return; t.style.height = 'auto'; const h = Math.min(t.scrollHeight, 134); t.style.height = h + 'px'; t.style.overflowY = t.scrollHeight > 134 ? 'auto' : 'hidden'; }
+// 输入框通用绑定：自动长高、回车发送（输入法组字时不发，Shift+回车换行）、聚焦挤走图标
+function composer(t, send){
+  if (!t) return; const box = t.parentNode, dk = $('.dk', box);
+  t.addEventListener('input', () => { autoGrow(t); dockJolt(); });
+  t.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229){ e.preventDefault(); send(); } });
+  if (!dk) return;
+  t.addEventListener('focus', () => { gravAsk(); dockOn(box, t, dk); });
+  t.addEventListener('blur', () => setTimeout(() => { if (document.activeElement === t || !t.isConnected) return; if (performance.now() - DK.tap < 450 && DK.st && DK.st.t === t){ DK.tap = 0; t.focus({preventScroll:true}); return; } dockOff(); }, 0));
+  // 点浮起来的小球：不抢输入框的焦点（键盘不收）
+  dk.addEventListener('pointerdown', e => { if (DK.st && DK.st.dk === dk){ DK.tap = performance.now(); if (e.pointerType === 'mouse') e.preventDefault(); } });
+  dk.addEventListener('mousedown', e => { if (DK.st && DK.st.dk === dk) e.preventDefault(); });
+}
+function dockSnap(t){ const S = DK.st; return S && S.t === t && S.mode !== 'home' ? S.b.map(b => ({x:b.x, y:b.y, vx:b.vx, vy:b.vy, a:b.a})) : null; }
+function dockOn(box, t, dk, snap){
+  if (DK.st && DK.st.dk === dk && DK.st.mode !== 'home') return;
+  if (DK.st) dockEnd(DK.st);
+  const els = [...dk.children], side = dk.nextElementSibling === t ? 'left' : 'right', B = box.getBoundingClientRect(), W = dk.offsetWidth;
+  if (reduced()){ dk.style.width = '0px'; dk.style.margin = '0'; dk.classList.add('dk-hide'); DK.st = {box, t, dk, b:[], mode:'rm'}; return; }
+  const b = els.map((el, i) => { const r = el.getBoundingClientRect(), x = r.left - B.left + r.width/2, y = r.top - B.top + r.height/2, sv = snap && snap[i];
+    return {el, r:r.width/2, ox:side === 'right' ? B.width - x : x, oy:B.height - y, x:sv ? sv.x : x, y:sv ? sv.y : y, vx:sv ? sv.vx : (side === 'right' ? -1 : 1)*(40 + Math.random()*90) + (i - (els.length - 1)/2)*60, vy:sv ? sv.vy : -(660 + Math.random()*160 + i*50), a:sv ? sv.a : 0}; });
+  const gap = parseFloat(getComputedStyle(box).columnGap) || 0;
+  dk.style.width = W + 'px'; dk.offsetWidth; dk.style.width = '0px'; dk.style[side === 'right' ? 'marginLeft' : 'marginRight'] = -gap + 'px';
+  if (snap){ dk.style.transition = 'none'; dk.offsetWidth; dk.style.transition = ''; }
+  if (snap){ box.style.transition = 'none'; box.classList.add('dk-on'); box.offsetWidth; box.style.transition = ''; } else box.classList.add('dk-on');
+  b.forEach(o => { o.el.classList.add('dk-fl'); dockPaint(o); });
+  const S = DK.st = {box, t, dk, b, side, W, mode:'fly', last:performance.now()};
+  const step = now => { if (DK.st !== S) return; const dt = Math.min(.033, (now - S.last)/1000); S.last = now; dockStep(S, dt); if (DK.st === S) S.raf = requestAnimationFrame(step); };
+  S.raf = requestAnimationFrame(step);
+}
+function dockPaint(o){ o.el.style.transform = `translate(${(o.x - o.r).toFixed(2)}px,${(o.y - o.r).toFixed(2)}px) rotate(${o.a.toFixed(3)}rad)`; }
+function dockStep(S, dt){
+  const Wb = S.box.clientWidth, Hb = S.box.clientHeight;
+  if (S.mode === 'home'){   // 回家：弹簧拉回原来的位置，角度转回整圈
+    let done = true;
+    S.b.forEach(o => { const tx = S.side === 'right' ? Wb - o.ox : o.ox, ty = Hb - o.oy, ta = Math.round(o.a/(Math.PI*2))*Math.PI*2, k = 260, c = 24;
+      o.vx += ((tx - o.x)*k - o.vx*c)*dt; o.vy += ((ty - o.y)*k - o.vy*c)*dt; o.va = (o.va || 0) + ((ta - o.a)*k - (o.va || 0)*c)*dt;
+      o.x += o.vx*dt; o.y += o.vy*dt; o.a += o.va*dt; dockPaint(o);
+      if (Math.hypot(tx - o.x, ty - o.y) > .6 || Math.hypot(o.vx, o.vy) > 12 || Math.abs(ta - o.a) > .02) done = false; });
+    if (done || performance.now() - S.homeT > 1100) dockEnd(S);
+    return;
+  }
+  gravTick(true); const G = 2600, gx = GRAV.x*G, gy = Math.max(.3, GRAV.y)*G;   // 重力跟陀螺仪（与海报物理共用 GRAV）；倒过来拿也至少保留一点向下的力，免得小球飞走
+  S.b.forEach(o => {
+    o.vx += gx*dt; o.vy += gy*dt; o.x += o.vx*dt; o.y += o.vy*dt;
+    const floor = S.t.offsetTop - 5 - o.r;   // 停在输入框上沿（架子上）
+    o.ground = false;
+    if (o.y > floor && o.vy >= 0){ o.y = floor; if (o.vy > 90){ o.vy = -o.vy*.38; } else { o.vy = 0; o.ground = true; } }
+    if (o.x < o.r + 6){ o.x = o.r + 6; o.vx = Math.abs(o.vx)*.45; } else if (o.x > Wb - o.r - 6){ o.x = Wb - o.r - 6; o.vx = -Math.abs(o.vx)*.45; }
+    if (o.ground){ o.vx *= Math.max(0, 1 - 1.6*dt); o.a += o.vx/o.r*dt; } else o.a += o.vx/o.r*dt*.5;   // 贴地时纯滚动
+  });
+  // 小球之间碰撞
+  for (let i = 0; i < S.b.length; i++) for (let j = i + 1; j < S.b.length; j++){
+    const p = S.b[i], q = S.b[j], dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy) || .01, m = p.r + q.r + 2;
+    if (d < m){ const nx = dx/d, ny = dy/d, push = (m - d)/2; p.x -= nx*push; p.y -= ny*push; q.x += nx*push; q.y += ny*push;
+      const rv = (q.vx - p.vx)*nx + (q.vy - p.vy)*ny; if (rv < 0){ const jn = -(1 + .4)*rv/2; p.vx -= jn*nx; p.vy -= jn*ny; q.vx += jn*nx; q.vy += jn*ny; } }
+  }
+  S.b.forEach(dockPaint);
+}
+// 打字的震动：随机一个停稳的小球轻轻蹦一下
+function dockJolt(){ const S = DK.st; if (!S || S.mode !== 'fly') return; const g = S.b.filter(o => o.ground); const o = g[Math.random()*g.length | 0]; if (o && Math.random() < .55){ o.vy = -(110 + Math.random()*120); o.vx += (Math.random() - .5)*90; } }
+function dockOff(){
+  const S = DK.st; if (!S) return;
+  if (S.mode === 'rm'){ S.dk.style.width = ''; S.dk.style.margin = ''; S.dk.classList.remove('dk-hide'); DK.st = null; return; }
+  if (S.mode === 'home') return;
+  S.mode = 'home'; S.homeT = performance.now(); S.box.classList.remove('dk-on'); S.dk.style.width = S.W + 'px'; S.dk.style.marginLeft = S.dk.style.marginRight = '';
+}
+function dockEnd(S){
+  cancelAnimationFrame(S.raf); S.box.classList.remove('dk-on'); S.b.forEach(o => { o.el.classList.remove('dk-fl'); o.el.style.transform = ''; });
+  S.dk.style.width = S.dk.style.margin = S.dk.style.marginLeft = S.dk.style.marginRight = ''; S.dk.classList.remove('dk-hide'); if (DK.st === S) DK.st = null;
+}
 function renderPost(id, fresh){
+  const ci0 = $('#cmtIn'), csnap = ci0 && !fresh && CUR.post === id ? {v:ci0.value, f:document.activeElement === ci0 || performance.now() - DK.tap < 450, b:dockSnap(ci0)} : null; DK.tap = 0;
+  if (DK.st && DK.st.t === ci0){ cancelAnimationFrame(DK.st.raf); DK.st = null; }
   PCLEAN.forEach(f => { try { f(); } catch(e){} }); PCLEAN = [];
   const keep = !fresh && postScroller() ? postScroller().scrollTop : 0; // 点赞 / 评论 / 关注后重绘不跳回顶部
   const p = POST(id), u = USERS[p.author], me = curUser(), solved = isSolved(p), isAuthor = me === p.author, cls = postCls(p);
@@ -4271,10 +4362,10 @@ function renderPost(id, fresh){
         <div style="margin-top:22px"><span class="lab">${p.type === 'question' ? '回答' : '评论'} ${cm.length}</span>
         ${cm.map((c, ci) => `<div class="cmt ${c.best ? 'best' : ''} ${UI.freshCmt === p.id && ci === cm.length - 1 ? 'fresh' : ''} ${UI.flashCmt && UI.flashCmt.p === p.id && UI.flashCmt.t === c.t ? 'flash' : ''}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">楼主</span>' : ''}${c.best ? '<span class="tag c-green" style="height:18px;font-size:10px">最佳</span>' : ''}<span>${c.time}</span></div><p>${esc(c.t)}</p>${c.code ? `<pre class="code">${esc(CODE[c.code])}</pre>` : ''}<div class="ctl"><button data-act="clike" data-k="${p.id}:${ci}" class="${STATE.clikes.has(p.id + ':' + ci) ? 'on' : ''}" aria-pressed="${STATE.clikes.has(p.id + ':' + ci)}"><i class="hk">${STATE.clikes.has(p.id + ':' + ci) ? '♥' : '♡'}</i><span>${c.likes + (STATE.clikes.has(p.id + ':' + ci) ? 1 : 0)}</span></button><button data-act="reply" data-v="${esc(USERS[c.u]?.name || '')}">回复</button></div></div></div>`).join('')}</div>
       </div>
-      <div class="foot"><input id="cmtIn" placeholder="${STATE.role === 'guest' ? '登录后参与' : p.type === 'question' ? '你会怎么解决？' : '说点什么…'}" autocomplete="off" enterkeyhint="send"><button class="pill sm ic" data-act="cmt" data-id="${p.id}" aria-label="发送">${IC.arrow}</button>
-        <button class="pill sm ic lt" data-act="like" data-id="${p.id}" aria-label="喜欢" style="${STATE.liked.has(p.id) ? 'color:var(--pink)' : ''}">${STATE.liked.has(p.id) ? IC.heartF : IC.heart}</button>
+      <div class="foot"><textarea id="cmtIn" rows="1" placeholder="${STATE.role === 'guest' ? '登录后参与' : p.type === 'question' ? '你会怎么解决？' : '说点什么…'}" autocomplete="off" enterkeyhint="send"></textarea><button class="pill sm ic" data-act="cmt" data-id="${p.id}" aria-label="发送">${IC.arrow}</button>
+        <span class="dk"><button class="pill sm ic lt" data-act="like" data-id="${p.id}" aria-label="喜欢" style="${STATE.liked.has(p.id) ? 'color:var(--pink)' : ''}">${STATE.liked.has(p.id) ? IC.heartF : IC.heart}</button>
         <button class="pill sm ic lt" data-act="fav" data-id="${p.id}" aria-label="收藏" style="${STATE.favs.has(p.id) ? 'color:var(--blue)' : ''}">${STATE.favs.has(p.id) ? IC.saveF : IC.save}</button>
-        <button class="pill sm ic lt" data-act="more-post" data-id="${p.id}" aria-label="更多">⋯</button></div>
+        <button class="pill sm ic lt" data-act="more-post" data-id="${p.id}" aria-label="更多">⋯</button></span></div>
     </div></article></div>`;
   const root = $('#post');
   if (keep){ postScroller().scrollTop = keep; }
@@ -4283,7 +4374,9 @@ function renderPost(id, fresh){
   PCLEAN.push(waveLoop($$('canvas[data-wave]', root)));
   syncLive();
   document.dispatchEvent(new CustomEvent('gen'));
-  const inp = $('#cmtIn'); inp.addEventListener('keydown', e => { if (e.key === 'Enter') ACTIONS.cmt($('[data-act="cmt"]')); });
+  const inp = $('#cmtIn'); composer(inp, () => ACTIONS.cmt($('[data-act="cmt"]')));
+  // 点赞 / 收藏等重绘后：保留没发出去的文字和焦点，小球接着在原来的位置滚
+  if (csnap){ inp.value = csnap.v; autoGrow(inp); if (csnap.f){ inp.focus({preventScroll:true}); if (csnap.b && DK.st && DK.st.t === inp){ dockEnd(DK.st); } if (csnap.b) dockOn(inp.parentNode, inp, $('.dk', inp.parentNode), csnap.b); } }
 }
 /* 关闭帖子：只负责回到上一层；动画统一在 render() 里做，所以点 ← 和安卓返回手势效果一样 */
 ACTIONS.pclose = () => navUp(CUR.hash);
@@ -5066,13 +5159,13 @@ function conv(uid){
   const u = USERS[uid];
   return `<div class="conv"><div class="cv-h"><button class="hd-back" data-act="back" aria-label="返回">${IC.back}</button><a data-go="user-${uid}" class="cv-who">${av(uid, 'sm')}<b>${esc(u.name)}</b></a>${STATE.follows.has(uid) ? '' : `<button class="pill sm" data-act="follow" data-id="${uid}">关注</button>`}</div>
     <div class="cv-b" id="cvB">${convBody(uid)}</div>
-    <div class="cv-f"><label class="cv-ic" title="发图片">${RIC.img}<input type="file" id="cvImg" accept="image/*" hidden></label><button class="cv-ic" data-act="cv-pick" data-id="${uid}" title="分享作品或商品">${IC.plus}</button><input class="inp" id="cvIn" placeholder="发消息…" autocomplete="off" enterkeyhint="send"><button class="pill sm ic" data-act="cv-send" data-id="${uid}" aria-label="发送">${IC.arrow}</button></div></div>`;
+    <div class="cv-f"><span class="dk"><label class="cv-ic" title="发图片">${RIC.img}<input type="file" id="cvImg" accept="image/*" hidden></label><button class="cv-ic" data-act="cv-pick" data-id="${uid}" title="分享作品或商品">${IC.plus}</button></span><textarea class="inp" id="cvIn" rows="1" placeholder="发消息…" autocomplete="off" enterkeyhint="send"></textarea><button class="pill sm ic" data-act="cv-send" data-id="${uid}" aria-label="发送">${IC.arrow}</button></div></div>`;
 }
 ROUTES.msg = arg => {
   if (STATE.role === 'guest') return gate('私信', '登录后可以和创作者互相私信。', `<button class="pill lg" data-act="login">登录</button>`);
   const uid = USERS[arg] && arg !== ME ? arg : null;
   if (uid){ CHATS[uid] ||= []; CHAT_UNREAD[uid] = 0; setTimeout(msgBadge); }
-  onMount(root => { const b = $('#cvB', root); if (b) b.scrollTop = b.scrollHeight; const i = $('#cvImg', root); i && i.addEventListener('change', e => { const f = e.target.files[0]; if (f) sendMsg(uid, {t:'img', url:URL.createObjectURL(f)}); }); const t = $('#cvIn', root); t && t.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) ACTIONS['cv-send']({dataset:{id:uid}}); }); });
+  onMount(root => { const b = $('#cvB', root); if (b) b.scrollTop = b.scrollHeight; const i = $('#cvImg', root); i && i.addEventListener('change', e => { const f = e.target.files[0]; if (f) sendMsg(uid, {t:'img', url:URL.createObjectURL(f)}); }); composer($('#cvIn', root), () => ACTIONS['cv-send']({dataset:{id:uid}})); });
   document.body.classList.toggle('in-conv', !!uid);
   onClean(() => document.body.classList.remove('in-conv'));
   return `<div class="wrap msgp ${uid ? 'has-conv' : ''}"><div class="m-side"><div class="m-head"><h1 class="x">私信</h1><span class="m-ha"><button class="rl-ic dk pg-only" data-act="search" aria-label="搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button><button class="pill sm lt" data-act="new-chat">${IC.plus}发起私信</button></span></div>${msgList(uid)}</div>
@@ -5087,7 +5180,7 @@ function autoReply(uid){
     else { CHAT_UNREAD[uid] = (CHAT_UNREAD[uid] || 0) + 1; msgBadge(); toast(`${USERS[uid].name}：${R[n % R.length]}`, 'blue'); if (CUR.key === 'msg|'){ rerender(); const row = $(`.mrow[data-go="msg-${uid}"]`); fxPop(row, 'fx-flash', 1100); fxPop(row?.querySelector('.bdg'), 'fx-up'); } } }, 1300); }, 700);
 }
 Object.assign(ACTIONS, {
-  'cv-send': b => { const uid = b.dataset.id, i = $('#cvIn'), v = i.value.trim(); if (!v){ fxPop(i, 'fx-shake', 300); return; } i.value = ''; sendMsg(uid, {t:'text', text:v});
+  'cv-send': b => { const uid = b.dataset.id, i = $('#cvIn'), v = i.value.trim(); if (!v){ fxPop(i, 'fx-shake', 300); return; } i.value = ''; autoGrow(i); sendMsg(uid, {t:'text', text:v});
     if (!reduced()){ const last = $$('#cvB .msg.me').pop(); last && last.animate([{transform:'translate(18px, 22px) scale(.55)', opacity:0}, {transform:'none', opacity:1}], {duration:340, easing:'cubic-bezier(.3,1.3,.5,1)'});
       const ic = b.querySelector('svg'); ic && ic.animate([{transform:'none'}, {transform:'translate(18px,-14px) rotate(-25deg)', opacity:0, offset:.45}, {transform:'translate(-12px,10px)', opacity:0, offset:.46}, {transform:'none', opacity:1}], {duration:520, easing:'ease-out'}); } i.focus(); },
   'cv-pick': b => { const uid = b.dataset.id, mine = POSTS.filter(p => p.author === ME), fav = [...POSTS.filter(p => STATE.favs.has(p.id)), ...PRODUCTS.filter(p => STATE.favs.has(p.id))], own = PRODUCTS.filter(p => STATE.owned.has(p.id) || p.seller === ME);
@@ -5560,7 +5653,7 @@ Object.assign(ACTIONS, {
   copy: b => { try { navigator.clipboard.writeText(b.dataset.v).then(() => toast('已复制 ' + b.dataset.v), () => toast(b.dataset.v, 'blue')); } catch(e){ toast(b.dataset.v, 'blue'); } },
   cmt: b => { if (needLogin()) return; const i = $('#cmtIn'), v = i.value.trim(), ir = i.getBoundingClientRect(); if (v && !reduced()){ const g = document.createElement('span'); g.className = 'fx-ghost'; g.textContent = v; g.style.cssText = `left:${ir.left + 14}px;top:${ir.top + ir.height/2}px`; document.body.appendChild(g);
       g.animate([{transform:'translateY(-50%)', opacity:1}, {transform:'translateY(-260%) scale(.92)', opacity:0}], {duration:460, easing:'cubic-bezier(.3,.7,.4,1)'}).onfinish = () => g.remove(); setTimeout(() => { const c = $$('#post .cmt.fresh').pop(); c && c.animate([{transform:'translateY(-14px) scale(.97)', opacity:0}, {transform:'none', opacity:1}], {duration:380, easing:'cubic-bezier(.3,1.25,.5,1)'}); }, 30); }
-    if (!v){ i.focus(); i.animate([{transform:'translateX(-5px)'},{transform:'translateX(5px)'},{transform:'none'}], {duration:220}); return; } (UI.newCmts[b.dataset.id] ||= []).push({u: STATE.role === 'admin' ? 'admin' : ME, t:v, time:'刚刚', likes:0}); POST(b.dataset.id).cmts++; UI.freshCmt = b.dataset.id; renderPost(CUR.post); UI.freshCmt = null; UI.dirty = true; const sc = $('#post .scroll'); sc && sc.scrollTo({top:sc.scrollHeight, behavior:'smooth'}); if (IS_MOBILE) scrollTo({top:document.body.scrollHeight}); },
+    if (!v){ i.focus(); i.animate([{transform:'translateX(-5px)'},{transform:'translateX(5px)'},{transform:'none'}], {duration:220}); return; } i.value = ''; i.blur(); (UI.newCmts[b.dataset.id] ||= []).push({u: STATE.role === 'admin' ? 'admin' : ME, t:v, time:'刚刚', likes:0}); POST(b.dataset.id).cmts++; UI.freshCmt = b.dataset.id; renderPost(CUR.post); UI.freshCmt = null; UI.dirty = true; const sc = $('#post .scroll'); sc && sc.scrollTo({top:sc.scrollHeight, behavior:'smooth'}); if (IS_MOBILE) scrollTo({top:document.body.scrollHeight}); },
   /* 评论点赞：再点一次取消 */
   clike: b => { const k = b.dataset.k, on = !STATE.clikes.has(k); on ? STATE.clikes.add(k) : STATE.clikes.delete(k);
     const n = Math.max(0, (parseInt(b.textContent.replace(/\D/g,'')) || 0) + (on ? 1 : -1));
