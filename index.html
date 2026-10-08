@@ -4800,7 +4800,6 @@ function syncTitle(){
 function ttScroll(){ const hd = $('#hd'); if (hd) hd.classList.toggle('tt-on', !hd.classList.contains('tt-late') || scrollY > 150); }
 addEventListener('scroll', ttScroll, {passive:true});
 document.addEventListener('rendered', syncTitle);
-{ const th = ACTIONS.theme; ACTIONS.theme = b => { th(b); const t = $('.drw-thm'); if (t) t.innerHTML = (isDark() ? IC.sun : IC.moon) + (isDark() ? '浅色模式' : '深色模式'); }; }
 
 /* ---------- 弹层：手机上可以按住往下拖走（抽屉往左拖），点遮罩 / ✕ / Esc 也会滑出去而不是瞬间消失 ---------- */
 function dismissSheet(sh){
@@ -4923,7 +4922,8 @@ Object.assign(ACTIONS, {
   report: () => sheet(`<h3>举报原因</h3><div style="display:flex;flex-direction:column;gap:8px">${['侵犯了我的版权','分享盗版资源','广告引流','不友善'].map(r => `<button class="pill lt lg" style="justify-content:flex-start" data-act="do-report">${r}</button>`).join('')}</div>`),
   'do-report': () => { closeSheet(); toast('收到，我们会尽快处理'); },
   compose: () => { if (needLogin()) return; composeSheet(); },
-  theme: () => { STATE.settings.theme = isDark() ? 'light' : 'dark'; applySettings(); applyTheme(true); },
+  theme: () => { STATE.settings.theme = isDark() ? 'light' : 'dark'; applySettings(); applyTheme(true);
+    const t = $('.drw-thm'); if (t) t.innerHTML = (isDark() ? IC.sun : IC.moon) + (isDark() ? '浅色模式' : '深色模式'); },   // 侧边菜单里的按钮文字跟着变
   'set-theme': b => { STATE.settings.theme = b.dataset.v; applySettings(); applyTheme(true); rerender(); },
   search: b => openSearch(b && b.dataset.v ? b.dataset.v : undefined),
 });
@@ -5137,11 +5137,11 @@ function openSearch(scope, tab){
     }
     const keys = S.tabs.map(([k]) => k), tab = keys.includes(UI.stabs[scope]) ? UI.stabs[scope] : (keys.find(k => G[k].length) || keys[0]), rows = G[tab];
     sel = clamp(sel, 0, Math.max(0, rows.length - 1));
-    const tabs = keys.length < 2 ? '' : `<div class="s-tabs" role="tablist">${S.tabs.map(([k,l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''} ${G[k].length ? '' : 'nil'}" data-act="stab" data-v="${k}">${l}<i>${G[k].length}</i></button>`).join('')}</div>`;
+    const tabs = keys.length < 2 ? '' : `<div class="s-tabs" role="tablist">${S.tabs.map(([k,l]) => `<button role="tab" aria-selected="${k === tab}" class="${k === tab ? 'on' : ''} ${G[k].length ? '' : 'nil'}" data-act="srtab" data-v="${k}">${l}<i>${G[k].length}</i></button>`).join('')}</div>`;
     let body;
     if (!rows.length){
       const alt = keys.find(k => G[k].length);
-      body = `<div class="empty" style="align-items:flex-start;padding-inline:0"><span class="x" style="font-size:44px">没找到</span><span>${alt ? `<button class="pill" data-act="stab" data-v="${alt}">看 ${G[alt].length} ${S.unit[alt]}</button>` : S.none ? `换个词，或者<a href="${S.none[1]}" style="text-decoration:underline">${S.none[0]}</a>` : '换个词试试'}</span></div>`;
+      body = `<div class="empty" style="align-items:flex-start;padding-inline:0"><span class="x" style="font-size:44px">没找到</span><span>${alt ? `<button class="pill" data-act="srtab" data-v="${alt}">看 ${G[alt].length} ${S.unit[alt]}</button>` : S.none ? `换个词，或者<a href="${S.none[1]}" style="text-decoration:underline">${S.none[0]}</a>` : '换个词试试'}</span></div>`;
     } else body = `<div class="s-list">` + rows.map((r, k) => `<div class="sr-row ${k === sel ? 'kb-on' : ''}" data-sgo="${r.go}">${r.av ? av(r.av) : r.img ? `<img src="${r.img}" alt="">` : `<span class="av c-yellow" style="border-radius:10px;font:900 26px/1 var(--f-x)">?</span>`}<div style="min-width:0"><b>${r.t}</b><span>${r.sh || esc(r.s)}</span></div>${IC.arrow.replace('<svg','<svg width="16" height="16"')}</div>`).join('') + `</div>`;
     $('#sres').innerHTML = tabs + body;
   };
@@ -5163,7 +5163,8 @@ const SHIST = {
   del(v){ this.save(this.list().filter(x => x !== v)); }
 };
 const sRedraw = () => $('#srch')?._draw?.();
-ACTIONS.stab = b => { const sc = $('#srch')?.dataset.s || 'all'; (UI.stabs ||= {})[sc] = b.dataset.v; sRedraw(); const q = $('#sq'); if (q && !IS_MOBILE) q.focus(); };
+/* 搜索结果的页签（不要和工作室页签的 stab 重名，否则会覆盖掉它） */
+ACTIONS.srtab = b => { const sc = $('#srch')?.dataset.s || 'all'; (UI.stabs ||= {})[sc] = b.dataset.v; sRedraw(); const q = $('#sq'); if (q && !IS_MOBILE) q.focus(); };
 ACTIONS.sclear = () => { const q = $('#sq'); if (!q) return; q.value = ''; q.dispatchEvent(new Event('input')); q.focus(); };
 ACTIONS['shist-del'] = b => { const c = b.closest('.sh-c'); c?.classList.add('out'); setTimeout(() => { SHIST.del(b.dataset.v); sRedraw(); $('#sq')?.focus(); }, reduced() ? 0 : 160); };
 ACTIONS['shist-clr'] = () => { const g = $('.sh-g'); g?.classList.add('out'); setTimeout(() => { SHIST.save([]); sRedraw(); $('#sq')?.focus(); }, reduced() ? 0 : 200); };
