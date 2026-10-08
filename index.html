@@ -1825,8 +1825,8 @@ html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
   #hd .sbtn .t,#hd .sbtn kbd{display:none}
   #hd .sbtn::after{content:"搜索"}
   #hd[data-s=none] .sbtn{display:none}
-  #hd .pill.post-btn{order:3;display:grid;place-items:center;width:52px;height:52px;padding:0;margin:8px 0 6px;border-radius:16px;background:var(--pink);color:#141418;font-size:0;gap:0}
-  #hd .pill.post-btn svg{width:24px;height:24px}
+  #hd .pill.post-btn{order:3;display:grid;place-items:center;width:44px;height:44px;flex:none;aspect-ratio:1;padding:0;margin:8px 0 6px;border-radius:16px;background:var(--pink);color:#141418;font-size:0;gap:0}
+  #hd .pill.post-btn svg{width:22px;height:22px}
   #hd #meBtn{order:4;display:grid;position:relative;overflow:visible;margin:10px 0 22px;width:38px;height:38px;font-size:13px}
   #hd #meBtn::after{content:"我";position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);font:600 11px/1 var(--f-b);color:var(--ink-2);white-space:nowrap}
   #hd #meBtn.on{box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--ink)}
@@ -2086,7 +2086,6 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 /* C. 底部导航：发布是圆形按键；选中页签图标后面居中垫一块对应的几何图形 */
 @media (max-width:760px){
   .tb .plus span{width:46px;height:46px;border-radius:50%;transition:transform .15s var(--spring),background .2s,color .2s}
-  .tb .plus:active span{transform:scale(.9)}
   .tb a svg{box-sizing:content-box;padding:4px;margin:-4px;background:no-repeat center/100% 100%;transition:background-size .25s var(--spring)}
   .tb a.on[data-r="home"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Ccircle cx='15' cy='15' r='13' fill='%23FF4FA7'/%3E%3C/svg%3E")}
   .tb a.on[data-r="shop"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Crect x='4' y='4' width='22' height='22' rx='3' fill='%232E5BFF' opacity='.75'/%3E%3C/svg%3E")}
@@ -2159,7 +2158,6 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 .tb .plus span,#hd .pill.post-btn{background:radial-gradient(140% 120% at 50% 0%,#ff86c2 0%,#FF4FA7 48%,#ef3f98 100%);color:#fff;
   box-shadow:inset 0 2px 3px rgba(255,255,255,.35),inset 0 -3px 6px rgba(150,10,80,.22),inset 0 0 0 .5px rgba(150,20,90,.25),0 1px 2px rgba(20,20,24,.14),0 6px 14px -8px rgba(20,20,24,.32);
   transition:transform .26s cubic-bezier(.3,1.7,.5,1),background .2s,color .2s}
-.tb .plus:active span,#hd .pill.post-btn:active{transform:scale(1.07,.88)}
 .tb .plus.fx-open span,#hd .pill.post-btn.fx-open{background:radial-gradient(140% 120% at 50% 0%,#3a3a42 0%,#18181c 60%,#0e0e11 100%);color:#fff}
 
 /* ---- 电脑 / 平板侧栏：毛玻璃 + 选中项是果冻 ---- */
@@ -5561,7 +5559,11 @@ ROUTES.shop = arg => {
   </div></div>
   <div style="margin-top:22px">${list.length ? `<div class="grid-p">${list.map(sleeve).join('')}</div>` : `<div class="empty"><div class="x">空</div><span>这个价格区间里还没有东西</span><button class="pill ol" data-act="sf" data-k="price" data-v="all">看全部价格</button></div>`}</div></div>`;
 };
-ACTIONS.sf0 = b => { UI.shop[b.dataset.k] = b.dataset.v; if (b.dataset.k === 'cat') UI.shop.sub = 'all'; if (!CUR.key.startsWith('shop|')) go('shop'); else flip(rerender); };
+ACTIONS.sf0 = b => { UI.shop[b.dataset.k] = b.dataset.v; if (b.dataset.k === 'cat') UI.shop.sub = 'all'; if (!CUR.key.startsWith('shop|')) go('shop'); else {
+    // 从「#shop-分类」链接进来时，网址里带着分类，每次重绘都会把分类改回网址里那个 → 点别的分类没反应。
+    // 改筛选时把网址原地换回 #shop（不新增历史记录），之后以用户的选择为准
+    if (CUR.key !== 'shop|'){ history.replaceState(history.state, '', '#shop'); HST.stk[HST.d] = '#shop'; CUR.key = 'shop|'; CUR.hash = '#shop'; }
+    flip(rerender); } };
 /* 商城筛选：先照常切换，再给新画出来的那张分类卡 / 那颗筛选按钮补上动效（重绘后元素是新的，所以切换完再找） */
 ACTIONS.sf = (b, e) => { const k = b.dataset.k, v = b.dataset.v, r = b.getBoundingClientRect(), x = e?.clientX || r.left + r.width/2, y = e?.clientY || r.top + r.height/2;
   ACTIONS.sf0(b, e); const t = $(`[data-act="sf"][data-k="${k}"][data-v="${v}"]`); if (!t) return;
@@ -6997,10 +6999,27 @@ function navDir(from, to){
   if (a === 0) return from === to ? null : 'tab';
   return NAVX.back ? 'pop' : 'push';
 }
+/* 发布按钮按压（手机底栏 + / 电脑侧栏 +）：按下先轻轻挤扁、马上回弹到略小一圈（按住保持这个大小，不会一直扁着），
+   松手时从当前形状弹过头再落定。用 WAAPI 接上当前形状，不会出现「突然变扁 / 突然恢复」 */
+(() => {
+  const tgt = b => b.matches('.tb .plus') ? b.querySelector('span') : b;
+  const run = (t, kf, o) => { t._pa?.cancel(); t._pa = t.animate(kf, o); };
+  document.addEventListener('pointerdown', e => {
+    const b = e.target.closest?.('.tb .plus, #hd .pill.post-btn'); if (!b || reduced()) return; const t = tgt(b); if (!t) return;
+    run(t, [{transform: 'none'}, {transform: 'scale(1.1,.86)', offset: .35}, {transform: 'scale(.93,1.03)', offset: .7}, {transform: 'scale(.95)'}], {duration: 300, easing: 'ease-out', fill: 'forwards'});
+    const up = () => { removeEventListener('pointerup', up, true); removeEventListener('pointercancel', up, true);
+      const cur = getComputedStyle(t).transform; run(t, [{transform: cur === 'none' ? 'scale(.95)' : cur}, {transform: 'scale(1.08,.95)', offset: .35}, {transform: 'scale(.98,1.02)', offset: .7}, {transform: 'none'}], {duration: 420, easing: 'cubic-bezier(.2,.8,.3,1)'}); };
+    addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
+  }, true);
+})();
+const VT = {t: null};
+addEventListener('pointerdown', () => { if (VT.t){ try { VT.t.skipTransition(); } catch(e){} } }, {capture: true, passive: true});
 function pageSwap(dir, fn){
   if (!dir || !document.startViewTransition || reduced() || !isMob()){ fn(); return; }
   const r = document.documentElement; r.dataset.vt = dir;
-  try { const t = document.startViewTransition(fn); t.finished.finally(() => { if (r.dataset.vt === dir) delete r.dataset.vt; }); }
+  // 翻页动画期间页面不响应点击：新页面画得慢时（手机上）会像卡住。点一下就直接跳到动画结尾，最长 1.2 秒也自动结束
+  try { const t = document.startViewTransition(fn); VT.t = t; const kill = setTimeout(() => { try { t.skipTransition(); } catch(e){} }, 1200);
+    t.finished.finally(() => { clearTimeout(kill); if (VT.t === t) VT.t = null; if (r.dataset.vt === dir) delete r.dataset.vt; }); }
   catch(e){ delete r.dataset.vt; fn(); }
 }
 
