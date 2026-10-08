@@ -1850,6 +1850,62 @@ html.rm .fx-shp{display:none}
 .fx-spin{animation:spin1 .55s var(--spring)}
 html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 @media (prefers-reduced-motion:reduce){ .empty .x,.toast i,.bdg,.drw > *{animation:none} }
+/* ===== 差异化：杂志刊头、荧光笔页签、错版投影、录音键、调音台通知、创作者名片 ===== */
+/* F. 页签：选中项用一块歪一点的荧光笔色块，代替下划线（滑动动效照旧） */
+.ht-t button,.mtabs button,.s-tabs button{isolation:isolate}
+.ht-t button.on::after,.mtabs button.on::after,.s-tabs button.on::after{content:"";position:absolute;z-index:-1;left:-8px;right:-8px;top:-2px;bottom:-2px;width:auto;height:auto;margin:0;border-radius:5px 8px 6px 7px;background:var(--yellow);transform:rotate(-2.2deg);animation:none}
+.s-tabs button.on::after{left:6px;right:6px;top:7px;bottom:7px}
+.mtabs button.on::after{top:-4px;bottom:-4px}
+.ht-t button.on,.mtabs button.on,.s-tabs button.on{color:#141418}
+/* A. 首页刊头：页签左边一行小字刊号 */
+.ht-no{position:absolute;left:calc(var(--g) + 38px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;font:900 11px/1 var(--f-x);font-stretch:115%;letter-spacing:.02em;color:var(--ink)}
+.ht-no i{font:600 10px/1 var(--f-b);font-style:normal;color:var(--ink-3);letter-spacing:.1em}
+@media (min-width:761px){ .ht-no{left:var(--g)} }
+@media (max-width:339px){ .ht-no{display:none} }
+/* B. 信息流卡片：封面右下错开一块实色投影，颜色按类型（声音粉 / 视频黄 / 提问蓝 / 图文橙） */
+.card .cv{box-shadow:5px 6px 0 var(--sh,var(--orange));overflow:hidden}
+.card[data-t="audio"]{--sh:var(--pink)} .card[data-t="video"]{--sh:var(--yellow)} .card[data-t="question"]{--sh:var(--blue)} .card[data-t="image"]{--sh:var(--orange)}
+.mason .card{margin-right:6px}
+/* C. 底部导航：发布是圆形录音键（带错版阴影，按下会陷进去）；选中页签图标后面垫一块对应的几何图形 */
+@media (max-width:760px){
+  .tb .plus span{width:46px;height:46px;border-radius:50%;box-shadow:3px 3px 0 var(--blue);transition:transform .12s,box-shadow .12s,background .2s,color .2s}
+  .tb .plus:active span{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--blue)}
+  .tb a svg{box-sizing:content-box;padding:4px;margin:-4px;background:no-repeat center/100% 100%;transition:background-size .25s var(--spring)}
+  .tb a.on[data-r="home"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Ccircle cx='17' cy='17' r='12' fill='%23FF4FA7'/%3E%3C/svg%3E")}
+  .tb a.on[data-r="shop"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Crect x='6' y='6' width='22' height='22' rx='2' fill='%232E5BFF' opacity='.75'/%3E%3C/svg%3E")}
+  .tb a.on[data-r="msg"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath d='M17 3L30 27H4z' fill='%23FFE14A'/%3E%3C/svg%3E")}
+  .tb a.on[data-r="me"] svg{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath d='M4 26a13 13 0 0126 0z' fill='%23FF6B2C'/%3E%3C/svg%3E")}
+}
+@media (max-width:760px) and (max-height:430px), (max-height:430px) and (min-aspect-ratio:3/2){ .tb .plus span{width:34px;height:34px} }
+#hd .pill.post-btn{border-radius:50%;box-shadow:3px 3px 0 var(--blue);transition:transform .12s,box-shadow .12s}
+#hd .pill.post-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--blue)}
+/* D. 私信：调音台式通知条（三个通道：标签 + 大号未读数 + 电平灯） */
+.m-quick{gap:0;border-radius:16px;background:var(--card);overflow:hidden}
+.mq{background:none;border-radius:0;align-items:stretch;gap:6px;padding:12px 14px 12px;text-align:left}
+.mq + .mq{border-left:1px solid var(--rule)}
+.mq-h{display:flex;align-items:center;gap:7px;min-width:0}
+.mq-h b{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mq .g{width:24px;height:24px;border-radius:7px;flex:none}
+.mq .g svg{width:14px;height:14px}
+.mq-n{font:900 26px/1 var(--f-x);font-stretch:115%;font-variant-numeric:tabular-nums;color:var(--ink-3)}
+.mq.live .mq-n{color:var(--ink)}
+.mq-led{display:flex;gap:3px}
+.mq-led i{flex:1;height:5px;border-radius:2px;background:var(--rule)}
+.mq-led i.on{background:var(--c)}
+@keyframes ledpulse{0%,100%{opacity:1}50%{opacity:.35}}
+.mq.live .mq-led i.pk{animation:ledpulse 1.4s ease-in-out infinite}   /* 最高那格灯在闪 */
+@media (max-width:374px){ .mq{padding:10px} .mq-h b{font-size:11.5px} }
+@media (max-width:359px){ .mq .g{display:none} }   /* 极窄屏：去掉小图标，保证三个名字完整显示 */
+html.rm .mq-led i.pk{animation:none}
+/* E. 「我」：创作者名片——展示字体大名字、头像后垫孔版色块、票根式数据条 */
+.mh-id h1{font:900 clamp(28px,6.4vw,48px)/1 var(--f-x);font-stretch:118%;letter-spacing:-.02em}
+.mh-av{isolation:isolate}
+.mh-av::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--yellow);transform:translate(7px,6px);z-index:-1}
+.mh-st{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:12px 0;border-top:1.5px dashed var(--rule-2);border-bottom:1.5px dashed var(--rule-2)}
+.mh-st > *{flex-direction:column;align-items:flex-start;gap:4px;padding:0 14px;text-align:left;min-width:0}
+.mh-st > * + *{border-left:1.5px dashed var(--rule-2)}
+.mh-st > :first-child{padding-left:2px}
+.mh-st b{font:900 22px/1 var(--f-x);font-stretch:112%}
 </style>
 
 </head>
@@ -2216,7 +2272,7 @@ const CHAT_REPLY = {
   ash:['谢谢！', '这个我也很喜欢'],
   mio:['谢谢学姐！！', '我再改改', '好的我去试试']
 };
-/* 通知（赞和收藏 / 新增关注 / 评论和@） */
+/* 通知（喜欢 / 新粉丝 / 回复与@） */
 const NOTES = {
   likes:[{u:'merc', k:'赞了你的帖子', ref:'s1', ts:NOW0 - 2*H}, {u:'nova', k:'收藏了你的帖子', ref:'s20', ts:NOW0 - 5*H}, {u:'ash', k:'赞了你的评论', ref:'s7', ts:NOW0 - 30*H}],
   fans:[{u:'mio', ts:NOW0 - 7*H}, {u:'ash', ts:NOW0 - 50*H}],
@@ -2792,6 +2848,7 @@ function drawWave(cv, seed, prog=0, opts={}){
 /* ================= 首页海报位：五张可演奏、可切换的推广海报 =================
    引导不靠文字：光标形状告诉你“这里能发声 / 能拨 / 能盖章”；
    没人碰的时候，海报会自己示范一次正确的玩法（幽灵点击），一旦你碰过就停止示范。 */
+const ISSUE_NO = 'NO.' + String(Math.floor((new Date() - new Date(2026,0,1))/864e5)).padStart(3,'0');   // 刊号：和海报一样，每天一期
 const SLIDES = [
   {scene:'beat',    c:'pink',   kicker:'NO.' + String(Math.floor((new Date() - new Date(2026,0,1))/864e5)).padStart(3,'0') + ' · 本期', title:'CTRL<span style="color:var(--pink)">Z</span>', sub:'声音与图像的创作者市集', cta:['逛商店','shop']},
   {scene:'field',   c:'orange', kicker:'精选 · TOUCHDESIGNER', title:'FIELD/GRID', sub:'200 万粒子，跟着底鼓跑', price:88, cta:['看这个组件','item-p5']},
@@ -3999,7 +4056,7 @@ function postCard(p){
   else if (p.type === 'video') cv = `<div class="cv vcard ${p.failed ? 'failed' : ''}"><img src="${cover(p.cover, hash(p.id) % 50, 480, Math.round(480*Math.max(1.15, p.h||1)))}" alt="" width="480" height="${Math.round(480*Math.max(1.15, p.h||1))}">${p.failed ? '<span class="vgone">视频已失效</span>' : `<span class="vbadge">${IC.play}${p.dur}</span>`}</div>`;
   else if (p.type === 'audio'){ const pr = p.attach[0] && P(p.attach[0]); cv = `<div class="cv grain"><div class="acv"><div class="row"><span class="tag k">声音 · <span data-wt="${p.id}">${p.dur}</span></span></div><canvas data-wave="${p.id}" data-seed="${p.seed}" tabindex="0" role="slider" aria-label="播放进度"></canvas><div class="row"><span class="t">${esc(pr ? pr.en.split(' ')[0] : (p.word || 'SOUND'))}</span><button class="pbtn" data-act="aplay" data-id="${p.id}" aria-label="试听">${IC.play}</button></div></div></div>`; }
   else { const s = isSolved(p); cv = `<div class="cv grain"><div class="qcv"><div style="display:flex;justify-content:space-between;align-items:flex-start"><span class="q">?</span>${s ? '<span class="stamp">SOLVED<small>已解决</small></span>' : `<span class="tag k">Q.${p.qn}</span>`}</div><p>${esc(p.ex)}</p></div></div>`; }
-  return `<article class="card ${postCls(p)} ${p.tcover && p.type === 'image' ? 'tpost' : ''}" data-go="${p.failed ? 'post-' + p.id : postHref(p)}" data-flip="p-${p.id}">${cv}<div class="bd"><h3>${esc(p.title)}</h3>${p.attach.length ? attachChip(p.attach[0]) : ''}<div class="meta"><a class="who" data-go="user-${u.id}">${av(u.id,'sm')}<span>${esc(u.name)}</span></a>${likeBtn(p)}</div></div></article>`;
+  return `<article class="card ${postCls(p)} ${p.tcover && p.type === 'image' ? 'tpost' : ''}" data-t="${p.type}" data-go="${p.failed ? 'post-' + p.id : postHref(p)}" data-flip="p-${p.id}">${cv}<div class="bd"><h3>${esc(p.title)}</h3>${p.attach.length ? attachChip(p.attach[0]) : ''}<div class="meta"><a class="who" data-go="user-${u.id}">${av(u.id,'sm')}<span>${esc(u.name)}</span></a>${likeBtn(p)}</div></div></article>`;
 }
 function sleeve(pr){
   const u = USERS[pr.seller], c = CATS[pr.cat], own = STATE.owned.has(pr.id);
@@ -4458,7 +4515,7 @@ ACTIONS.buy = (b, e) => { const r = b.getBoundingClientRect(); if (STATE.role !=
     t0 = now; p0 = [e.clientX, e.clientY]; });
 })();
 /* 私信页：有新消息的快捷入口，进页面时依次招一下手 */
-document.addEventListener('rendered', () => { if (CUR.key !== 'msg|' || reduced()) return; $$('#app .mq').forEach((b, i) => { if (b.querySelector('.bdg')) setTimeout(() => fxPop(b, 'fx-go', 700), 260 + i*160); }); });
+document.addEventListener('rendered', () => { if (CUR.key !== 'msg|' || reduced()) return; $$('#app .mq').forEach((b, i) => { if (+b.dataset.n) setTimeout(() => fxPop(b, 'fx-go', 700), 260 + i*160); }); });
 /* 往下滑时，新进入视野的卡片依次浮上来；只在真正换页时布置，首屏不播放，点赞等局部重绘也不重播 */
 const RVS = {key:null, seen:new Set()};   // 本页已经露过面的卡片（按卡片 id 记），重绘出来的新元素不会再藏起来重播
 const rvId = el => el.dataset.flip || el.dataset.go || '';
@@ -4706,7 +4763,7 @@ ROUTES.home = () => {
   const sugg = Object.values(USERS).filter(u => u.id !== ME && !STATE.follows.has(u.id));
   onMount(root => mountWaves(root));
   return `<div class="wrap home">
-    <div class="htabs"><button class="rl-ic dk ht-l pg-only" data-act="me-menu" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><div class="ht-t" role="tablist"><button role="tab" class="${tab === 'fol' ? 'on' : ''}" data-act="htab" data-v="fol">关注</button><button role="tab" class="${tab === 'rec' ? 'on' : ''}" data-act="htab" data-v="rec">推荐</button></div><button class="rl-ic dk ht-r pg-only" data-act="search" aria-label="搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div>
+    <div class="htabs"><button class="rl-ic dk ht-l pg-only" data-act="me-menu" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><span class="ht-no" aria-hidden="true">${ISSUE_NO}<i>今日</i></span><div class="ht-t" role="tablist"><button role="tab" class="${tab === 'fol' ? 'on' : ''}" data-act="htab" data-v="fol">关注</button><button role="tab" class="${tab === 'rec' ? 'on' : ''}" data-act="htab" data-v="rec">推荐</button></div><button class="rl-ic dk ht-r pg-only" data-act="search" aria-label="搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div>
     <div class="hfeed">${tab === 'fol' ? `<div class="sugg"><span class="lab">${list.length ? '还可以关注' : '先关注几位创作者'}</span><div class="sugg-r">${sugg.map(u => `<div class="sg ${ucls(u.id)}"><a data-go="user-${u.id}">${av(u.id, 'md')}<b>${esc(u.name)}</b><span>${esc(u.role.split(' · ')[0])}</span></a><button class="pill sm" data-act="follow" data-id="${u.id}">关注</button></div>`).join('')}</div></div>` : ''}
     ${list.length ? `<div class="mason">${list.map(postCard).join('')}</div>` : `<div class="empty"><div class="x">空</div><span>关注的人还没有发东西</span></div>`}</div>
   </div>`;
@@ -4941,7 +4998,7 @@ function msgBadge(){ const n = unreadTotal(); $$('[data-r="msg"]').forEach(b => 
 function msgPreview(m){ if (!m) return ''; const who = m.me ? '我：' : ''; return who + (m.t === 'text' ? m.text : m.t === 'img' ? '[图片]' : m.t === 'post' ? '[帖子] ' + (POST(m.ref)?.title || '') : '[商品] ' + (P(m.ref)?.title || '')); }
 function msgList(sel){
   const ids = Object.keys(CHATS).filter(id => USERS[id]).sort((a, b) => lastTs(b) - lastTs(a));
-  return `<div class="m-quick">${[['likes','赞和收藏','pink',IC.heartF],['fans','新增关注','blue','<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.4-7 8-7s7 2.5 8 7z"/></svg>'],['at','评论和@','yellow',RIC.cm]].map(([k,l,c,ic]) => `<button class="mq c-${c} mq-${k}" data-act="note" data-v="${k}"><span class="g">${ic}</span><b>${l}</b>${NOTE_NEW[k] ? `<i class="bdg">${NOTE_NEW[k]}</i>` : ''}</button>`).join('')}</div>
+  return `<div class="m-quick">${[['likes','喜欢','pink',IC.heartF],['fans','新粉丝','blue','<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.4-7 8-7s7 2.5 8 7z"/></svg>'],['at','回复与@','yellow',RIC.cm]].map(([k,l,c,ic]) => { const n = NOTE_NEW[k] || 0; return `<button class="mq c-${c} mq-${k} ${n ? 'live' : ''}" data-act="note" data-v="${k}" data-n="${n}" aria-label="${l}${n ? '，' + n + ' 条新的' : ''}"><span class="mq-h"><span class="g">${ic}</span><b>${l}</b></span><span class="mq-n">${n}</span><span class="mq-led" aria-hidden="true">${Array.from({length:6}, (_, i) => { const lit = Math.min(6, n * 2); return `<i class="${i < lit ? 'on' : ''} ${i === lit - 1 ? 'pk' : ''}"></i>`; }).join('')}</span></button>`; }).join('')}</div>
   <div class="m-list">${ids.map(id => { const m = CHATS[id][CHATS[id].length - 1], u = USERS[id]; return `<a class="mrow ${sel === id ? 'on' : ''}" data-go="msg-${id}">${av(id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>${esc(msgPreview(m))}</span></span><span class="mr"><time>${ago(m.ts)}</time>${CHAT_UNREAD[id] ? `<i class="bdg">${CHAT_UNREAD[id]}</i>` : ''}</span></a>`; }).join('') || '<div class="rnone">还没有私信</div>'}</div>`;
 }
 function bubble(m, uid){
@@ -4988,7 +5045,7 @@ Object.assign(ACTIONS, {
     sheet(`<h3>分享给 ${esc(USERS[uid].name)}</h3>${sec('我的作品', mine.map(o => ['post', o]))}${sec('收藏', fav.map(o => [o.price !== undefined ? 'prod' : 'post', o]))}${sec('已购 / 我的资源', own.map(o => ['prod', o]))}`); },
   'cv-share': b => { closeSheet(); sendMsg(b.dataset.uid, {t:b.dataset.k, ref:b.dataset.id}); },
   'new-chat': () => { sheet(`<h3>发起私信</h3><div class="rsearch">${IC.search}<input class="inp" id="ncQ" placeholder="搜创作者" autocomplete="off"></div><div class="m-list" id="ncL"></div>`, d => { const draw = () => { const q = $('#ncQ', d).value.trim().toLowerCase(); $('#ncL', d).innerHTML = Object.values(USERS).filter(u => u.id !== ME && (!q || (u.name + u.role).toLowerCase().includes(q))).map(u => `<a class="mrow" data-go="msg-${u.id}">${av(u.id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>${esc(u.role)}</span></span>${STATE.follows.has(u.id) ? '<span class="tag k">已关注</span>' : ''}</a>`).join(''); }; $('#ncQ', d).addEventListener('input', draw); draw(); setTimeout(() => $('#ncQ', d).focus(), 60); }); },
-  note: b => { fxPop(b, 'fx-go', 700); const k = b.dataset.v, t = {likes:'赞和收藏', fans:'新增关注', at:'评论和@'}[k]; NOTE_NEW[k] = 0; msgBadge();
+  note: b => { fxPop(b, 'fx-go', 700); const k = b.dataset.v, t = {likes:'喜欢', fans:'新粉丝', at:'回复与@'}[k]; NOTE_NEW[k] = 0; msgBadge();
     sheet(`<h3>${t}</h3><div class="m-list">${NOTES[k].map(n => { const p = n.ref && POST(n.ref); return `<a class="mrow" data-go="${p ? postHref(p) : 'user-' + n.u}">${av(n.u, 'md')}<span class="mt"><b>${esc(USERS[n.u].name)}</b><span>${k === 'fans' ? '开始关注你了' : esc(n.k) + (n.text ? '：' + esc(n.text) : '')} · ${ago(n.ts)}</span></span>${p ? miniThumb(p, 'nth') : k === 'fans' ? `<button class="pill sm ${STATE.follows.has(n.u) ? 'lt' : ''}" data-act="follow" data-id="${n.u}">${STATE.follows.has(n.u) ? '互相关注' : '回关'}</button>` : ''}</a>`; }).join('')}</div>`);
     const q = $(`[data-act="note"][data-v="${k}"] .bdg`); q && q.remove(); }
 });
