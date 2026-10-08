@@ -3417,7 +3417,7 @@ function render(force){
   if (CUR.post) closePostLayer();
   const key = r + '|' + arg;
   if (!force && CUR.key === key) { if (UI.dirty){ UI.dirty = false; renderBase(r, arg, true); } return; }
-  renderBase(r, arg, force === 'soft');
+  renderBase(r, arg, force === 'soft' || NAVX.inpage);
 }
 function renderBase(r, arg, soft){
   CLEAN.forEach(f => { try { f(); } catch(e){} }); CLEAN = []; MOUNTS = [];
@@ -3429,7 +3429,8 @@ function renderBase(r, arg, soft){
   rollNums(app); fitText(app); syncLive(); document.dispatchEvent(new CustomEvent('gen')); if (r === 'item') addHist('item', arg); msgBadge();
   const navKey = r === 'user' ? (arg === ME ? 'me' : '') : {item:'shop', feed:'home', seller:'me', creators:'home', admin:'me'}[r] || r;
   $$('[data-r]').forEach(a => a.classList.toggle('on', a.dataset.r === navKey)); navInk();
-  if (soft) scrollTo(0, y); else { scrollTo(0, 0); const want = (NAVX.back || NAVX.tab) ? SCROLLS[scrollKey(CUR.hash)] : 0; if (want) restoreScroll(want); }
+  if (NAVX.inpage){ const sn = $('.snav', app); if (sn){ scrollTo(0, 0); const lim = Math.max(0, sn.getBoundingClientRect().top - (parseFloat(getComputedStyle(sn).top) || 0)); scrollTo(0, Math.min(y, lim)); } else scrollTo(0, y); }   // 页内页签：留在原位，最多滚到页签条刚好贴顶
+  else if (soft) scrollTo(0, y); else { scrollTo(0, 0); const want = (NAVX.back || NAVX.tab) ? SCROLLS[scrollKey(CUR.hash)] : 0; if (want) restoreScroll(want); }
   NAVX.back = NAVX.tab = false; fabUpdate(); revealActive(app);
   $('#hdBack').hidden = !parentOf(CUR.hash) || r === 'msg'; $('#hd').classList.toggle('has-back', !$('#hdBack').hidden); $('#hd').classList.toggle('me-sub', r === 'me'); document.dispatchEvent(new Event('rendered'));
   $('footer').hidden = r === 'post';
@@ -3494,7 +3495,7 @@ addEventListener('hashchange', () => { const h = curH(), st = history.state;
   NAVX.back = UI.goUp || back; UI.goUp = false;
   { const r0 = (h.slice(1).split('-')[0]) || 'home'; if (['home','shop','msg','me'].includes(r0) && !h.includes('-') ) UI.lastTab = r0; }
   closeSheet(); closeSearch(); $('#menu')?.remove();
-  pageSwap(navDir(CUR.hash, h), () => { render(); NAVX.back = NAVX.tab = false; }); });
+  pageSwap(navDir(CUR.hash, h), () => { render(); NAVX.back = NAVX.tab = NAVX.inpage = false; }); });
 /* 返回 = 回到真正的上一层（页面层级），而不是浏览器历史里的上一步：
    商品 → 它所在的商城分类；会话 → 私信列表；我的子页 / 工作室 / 管理 → 我；别人的主页 → 你当前所在的那个底部页签 */
 function parentOf(h){
@@ -4089,7 +4090,8 @@ ROUTES.seller = arg => {
 };
 ACTIONS['save-store'] = () => { USERS[ME].shop = $('#st-n').value || USERS[ME].shop; USERS[ME].bio = $('#st-b').value; toast('店铺已更新'); };
 function ordersTable(list){ return `<table class="t"><tbody>${list.map(o => `<tr class="${o.st === 'refund' ? 'dim' : ''}"><td>${av(USERS[o.buyer] ? o.buyer : 'x','sm').replace('AZ', esc((o.buyer[0] || '?').toUpperCase()))}</td><td style="font-weight:600">雨夜磁带 Lo-Fi 采样包</td><td class="mut2">@${esc(USERS[o.buyer]?.name || o.buyer)}</td><td>${o.pay}</td><td class="r n">${yuan2(o.amt)}</td><td class="mut2 n">${o.time}</td></tr>`).join('')}</tbody></table>`; }
-ACTIONS.stab = b => go('seller-' + b.dataset.v);
+/* 工作室页签是页内切换：原地替换网址（不新增返回记录）、不翻页、不跳回顶部 */
+ACTIONS.stab = b => { const h = '#seller-' + b.dataset.v; if (curH() === h) return; NAVX.inpage = true; navReplace(h); };
 
 /* 上架：一页填完，右侧实时看到买家视角 */
 const GROUP_CATS = {sound:['sample','preset','max','pd'], visual:['visual','td','max']};
@@ -4768,6 +4770,7 @@ const isMob = () => matchMedia('(max-width:760px)').matches;
 const isOverlay = h => /^#?(post|v)-/.test(h || '');
 function depthOf(h){ let d = 0, x = h; while ((x = parentOf(x.startsWith('#') ? x : '#' + x)) && d < 6) d++; return d; }
 function navDir(from, to){
+  if (NAVX.inpage) return null;   // 页内页签切换：不播放翻页动画
   if (!from || CUR.post || RL.on || isOverlay(to) || isOverlay(from)) return null;
   const a = depthOf(from), b = depthOf(to);
   if (b > a) return 'push'; if (b < a) return 'pop';
