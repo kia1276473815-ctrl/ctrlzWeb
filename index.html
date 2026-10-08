@@ -2266,6 +2266,131 @@ html.rm .fx-em *{animation:none}
 
 /* CONCRETE 海报：被波纹推动的标题字母 */
 .bn-txt h2 .fx-wl{display:inline-block}
+
+/* ===================== 管理后台 ===================== */
+.ad-ph{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ad-who{display:flex;align-items:center;gap:8px}
+.ad-sel{height:36px;width:auto;max-width:100%;padding:0 32px 0 12px;font-size:13.5px;font-weight:600;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a8a92' stroke-width='2.4'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center/14px;-webkit-appearance:none;appearance:none;box-shadow:inset 0 0 0 1px var(--rule);cursor:pointer}
+.ad-sel:disabled{opacity:.6;cursor:default}
+.ad-dash .snav{gap:2px}
+.ad-dash .snav .ad-g{font:700 11px/1 var(--f-b);letter-spacing:.08em;color:var(--ink-3);padding:14px 14px 6px}
+.ad-dash .snav .ad-g:first-child{padding-top:2px}
+.ad-h{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin:6px 0 14px}
+.ad-h + .ad-h,.box + .ad-h,.ad-list + .ad-h{margin-top:32px}
+.ad-h h2{font:900 22px/1.15 var(--f-b)}
+.ad-h p{font-size:13.5px;color:var(--ink-3);margin-top:4px;max-width:60ch}
+.ad-hr{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ad-q{position:relative;display:flex;align-items:center;min-width:0}
+.ad-q svg{position:absolute;left:12px;width:16px;height:16px;color:var(--ink-3);pointer-events:none}
+.ad-q .inp{height:36px;padding-left:36px;width:clamp(160px,26vw,260px);background:var(--card);box-shadow:inset 0 0 0 1px var(--rule);font-size:13.5px}
+.ad-bar2{display:flex;gap:8px;flex-wrap:wrap}
+.ad-seg{background:var(--card);box-shadow:inset 0 0 0 1px var(--rule);max-width:100%;overflow-x:auto;scrollbar-width:none}
+.ad-seg button{flex:none}
+.ad-st{text-transform:none;letter-spacing:0;font-weight:700}
+.ad-u{display:flex;align-items:center;gap:10px;min-width:0}
+.ad-u > span:last-child{display:flex;flex-direction:column;min-width:0}
+.ad-u b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:32ch}
+.ad-u i{font-style:normal;font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:36ch}
+.ad-u.big{gap:12px} .ad-u.big b{font-size:18px}
+.ad-th{width:36px;height:36px;border-radius:8px;object-fit:cover;flex:none;font-size:14px}
+.ad-list{display:flex;flex-direction:column;gap:10px}
+.ad-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:16px 18px;border-radius:18px;background:var(--card)}
+.ad-row.dim{opacity:.55}
+.ad-rm{display:flex;flex-direction:column;gap:4px;min-width:0}
+.ad-rm b{font-size:15px;line-height:1.35}
+.ad-rm .mut{font-size:13px;line-height:1.5} .ad-rm .mut2{font-size:12.5px}
+.ad-ra{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.ad-click{cursor:pointer} .ad-click:hover td{background:rgba(20,20,24,.03)}
+.t td,.t th{white-space:nowrap}
+.ad-todo{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,120px),1fr));gap:8px;margin-top:12px}
+.ad-todo button{display:flex;align-items:baseline;gap:8px;padding:14px 16px;border-radius:16px;background:var(--card);text-align:left;color:var(--ink-3)}
+.ad-todo button.on{color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.ad-todo b{font:900 24px/1 var(--f-x);font-stretch:115%} .ad-todo span{font-size:13px;font-weight:600}
+.ad-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
+.ad-grid2 .box{margin-top:14px}
+/* 看板图表：单一序列，一个颜色；柱子贴着基线、顶端 4px 圆角、相邻柱子间留 2px；悬停显示数值 */
+.ad-bars{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:2px;align-items:end;height:180px;padding:8px 18px 0;position:relative}
+.ad-bar{position:relative;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;cursor:default}
+.ad-bar i{width:100%;max-width:22px;background:var(--blue);border-radius:4px 4px 0 0;min-height:2px}
+.ad-bar span{font:600 10.5px/1 var(--f-b);color:var(--ink-3);padding:6px 0 10px}
+.ad-bars::after{content:"";position:absolute;left:18px;right:18px;bottom:26px;height:1px;background:var(--rule)}
+[data-tip]{position:relative}
+[data-tip]:hover::before{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:nowrap;padding:6px 9px;border-radius:8px;background:var(--ink);color:var(--paper);font:600 12px/1 var(--f-b);z-index:5;pointer-events:none}
+.ad-bar[data-tip]:hover::before{bottom:auto;top:-6px}
+.ad-bar:hover i{background:color-mix(in srgb,var(--blue) 80%,var(--ink))}
+.ad-dt{padding:4px 18px 16px;font-size:12.5px;color:var(--ink-3)} .ad-dt summary{cursor:pointer;width:max-content}
+.ad-dt .t td{padding:6px 10px}
+.ad-rank{display:flex;flex-direction:column;gap:2px;padding:0 18px 18px}
+.ad-rk{display:grid;grid-template-columns:18px minmax(0,1.2fr) minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;font-size:13.5px}
+.ad-rk .i{font:800 12px/1 var(--f-b);color:var(--ink-3)} .ad-rk .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.ad-rk .b{height:8px;border-radius:4px;background:var(--rule);overflow:hidden} .ad-rk .b i{display:block;height:100%;background:var(--blue);border-radius:4px}
+.ad-rk .v{font-size:12.5px;font-weight:700}
+.ad-rk[data-tip]:hover::before{bottom:auto;top:-28px}
+.ad-next{display:flex;gap:8px;margin-top:12px;overflow-x:auto;scrollbar-width:none}
+.ad-next > div{display:flex;gap:10px;align-items:center;padding:8px 14px 8px 8px;border-radius:999px;background:var(--card);flex:none}
+.ad-next img{width:32px;height:32px;border-radius:50%} .ad-next span{font-size:13px;font-weight:600}
+/* 详情面板 */
+.ad-lab{display:block;font:700 12px/1 var(--f-b);color:var(--ink-3);letter-spacing:.04em;margin:6px 0 -6px}
+.ad-acts{display:flex;gap:6px;flex-wrap:wrap}
+.ad-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,84px),1fr));gap:8px}
+.ad-kv span{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:12px;background:var(--paper);font-size:12px;color:var(--ink-3)}
+.ad-kv b{font:800 16px/1.2 var(--f-b);color:var(--ink);overflow-wrap:anywhere}
+.ad-kv.col{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))} .ad-kv.col b{font-size:14px}
+.ad-mini{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink-2);max-height:180px;overflow:auto}
+.ad-warn{padding:10px 12px;border-radius:12px;background:var(--orange-t);font-size:13.5px;font-weight:600}
+.ad-warn.y{background:var(--yellow-t)}
+.ad-us{display:flex;flex-direction:column;gap:14px}
+.ad-us .ad-u .tag{margin-left:auto}
+.ad-us .ad-u.big{padding-right:48px}   /* 给右上角关闭按钮让位 */
+.ad-rs{display:flex;flex-direction:column;gap:8px}
+.ad-rs .pill{justify-content:flex-start;height:auto;min-height:44px;padding:10px 16px;text-align:left;white-space:normal;line-height:1.4}
+.ad-rs .pill.on{box-shadow:inset 0 0 0 2px var(--ink)}
+.ad-log{display:flex;flex-direction:column;gap:8px;max-height:min(40vh,320px);overflow:auto;padding:12px;border-radius:14px;background:var(--paper)}
+.ad-log div{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;font-size:13px} .ad-log time{color:var(--ink-3);font-variant-numeric:tabular-nums}
+.ad-log .sys span{font-weight:600}
+.ad-part input{width:100%}
+.ad-form{padding:18px;display:flex;flex-direction:column;gap:12px}
+.ad-f2{display:flex;flex-direction:column;gap:12px}
+.ad-chips{display:flex;gap:6px;flex-wrap:wrap}
+.ad-chips .tag{height:30px;padding:0 6px 0 12px;font-size:13px;text-transform:none;letter-spacing:0;color:var(--on)}
+.ad-chips .tag button{width:22px;height:22px;border-radius:50%;font-size:15px;line-height:1;color:inherit}
+.ad-chips .tag button:hover{background:rgba(20,20,24,.12)}
+.ad-chips .chip.on{background:var(--ink);color:var(--paper);box-shadow:none}
+.ad-inl{display:flex;gap:8px;align-items:center} .ad-inl .inp{flex:1;min-width:0}
+.ad-cfg{display:flex;flex-direction:column}
+.ad-cf{display:grid;grid-template-columns:auto 64px repeat(4,minmax(0,1fr)) auto;gap:8px;align-items:center;padding:10px 14px;border-top:1px solid var(--rule)}
+.ad-cf:first-child{border-top:0}
+.ad-cf.c2{grid-template-columns:auto 120px minmax(0,1fr) auto}
+.ad-cf .inp{height:38px;font-size:13.5px;background:var(--paper)}
+.ad-cfk{font:700 12px/1 var(--f-b);color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis}
+.ad-ud{display:flex;gap:4px} .ad-ud .pill{width:34px;padding:0} .ad-ud .pill:disabled{opacity:.35}
+.ad-perm td,.ad-perm th{text-align:center} .ad-perm td:first-child,.ad-perm th:first-child{text-align:left}
+.ad-params .ad-pr{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;font-weight:600}
+.ad-params .ad-inl{width:150px} .ad-params .ad-inl i{font-style:normal;color:var(--ink-3);font-size:13px}
+@media (max-width:1020px){ .ad-dash .snav .ad-g{display:none} }   /* 页签横排时不要分组标题（和 .dash 改单列的断点一致） */
+@media (max-width:760px){
+  .ad-row{grid-template-columns:minmax(0,1fr)}
+  .ad-ra{justify-content:flex-start}
+  .ad-h{align-items:stretch} .ad-hr{width:100%} .ad-q{flex:1} .ad-q .inp{width:100%}
+  .ad-cf{grid-template-columns:auto minmax(0,1fr) auto;grid-auto-rows:auto}
+  .ad-cf .inp{grid-column:1 / -1}
+  .ad-cf .ad-ud{grid-column:3;grid-row:1}
+  .ad-cf.c2 .inp{grid-column:1 / -1}
+  .ad-u b{max-width:20ch} .ad-u i{max-width:24ch}
+  .ad-params .ad-pr{flex-direction:column;align-items:flex-start} .ad-params .ad-inl{width:100%}
+}
+/* 用户端：公告条 / 受限提示 / 官方通知 */
+.ann{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--yellow-t);margin:0 0 12px}
+.ann.warn{background:var(--orange-t)}
+.ann-i{width:32px;height:32px;border-radius:10px;background:var(--yellow);color:#141418;display:grid;place-items:center;flex:none}
+.ann.warn .ann-i{background:var(--orange)}
+.ann-i svg{width:18px;height:18px}
+.ann-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1} .ann-t b{font-size:14px} .ann-t span{font-size:12.5px;color:var(--ink-2)}
+.ann-x{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none;color:var(--ink-2)} .ann-x svg{width:16px;height:16px}
+.sys-av{background:var(--ink);color:var(--paper);font:900 16px/1 var(--f-x)}
+.sysbox{display:flex;flex-direction:column;gap:8px;max-height:min(50vh,420px);overflow:auto}
+.sysm{padding:12px 14px;border-radius:14px;background:var(--paper)} .sysm.new{box-shadow:inset 3px 0 0 var(--pink)}
+.sysm b{font-size:14px} .sysm p{font-size:13.5px;line-height:1.6;margin-top:4px;color:var(--ink-2)} .sysm time{display:block;font-size:11.5px;color:var(--ink-3);margin-top:6px}
 </style>
 
 </head>
@@ -2467,7 +2592,8 @@ const POSTS = [
   {id:'s13', type:'image', author:'lowf', title:'做贝斯音色的 5 个习惯', ex:'先单声道，再定包络，最后才碰失真。Sub 永远单独一层。', tags:['音色设计','教程'], likes:980, favs:860, cmts:1, time:'1 周前', attach:['p4'], cover:'rings', h:1},
   {id:'s14', type:'question', author:'ash', title:'带 alpha 的 ProRes 4444 循环，网页预览怎么做比较好？', ex:'想在商品页展示透明背景的效果，浏览器好像不支持 ProRes。', tags:['视觉','提问'], likes:24, favs:9, cmts:1, time:'1 周前', attach:[], solved:false, qn:'009'}
 ];
-const POST = id => POSTS.find(p => p.id === id) || (id === 'draft' ? UI.cpDraft : undefined);
+const TAKEN_P = {};   // 被后台下架的帖子（用户端看不到，管理员还能打开）
+const POST = id => POSTS.find(p => p.id === id) || (id === 'draft' ? UI.cpDraft : undefined) || (STATE.role === 'admin' ? TAKEN_P[id] : undefined);
 
 const BODY = {
   s1:['这首是周末在家用「雨夜磁带」做的，鼓全部来自 Drums 文件夹，和弦用的是 Keys_Loops 里的 Am7–Fmaj7 循环，换成了 Rhodes 音色。','混音时我只在总线上挂了一个磁带饱和，没有做太多处理。包里自带的底噪已经足够有氛围了。','有人问 BPM：78。所有循环都是这个速度，拉进工程就能对齐。'],
@@ -2545,7 +2671,7 @@ const STATE = {
 
 /* 卖家后台：rin.wav 的店 */
 const FEE = {'微信支付':0.006, '支付宝':0.006, '银行卡':0.010}; // ⚠️ 示例费率，需按实际支付渠道核实
-const PLAT = .03;   // 平台抽成：商品售卖 3%（合作订单的服务费另见 CO_FEE）
+let PLAT = .03;     // 平台抽成（后台「平台参数」可改，见 applyParams）：商品售卖 3%（合作订单的服务费另见 CO_FEE）
 const SELLER_PRODUCTS = [
   {pid:'p2', st:'已上架', views:5210, sales:342, conv:'6.6%'},
   {title:'城市噪声 CITY NOISE', cat:'sample', st:'审核中', views:0, sales:0, conv:'—', cover:'topo', note:'提交于 10-04 · 预计 1–2 个工作日'},
@@ -2575,10 +2701,11 @@ const REVIEW = [
   {id:'r3', kind:'帖子', title:'Ableton Link 多机同步踩坑记录', who:'merc', cat:'图文', time:'10-05 18:02', flags:['外链 2 个'], cover:'grid'},
   {id:'r4', kind:'商品', title:'Kernel 噪声 .tox', who:'merc', cat:'TD 组件', time:'10-06 08:47', flags:['未标注 TD 版本'], cover:'particles', warn:true}
 ];
-const REPORTS = [
-  {id:'rp1', target:'帖子「免费分享 Serum 全套预设」', reason:'疑似分享盗版资源', who:'lowf', time:'10-05', st:'待处理', lv:'r'},
-  {id:'rp2', target:'商品「Lo-Fi 鼓组 VOL.3」', reason:'采样疑似来自其他商业采样包', who:'nova', time:'10-04', st:'待处理', lv:'o'},
-  {id:'rp3', target:'评论 @sora_99', reason:'广告引流', who:'mio', time:'10-03', st:'已处理 · 删除', lv:''}
+const REPORTS = [   // kind: post / prod / cmt / user；ref 指向真实对象
+  {id:'rp1', kind:'post', ref:'s19', reason:'疑似搬运别人的作品', who:'lowf', time:'10-05', st:'待处理'},
+  {id:'rp2', kind:'prod', ref:'p8', reason:'素材疑似来自其他商业素材包', who:'nova', time:'10-04', st:'待处理'},
+  {id:'rp3', kind:'user', ref:'k_tape', reason:'私信里反复发引流链接', who:'ash', time:'10-04', st:'待处理'},
+  {id:'rp4', kind:'cmt', ref:'s2', au:'mio', text:'求问这个是用的店里那个组件吗？', key:'', reason:'广告引流', who:'rin', time:'10-03', st:'已处理 · 不成立'}
 ];
 const REFUNDS = [
   {no:'CZ20260915-0346', item:'雨夜磁带 Lo-Fi 采样包', amt:45, buyer:'阿芥', reason:'重复购买', dl:'未下载', st:'已退款'},
@@ -2646,7 +2773,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>'
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 const pad2 = n => String(n).padStart(2,'0');
 const yuan = n => n === 0 ? '免费' : '¥' + n;
-const yuan2 = n => '¥' + n.toFixed(2);
+const yuan2 = n => '¥' + n.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2});
 const IS_MOBILE = matchMedia('(max-width:760px)').matches || /Mobi|Android/i.test(navigator.userAgent);
 function rng(seed){ let a = seed >>> 0 || 1; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function hash(s){ let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -2654,6 +2781,60 @@ const store = {
   get(k, d){ try { const v = localStorage.getItem('ctrlz2.' + k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
   set(k, v){ try { localStorage.setItem('ctrlz2.' + k, JSON.stringify(v)); } catch(e){} }
 };
+
+/* ================= 管理后台数据（ADM） =================
+   原型阶段：后台的所有状态存在浏览器本地（store 'adm'）。接后端时，下面每个「adm 开头的操作」换成对应接口即可，页面不用改。
+   员工角色（RBAC）：super 超级管理员 / mod 内容审核 / cs 客服 / fin 财务 / ops 运营；页签按角色可见，每个操作都写进操作日志 */
+const ADM_ROLES = {super:['超级管理员', 'ink'], mod:['内容审核', 'pink'], cs:['客服', 'blue'], fin:['财务', 'green'], ops:['运营', 'yellow']};
+const ADM_BUYERS = ['k_tape', 'yuu.td', '阿芥', 'lune', 'sora_99', 'pixel_x', 'ohm', '晚风', 'tide.wav'];   // 只买东西的普通用户（原型里没有完整资料）
+const ADM = Object.assign({
+  me:'az',
+  staff:[{id:'az', name:'阿Z', role:'super', on:true}, {id:'xm', name:'小满', role:'mod', on:true}, {id:'aq', name:'阿青', role:'cs', on:true}, {id:'lz', name:'老周', role:'fin', on:true}, {id:'tt', name:'糖糖', role:'ops', on:true}],
+  acct:{},                                   // 用户处置：uid → {ban:{until, reason}, mute:{until, reason}, warns:[{ts, reason}], verified}
+  taken:{post:{}, prod:{}, cmt:{}},          // 下架记录：id → {reason, ts, by}
+  words:{block:['加微信', '私下交易', '代开发票', '盗版'], review:['破解', '免费分享', '外挂', '刷单']},
+  ann:[{id:'n1', title:'国庆期间结算顺延', body:'10 月 1–7 日产生的结算顺延到 10 月 9 日发放。', aud:'creators', on:true, ts:NOW0 - 6*24*H}],
+  inbox:{},                                  // 官方通知 / 站内信：uid → [{id, title, text, ts, read}]
+  slides:null, cats:null,                    // 海报 / 分类配置（null = 用默认）
+  payouts:[],                                // 结算单
+  lst:{},                                    // 管理员改过的订单状态：订单号 → 状态
+  apps:[
+    {id:'ap1', name:'晚风 Evening', real:'林*', idno:'3301**********2017', phone:'138****5521', cats:['preset'], link:'space.bilibili.com/3546…', note:'做了 3 年 Serum / Vital 预设，想卖一套氛围 Pad。', ts:NOW0 - 20*H, st:'待审核'},
+    {id:'ap2', name:'tide.wav', real:'周*', idno:'4403**********0611', phone:'186****0912', cats:['sample', 'visual'], link:'xiaohongshu.com/user/5f2…', note:'海边实录采样 + 胶片扫描素材。', ts:NOW0 - 46*H, st:'待审核'}
+  ],
+  audit:[],
+  params:{plat:.03, coFee:.05, coRev:2, coAuto:7}
+}, store.get('adm', {}));
+const admSave = () => store.set('adm', ADM);
+PLAT = ADM.params.plat;
+REPORTS.forEach(r => { if (r.kind === 'cmt' && !r.key) r.key = r.ref + ':' + hash(r.au + '|' + r.text); });
+// 待审核 / 举报 / 退款 / 邀请码队列：第一次用种子数据，之后用本地保存的
+[['review', REVIEW], ['reports', REPORTS], ['refunds', REFUNDS], ['invites', INVITES]].forEach(([k, arr]) => { if (Array.isArray(ADM[k])) arr.splice(0, arr.length, ...ADM[k]); ADM[k] = arr; });
+// 被下架的帖子从 POSTS 里拿出来：用户端完全看不到，管理员还能打开查看
+Object.keys(ADM.taken.post).forEach(id => { const i = POSTS.findIndex(p => p.id === id); if (i >= 0) TAKEN_P[id] = POSTS.splice(i, 1)[0]; });
+/* 评论：按「帖子 + 作者 + 内容」认一条（原型里评论没有 id）；被下架的评论在所有地方都不显示 */
+const cmtKey = (pid, c) => pid + ':' + hash(c.u + '|' + c.t);
+const cmtsOf = pid => (COMMENTS[pid] || COMMENTS._default).concat(UI.newCmts[pid] || []).filter(c => !ADM.taken.cmt[cmtKey(pid, c)]);
+/* 账号状态 */
+const acctOf = uid => ADM.acct[uid] ||= {warns:[]};
+const live = x => x && (x.until === 0 || x.until > Date.now()) ? x : null;
+const banOf = uid => live(ADM.acct[uid]?.ban), muteOf = uid => live(ADM.acct[uid]?.mute);
+const fmtDay = ts => { const d = new Date(ts); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; };
+const fmtDT = ts => { const d = new Date(ts); return `${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+/* 用户端：被封禁 / 禁言时不能发帖、评论、私信、上架 */
+function canSpeak(){
+  if (STATE.role !== 'user') return true;
+  const b = banOf(ME), m = muteOf(ME);
+  if (b){ toast(`账号已被封禁${b.until ? '至 ' + fmtDay(b.until) : ''}：${esc(b.reason)}`, 'orange', 'x'); return false; }
+  if (m){ toast(`你已被禁言至 ${fmtDay(m.until)}：${esc(m.reason)}`, 'orange', 'x'); return false; }
+  return true;
+}
+/* 敏感词：block = 直接拦下；review = 能发，但进待审核复查 */
+function censor(text){ const t = String(text || '').toLowerCase(); for (const lv of ['block', 'review']) for (const w of ADM.words[lv]) if (w && t.includes(w.toLowerCase())) return {lv, w}; return null; }
+function speakOk(text){ if (!canSpeak()) return false; const c = censor(text); if (c && c.lv === 'block'){ toast(`包含违规词「${esc(c.w)}」，改一下再发`, 'orange', 'x'); return false; } return c || true; }
+/* 官方通知 / 站内信（私信列表最上面的「CTRL Z 官方」） */
+function notify(uid, title, text){ (ADM.inbox[uid] ||= []).unshift({id:'m' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title, text, ts:Date.now(), read:false}); admSave(); if (uid === ME && typeof msgBadge === 'function') msgBadge(); }
+const inboxUnread = () => (ADM.inbox[ME] || []).filter(m => !m.read).length;
 const IC = {
   readAll:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 13l4.5 4.5L13 10M10 16l1.5 1.5L22 7"/></svg>',
   moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg>',
@@ -4804,7 +4985,7 @@ const catOf = p => p.attach[0] ? P(p.attach[0]).cat : null;
 const isSolved = p => STATE.solved[p.id] ?? p.solved;
 const likes = p => p.likes + (STATE.liked.has(p.id) ? 1 : 0);
 function postCls(p){ if (p.type === 'question') return isSolved(p) ? 'c-green' : 'c-yellow'; const c = catOf(p); return 'c-' + (c ? CATS[c].c : USERS[p.author].c); }
-const onSale = p => p && (p.seller !== ME || STATE.seller);
+const onSale = p => p && !ADM.taken.prod[p.id] && (p.seller !== ME || STATE.seller);
 const isShop = uid => uid === ME ? STATE.seller : !!USERS[uid]?.shop;
 function attachChip(pid){ const pr = P(pid); if (!onSale(pr)) return ''; return `<a class="att c-${CATS[pr.cat].c}" data-go="item-${pr.id}"><span class="dot"></span><span class="n">${esc(pr.title)}</span><b>${yuan(pr.price)}</b></a>`; }
 function likeBtn(p){ const on = STATE.liked.has(p.id); return `<button class="lk ${on ? 'on' : ''}" data-act="like" data-id="${p.id}" aria-label="喜欢">${on ? IC.heartF : IC.heart}<span>${likes(p)}</span></button>`; }
@@ -5464,7 +5645,7 @@ function renderPost(id, fresh){
   PCLEAN.forEach(f => { try { f(); } catch(e){} }); PCLEAN = [];
   const keep = !fresh && postScroller() ? postScroller().scrollTop : 0; // 点赞 / 评论 / 关注后重绘不跳回顶部
   const p = POST(id), u = USERS[p.author], me = curUser(), solved = isSolved(p), isAuthor = me === p.author, cls = postCls(p);
-  const cm = (COMMENTS[p.id] || COMMENTS._default).concat(UI.newCmts[p.id] || []);
+  const cm = cmtsOf(p.id);
   let media = '';
   if (p.type === 'image' && p.tcover) media = textCover(p, 'post');
   else if (p.type === 'image' && p.img) media = `<img src="${p.img}" alt="">${p.imgs && p.imgs.length > 1 ? `<span class="tag k" style="position:absolute;right:16px;bottom:16px;z-index:2">共 ${p.imgs.length} 张</span>` : ''}`;
@@ -5555,7 +5736,7 @@ ROUTES.shop = arg => {
       <span class="bn-cnt"></span><button class="bn-a" data-act="bn-prev" aria-label="上一张">${IC.arrow}</button><button class="bn-a" data-act="bn-next" aria-label="下一张">${IC.arrow}</button></div>
   </section>
   <div class="wrap" style="padding-top:clamp(18px,3vw,32px)">
-  <div class="cats">${tile('all', null, 'ALL', '全部资源', PRODUCTS.filter(onSale).length)}${Object.entries(CATS).map(([k,c]) => tile(k, c.c, c.t || c.k, c.cn, PRODUCTS.filter(p => p.cat === k && onSale(p)).length)).join('')}</div>
+  <div class="cats">${tile('all', null, 'ALL', '全部资源', PRODUCTS.filter(onSale).length)}${Object.entries(CATS).filter(([, c]) => !c.off).map(([k,c]) => tile(k, c.c, c.t || c.k, c.cn, PRODUCTS.filter(p => p.cat === k && onSale(p)).length)).join('')}</div>
   ${CATS[s.cat]?.subs ? (() => { const C = CATS[s.cat], n = sb => PRODUCTS.filter(p => p.cat === s.cat && onSale(p) && (sb === 'all' || p.sub === sb)).length, cur = s.sub || 'all';
     return `<div class="subz c-${C.c}" role="tablist" aria-label="${C.k} 子专区">${[['all', '全部', '', ''], ...Object.entries(C.subs).map(([k, v]) => [k, v[0], v[1], k === 'aud' ? IC.wave : IC.img])].map(([k, l, sm, ic]) => `<button role="tab" aria-selected="${cur === k}" class="${cur === k ? 'on' : ''}" data-act="sf" data-k="sub" data-v="${k}">${ic}<span><b>${l}</b>${sm ? `<small>${sm}</small>` : ''}</span><i>${n(k)}</i></button>`).join('')}</div>`; })() : ''}
   <div class="sticky-f" style="margin-top:14px"><div class="rail">
@@ -5960,7 +6141,7 @@ ACTIONS['up-vlab'] = () => visLab({tpl:UI.up.look.tpl, pal:UI.up.look.pal, onPic
 ACTIONS['up-look'] = b => { UI.up.look[b.dataset.k] = b.dataset.v; rerender(); };
 ACTIONS['up-set'] = b => { UI.up[b.dataset.k] = b.dataset.v; if (b.dataset.k === 'cat') UI.up.tpl = upTpl(b.dataset.v, UI.up.group || (GROUP_CATS.visual.includes(b.dataset.v) && !GROUP_CATS.sound.includes(b.dataset.v) ? 'visual' : 'sound')); rerender(); };
 ACTIONS['up-file'] = () => { if (UI.up.file) return; const d = $('[data-act="up-file"]'); d.innerHTML = `<div class="ring-p" id="upR" style="--p:0;width:56px;height:56px"></div><b>上传中…</b>`; const t0 = performance.now(); const s = n => { const k = Math.min(1, (n - t0)/1100); const r = $('#upR'); if (!r) return; r.style.setProperty('--p', k*100); if (k < 1) requestAnimationFrame(s); else { UI.up.file = true; rerender(); } }; requestAnimationFrame(s); };
-ACTIONS['up-submit'] = () => { SELLER_PRODUCTS.unshift({title:UI.up.title + ' ' + UI.up.en, cat:UI.up.cat, sub:CATS[UI.up.cat].subs ? (UI.up.group === 'visual' ? 'vis' : 'aud') : undefined, st:'审核中', views:0, sales:0, conv:'—', cover:{...UI.up.look, txt:UI.up.en}, note:'刚刚提交 · 通常 1–2 个工作日'}); UI.up.file = false; toast('已提交，审核通过后自动上架', 'yellow'); navUp('seller-products'); };
+ACTIONS['up-submit'] = () => { if (!canSpeak()) return; SELLER_PRODUCTS.unshift({title:UI.up.title + ' ' + UI.up.en, cat:UI.up.cat, sub:CATS[UI.up.cat].subs ? (UI.up.group === 'visual' ? 'vis' : 'aud') : undefined, st:'审核中', views:0, sales:0, conv:'—', cover:{...UI.up.look, txt:UI.up.en}, note:'刚刚提交 · 通常 1–2 个工作日'}); UI.up.file = false; toast('已提交，审核通过后自动上架', 'yellow'); navUp('seller-products'); };
 document.addEventListener('input', e => { const k = e.target.dataset?.up; if (!k) return; UI.up[k] = k === 'price' ? (parseFloat(e.target.value) || 0) : e.target.value; const m = {title:'pv-t', en:'pv-en'}; if (m[k]) $('#' + m[k]).textContent = e.target.value; if (k === 'price'){ $('#pv-p').textContent = '¥' + UI.up.price; $('#up-est').textContent = `每单到手约 ¥${(UI.up.price*(1 - PLAT - .01)).toFixed(2)}（扣 ${PLAT*100}% 平台费和支付手续费）`; } });
 
 function onboarding(){
@@ -5970,8 +6151,8 @@ function onboarding(){
     <div class="kpis k3" style="margin-top:28px"><div class="kpi cc c-pink grain"><b style="position:relative;z-index:2">${PLAT*100}%</b><span class="d" style="color:var(--ink);position:relative;z-index:2">平台只收这么多</span></div><div class="kpi cc c-blue grain"><b style="position:relative;z-index:2;color:var(--paper)">月结</b><span class="d" style="color:var(--paper);position:relative;z-index:2">每月结算一次</span></div><div class="kpi cc c-yellow grain"><b style="position:relative;z-index:2">0.6–1%</b><span class="d" style="color:var(--ink);position:relative;z-index:2">支付手续费由卖家承担</span></div></div></div></div>`;
 }
 const inviteForm = next => `<form class="invf" data-next="${next}" onsubmit="return false"><input class="inp x" id="inv" value="CTRLZ-T4V-01M" aria-label="邀请码" autocapitalize="characters" spellcheck="false"><button class="pill lg" data-act="inv-check" aria-label="开通">${IC.arrow}</button></form><p class="mut2" style="font-size:12px;margin-top:8px">开通即同意卖家协议</p>`;
-function inviteSheet(next){ sheet(`<h3>上架作品需要邀请码</h3><p class="mut" style="font-size:14px;margin-top:-6px">填一次就好，开通后可以直接上架。</p>${inviteForm(next)}`, d => { setTimeout(() => { const i = $('#inv', d); i && i.select(); }, 80); }); }
-ACTIONS.sell = () => { if (needLogin()) return; if (STATE.role === 'admin'){ toast('管理员身份不能开店', 'orange', 'x'); return; } closeSheet(); if (STATE.seller){ UI.sellerTab = 'upload'; go('seller-upload'); } else inviteSheet('seller-upload'); };
+function inviteSheet(next){ sheet(`<h3>上架作品需要邀请码</h3><p class="mut" style="font-size:14px;margin-top:-6px">填一次就好，开通后可以直接上架。</p>${inviteForm(next)}<button class="pill lt" data-act="apply-open" style="align-self:flex-start">没有邀请码？申请入驻</button>`, d => { setTimeout(() => { const i = $('#inv', d); i && i.select(); }, 80); }); }
+ACTIONS.sell = () => { if (needLogin() || !canSpeak()) return; if (STATE.role === 'admin'){ toast('管理员身份不能开店', 'orange', 'x'); return; } closeSheet(); if (STATE.seller){ UI.sellerTab = 'upload'; go('seller-upload'); } else inviteSheet('seller-upload'); };
 ACTIONS['inv-check'] = b => {
   const i = $('#inv'), v = i.value.trim().toUpperCase();
   if (!v.startsWith('CTRLZ-') || v.length < 10){ i.animate([{transform:'translateX(-8px)'},{transform:'translateX(8px)'},{transform:'translateX(-4px)'},{transform:'none'}], {duration:280}); i.style.boxShadow = 'inset 0 0 0 2px var(--orange)'; setTimeout(() => i.style.boxShadow = '', 900); return; }
@@ -5983,40 +6164,435 @@ ACTIONS['inv-check'] = b => {
 ACTIONS.unseller = () => { STATE.seller = false; store.set('seller', false); toast('已撤回卖家资格', 'orange'); rerender(); };
 
 /* ================= 管理 ================= */
+/* ================= 管理后台（页面） =================
+   分组：概览 / 审核 / 用户与内容 / 交易 / 运营 / 系统。每个页签写明哪些角色能看（ADM_TABS 第 4 项），操作前再校验一次（admGuard） */
+const ADM_TABS = [
+  ['dash', '看板', '概览', ['super', 'mod', 'cs', 'fin', 'ops']],
+  ['review', '待审核', '审核', ['super', 'mod']],
+  ['avatars', '头像', '审核', ['super', 'mod']],
+  ['reports', '举报', '审核', ['super', 'mod', 'cs']],
+  ['apply', '入驻申请', '审核', ['super', 'mod']],
+  ['users', '用户', '用户与内容', ['super', 'mod', 'cs']],
+  ['content', '内容', '用户与内容', ['super', 'mod']],
+  ['orders', '订单流水', '交易', ['super', 'cs', 'fin']],
+  ['refunds', '退款', '交易', ['super', 'cs', 'fin']],
+  ['disputes', '合作纠纷', '交易', ['super', 'cs']],
+  ['payout', '结算打款', '交易', ['super', 'fin']],
+  ['notice', '公告与站内信', '运营', ['super', 'ops', 'cs']],
+  ['ops', '海报与分类', '运营', ['super', 'ops']],
+  ['words', '敏感词', '运营', ['super', 'mod']],
+  ['invites', '邀请码', '运营', ['super', 'ops']],
+  ['staff', '人员与权限', '系统', ['super']],
+  ['params', '平台参数', '系统', ['super', 'fin']],
+  ['audit', '操作日志', '系统', ['super']]
+];
+const admMe = () => ADM.staff.find(s => s.id === ADM.me && s.on) || ADM.staff.find(s => s.on) || ADM.staff[0];
+const admCan = tab => (ADM_TABS.find(t => t[0] === tab) || [, , , []])[3].includes(admMe().role);
+const admGuard = tab => { if (STATE.role === 'admin' && admCan(tab)) return true; toast('当前角色没有这个权限', 'orange', 'x'); return false; };
+function admLog(act, target, detail = ''){ const me = admMe(); ADM.audit.unshift({ts:Date.now(), by:me.name, role:me.role, act, target, detail}); ADM.audit.length = Math.min(ADM.audit.length, 600); admSave(); }
+const uname = uid => USERS[uid]?.name || uid;
+const uav = (uid, cls = 'sm') => USERS[uid] ? av(uid, cls) : `<span class="av c-${['pink','blue','yellow','orange','green','violet'][hash(uid) % 6]} ${cls}">${esc(String(uid).slice(0, 2).toUpperCase())}</span>`;
+const adH = (title, sub, right = '') => `<div class="ad-h"><div class="ad-ht"><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div>${right ? `<div class="ad-hr">${right}</div>` : ''}</div>`;
+const adSeg = (k, opts, cur) => `<div class="seg ad-seg">${opts.map(([v, l]) => `<button class="${cur === v ? 'on' : ''}" data-act="adf" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div>`;
+const adQ = (k, ph) => `<label class="ad-q">${IC.search}<input class="inp" data-adq="${k}" value="${esc(UI.adq?.[k] || '')}" placeholder="${ph}" autocomplete="off"></label>`;
+const adEmpty = (stamp, txt) => `<div class="empty"><span class="stamp big pop">${stamp}<small>${txt}</small></span></div>`;
+const stTag = (txt, c) => `<span class="tag ${c ? 'c-' + c : ''} ad-st">${txt}</span>`;
+const fq = k => (UI.adq?.[k] || '').trim().toLowerCase();
+function csvDownload(name, rows){
+  const s = '﻿' + rows.map(r => r.map(v => { v = v == null ? '' : String(v); if (/^[=+@\t\r]|^-(?![\d.])/.test(v)) v = "'" + v;   // 防 CSV 公式注入（用户写的标题 / 理由）
+    return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(',')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([s], {type:'text/csv;charset=utf-8'})); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+/* —— 交易流水（原型）：按商品销量生成确定的示例订单 + 真实发生的购买 / 店铺订单 / 合作订单。接后端后直接换成订单表查询 —— */
+const LST = {paid:['已支付', 'green'], refund:['已退款', ''], refunding:['退款中', 'orange'], held:['托管中', 'blue'], released:['已放款', 'green'], dispute:['纠纷中', 'orange']};
+function ledger(){
+  const L = [], R = rng(20261008), DAY = 864e5, now = NOW0, ymd = ts => { const d = new Date(ts); return '' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()); };
+  PRODUCTS.forEach(pr => { if (pr.seller === 'rin' || !pr.price) return; const n = 3 + Math.floor(Math.min(9, pr.sales/220));
+    for (let i = 0; i < n; i++){ const ts = now - Math.floor(R()*44)*DAY - Math.floor(R()*DAY); const pay = ['微信支付', '支付宝', '微信支付', '支付宝', '银行卡'][Math.floor(R()*5)];
+      L.push({no:'CZ' + ymd(ts) + '-' + (1000 + Math.floor(R()*9000)), type:'prod', ref:pr.id, title:pr.title, buyer:ADM_BUYERS.concat(['mio'])[Math.floor(R()*10)], seller:pr.seller, amt:pr.price, pay, ts, st:R() < .05 ? 'refund' : 'paid'}); } });
+  SELLER_ORDERS.forEach(o => { const m = o.no.match(/CZ(\d{4})(\d\d)(\d\d)-(\d\d)(\d\d)/); L.push({no:o.no, type:'prod', ref:'p2', title:P('p2').title, buyer:o.buyer, seller:'rin', amt:o.amt, pay:o.pay, ts:m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5]).getTime() : now, st:o.st === 'refund' ? 'refund' : 'paid'}); });
+  STATE.orders.forEach(o => { const pr = P(o.pid); if (!pr || !o.price || L.some(x => x.no === o.no)) return; L.push({no:o.no, type:'prod', ref:o.pid, title:pr.title, buyer:ME, seller:pr.seller, amt:o.price, pay:o.pay, ts:Date.parse(String(o.time).replace(' ', 'T')) || now, st:o.st === '已退款' ? 'refund' : 'paid'}); });
+  REFUNDS.forEach(r => { if (L.some(x => x.no === r.no)) return; const pr = PRODUCTS.find(p => p.title === r.item); L.push({no:r.no, type:'prod', ref:pr?.id, title:r.item, buyer:r.buyer, seller:pr?.seller || 'ash', amt:r.amt, pay:'微信支付', ts:now - 6*DAY, st:r.st === '已退款' ? 'refund' : 'refunding'}); });
+  CO.orders.forEach(o => { if (o.price == null || !o.paidAt) return;
+    L.push({no:'CO' + ymd(o.paidAt) + '-' + o.id.toUpperCase(), type:'co', ref:o.id, title:o.title, buyer:o.from, seller:o.to, amt:o.price, pay:o.pay || '微信支付', ts:o.paidAt,
+      st:{paid:'held', delivered:'held', revising:'held', done:'released', dispute:'dispute', refunded:'refund'}[o.st] || 'held', part:o.ruling?.refund || 0}); });
+  L.forEach(x => { if (ADM.lst[x.no]) x.st = ADM.lst[x.no]; });
+  return L.sort((a, b) => b.ts - a.ts);
+}
+const monthOf = ts => { const d = new Date(ts); return d.getFullYear() + '-' + pad2(d.getMonth() + 1); };
+/* 结算：某个月里每个卖家应得 = 商品成交 − 支付手续费 − 平台抽成 + 已放款的合作金额 − 合作服务费（部分退款的合作只算放给创作者的部分） */
+function payoutRows(month){
+  const M = {};
+  ledger().forEach(x => { if (monthOf(x.ts) !== month) return; const r = M[x.seller] ||= {seller:x.seller, n:0, gross:0, fee:0, plat:0, co:0, coFee:0};
+    if (x.type === 'prod' && x.st === 'paid'){ r.n++; r.gross += x.amt; r.fee += x.amt*(FEE[x.pay] || .006); r.plat += x.amt*PLAT; }
+    if (x.type === 'co' && x.st === 'released'){ const amt = x.amt - (x.part || 0); r.n++; r.co += amt; r.coFee += amt*CO_FEE; } });
+  return Object.values(M).map(r => ({...r, net:r.gross - r.fee - r.plat + r.co - r.coFee})).filter(r => r.n).sort((a, b) => b.net - a.net);
+}
+
+/* —— 各页签 —— */
+const ADMV = {};
+ADMV.dash = () => {
+  const L = ledger(), now = NOW0, DAY = 864e5, mon = monthOf(now), ML = L.filter(x => monthOf(x.ts) === mon);
+  const gmv = ML.filter(x => x.st !== 'refund').reduce((a, x) => a + x.amt, 0);
+  const rev = ML.reduce((a, x) => a + (x.type === 'prod' && x.st === 'paid' ? x.amt*PLAT : x.type === 'co' && x.st === 'released' ? (x.amt - (x.part || 0))*CO_FEE : 0), 0);
+  const todo = [['review', '待审核', REVIEW.length], ['avatars', '头像', AVQ.length], ['reports', '举报', REPORTS.filter(r => r.st === '待处理').length], ['apply', '入驻', ADM.apps.filter(a => a.st === '待审核').length],
+    ['refunds', '退款', REFUNDS.filter(r => r.st === '待处理').length], ['disputes', '纠纷', CO.orders.filter(o => o.st === 'dispute').length]].filter(t => admCan(t[0]));
+  // 近 14 天成交额（单一序列：一个颜色、不要图例；悬停看数值；下面附数据表）
+  const days = Array.from({length:14}, (_, i) => { const t0 = new Date(now - (13 - i)*DAY); t0.setHours(0, 0, 0, 0); const t1 = t0.getTime() + DAY; return {d:`${t0.getMonth() + 1}/${t0.getDate()}`, v:L.filter(x => x.ts >= t0.getTime() && x.ts < t1 && x.st !== 'refund').reduce((a, x) => a + x.amt, 0)}; });
+  const mx = Math.max(1, ...days.map(d => d.v));
+  const top = Object.values(L.filter(x => x.type === 'prod' && x.st === 'paid' && now - x.ts < 30*DAY).reduce((m, x) => { (m[x.ref] ||= {ref:x.ref, title:x.title, n:0, v:0}); m[x.ref].n++; m[x.ref].v += x.amt; return m; }, {})).sort((a, b) => b.v - a.v).slice(0, 5);
+  const tmx = Math.max(1, ...top.map(t => t.v));
+  return `${adH('看板', `${mon} · 数据来自订单流水（原型为示例数据）`)}
+  <div class="kpis"><div class="kpi"><span class="lab">本月成交额</span><b class="num">${yuan2(gmv)}</b><span class="d">${ML.length} 笔订单</span></div>
+    <div class="kpi"><span class="lab">平台收入</span><b class="num">${yuan2(rev)}</b><span class="d">商品 ${Math.round(PLAT*100)}% · 合作 ${Math.round(CO_FEE*100)}%</span></div>
+    <div class="kpi"><span class="lab">用户 / 创作者</span><b class="num">${Object.keys(USERS).length + ADM_BUYERS.length} / ${Object.keys(USERS).length - 1}</b><span class="d">在售商品 ${PRODUCTS.filter(onSale).length}</span></div>
+    <div class="kpi"><span class="lab">托管中的合作款</span><b class="num">${yuan2(L.filter(x => x.st === 'held' || x.st === 'dispute').reduce((a, x) => a + x.amt, 0))}</b><span class="d">纠纷 ${CO.orders.filter(o => o.st === 'dispute').length} 单</span></div></div>
+  ${todo.length ? `<div class="ad-todo">${todo.map(([k, l, n]) => `<button data-act="atab" data-v="${k}" class="${n ? 'on' : ''}"><b class="num">${n}</b><span>${l}</span></button>`).join('')}</div>` : ''}
+  <div class="ad-grid2"><div class="box"><div class="box-h"><h3>近 14 天成交额</h3><span class="mut2" style="font-size:12.5px">不含已退款</span></div>
+    <div class="ad-bars" role="img" aria-label="近 14 天每日成交额柱状图">${days.map(d => `<div class="ad-bar" data-tip="${d.d} · ${yuan2(d.v)}"><i style="height:${Math.max(2, d.v/mx*100).toFixed(1)}%"></i><span>${d.d.split('/')[1]}</span></div>`).join('')}</div>
+    <details class="ad-dt"><summary>数据表</summary><div class="tw"><table class="t"><tbody>${days.map(d => `<tr><td>${d.d}</td><td class="r n">${yuan2(d.v)}</td></tr>`).join('')}</tbody></table></div></details></div>
+    <div class="box"><div class="box-h"><h3>近 30 天热卖</h3><span class="mut2" style="font-size:12.5px">按成交额</span></div>
+    <div class="ad-rank">${top.map((t, i) => `<div class="ad-rk" data-tip="${esc(t.title)} · ${t.n} 单 · ${yuan2(t.v)}"><span class="i">${i + 1}</span><span class="t">${esc(t.title)}</span><span class="b"><i style="width:${(t.v/tmx*100).toFixed(1)}%"></i></span><span class="v num">${yuan2(t.v)}</span></div>`).join('') || '<p class="mut" style="padding:0 18px 18px">暂无数据</p>'}</div></div></div>`;
+};
+
+/* 审核：驳回要选原因并通知本人；本人的商品状态同步到工作室 */
+const RJ_REASON = {review:['标题或素材用了别人的商标', '没写兼容版本或依赖', '试听素材不合规范', '疑似侵权', '内容含违规信息'], avatar:['不是本人或含他人肖像', '含文字 / 二维码 / 联系方式', '画面不适合公开展示'], apply:['作品不足以证明原创能力', '实名信息不一致', '暂不开放该品类']};
+ADMV.review = () => { const r = REVIEW[0];
+  if (!r) return adH('待审核', '商品、帖子上架前在这里过一遍') + adEmpty('ALL CLEAR', '审完了');
+  return `${adH('待审核', `还剩 ${REVIEW.length} 个 · 键盘 A 通过 / R 驳回`)}
+  <div class="q-card"><img src="${cover(r.cover, 5, 400, 400)}" alt=""><div class="bd"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="tag ${r.kind === '商品' ? 'c-pink' : 'k'}">${r.kind}</span><span class="mut2" style="font-size:13px">${r.cat} · ${r.time}</span></div><h3>${esc(r.title)}</h3><a data-go="user-${r.who}" style="display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer">${uav(r.who)}${esc(uname(r.who))}</a>
+    <div class="flags">${r.flags.map(f => `<span class="flag ${/^⚠|^未|敏感/.test(f) ? 'w' : ''}">${esc(f.replace('⚠ ', ''))}</span>`).join('')}</div>
+    <div class="qact"><button class="pill lg" data-act="rv-ok" style="background:var(--green);color:var(--on)">${IC.check}通过<kbd>A</kbd></button><button class="pill lg lt" data-act="rv-no">${IC.x}驳回<kbd>R</kbd></button></div></div></div>
+  ${REVIEW.length > 1 ? `<div class="ad-next">${REVIEW.slice(1).map(x => `<div><img src="${cover(x.cover, 5, 80, 80)}" alt=""><span>${esc(x.title)}</span></div>`).join('')}</div>` : ''}`;
+};
+ADMV.avatars = () => adH('头像审核', '用户上传的照片头像，通过后才对外显示') + (AVQ.length ? `<div class="avq">${AVQ.map(q => `<div class="avq-i"><img src="${q.img}" alt="待审核头像"><div style="min-width:0"><b>${esc(uname(q.uid))}</b><span>${esc(q.time)} · 上传的头像</span></div><div class="avq-a"><button class="pill sm" data-act="avq-ok" data-id="${q.id}" style="background:var(--green);color:var(--on)">${IC.check}通过</button><button class="pill sm lt" data-act="avq-no" data-id="${q.id}">${IC.x}驳回</button></div></div>`).join('')}</div>` : adEmpty('ALL CLEAR', '没有待审核的头像'));
+
+/* 举报：关联到真实对象；处理 = 驳回 / 警告 / 下架 / 封禁，并通知举报人 */
+const repTarget = r => r.kind === 'post' ? (POST(r.ref) || TAKEN_P[r.ref]) : r.kind === 'prod' ? P(r.ref) : null;
+const repAuthor = r => { const t = repTarget(r); return r.kind === 'post' ? t?.author : r.kind === 'prod' ? t?.seller : r.kind === 'cmt' ? r.au : r.ref; };
+const repLabel = r => { const t = repTarget(r); return r.kind === 'post' ? `帖子「${t?.title || r.ref}」` : r.kind === 'prod' ? `商品「${t?.title || r.ref}」` : r.kind === 'cmt' ? `评论「${r.text}」` : `用户 @${uname(r.ref)}`; };
+ADMV.reports = () => { const f = UI.adf?.rp || 'todo', list = REPORTS.filter(r => f === 'all' || (f === 'todo') === (r.st === '待处理'));
+  return `${adH('举报', '先看内容再处理；处理结果会通知举报人', adSeg('rp', [['todo', '待处理'], ['done', '已处理'], ['all', '全部']], f))}
+  <div class="ad-list">${list.map(r => { const au = repAuthor(r), open = r.st === '待处理'; return `<div class="ad-row ${open ? '' : 'dim'}"><div class="ad-rm"><b>${esc(repLabel(r))}</b>
+    <span class="mut">${esc(r.reason)} · 来自 @${esc(uname(r.who))} · ${r.time}${au ? ` · 作者 @${esc(uname(au))}` : ''}</span>${open ? '' : `<span class="mut2">${esc(r.st)}</span>`}</div>
+    <div class="ad-ra">${r.kind === 'post' || r.kind === 'prod' ? `<button class="pill sm lt" data-act="rp-view" data-id="${r.id}">查看</button>` : ''}${open ? `<button class="pill sm lt" data-act="rp-do" data-v="dismiss" data-id="${r.id}">不成立</button><button class="pill sm lt" data-act="rp-do" data-v="warn" data-id="${r.id}">警告作者</button>${r.kind !== 'user' ? `<button class="pill sm" data-act="rp-do" data-v="take" data-id="${r.id}">下架</button>` : ''}<button class="pill sm pk" data-act="rp-do" data-v="ban" data-id="${r.id}">封禁 7 天</button>` : ''}</div></div>`; }).join('') || '<div class="rnone">没有记录</div>'}</div>`;
+};
+
+/* 入驻：实名 + 作品链接，通过后自动生成邀请码并通知 */
+ADMV.apply = () => { const f = UI.adf?.ap || 'todo', list = ADM.apps.filter(a => f === 'all' || (f === 'todo') === (a.st === '待审核'));
+  return `${adH('入驻申请', '创作者开店前的资质审核；通过后自动发一个邀请码', adSeg('ap', [['todo', '待审核'], ['done', '已处理'], ['all', '全部']], f))}
+  <div class="ad-list">${list.map(a => `<div class="ad-row ${a.st === '待审核' ? '' : 'dim'}"><div class="ad-rm"><b>${esc(a.name)}${a.uid ? ` <span class="mut2">@${esc(uname(a.uid))}</span>` : ''}</b>
+    <span class="mut">实名 ${esc(a.real)} · 证件 ${esc(a.idno)} · 手机 ${esc(a.phone)}</span><span class="mut">想卖：${a.cats.map(c => esc(CATS[c]?.cn || c)).join('、')} · 作品 ${esc(a.link)}</span><span class="mut2">${esc(a.note)} · ${fmtDT(a.ts)}${a.st !== '待审核' ? ' · ' + esc(a.st) : ''}</span></div>
+    <div class="ad-ra">${a.st === '待审核' ? `<button class="pill sm lt" data-act="ap-no" data-id="${a.id}">${IC.x}驳回</button><button class="pill sm" data-act="ap-ok" data-id="${a.id}" style="background:var(--green);color:var(--on)">${IC.check}通过</button>` : ''}</div></div>`).join('') || '<div class="rnone">没有记录</div>'}</div>`;
+};
+
+/* 用户 */
+const allUids = () => [...Object.keys(USERS), ...ADM_BUYERS];
+const uState = uid => banOf(uid) ? ['封禁', 'orange'] : muteOf(uid) ? ['禁言', 'yellow'] : ['正常', 'green'];
+ADMV.users = () => { const q = fq('users'), f = UI.adf?.us || 'all', L = ledger();
+  const list = allUids().filter(uid => (!q || (uid + ' ' + uname(uid)).toLowerCase().includes(q)) && (f === 'all' || (f === 'creator' ? USERS[uid] && uid !== 'mio' : f === 'limited' ? banOf(uid) || muteOf(uid) : f === 'warned' ? (ADM.acct[uid]?.warns || []).length : true)));
+  return `${adH('用户', '查资料、交易和违规记录；禁言 / 封禁 / 警告 / 实名认证', adQ('users', '搜昵称或 ID'))}
+  <div class="ad-bar2">${adSeg('us', [['all', '全部'], ['creator', '创作者'], ['limited', '受限中'], ['warned', '被警告过']], f)}</div>
+  <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>用户</th><th>身份</th><th>状态</th><th class="r">订单</th><th class="r">违规</th><th></th></tr></thead><tbody>${list.map(uid => { const [st, c] = uState(uid), a = ADM.acct[uid] || {};
+    return `<tr><td><span class="ad-u">${uav(uid)}<span><b>${esc(uname(uid))}</b><i>@${esc(uid)}${a.verified ? ' · 已实名' : ''}</i></span></span></td><td class="mut2">${USERS[uid] ? esc(USERS[uid].role) : '普通用户'}</td><td>${stTag(st, c)}</td>
+      <td class="r n">${L.filter(x => x.buyer === uid || x.seller === uid).length}</td><td class="r n">${(a.warns || []).length}</td><td class="r"><button class="pill sm lt" data-act="us-open" data-id="${esc(uid)}">管理</button></td></tr>`; }).join('') || '<tr><td colspan="6" class="mut">没找到</td></tr>'}</tbody></table></div></div>`;
+};
+function userSheet(uid){
+  const a = acctOf(uid), L = ledger().filter(x => x.buyer === uid || x.seller === uid), [st, c] = uState(uid), b = banOf(uid), m = muteOf(uid);
+  const posts = POSTS.filter(p => p.author === uid).length + Object.values(TAKEN_P).filter(p => p.author === uid).length, prods = PRODUCTS.filter(p => p.seller === uid).length;
+  const reps = REPORTS.filter(r => repAuthor(r) === uid);
+  sheet(`<div class="ad-us"><div class="ad-u big">${uav(uid, 'md')}<span><b>${esc(uname(uid))}</b><i>@${esc(uid)} · ${USERS[uid] ? esc(USERS[uid].role) : '普通用户'}</i></span>${stTag(st, c)}</div>
+    ${b ? `<p class="ad-warn">封禁${b.until ? '至 ' + fmtDay(b.until) : '（永久）'}：${esc(b.reason)}</p>` : ''}${m ? `<p class="ad-warn y">禁言至 ${fmtDay(m.until)}：${esc(m.reason)}</p>` : ''}
+    <div class="ad-kv"><span>帖子<b>${posts}</b></span><span>商品<b>${prods}</b></span><span>订单<b>${L.length}</b></span><span>被举报<b>${reps.length}</b></span><span>警告<b>${a.warns.length}</b></span></div>
+    <label class="ad-lab">处理原因（会发给用户）</label><input class="inp" id="usWhy" placeholder="例如：多次发布引流广告" value="">
+    <div class="ad-acts"><button class="pill sm lt" data-act="us-do" data-v="warn" data-id="${esc(uid)}">警告</button><button class="pill sm lt" data-act="us-do" data-v="mute1" data-id="${esc(uid)}">禁言 1 天</button><button class="pill sm lt" data-act="us-do" data-v="mute7" data-id="${esc(uid)}">禁言 7 天</button>
+      <button class="pill sm pk" data-act="us-do" data-v="ban7" data-id="${esc(uid)}">封禁 7 天</button><button class="pill sm pk" data-act="us-do" data-v="ban0" data-id="${esc(uid)}">永久封禁</button>
+      ${b || m ? `<button class="pill sm" data-act="us-do" data-v="lift" data-id="${esc(uid)}">解除限制</button>` : ''}<button class="pill sm lt" data-act="us-do" data-v="verify" data-id="${esc(uid)}">${a.verified ? '取消实名标记' : '标记已实名'}</button>
+      <button class="pill sm lt" data-act="us-msg" data-id="${esc(uid)}">发站内信</button></div>
+    ${a.warns.length ? `<label class="ad-lab">警告记录</label><div class="ad-mini">${a.warns.map(w => `<span>${fmtDT(w.ts)} · ${esc(w.reason)}</span>`).join('')}</div>` : ''}
+    <label class="ad-lab">最近订单</label><div class="ad-mini">${L.slice(0, 6).map(x => `<span>${fmtDT(x.ts)} · ${x.buyer === uid ? '买' : '卖'} · ${esc(x.title)} · ${yuan2(x.amt)} · ${LST[x.st][0]}</span>`).join('') || '<span>没有订单</span>'}</div></div>`);
+}
+
+/* 内容：已发布的帖子 / 商品 / 评论，下架和恢复 */
+function allCmts(){ const out = []; Object.keys(COMMENTS).forEach(pid => { if (pid === '_default') return; COMMENTS[pid].forEach(c => out.push({pid, c})); }); Object.keys(UI.newCmts || {}).forEach(pid => UI.newCmts[pid].forEach(c => out.push({pid, c}))); return out; }
+ADMV.content = () => { const k = UI.adf?.ct || 'post', q = fq('content'), f = UI.adf?.cs || 'all', T = ADM.taken[k];
+  let rows = '';
+  if (k === 'post') rows = [...POSTS, ...Object.values(TAKEN_P)].filter(p => p.id !== 'draft' && (!q || (p.title + uname(p.author)).toLowerCase().includes(q)) && (f === 'all' || (f === 'off') === !!T[p.id])).map(p => `<tr><td><span class="ad-u">${miniThumb(p, 'ad-th')}<span><b>${esc(p.title)}</b><i>${esc(uname(p.author))} · ${esc(p.time || '')}</i></span></span></td><td class="r n">${p.likes || 0}</td><td>${T[p.id] ? stTag('已下架', 'orange') : stTag('在线', 'green')}</td><td class="r">${cAct('post', p.id, T)}</td></tr>`).join('');
+  if (k === 'prod') rows = PRODUCTS.filter(p => (!q || (p.title + uname(p.seller)).toLowerCase().includes(q)) && (f === 'all' || (f === 'off') === !!T[p.id])).map(p => `<tr><td><span class="ad-u"><img class="ad-th" src="${cover(p.cover, hash(p.id) % 50, 80, 80)}" alt=""><span><b>${esc(p.title)}</b><i>${esc(uname(p.seller))} · ${yuan(p.price)}</i></span></span></td><td class="r n">${p.sales}</td><td>${T[p.id] ? stTag('已下架', 'orange') : stTag('在售', 'green')}</td><td class="r">${cAct('prod', p.id, T)}</td></tr>`).join('');
+  if (k === 'cmt') rows = allCmts().filter(({pid, c}) => (!q || (c.t + uname(c.u)).toLowerCase().includes(q)) && (f === 'all' || (f === 'off') === !!T[cmtKey(pid, c)])).map(({pid, c}) => { const key = cmtKey(pid, c); return `<tr><td><span class="ad-u">${uav(c.u)}<span><b>${esc(c.t)}</b><i>${esc(uname(c.u))} · 在「${esc((POST(pid) || TAKEN_P[pid])?.title || pid)}」</i></span></span></td><td class="r n">${c.likes || 0}</td><td>${T[key] ? stTag('已删除', 'orange') : stTag('在线', 'green')}</td><td class="r">${cAct('cmt', key, T)}</td></tr>`; }).join('');
+  return `${adH('内容', '已发布的内容；下架后用户端立刻看不到，可以恢复', adQ('content', '搜标题、内容或作者'))}
+  <div class="ad-bar2">${adSeg('ct', [['post', '帖子'], ['prod', '商品'], ['cmt', '评论']], k)}${adSeg('cs', [['all', '全部'], ['on', '在线'], ['off', '已下架']], f)}</div>
+  <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>内容</th><th class="r">${k === 'prod' ? '销量' : '赞'}</th><th>状态</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="mut">没找到</td></tr>'}</tbody></table></div></div>`;
+};
+const cAct = (k, id, T) => T[id] ? `<button class="pill sm lt" data-act="ct-on" data-k="${k}" data-id="${esc(id)}" title="${esc(T[id].reason)}">恢复</button>` : `<button class="pill sm" data-act="ct-off" data-k="${k}" data-id="${esc(id)}">下架</button>`;
+
+/* 订单流水：筛选、搜索、导出 */
+ADMV.orders = () => { const q = fq('orders'), f = UI.adf?.ot || 'all', s = UI.adf?.os || 'all', n = UI.adn || 30;
+  const list = ledger().filter(x => (f === 'all' || x.type === f) && (s === 'all' || x.st === s) && (!q || (x.no + x.title + uname(x.buyer) + uname(x.seller)).toLowerCase().includes(q)));
+  return `${adH('订单流水', `共 ${list.length} 笔 · 合计 ${yuan2(list.reduce((a, x) => a + x.amt, 0))}`, `${adQ('orders', '订单号 / 商品 / 用户')}<button class="pill sm lt" data-act="od-csv">${IC.dl}导出 CSV</button>`)}
+  <div class="ad-bar2">${adSeg('ot', [['all', '全部'], ['prod', '商品'], ['co', '合作']], f)}${adSeg('os', [['all', '全部状态'], ['paid', '已支付'], ['held', '托管中'], ['released', '已放款'], ['refunding', '退款中'], ['refund', '已退款'], ['dispute', '纠纷中']], s)}</div>
+  <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>订单号</th><th>内容</th><th>买家</th><th>卖家</th><th class="r">金额</th><th>渠道</th><th>状态</th><th>时间</th></tr></thead><tbody>${list.slice(0, n).map(x => `<tr class="ad-click" data-act="od-open" data-no="${x.no}"><td class="n">${x.no}</td><td>${x.type === 'co' ? '<span class="tag k">合作</span> ' : ''}${esc(x.title)}</td><td>${esc(uname(x.buyer))}</td><td>${esc(uname(x.seller))}</td><td class="r n">${yuan2(x.amt)}</td><td class="mut2">${x.pay}</td><td>${stTag(...LST[x.st])}</td><td class="mut2 n">${fmtDT(x.ts)}</td></tr>`).join('') || '<tr><td colspan="8" class="mut">没找到</td></tr>'}</tbody></table></div>${list.length > n ? `<div style="padding:12px 18px"><button class="pill sm lt" data-act="od-more">再看 30 条</button></div>` : ''}</div>`;
+};
+
+/* 退款 */
+ADMV.refunds = () => `${adH('退款', '已下载过的资源默认不退，特殊情况（文件损坏等）可同意')}
+  <div class="ad-list">${REFUNDS.map(r => `<div class="ad-row ${r.st === '待处理' ? '' : 'dim'}"><div class="ad-rm"><b>${esc(r.item)} · ${yuan2(r.amt)}</b><span class="mut">${r.no} · @${esc(r.buyer)} · ${esc(r.reason)} · <b style="color:${r.dl === '未下载' ? 'var(--green)' : 'var(--orange)'}">${r.dl}</b></span>${r.st !== '待处理' ? `<span class="mut2">${esc(r.st)}</span>` : ''}</div>
+    <div class="ad-ra">${r.st === '待处理' ? `<button class="pill sm lt" data-act="rf-do" data-v="no" data-no="${r.no}">拒绝</button><button class="pill sm" data-act="rf-do" data-v="ok" data-no="${r.no}">同意退款</button>` : ''}</div></div>`).join('') || '<div class="rnone">没有退款申请</div>'}</div>`;
+
+/* 合作纠纷：看订单记录 → 裁决（全额放款 / 部分退款 / 全额退款） */
+ADMV.disputes = () => { const list = CO.orders.filter(o => o.st === 'dispute' || o.ruling);
+  return `${adH('合作纠纷', '用户申请平台介入后，托管款冻结；看完记录再裁决，结果会通知双方')}
+  <div class="ad-list">${list.map(o => `<div class="ad-row ${o.st === 'dispute' ? '' : 'dim'}"><div class="ad-rm"><b>${esc(o.title)} · ${yuan2(o.price)}</b><span class="mut">委托方 @${esc(uname(o.from))} → 创作者 @${esc(uname(o.to))} · ${esc(SVC_DEF[o.svc]?.n || o.svc)}</span>
+    <span class="mut2">${o.ruling ? '已裁决：' + esc(o.ruling.text) : '申请原因：' + esc(o.why || '—')}</span></div><div class="ad-ra"><button class="pill sm ${o.st === 'dispute' ? '' : 'lt'}" data-act="dp-open" data-id="${o.id}">${o.st === 'dispute' ? '处理' : '查看'}</button></div></div>`).join('') || adEmpty('ALL CLEAR', '没有纠纷')}</div>`;
+};
+function disputeSheet(id){ const o = CO_BY(id); if (!o) return; const open = o.st === 'dispute';
+  sheet(`<h3>${esc(o.title)}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">委托方 @${esc(uname(o.from))} · 创作者 @${esc(uname(o.to))} · 托管 ${yuan2(o.price)} · 修改 ${o.rev || 0}/${CO_FREE_REV} 次</p>
+    <div class="ad-log">${o.log.map(e => `<div class="${e.k === 'sys' ? 'sys' : ''}"><time>${fmtDT(e.ts)}</time><span>${e.k === 'card' ? `${esc(uname(e.by))} 发出 / 更新了邀约（第 ${e.v} 版）` : esc(e.text)}</span></div>`).join('')}</div>
+    ${open ? `<label class="ad-lab">裁决</label><div class="seg ad-seg" id="dpK">${[['release', '全额放款给创作者'], ['part', '部分退款'], ['refund', '全额退给委托方']].map(([v, l], i) => `<button class="${i ? '' : 'on'}" data-act="dp-k" data-v="${v}">${l}</button>`).join('')}</div>
+    <div id="dpPart" class="ad-part" hidden><label class="ad-lab">退给委托方 <b id="dpAmtL">${yuan2(o.price/2)}</b></label><input type="range" id="dpAmt" min="0" max="${o.price}" step="10" value="${o.price/2}"></div>
+    <label class="ad-lab">裁决说明（双方都能看到）</label><textarea class="inp" id="dpWhy" placeholder="例如：交付物与约定的 16:9 规格不符，按完成度退一半"></textarea>
+    <button class="pill lg" data-act="dp-go" data-id="${o.id}">确认裁决</button>` : `<p class="ad-warn y">已裁决：${esc(o.ruling.text)}</p>`}`, d => { const r = $('#dpAmt', d); r && r.addEventListener('input', () => { $('#dpAmtL', d).textContent = yuan2(+r.value); }); });
+}
+
+/* 结算打款 */
+ADMV.payout = () => { const months = [...new Set(ledger().map(x => monthOf(x.ts)))].sort().reverse().slice(0, 3), m = UI.adf?.pm || months[0], rows = payoutRows(m);
+  const sum = rows.reduce((a, r) => ({gross:a.gross + r.gross, fee:a.fee + r.fee, plat:a.plat + r.plat, co:a.co + r.co, coFee:a.coFee + r.coFee, net:a.net + r.net}), {gross:0, fee:0, plat:0, co:0, coFee:0, net:0});
+  const batches = ADM.payouts.filter(b => b.month === m);
+  return `${adH('结算打款', '按订单流水自动计算；生成结算单后逐个打款并记录', adSeg('pm', months.map(x => [x, x]), m))}
+  <div class="kpis"><div class="kpi"><span class="lab">商品成交</span><b class="num">${yuan2(sum.gross)}</b><span class="d">${rows.reduce((a, r) => a + r.n, 0)} 单 · 合作放款 ${yuan2(sum.co)}</span></div><div class="kpi"><span class="lab">平台收入</span><b class="num">${yuan2(sum.plat + sum.coFee)}</b><span class="d">抽成 ${yuan2(sum.plat)} · 合作 ${yuan2(sum.coFee)}</span></div><div class="kpi"><span class="lab">支付手续费</span><b class="num">${yuan2(sum.fee)}</b><span class="d">卖家承担</span></div><div class="kpi"><span class="lab">应打给创作者</span><b class="num">${yuan2(sum.net)}</b><span class="d">${rows.length} 位创作者</span></div></div>
+  <div class="box"><div class="box-h"><h3>${m} · 按创作者</h3>${batches.length ? '' : `<button class="pill sm" data-act="po-gen" data-v="${m}">生成结算单</button>`}</div><div class="tw"><table class="t"><thead><tr><th>创作者</th><th class="r">单数</th><th class="r">商品成交</th><th class="r">手续费</th><th class="r">抽成 ${Math.round(PLAT*100)}%</th><th class="r">合作放款</th><th class="r">服务费 ${Math.round(CO_FEE*100)}%</th><th class="r">应打款</th>${batches.length ? '<th>状态</th><th></th>' : ''}</tr></thead>
+    <tbody>${rows.map(r => { const b = batches[0]?.rows.find(x => x.seller === r.seller); return `<tr><td><span class="ad-u">${uav(r.seller)}<span><b>${esc(uname(r.seller))}</b></span></span></td><td class="r n">${r.n}</td><td class="r n">${yuan2(r.gross)}</td><td class="r n neg">−${yuan2(r.fee)}</td><td class="r n neg">−${yuan2(r.plat)}</td><td class="r n">${yuan2(r.co)}</td><td class="r n neg">−${yuan2(r.coFee)}</td><td class="r n"><b>${yuan2(r.net)}</b></td>
+      ${b ? `<td>${stTag(b.st, {待打款:'yellow', 已打款:'green', 打款失败:'orange'}[b.st])}${b.txn ? `<br><span class="mut2 n" style="font-size:11.5px">${b.txn}</span>` : ''}</td><td class="r">${b.st !== '已打款' ? `<button class="pill sm" data-act="po-pay" data-b="${batches[0].id}" data-id="${r.seller}">标记已打款</button> <button class="pill sm lt" data-act="po-fail" data-b="${batches[0].id}" data-id="${r.seller}">失败</button>` : ''}</td>` : ''}</tr>`; }).join('') || '<tr><td colspan="8" class="mut">这个月没有可结算的订单</td></tr>'}</tbody>
+    <tfoot><tr><td>合计</td><td class="r n">${rows.reduce((a, r) => a + r.n, 0)}</td><td class="r n">${yuan2(sum.gross)}</td><td class="r n">−${yuan2(sum.fee)}</td><td class="r n">−${yuan2(sum.plat)}</td><td class="r n">${yuan2(sum.co)}</td><td class="r n">−${yuan2(sum.coFee)}</td><td class="r n">${yuan2(sum.net)}</td>${batches.length ? '<td></td><td></td>' : ''}</tr></tfoot></table></div></div>
+  <p class="mut2" style="font-size:12.5px;margin-top:10px">⚠️ 正式上线时打款走支付渠道的分账 / 结算接口（微信支付电商收付通、支付宝直付通等），这里只记录状态。</p>`;
+};
+
+/* 公告与站内信 */
+ADMV.notice = () => `${adH('公告', '开着的公告显示在首页顶部，用户可以关掉', `<button class="pill sm" data-act="an-new">${IC.plus}新公告</button>`)}
+  <div class="ad-list">${ADM.ann.map(a => `<div class="ad-row ${a.on ? '' : 'dim'}"><div class="ad-rm"><b>${esc(a.title)}</b><span class="mut">${esc(a.body)}</span><span class="mut2">${a.aud === 'creators' ? '只给创作者' : '所有人'} · ${fmtDT(a.ts)}</span></div>
+    <div class="ad-ra"><button class="sw ${a.on ? 'on' : ''}" data-act="an-on" data-id="${a.id}" aria-label="显示公告" aria-pressed="${a.on}"><i></i></button><button class="pill sm lt" data-act="an-edit" data-id="${a.id}">编辑</button><button class="pill sm lt" data-act="an-del" data-id="${a.id}">删除</button></div></div>`).join('') || '<div class="rnone">还没有公告</div>'}</div>
+  ${adH('站内信', '发到用户私信最上面的「CTRL Z 官方」')}
+  <div class="box ad-form"><div class="ad-f2"><label class="ad-lab">发给</label><div class="seg ad-seg" id="smTo">${[['all', '所有用户'], ['creators', '所有创作者'], ['one', '指定用户']].map(([v, l], i) => `<button class="${i ? '' : 'on'}" data-act="sm-to" data-v="${v}">${l}</button>`).join('')}</div>
+    <select class="inp" id="smU" hidden>${allUids().map(u => `<option value="${esc(u)}">${esc(uname(u))}（@${esc(u)}）</option>`).join('')}</select></div>
+    <label class="ad-lab">标题</label><input class="inp" id="smT" placeholder="例如：结算规则更新">
+    <label class="ad-lab">内容</label><textarea class="inp" id="smX" placeholder="写给用户的话"></textarea>
+    <button class="pill" data-act="sm-send" style="align-self:flex-start">发送</button></div>`;
+
+/* 海报与分类 */
+ADMV.ops = () => { const S = slidesConf(), C = catsConf();
+  return `${adH('商城海报', '开关、顺序和文案；改完点保存，商城立刻生效', `<button class="pill sm" data-act="op-save">保存</button>`)}
+  <div class="box"><div class="ad-cfg">${S.map((s, i) => `<div class="ad-cf" data-i="${i}"><button class="sw ${s.on ? 'on' : ''}" data-act="op-son" data-i="${i}" aria-label="显示这张海报" aria-pressed="${s.on}"><i></i></button><span class="ad-cfk">${esc(s.scene)}</span>
+    <input class="inp" data-op="kicker" data-i="${i}" value="${esc(s.kicker)}" placeholder="小标题"><input class="inp" data-op="title" data-i="${i}" value="${esc(s.title)}" placeholder="大标题"><input class="inp" data-op="sub" data-i="${i}" value="${esc(s.sub)}" placeholder="一句话"><input class="inp" data-op="cta" data-i="${i}" value="${esc(s.cta)}" placeholder="按钮文字">
+    <span class="ad-ud"><button class="pill sm lt" data-act="op-mv" data-k="s" data-i="${i}" data-d="-1" aria-label="上移" ${i ? '' : 'disabled'}>↑</button><button class="pill sm lt" data-act="op-mv" data-k="s" data-i="${i}" data-d="1" aria-label="下移" ${i < S.length - 1 ? '' : 'disabled'}>↓</button></span></div>`).join('')}</div></div>
+  ${adH('商城分类', '分类名、顺序、是否在商城显示（隐藏只是收起入口，商品还在「全部」里）')}
+  <div class="box"><div class="ad-cfg">${C.map((c, i) => `<div class="ad-cf c2"><button class="sw ${c.on ? 'on' : ''}" data-act="op-con" data-i="${i}" aria-label="显示这个分类" aria-pressed="${c.on}"><i></i></button><span class="ad-cfk">${esc(c.k)}</span><input class="inp" data-op="cn" data-i="${i}" value="${esc(c.cn)}" placeholder="中文名">
+    <span class="ad-ud"><button class="pill sm lt" data-act="op-mv" data-k="c" data-i="${i}" data-d="-1" aria-label="上移" ${i ? '' : 'disabled'}>↑</button><button class="pill sm lt" data-act="op-mv" data-k="c" data-i="${i}" data-d="1" aria-label="下移" ${i < C.length - 1 ? '' : 'disabled'}>↓</button></span></div>`).join('')}</div></div>`;
+};
+
+/* 敏感词 */
+ADMV.words = () => `${adH('敏感词', '「拦截」：发帖 / 评论 / 私信直接发不出去；「送审」：能发出，但帖子进待审核复查')}
+  ${[['block', '拦截', 'orange'], ['review', '送审', 'yellow']].map(([lv, l, c]) => `<div class="box ad-form"><div class="box-h" style="padding:0"><h3>${l}</h3><span class="mut2" style="font-size:12.5px">${ADM.words[lv].length} 个</span></div>
+    <div class="ad-chips">${ADM.words[lv].map((w, i) => `<span class="tag c-${c}">${esc(w)}<button data-act="wd-del" data-lv="${lv}" data-i="${i}" aria-label="删除 ${esc(w)}">×</button></span>`).join('')}</div>
+    <div class="ad-inl"><input class="inp" id="wd-${lv}" placeholder="加一个词，回车也行"><button class="pill sm" data-act="wd-add" data-lv="${lv}">添加</button></div></div>`).join('')}
+  <div class="box ad-form"><h3 style="font-size:18px;font-weight:900">试一下</h3><div class="ad-inl"><input class="inp" id="wdT" placeholder="输入一段话看看会不会被拦"><button class="pill sm lt" data-act="wd-test">检测</button></div><span id="wdR" class="mut" style="font-size:13.5px"></span></div>`;
+
+/* 邀请码 */
+ADMV.invites = () => `${adH('邀请码', '创作者开店要用；入驻申请通过时会自动生成一个', `<button class="pill sm pk" data-act="inv-new">${IC.plus}生成一个</button>`)}
+  <div class="box"><div class="tw"><table class="t"><tbody>${INVITES.slice().reverse().map(i => `<tr><td class="n" style="font-weight:800;letter-spacing:.03em">${i.code}</td><td>${i.st === '已入驻' ? `<span style="font-weight:600">${esc(i.to)}</span>` : stTag('未使用', 'yellow')}${i.st !== '已入驻' && i.to !== '—' ? ` <span class="mut2">给 ${esc(i.to)}</span>` : ''}</td><td class="mut2">${esc(i.by)}</td><td class="mut2 n">${i.time}</td><td class="r">${i.st === '未使用' ? `<button class="pill sm lt" data-act="copy" data-v="${i.code}">复制</button>` : ''}</td></tr>`).join('')}</tbody></table></div></div>`;
+
+/* 人员与权限 */
+ADMV.staff = () => `${adH('人员与权限', '每个后台账号一个角色；停用后不能再登录后台', `<button class="pill sm" data-act="sf-new">${IC.plus}加一个人</button>`)}
+  <div class="box"><div class="tw"><table class="t"><thead><tr><th>成员</th><th>角色</th><th>状态</th><th>最近操作</th><th></th></tr></thead><tbody>${ADM.staff.map(s => { const last = ADM.audit.find(a => a.by === s.name);
+    return `<tr><td><b>${esc(s.name)}</b>${s.id === admMe().id ? ' <span class="mut2">（当前）</span>' : ''}</td><td><select class="inp ad-sel" data-act-ch="sf-role" data-id="${s.id}" ${s.id === admMe().id ? 'disabled' : ''}>${Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}" ${s.role === k ? 'selected' : ''}>${n}</option>`).join('')}</select></td>
+      <td>${s.on ? stTag('启用', 'green') : stTag('停用', '')}</td><td class="mut2 n">${last ? fmtDT(last.ts) : '—'}</td><td class="r">${s.id === admMe().id ? '' : `<button class="pill sm lt" data-act="sf-on" data-id="${s.id}">${s.on ? '停用' : '启用'}</button>`}</td></tr>`; }).join('')}</tbody></table></div></div>
+  ${adH('角色能看到的页签', '')}
+  <div class="box"><div class="tw"><table class="t ad-perm"><thead><tr><th></th>${Object.values(ADM_ROLES).map(([n]) => `<th>${n}</th>`).join('')}</tr></thead><tbody>${ADM_TABS.map(([, l, , roles]) => `<tr><td>${l}</td>${Object.keys(ADM_ROLES).map(r => `<td>${roles.includes(r) ? '●' : '<span class="mut2">—</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+
+/* 平台参数 */
+ADMV.params = () => `${adH('平台参数', '改动只影响之后的新订单；每次修改都会记进操作日志')}
+  <div class="box ad-form ad-params">${[['plat', '商品售卖平台抽成', '%', 100], ['coFee', '合作订单服务费（创作者承担）', '%', 100], ['coRev', '合作免费修改次数', '次', 1], ['coAuto', '交付后自动验收', '天', 1]].map(([k, l, u, m]) => `<label class="ad-pr"><span>${l}</span><span class="ad-inl"><input class="inp" type="number" min="0" step="${m === 100 ? .5 : 1}" data-pm="${k}" data-m="${m}" value="${+(ADM.params[k]*m).toFixed(2)}"><i>${u}</i></span></label>`).join('')}
+  <button class="pill" data-act="pm-save" style="align-self:flex-start">保存</button></div>`;
+
+/* 操作日志 */
+ADMV.audit = () => { const who = UI.adf?.lg || 'all', q = fq('audit'), list = ADM.audit.filter(a => (who === 'all' || a.by === who) && (!q || (a.act + a.target + a.detail).toLowerCase().includes(q)));
+  return `${adH('操作日志', `后台的每一个操作都会记下来 · 共 ${list.length} 条`, `${adQ('audit', '搜操作或对象')}<button class="pill sm lt" data-act="lg-csv">${IC.dl}导出 CSV</button>`)}
+  <div class="ad-bar2">${adSeg('lg', [['all', '所有人'], ...ADM.staff.map(s => [s.name, s.name])], who)}</div>
+  <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>时间</th><th>成员</th><th>操作</th><th>对象</th><th>说明</th></tr></thead><tbody>${list.slice(0, 200).map(a => `<tr><td class="mut2 n">${fmtDT(a.ts)}</td><td><b>${esc(a.by)}</b> <span class="mut2">${ADM_ROLES[a.role]?.[0] || ''}</span></td><td>${esc(a.act)}</td><td>${esc(a.target)}</td><td class="mut2">${esc(a.detail)}</td></tr>`).join('') || '<tr><td colspan="5" class="mut">还没有记录</td></tr>'}</tbody></table></div></div>`;
+};
+
 ROUTES.admin = arg => {
   if (arg) UI.adminTab = arg;
   if (STATE.role !== 'admin') return gate('管理', '只有平台管理员能进入。', `<button class="pill lg" data-act="role" data-v="admin">以管理员身份查看</button>`);
-  const t = UI.adminTab;
-  const nav = [['review','待审核', REVIEW.length],['reports','举报', REPORTS.filter(r => r.st === '待处理').length],['refunds','退款', REFUNDS.filter(r => r.st === '待处理').length],['avatars','头像', AVQ.length],['payout','结算', 0],['invites','邀请码', 0]];
-  let body = '';
-  if (t === 'review'){ const r = REVIEW[0];
-    body = r ? `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><span class="lab">还剩 ${REVIEW.length} 个</span><span class="mut2" style="font-size:12.5px">键盘 A 通过 · R 驳回</span></div>
-      <div class="q-card"><img src="${cover(r.cover, 5, 400, 400)}" alt=""><div class="bd"><div style="display:flex;gap:8px;align-items:center"><span class="tag ${r.kind === '商品' ? 'c-pink' : 'k'}">${r.kind}</span><span class="mut2" style="font-size:13px">${r.cat} · ${r.time}</span></div><h3>${esc(r.title)}</h3><a data-go="user-${r.who}" style="display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer">${av(r.who,'sm')}${esc(USERS[r.who].name)}</a>
-        <div class="flags">${r.flags.map(f => `<span class="flag ${f.startsWith('⚠') || f.startsWith('未') ? 'w' : ''}">${esc(f.replace('⚠ ',''))}</span>`).join('')}</div>
-        <div class="qact"><button class="pill lg" data-act="rv-ok" style="background:var(--green);color:var(--ink)">${IC.check}通过<kbd>A</kbd></button><button class="pill lg lt" data-act="rv-no">${IC.x}驳回<kbd>R</kbd></button></div></div></div>
-      ${REVIEW.length > 1 ? `<div style="display:flex;gap:8px;margin-top:12px;overflow-x:auto">${REVIEW.slice(1).map(x => `<div style="display:flex;gap:10px;align-items:center;padding:8px 14px 8px 8px;border-radius:999px;background:var(--card);flex:none"><img src="${cover(x.cover,5,80,80)}" alt="" style="width:32px;height:32px;border-radius:50%"><span style="font-size:13px;font-weight:600">${esc(x.title)}</span></div>`).join('')}</div>` : ''}`
-      : `<div class="empty"><span class="stamp big pop">ALL CLEAR<small>审完了</small></span></div>`;
-    onMount(() => { const kd = e => { if (e.target.closest('input,textarea') || !REVIEW.length || $('#layer .sheet')) return; if (e.key.toLowerCase() === 'a') ACTIONS['rv-ok'](); if (e.key.toLowerCase() === 'r') ACTIONS['rv-no'](); }; document.addEventListener('keydown', kd); onClean(() => document.removeEventListener('keydown', kd)); });
-  }
-  if (t === 'avatars') body = AVQ.length ? `<div class="avq">${AVQ.map(q => `<div class="avq-i"><img src="${q.img}" alt="待审核头像"><div style="min-width:0"><b>${esc(USERS[q.uid]?.name || q.uid)}</b><span>${esc(q.time)} · 上传的头像</span></div><div class="avq-a"><button class="pill sm" data-act="avq-ok" data-id="${q.id}" style="background:var(--green);color:var(--on)">${IC.check}通过</button><button class="pill sm lt" data-act="avq-no" data-id="${q.id}">${IC.x}驳回</button></div></div>`).join('')}</div>`
-    : `<div class="empty"><span class="stamp big pop">ALL CLEAR<small>没有待审核的头像</small></span></div>`;
-  if (t === 'reports') body = `<div style="display:flex;flex-direction:column;gap:10px">${REPORTS.map(r => `<div class="box" style="margin:0;padding:16px 18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;${r.st !== '待处理' ? 'opacity:.5' : ''}"><div><b style="font-size:15px">${esc(r.target)}</b><div class="mut" style="font-size:13.5px;margin-top:4px">${esc(r.reason)} · 来自 @${esc(USERS[r.who]?.name || r.who)} · ${r.time}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${r.st === '待处理' ? `<button class="pill sm lt" data-act="rp" data-id="${r.id}" data-v="已忽略">忽略</button><button class="pill sm" data-act="rp" data-id="${r.id}" data-v="已下架">下架</button>` : `<span class="tag c-green">${r.st.replace('已处理 · ','已')}</span>`}</div></div>`).join('')}</div>`;
-  if (t === 'refunds') body = `<div style="display:flex;flex-direction:column;gap:10px">${REFUNDS.map(r => `<div class="box" style="margin:0;padding:16px 18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center"><div><b style="font-size:15px">${esc(r.item)} · ${yuan2(r.amt)}</b><div class="mut" style="font-size:13.5px;margin-top:4px">@${esc(r.buyer)} · ${esc(r.reason)} · <b style="color:${r.dl === '未下载' ? 'var(--green)' : 'var(--orange)'}">${r.dl}</b></div></div><div style="display:flex;gap:6px">${r.st === '待处理' ? `<button class="pill sm lt" data-act="rf" data-no="${r.no}" data-v="已拒绝">拒绝</button><button class="pill sm" data-act="rf" data-no="${r.no}" data-v="已退款">退款</button>` : `<span class="tag c-${r.st === '已退款' ? 'violet' : 'orange'}">${r.st}</span>`}</div></div>`).join('')}</div>`;
-  if (t === 'payout'){ const rows = [['nova',142,8436,.0068],['merc',96,9810,.0072],['lowf',121,6120,.0066],['ash',58,5240,.0075],['rin',5,216,.0074]]; const sum = rows.reduce((a, [, n, g, r]) => { a.g += g; a.f += g*r; a.p += g*PLAT; return a; }, {g:0, f:0, p:0});
-    body = `<div class="kpis"><div class="kpi"><span class="lab">九月成交</span><b data-roll="${sum.g}" data-pre="¥">¥${sum.g}</b></div><div class="kpi cc c-pink grain"><span class="lab" style="color:var(--ink);position:relative;z-index:2">平台收入 ${PLAT*100}%</span><b class="num" style="position:relative;z-index:2">${yuan2(sum.p)}</b></div><div class="kpi"><span class="lab">支付手续费</span><b class="num">${yuan2(sum.f)}</b><span class="d">卖家承担</span></div><div class="kpi"><span class="lab">要打给卖家</span><b class="num">${yuan2(sum.g - sum.f - sum.p)}</b></div></div>
-    <div class="box"><div class="box-h"><h3>九月 · 按卖家</h3><button class="pill sm" data-act="payout-go">生成结算单</button></div><div class="tw"><table class="t"><thead><tr><th>卖家</th><th class="r">单数</th><th class="r">成交</th><th class="r">手续费</th><th class="r">平台 ${PLAT*100}%</th><th class="r">应打款</th></tr></thead><tbody>${rows.map(([u, n, g, r]) => `<tr><td><span style="display:flex;gap:8px;align-items:center;font-weight:600">${av(u,'sm')}${esc(USERS[u].name)}</span></td><td class="r n">${n}</td><td class="r n">${yuan2(g)}</td><td class="r n neg">−${yuan2(g*r)}</td><td class="r n neg">−${yuan2(g*PLAT)}</td><td class="r n">${yuan2(g*(1-r-PLAT))}</td></tr>`).join('')}</tbody></table></div></div>`; }
-  if (t === 'invites') body = `<div class="box" style="margin-top:0"><div class="box-h"><h3>邀请码</h3><button class="pill sm pk" data-act="inv-new">${IC.plus}生成一个</button></div><div class="tw"><table class="t"><tbody>${INVITES.slice().reverse().map(i => `<tr><td class="n" style="font-weight:800;letter-spacing:.03em">${i.code}</td><td>${i.st === '已入驻' ? `<span style="font-weight:600">${esc(i.to)}</span>` : `<span class="tag c-yellow">未使用</span>`}</td><td class="mut2">${i.by}</td><td class="mut2 n">${i.time}</td><td class="r">${i.st === '未使用' ? `<button class="pill sm lt" data-act="copy" data-v="${i.code}">复制</button>` : ''}</td></tr>`).join('')}</tbody></table></div></div>`;
-  return `<div class="wrap"><div class="ph"><h1 class="x">管理<span class="s">admin</span></h1></div>
-  <div class="dash"><nav class="snav">${nav.map(([k,l,n]) => `<button class="${t===k?'on':''}" data-act="atab" data-v="${k}">${l}${n ? `<span class="n">${n}</span>` : ''}</button>`).join('')}</nav><div style="min-width:0">${body}</div></div></div>`;
+  const me = admMe(), tabs = ADM_TABS.filter(t => t[3].includes(me.role));
+  let t = UI.adminTab; if (!tabs.some(x => x[0] === t)) t = UI.adminTab = tabs[0][0];
+  const cnt = {review:REVIEW.length, avatars:AVQ.length, reports:REPORTS.filter(r => r.st === '待处理').length, apply:ADM.apps.filter(a => a.st === '待审核').length, refunds:REFUNDS.filter(r => r.st === '待处理').length, disputes:CO.orders.filter(o => o.st === 'dispute').length};
+  if (t === 'review') onMount(() => { const kd = e => { if (e.target.closest('input,textarea,select') || !REVIEW.length || $('#layer .sheet')) return; if (e.key.toLowerCase() === 'a') ACTIONS['rv-ok'](); if (e.key.toLowerCase() === 'r') ACTIONS['rv-no'](); }; document.addEventListener('keydown', kd); onClean(() => document.removeEventListener('keydown', kd)); });
+  let g0 = '';
+  const nav = tabs.map(([k, l, g]) => { const head = g !== g0 ? `<span class="ad-g">${g}</span>` : ''; g0 = g; return head + `<button class="${t === k ? 'on' : ''}" data-act="atab" data-v="${k}">${l}${cnt[k] ? `<span class="n">${cnt[k]}</span>` : ''}</button>`; }).join('');
+  return `<div class="wrap"><div class="ph ad-ph"><h1 class="x">管理<span class="s">admin</span></h1><label class="ad-who"><span class="tag c-${ADM_ROLES[me.role][1] === 'ink' ? 'pink' : ADM_ROLES[me.role][1]}">${ADM_ROLES[me.role][0]}</span>
+    <select class="inp ad-sel" data-act-ch="adm-me" aria-label="切换后台账号（原型演示用）">${ADM.staff.filter(s => s.on).map(s => `<option value="${s.id}" ${s.id === me.id ? 'selected' : ''}>${esc(s.name)} · ${ADM_ROLES[s.role][0]}</option>`).join('')}</select></label></div>
+  <div class="dash ad-dash"><nav class="snav">${nav}</nav><div class="ad-body" style="min-width:0">${(ADMV[t] || ADMV.dash)()}</div></div></div>`;
 };
-ACTIONS.atab = b => go('admin-' + b.dataset.v);
-ACTIONS['rv-ok'] = () => { const r = REVIEW.shift(); toast(`已通过：${r.title}`, 'green'); rerender(); };
-ACTIONS['rv-no'] = () => { const r = REVIEW[0]; sheet(`<h3>为什么驳回？</h3><div style="display:flex;flex-direction:column;gap:8px">${['标题或素材用了别人的商标','没写兼容版本或依赖','试听素材不合规范','疑似侵权'].map(x => `<button class="pill lt lg" style="justify-content:flex-start" data-act="rv-reject" data-v="${x}">${x}</button>`).join('')}</div><p class="mut2" style="font-size:12.5px">原因会直接发给 ${esc(USERS[r.who].name)}</p>`); };
-ACTIONS['rv-reject'] = () => { const r = REVIEW.shift(); closeSheet(); toast(`已驳回：${r.title}`, 'orange', 'x'); rerender(); };
-ACTIONS.rp = b => { REPORTS.find(x => x.id === b.dataset.id).st = b.dataset.v; toast(b.dataset.v); rerender(); };
-ACTIONS.rf = b => { REFUNDS.find(x => x.no === b.dataset.no).st = b.dataset.v; toast(b.dataset.v); rerender(); };
-ACTIONS['payout-go'] = () => toast('九月结算单已生成，等卖家确认', 'blue');
-ACTIONS['inv-new'] = () => { const code = 'CTRLZ-' + Math.random().toString(36).slice(2,5).toUpperCase() + '-' + Math.random().toString(36).slice(2,5).toUpperCase(); INVITES.push({code, by:'阿Z', to:'—', st:'未使用', time:'10-06'}); rerender(); toast('新邀请码 ' + code, 'pink'); };
+
+/* —— 配置读写 —— */
+const SLIDES0 = SLIDES.map(s => ({...s, cta:[...s.cta]}));
+const strip = h => String(h).replace(/<[^>]+>/g, '');
+function slidesConf(){ const saved = UI.opS || ADM.slides || [];
+  const base = saved.map(c => { const s0 = SLIDES0.find(s => s.scene === c.scene); return s0 && {scene:c.scene, on:c.on, kicker:c.kicker ?? strip(s0.kicker), title:c.title ?? strip(s0.title), sub:c.sub ?? s0.sub, cta:c.cta ?? s0.cta[0]}; }).filter(Boolean);
+  SLIDES0.forEach(s => { if (!base.some(b => b.scene === s.scene)) base.push({scene:s.scene, on:true, kicker:strip(s.kicker), title:strip(s.title), sub:s.sub, cta:s.cta[0]}); });
+  return UI.opS = base; }
+function applySlides(){ if (!ADM.slides) return; const out = slidesConf().filter(c => c.on).map(c => { const s0 = SLIDES0.find(s => s.scene === c.scene);
+    return {...s0, kicker:c.kicker === strip(s0.kicker) ? s0.kicker : esc(c.kicker), title:c.title === strip(s0.title) ? s0.title : esc(c.title), sub:esc(c.sub), cta:[esc(c.cta), s0.cta[1]]}; });
+  UI.opS = null; if (out.length){ SLIDES.splice(0, SLIDES.length, ...out); UI.bi = 0; } }
+const CATS0 = Object.fromEntries(Object.entries(CATS).map(([k, c]) => [k, {...c}]));
+function catsConf(){ if (UI.opC) return UI.opC; const saved = ADM.cats || []; const base = saved.filter(c => CATS0[c.k]).map(c => ({...c}));
+  Object.keys(CATS0).forEach(k => { if (!base.some(b => b.k === k)) base.push({k, cn:CATS0[k].cn, on:true}); }); return UI.opC = base; }
+function applyCats(){ if (!ADM.cats) return; const C = catsConf(); UI.opC = null;
+  const keys = Object.keys(CATS); keys.forEach(k => delete CATS[k]); C.forEach(c => { CATS[c.k] = {...CATS0[c.k], cn:c.cn || CATS0[c.k].cn, off:!c.on}; }); }
+applySlides(); applyCats();
+
+/* —— 操作 —— */
+const rsnSheet = (title, kind, go) => sheet(`<h3>${title}</h3><div class="ad-rs">${RJ_REASON[kind].map((x, i) => `<button class="pill lt ${i ? '' : 'on'}" data-act="rs-pick">${esc(x)}</button>`).join('')}</div><label class="ad-lab">补充说明（可选）</label><textarea class="inp" id="rsX" placeholder="会一起发给对方"></textarea><button class="pill lg" data-act="rs-go">确认驳回</button>`, d => { RSN.go = go; });
+const RSN = {go:null};
+const PM_MAX = {plat:30, coFee:30, coRev:10, coAuto:30};   // 按输入框里的单位（% / 次 / 天）
+const rsnText = () => { const p = $('#layer .ad-rs .on')?.textContent || '', x = $('#rsX')?.value.trim(); return p + (x ? '：' + x : ''); };
+Object.assign(ACTIONS, {
+  atab: b => go('admin-' + b.dataset.v),
+  adf: b => { (UI.adf ||= {})[b.dataset.k] = b.dataset.v; if (b.dataset.k !== 'pm') UI.adn = 30; rerender(); },
+  'rs-pick': b => { $$('#layer .ad-rs .pill').forEach(x => x.classList.toggle('on', x === b)); },
+  'rs-go': () => { const t = rsnText(), go = RSN.go; RSN.go = null; closeSheet(); go && go(t); },
+  // 待审核
+  'rv-ok': () => { if (!admGuard('review')) return; const r = REVIEW.shift(); if (!r) return; admLog('审核通过', `${r.kind}「${r.title}」`);
+    const sp = r.who === ME && SELLER_PRODUCTS.find(x => x.title === r.title); if (sp){ sp.st = '已上架'; sp.note = ''; }
+    notify(r.who, '审核通过', `你提交的${r.kind}「${r.title}」已通过审核${r.kind === '商品' ? '，已经上架' : ''}。`); admSave(); toast(`已通过：${esc(r.title)}`, 'green'); rerender(); },
+  'rv-no': () => { if (!admGuard('review')) return; const r = REVIEW[0]; if (!r) return;
+    rsnSheet(`驳回「${esc(r.title)}」`, 'review', why => { REVIEW.shift(); admLog('审核驳回', `${r.kind}「${r.title}」`, why);
+      const sp = r.who === ME && SELLER_PRODUCTS.find(x => x.title === r.title); if (sp){ sp.st = '已驳回'; sp.note = '驳回原因：' + why; }
+      if (r.ref && r.kind === '帖子') takeDown('post', r.ref, '审核驳回：' + why, true);
+      notify(r.who, '审核没有通过', `你提交的${r.kind}「${r.title}」没有通过审核。原因：${why}。修改后可以重新提交。`); admSave(); toast(`已驳回：${esc(r.title)}`, 'orange', 'x'); rerender(); }); },
+  // 举报
+  'rp-view': b => { const r = REPORTS.find(x => x.id === b.dataset.id); if (!r) return; if (r.kind === 'prod') go('item-' + r.ref); else if (r.kind === 'post') openPost(r.ref); },
+  'rp-do': b => { if (!admGuard('reports')) return; const r = REPORTS.find(x => x.id === b.dataset.id), v = b.dataset.v; if (!r) return; const au = repAuthor(r), lab = repLabel(r);
+    const done = (st, msg) => { r.st = '已处理 · ' + st; admLog('处理举报', lab, st); notify(r.who, '你的举报有结果了', `你举报的${lab}：${msg}。谢谢你帮社区变得更好。`); admSave(); toast('已处理：' + st); rerender(); };
+    if (v === 'dismiss') return done('不成立', '经核实暂未发现违规');
+    if (v === 'warn'){ if (au){ acctOf(au).warns.unshift({ts:Date.now(), reason:r.reason}); notify(au, '社区警告', `你的${lab}被举报「${r.reason}」，请注意社区规范，多次违规会被限制使用。`); } return done('警告作者', '已对作者发出警告'); }
+    if (v === 'take'){ takeDown(r.kind, r.kind === 'cmt' ? r.key : r.ref, '举报成立：' + r.reason, true); return done('下架', '内容已被下架'); }
+    if (v === 'ban' && au){ acctOf(au).ban = {until:Date.now() + 7*864e5, reason:r.reason, ts:Date.now()}; notify(au, '账号已被封禁 7 天', `原因：${r.reason}。如有异议可以回复这条通知申诉。`); return done('封禁作者 7 天', '已对作者做出封禁处理'); } },
+  // 入驻
+  'ap-ok': b => { if (!admGuard('apply')) return; const a = ADM.apps.find(x => x.id === b.dataset.id); if (!a) return; const code = 'CTRLZ-' + Math.random().toString(36).slice(2, 5).toUpperCase() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase();
+    a.st = '已通过 · ' + code; INVITES.push({code, by:admMe().name, to:a.name, st:'未使用', time:fmtDT(Date.now()).slice(0, 5)}); admLog('入驻通过', a.name, code);
+    if (a.uid) notify(a.uid, '入驻申请通过了', `欢迎加入 CTRL Z！你的邀请码是 ${code}，在「上架作品」里填入就能开店。`); admSave(); toast('已通过，邀请码 ' + code, 'green'); rerender(); },
+  'ap-no': b => { if (!admGuard('apply')) return; const a = ADM.apps.find(x => x.id === b.dataset.id); if (!a) return;
+    rsnSheet(`驳回「${esc(a.name)}」的入驻申请`, 'apply', why => { a.st = '已驳回 · ' + why; admLog('入驻驳回', a.name, why); if (a.uid) notify(a.uid, '入驻申请没有通过', `原因：${why}。补充作品后可以再次申请。`); admSave(); toast('已驳回', 'orange', 'x'); rerender(); }); },
+  // 用户
+  'us-open': b => userSheet(b.dataset.id),
+  'us-do': b => { if (!admGuard('users')) return; const uid = b.dataset.id, v = b.dataset.v, a = acctOf(uid), why = $('#usWhy')?.value.trim() || '违反社区规范', D = 864e5;
+    const M = {warn:'警告', mute1:'禁言 1 天', mute7:'禁言 7 天', ban7:'封禁 7 天', ban0:'永久封禁', lift:'解除限制', verify:a.verified ? '取消实名标记' : '标记已实名'}[v];
+    if (v === 'warn'){ a.warns.unshift({ts:Date.now(), reason:why}); notify(uid, '社区警告', `原因：${why}。多次违规会被限制使用。`); }
+    if (v.startsWith('mute')){ a.mute = {until:Date.now() + (v === 'mute1' ? 1 : 7)*D, reason:why, ts:Date.now()}; notify(uid, `你被禁言 ${v === 'mute1' ? 1 : 7} 天`, `期间不能发帖、评论和私信。原因：${why}。`); }
+    if (v.startsWith('ban')){ a.ban = {until:v === 'ban0' ? 0 : Date.now() + 7*D, reason:why, ts:Date.now()}; notify(uid, v === 'ban0' ? '账号已被永久封禁' : '账号已被封禁 7 天', `原因：${why}。如有异议可以回复这条通知申诉。`); }
+    if (v === 'lift'){ a.ban = null; a.mute = null; notify(uid, '限制已解除', '你的账号已恢复正常使用。'); }
+    if (v === 'verify') a.verified = !a.verified;
+    admLog(M, '@' + uname(uid), v === 'verify' || v === 'lift' ? '' : why); admSave(); toast(`${M}：${esc(uname(uid))}`, v.startsWith('ban') ? 'orange' : 'green'); rerender(); userSheet(uid); },
+  'us-msg': b => { const uid = b.dataset.id; closeSheet(); UI.adminTab = 'notice'; UI.smTo = uid; go('admin-notice'); setTimeout(() => { const t = $('[data-act="sm-to"][data-v="one"]'); t && ACTIONS['sm-to'](t); const s = $('#smU'); if (s) s.value = uid; $('#smT')?.focus(); }, 60); },
+  // 内容
+  'ct-off': b => { if (!admGuard('content')) return; const k = b.dataset.k, id = b.dataset.id;
+    sheet(`<h3>下架原因</h3><div class="ad-rs">${['违反社区规范', '侵权 / 盗版', '广告引流', '低质内容', '作者申请删除'].map((x, i) => `<button class="pill lt ${i ? '' : 'on'}" data-act="rs-pick">${x}</button>`).join('')}</div><label class="ad-lab">补充说明（可选）</label><textarea class="inp" id="rsX"></textarea><button class="pill lg" data-act="rs-go">确认下架</button>`);
+    RSN.go = why => { takeDown(k, id, why, true); admSave(); toast('已下架', 'orange', 'x'); rerender(); }; },
+  'ct-on': b => { if (!admGuard('content')) return; const k = b.dataset.k, id = b.dataset.id; delete ADM.taken[k][id];
+    const au = k === 'post' ? TAKEN_P[id]?.author : k === 'prod' ? P(id)?.seller : allCmts().find(({pid, c}) => cmtKey(pid, c) === id)?.c.u;
+    if (k === 'post' && TAKEN_P[id]){ POSTS.unshift(TAKEN_P[id]); delete TAKEN_P[id]; } admLog('恢复内容', `${{post:'帖子', prod:'商品', cmt:'评论'}[k]} ${id}`); if (au) notify(au, '内容已恢复', '经复核，你之前被下架的内容已经恢复显示。'); admSave(); toast('已恢复'); rerender(); },
+  // 订单
+  'od-more': () => { UI.adn = (UI.adn || 30) + 30; rerender(); },
+  'od-csv': () => { const q = fq('orders'), f = UI.adf?.ot || 'all', s = UI.adf?.os || 'all'; const L = ledger().filter(x => (f === 'all' || x.type === f) && (s === 'all' || x.st === s) && (!q || (x.no + x.title + uname(x.buyer) + uname(x.seller)).toLowerCase().includes(q)));
+    csvDownload(`ctrlz-orders-${fmtDay(Date.now())}.csv`, [['订单号', '类型', '内容', '买家', '卖家', '金额', '渠道', '状态', '时间'], ...L.map(x => [x.no, x.type === 'co' ? '合作' : '商品', x.title, uname(x.buyer), uname(x.seller), x.amt.toFixed(2), x.pay, LST[x.st][0], fmtDay(x.ts) + ' ' + fmtDT(x.ts).slice(6)])]); admLog('导出订单', `${L.length} 条`); },
+  'od-open': b => { const x = ledger().find(o => o.no === b.dataset.no); if (!x) return;
+    sheet(`<h3>${x.no}</h3><div class="ad-kv col"><span>内容<b>${esc(x.title)}</b></span><span>类型<b>${x.type === 'co' ? '合作订单' : '商品'}</b></span><span>买家<b>${esc(uname(x.buyer))}</b></span><span>卖家<b>${esc(uname(x.seller))}</b></span><span>金额<b>${yuan2(x.amt)}</b></span><span>渠道<b>${x.pay}</b></span><span>状态<b>${LST[x.st][0]}</b></span><span>时间<b>${fmtDay(x.ts)} ${fmtDT(x.ts).slice(6)}</b></span></div>
+      <div class="ad-acts">${x.type === 'co' ? `<button class="pill sm lt" data-act="dp-open" data-id="${x.ref}">看合作记录</button>` : ''}<button class="pill sm lt" data-act="us-open" data-id="${esc(x.buyer)}">管理买家</button><button class="pill sm lt" data-act="us-open" data-id="${esc(x.seller)}">管理卖家</button></div>`); },
+  // 退款
+  'rf-do': b => { if (!admGuard('refunds')) return; const r = REFUNDS.find(x => x.no === b.dataset.no); if (!r) return; const ok = b.dataset.v === 'ok';
+    r.st = ok ? '已退款' : '已拒绝'; if (ok) ADM.lst[r.no] = 'refund'; admLog(ok ? '同意退款' : '拒绝退款', `${r.no} ${r.item}`, yuan2(r.amt));
+    notify(r.buyer, ok ? '退款已同意' : '退款申请没有通过', ok ? `「${r.item}」的 ${yuan2(r.amt)} 会原路退回，1–3 个工作日到账。` : `「${r.item}」已下载过，按规则不支持退款。如果文件有问题可以联系卖家。`);
+    admSave(); toast(r.st, ok ? 'green' : 'orange', ok ? 'check' : 'x'); rerender(); },
+  // 纠纷
+  'dp-open': b => disputeSheet(b.dataset.id),
+  'dp-k': b => { $$('#dpK button').forEach(x => x.classList.toggle('on', x === b)); $('#dpPart').hidden = b.dataset.v !== 'part'; },
+  'dp-go': b => { if (!admGuard('disputes')) return; const o = CO_BY(b.dataset.id); if (!o) return; const k = $('#dpK .on')?.dataset.v || 'release', why = $('#dpWhy').value.trim();
+    if (!why){ fxPop($('#dpWhy'), 'fx-shake', 300); $('#dpWhy').focus(); return; }
+    const refund = k === 'refund' ? o.price : k === 'part' ? Math.round(+$('#dpAmt').value*100)/100 : 0;
+    if (k === 'part' && !(refund > 0 && refund < o.price)){ fxPop($('#dpAmt'), 'fx-shake', 300); toast(`退款金额要在 0 和 ${yuan2(o.price)} 之间`, 'orange', 'x'); return; }
+    const text = k === 'release' ? `全额放款给创作者（${yuan2(o.price)}）` : k === 'refund' ? `全额退给委托方（${yuan2(o.price)}）` : `退给委托方 ${yuan2(refund)}，放款给创作者 ${yuan2(o.price - refund)}`;
+    o.ruling = {k, refund, text:text + ' · ' + why, by:admMe().name, ts:Date.now()}; o.st = k === 'refund' ? 'refunded' : 'done'; o.doneAt = Date.now();
+    coSys(o, '平台裁决：' + text + '。说明：' + why); coSave(); admLog('纠纷裁决', `合作「${o.title}」`, text);
+    [o.from, o.to].forEach(u => notify(u, '合作纠纷已裁决', `「${o.title}」：${text}。说明：${why}`)); closeSheet(); toast('已裁决', 'green'); rerender(); },
+  // 结算
+  'po-gen': b => { if (!admGuard('payout')) return; const m = b.dataset.v, rows = payoutRows(m); if (!rows.length) return;
+    ADM.payouts.push({id:'po' + Date.now().toString(36), month:m, ts:Date.now(), rows:rows.map(r => ({seller:r.seller, net:+r.net.toFixed(2), st:'待打款'}))}); admLog('生成结算单', m, `${rows.length} 位创作者`);
+    rows.forEach(r => notify(r.seller, `${m} 结算单已生成`, `本月应结 ${yuan2(r.net)}（已扣手续费、平台抽成和合作服务费），打款后会再通知你。`)); admSave(); toast('结算单已生成', 'blue'); rerender(); },
+  'po-pay': b => { if (!admGuard('payout')) return; const bt = ADM.payouts.find(x => x.id === b.dataset.b), r = bt?.rows.find(x => x.seller === b.dataset.id); if (!r) return;
+    r.st = '已打款'; r.txn = 'TXN' + Date.now().toString().slice(-10); r.ts = Date.now(); admLog('标记已打款', `${bt.month} @${uname(r.seller)}`, `${yuan2(r.net)} · ${r.txn}`);
+    notify(r.seller, '结算款已打出', `${bt.month} 结算 ${yuan2(r.net)} 已打款（流水号 ${r.txn}），请留意到账。`); admSave(); toast('已打款'); rerender(); },
+  'po-fail': b => { if (!admGuard('payout')) return; const bt = ADM.payouts.find(x => x.id === b.dataset.b), r = bt?.rows.find(x => x.seller === b.dataset.id); if (!r) return;
+    r.st = '打款失败'; admLog('打款失败', `${bt.month} @${uname(r.seller)}`); notify(r.seller, '结算打款失败', '收款账户信息可能有误，请到工作室核对收款账户。'); admSave(); toast('已标记失败', 'orange', 'x'); rerender(); },
+  // 公告
+  'an-on': b => { if (!admGuard('notice')) return; const a = ADM.ann.find(x => x.id === b.dataset.id); a.on = !a.on; admLog(a.on ? '开启公告' : '关闭公告', a.title); admSave(); rerender(); },
+  'an-del': b => { if (!admGuard('notice')) return; const i = ADM.ann.findIndex(x => x.id === b.dataset.id); const a = ADM.ann.splice(i, 1)[0]; admLog('删除公告', a.title); admSave(); rerender(); },
+  'an-new': () => annSheet(), 'an-edit': b => annSheet(ADM.ann.find(x => x.id === b.dataset.id)),
+  'an-save': b => { if (!admGuard('notice')) return; const t = $('#anT').value.trim(), x = $('#anX').value.trim(), aud = $('#anA .on')?.dataset.v || 'all'; if (!t){ fxPop($('#anT'), 'fx-shake', 300); return; }
+    const a = ADM.ann.find(y => y.id === b.dataset.id); if (a) Object.assign(a, {title:t, body:x, aud}); else ADM.ann.unshift({id:'n' + Date.now().toString(36), title:t, body:x, aud, on:true, ts:Date.now()});
+    admLog(a ? '编辑公告' : '发布公告', t); admSave(); closeSheet(); toast('公告已保存'); rerender(); },
+  'an-aud': b => $$('#anA button').forEach(x => x.classList.toggle('on', x === b)),
+  'sm-to': b => { $$('#smTo button').forEach(x => x.classList.toggle('on', x === b)); $('#smU').hidden = b.dataset.v !== 'one'; },
+  'sm-send': () => { if (!admGuard('notice')) return; const to = $('#smTo .on')?.dataset.v, t = $('#smT').value.trim(), x = $('#smX').value.trim(); if (!t || !x){ fxPop(!t ? $('#smT') : $('#smX'), 'fx-shake', 300); return; }
+    const ids = to === 'one' ? [$('#smU').value] : to === 'creators' ? Object.keys(USERS).filter(u => u !== 'mio') : allUids(); ids.forEach(u => notify(u, t, x));
+    admLog('发站内信', to === 'one' ? '@' + uname(ids[0]) : to === 'creators' ? '所有创作者' : '所有用户', t); admSave(); toast(`已发给 ${ids.length} 人`); $('#smT').value = $('#smX').value = ''; },
+  // 海报与分类
+  'op-son': b => { const S = slidesConf(), s = S[+b.dataset.i]; s.on = !s.on; if (!S.some(x => x.on)){ s.on = true; toast('至少留一张海报', 'orange', 'x'); } rerender(); },
+  'op-con': b => { const c = catsConf()[+b.dataset.i]; c.on = !c.on; rerender(); },
+  'op-mv': b => { const A = b.dataset.k === 's' ? slidesConf() : catsConf(), i = +b.dataset.i, j = i + +b.dataset.d; if (j < 0 || j >= A.length) return; [A[i], A[j]] = [A[j], A[i]]; rerender(); },
+  'op-save': () => { if (!admGuard('ops')) return; ADM.slides = slidesConf().map(s => ({...s})); ADM.cats = catsConf().map(c => ({...c})); admSave(); applySlides(); applyCats(); admLog('保存海报与分类', `${ADM.slides.filter(s => s.on).length} 张海报 · ${ADM.cats.filter(c => c.on).length} 个分类`); toast('已保存，商城已更新'); rerender(); },
+  // 敏感词
+  'wd-add': b => { if (!admGuard('words')) return; const lv = b.dataset.lv, i = $('#wd-' + lv), v = i.value.trim(); if (!v) return; if (!ADM.words[lv].includes(v)) ADM.words[lv].push(v); admLog('添加敏感词', v, lv === 'block' ? '拦截' : '送审'); admSave(); rerender(); setTimeout(() => $('#wd-' + lv)?.focus(), 30); },
+  'wd-del': b => { if (!admGuard('words')) return; const w = ADM.words[b.dataset.lv].splice(+b.dataset.i, 1)[0]; admLog('删除敏感词', w); admSave(); rerender(); },
+  'wd-test': () => { const c = censor($('#wdT').value), r = $('#wdR'); r.innerHTML = !c ? '没有命中，可以正常发出' : c.lv === 'block' ? `会被<b style="color:var(--orange)">拦截</b>：命中「${esc(c.w)}」` : `能发出，但会<b>送审</b>：命中「${esc(c.w)}」`; },
+  // 人员
+  'sf-new': () => sheet(`<h3>加一个后台成员</h3><label class="ad-lab">名字</label><input class="inp" id="sfN" placeholder="例如：小雨"><label class="ad-lab">角色</label><select class="inp" id="sfR">${Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}">${n}</option>`).join('')}</select><button class="pill lg" data-act="sf-add">添加</button>`),
+  'sf-add': () => { if (!admGuard('staff')) return; const n = $('#sfN').value.trim(); if (!n){ fxPop($('#sfN'), 'fx-shake', 300); return; } const s = {id:'s' + Date.now().toString(36), name:n, role:$('#sfR').value, on:true}; ADM.staff.push(s); admLog('添加成员', n, ADM_ROLES[s.role][0]); admSave(); closeSheet(); rerender(); },
+  'sf-on': b => { if (!admGuard('staff')) return; const s = ADM.staff.find(x => x.id === b.dataset.id); if (s.on && s.role === 'super' && ADM.staff.filter(x => x.on && x.role === 'super').length < 2){ toast('至少要留一位超级管理员', 'orange', 'x'); return; } s.on = !s.on; admLog(s.on ? '启用成员' : '停用成员', s.name); admSave(); rerender(); },
+  // 参数
+  /* 参数上限：抽成 / 服务费不超过 30%，修改次数 ≤ 10，自动验收 1–30 天 */
+  'pm-save': () => { if (!admGuard('params')) return; const ch = [];
+    $$('[data-pm]').forEach(i => { const k = i.dataset.pm, v = Math.min(PM_MAX[k], Math.max(k === 'coAuto' ? 1 : 0, +i.value || 0))/+i.dataset.m; if (Math.abs(v - ADM.params[k]) > 1e-9){ ch.push(`${k}: ${ADM.params[k]} → ${v}`); ADM.params[k] = v; } });
+    if (!ch.length){ toast('没有改动', 'blue'); return; } applyParams(); admLog('修改平台参数', ch.join('；')); admSave(); toast('已保存'); rerender(); },
+  'lg-csv': () => { csvDownload(`ctrlz-audit-${fmtDay(Date.now())}.csv`, [['时间', '成员', '角色', '操作', '对象', '说明'], ...ADM.audit.map(a => [fmtDay(a.ts) + ' ' + fmtDT(a.ts).slice(6), a.by, ADM_ROLES[a.role]?.[0], a.act, a.target, a.detail])]); },
+  'inv-new': () => { if (!admGuard('invites')) return; const code = 'CTRLZ-' + Math.random().toString(36).slice(2, 5).toUpperCase() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(); INVITES.push({code, by:admMe().name, to:'—', st:'未使用', time:fmtDT(Date.now()).slice(0, 5)}); admLog('生成邀请码', code); admSave(); rerender(); toast('新邀请码 ' + code, 'pink'); }
+});
+/* 头像审核：沿用原来的通过 / 驳回，补上原因、通知和日志 */
+{ const ok0 = ACTIONS['avq-ok'];
+  ACTIONS['avq-ok'] = b => { if (!admGuard('avatars')) return; const q = AVQ.find(x => x.id === b.dataset.id); ok0(b); if (q){ admLog('头像通过', '@' + uname(q.uid)); notify(q.uid, '头像审核通过', '你上传的头像已经生效。'); } };
+  ACTIONS['avq-no'] = b => { if (!admGuard('avatars')) return; const q = AVQ.find(x => x.id === b.dataset.id); if (!q) return;
+    rsnSheet('为什么驳回这个头像？', 'avatar', why => { const i = AVQ.findIndex(x => x.id === q.id); if (i < 0) return; AVQ.splice(i, 1); AVREJ[q.uid] = true; avSave(); admLog('头像驳回', '@' + uname(q.uid), why); notify(q.uid, '头像没有通过审核', `原因：${why}。可以换一张再试。`); toast('已驳回', 'orange', 'x'); rerender(); }); }; }
+/* 下架：帖子从列表里拿走（管理员还能看），商品停售，评论隐藏；可以通知作者 */
+function takeDown(k, id, why, tell){
+  ADM.taken[k][id] = {reason:why, ts:Date.now(), by:admMe().name};
+  let au = null, name = id;
+  if (k === 'post'){ const i = POSTS.findIndex(p => p.id === id); if (i >= 0){ TAKEN_P[id] = POSTS.splice(i, 1)[0]; } const p = TAKEN_P[id]; au = p?.author; name = `帖子「${p?.title || id}」`; }
+  if (k === 'prod'){ const p = P(id); au = p?.seller; name = `商品「${p?.title || id}」`; }
+  if (k === 'cmt'){ const f = allCmts().find(({pid, c}) => cmtKey(pid, c) === id); au = f?.c.u; name = `评论「${f?.c.t || ''}」`; }
+  admLog('下架内容', name, why); if (tell && au) notify(au, '内容被下架了', `你的${name}已被下架。原因：${why}。如有异议可以回复这条通知申诉。`);
+}
+function annSheet(a){ sheet(`<h3>${a ? '编辑公告' : '新公告'}</h3><label class="ad-lab">标题</label><input class="inp" id="anT" value="${esc(a?.title || '')}" placeholder="一句话说清楚" autofocus><label class="ad-lab">内容</label><textarea class="inp" id="anX" placeholder="可选">${esc(a?.body || '')}</textarea>
+  <label class="ad-lab">给谁看</label><div class="seg ad-seg" id="anA">${[['all', '所有人'], ['creators', '只给创作者']].map(([v, l]) => `<button class="${(a?.aud || 'all') === v ? 'on' : ''}" data-act="an-aud" data-v="${v}">${l}</button>`).join('')}</div><button class="pill lg" data-act="an-save" data-id="${a?.id || ''}">保存</button>`); }
+/* 搜索框：输入停一下再重绘，并把光标放回原处；后台下拉框（角色、当前账号） */
+document.addEventListener('input', e => { const i = e.target.closest?.('[data-adq]'); if (!i) return; const k = i.dataset.adq; (UI.adq ||= {})[k] = i.value; clearTimeout(i._t);
+  i._t = setTimeout(() => { const pos = i.selectionStart; UI.adn = 30; rerender(); const n = $(`[data-adq="${k}"]`); if (n){ n.focus(); n.setSelectionRange(pos, pos); } }, 260); });
+document.addEventListener('keydown', e => { if (e.key !== 'Enter') return; const i = e.target.closest?.('#wd-block, #wd-review'); if (i){ e.preventDefault(); ACTIONS['wd-add']({dataset:{lv:i.id.slice(3)}}); } });
+document.addEventListener('change', e => { const s = e.target.closest?.('[data-act-ch]'); if (!s) return; const a = s.dataset.actCh;
+  if (a === 'adm-me'){ ADM.me = s.value; admSave(); toast(`已切换到 ${esc(admMe().name)} · ${ADM_ROLES[admMe().role][0]}`, 'blue'); rerender(); }
+  if (a === 'sf-role'){ if (!admGuard('staff')) return; const st = ADM.staff.find(x => x.id === s.dataset.id); st.role = s.value; admLog('修改角色', st.name, ADM_ROLES[st.role][0]); admSave(); rerender(); } });
+/* 海报 / 分类的文字输入：边打边记到草稿里（保存后才生效） */
+document.addEventListener('input', e => { const i = e.target.closest?.('[data-op]'); if (!i) return; const k = i.dataset.op, idx = +i.dataset.i; if (k === 'cn') catsConf()[idx].cn = i.value; else slidesConf()[idx][k] = i.value; });
 /* ================= 社区骨架：首页（关注 / 推荐）、短视频、私信、我的 ================= */
 const isVid = p => p && p.type === 'video';
 const durSec = d => { const m = String(d || '').match(/(\d+):(\d+)/); return m ? +m[1]*60 + +m[2] : 60; };
@@ -6040,7 +6616,7 @@ ROUTES.home = () => {
   onMount(root => mountWaves(root));
   return `<div class="wrap home">
     <div class="htabs"><button class="rl-ic dk ht-l pg-only" data-act="me-menu" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><span class="ht-no" aria-hidden="true">${ISSUE_NO}<i>今日</i></span><div class="ht-t" role="tablist"><button role="tab" class="${tab === 'fol' ? 'on' : ''}" data-act="htab" data-v="fol">关注</button><button role="tab" class="${tab === 'rec' ? 'on' : ''}" data-act="htab" data-v="rec">推荐</button></div><button class="rl-ic dk ht-r pg-only" data-act="search" aria-label="搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div>
-    <div class="hfeed">${tab === 'fol' ? `<div class="sugg"><span class="lab">${list.length ? '还可以关注' : '先关注几位创作者'}</span><div class="sugg-r">${sugg.map(u => `<div class="sg ${ucls(u.id)}"><a data-go="user-${u.id}">${av(u.id, 'md')}<b>${esc(u.name)}</b><span>${esc(u.role.split(' · ')[0])}</span></a><button class="pill sm" data-act="follow" data-id="${u.id}">关注</button></div>`).join('')}</div></div>` : ''}
+    <div class="hfeed">${annBar()}${tab === 'fol' ? `<div class="sugg"><span class="lab">${list.length ? '还可以关注' : '先关注几位创作者'}</span><div class="sugg-r">${sugg.map(u => `<div class="sg ${ucls(u.id)}"><a data-go="user-${u.id}">${av(u.id, 'md')}<b>${esc(u.name)}</b><span>${esc(u.role.split(' · ')[0])}</span></a><button class="pill sm" data-act="follow" data-id="${u.id}">关注</button></div>`).join('')}</div></div>` : ''}
     ${list.length ? `<div class="mason">${list.map(postCard).join('')}</div>` : `<div class="empty"><div class="x">空</div><span>关注的人还没有发东西</span></div>`}</div>
   </div>`;
 };
@@ -6139,7 +6715,7 @@ function goReel(i, jump){
 }
 const reelCur = () => RL.list[RL.i];
 function reelBar(){
-  const p = reelCur(), el = RL.el; if (!p || !el) return; const cm = (COMMENTS[p.id] || COMMENTS._default).length + (UI.newCmts[p.id] || []).length;
+  const p = reelCur(), el = RL.el; if (!p || !el) return; const cm = cmtsOf(p.id).length;
   const L = $('[data-act="rl-like"]', el), F = $('[data-act="rl-fav"]', el);
   L.classList.toggle('on', STATE.liked.has(p.id)); $('.i', L).innerHTML = STATE.liked.has(p.id) ? IC.heartF : IC.heart; $('b', L).textContent = likes(p);
   F.classList.toggle('on', STATE.favs.has(p.id)); $('.i', F).innerHTML = STATE.favs.has(p.id) ? RIC.starF : RIC.star; $('b', F).textContent = p.favs + (STATE.favs.has(p.id) ? 1 : 0);
@@ -6205,11 +6781,11 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'Escape'){ if (RL.cm) closeReelCm(); else ACTIONS['rl-close'](); }
 });
 /* 评论面板：从底部升起，盖住下半屏，视频继续在上半屏播放 */
-function reelCmList(p){ const cm = (COMMENTS[p.id] || COMMENTS._default).concat(UI.newCmts[p.id] || []); const fl = UI.flashCmt && UI.flashCmt.p === p.id ? UI.flashCmt.t : null;
+function reelCmList(p){ const cm = cmtsOf(p.id); const fl = UI.flashCmt && UI.flashCmt.p === p.id ? UI.flashCmt.t : null;
   return cm.map(c => `<div class="cmt ${fl === c.t ? 'flash' : ''}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">作者</span>' : ''}<span>${c.time}</span></div><p>${esc(c.t)}</p><div class="ctl"><button data-act="rl-cl">♥ ${c.likes}</button><button data-act="rl-re" data-v="${esc(USERS[c.u]?.name || '')}">回复</button></div></div></div>`).join('') || '<div class="rnone">还没有评论，来说第一句</div>'; }
 function openReelCm(focus){
   const p = reelCur(), box = $('.rl-cm', RL.el); if (!p) return; RL.cm = true;
-  const n = (COMMENTS[p.id] || COMMENTS._default).length + (UI.newCmts[p.id] || []).length;
+  const n = cmtsOf(p.id).length;
   box.innerHTML = `<div class="rl-cm-h"><b>评论 ${n}</b><button class="rl-ic dk" data-act="rl-cm-x" aria-label="收起">${IC.x}</button></div><div class="rl-cm-l">${reelCmList(p)}</div><div class="rl-cm-f"><input id="rlIn" placeholder="说点什么…" autocomplete="off" enterkeyhint="send"><button class="pill sm ic" data-act="rl-send" aria-label="发送">${IC.arrow}</button></div>`;
   box.classList.add('on'); box.setAttribute('aria-hidden', 'false'); RL.el.classList.add('cm-on');
   const inp = $('#rlIn'); inp.addEventListener('keydown', e => { if (e.key === 'Enter') ACTIONS['rl-send'](); });
@@ -6225,7 +6801,7 @@ Object.assign(ACTIONS, {
   'rl-fav': () => { const p = reelCur(); if (!p || needLogin()) return; STATE.favs.has(p.id) ? STATE.favs.delete(p.id) : (STATE.favs.add(p.id), toast('已收藏', 'yellow')); reelBar(); UI.dirty = true; },
   'rl-cmts': b => openReelCm(!!b.dataset.focus),
   'rl-cm-x': () => closeReelCm(),
-  'rl-send': () => { if (needLogin()) return; const p = reelCur(), i = $('#rlIn'), v = i.value.trim(); if (!v){ i.focus(); return; } (UI.newCmts[p.id] ||= []).push({u:ME, t:v, time:'刚刚', likes:0}); p.cmts++; openReelCm(); const l = $('.rl-cm-l', RL.el); l.scrollTop = l.scrollHeight; reelBar(); UI.dirty = true; },
+  'rl-send': () => { if (needLogin()) return; const p = reelCur(), i = $('#rlIn'), v = i.value.trim(); if (!v){ i.focus(); return; } if (!speakOk(v)) return; (UI.newCmts[p.id] ||= []).push({u:ME, t:v, time:'刚刚', likes:0}); p.cmts++; openReelCm(); const l = $('.rl-cm-l', RL.el); l.scrollTop = l.scrollHeight; reelBar(); UI.dirty = true; },
   'rl-cl': b => { const n = parseInt(b.textContent.replace(/\D/g, '')) || 0, on = !b.classList.contains('on'); b.classList.toggle('on', on); b.textContent = '♥ ' + (n + (on ? 1 : -1)); },
   'rl-re': b => { const i = $('#rlIn'); i.value = '@' + b.dataset.v + ' '; i.focus(); },
   'rl-follow': b => { if (needLogin()) return; const id = b.dataset.id, on = !STATE.follows.has(id); on ? STATE.follows.add(id) : STATE.follows.delete(id); $$(`.rl-fo[data-id="${id}"]`, RL.el).forEach(x => { x.classList.toggle('on', on); x.textContent = on ? '已关注' : '关注'; fxPop(x, 'fx-jelly'); }); if (on){ const r = b.getBoundingClientRect(); burst(r.left + r.width/2, r.top + r.height/2, [USERS[id].c, 'yellow']); haptic(8); } UI.dirty = true; },
@@ -6269,13 +6845,50 @@ Object.assign(ACTIONS, {
 });
 
 /* ================= 私信 ================= */
-const unreadTotal = () => Object.values(CHAT_UNREAD).reduce((a, b) => a + b, 0) + Object.values(NOTE_NEW).reduce((a, b) => a + b, 0);
+const unreadTotal = () => Object.values(CHAT_UNREAD).reduce((a, b) => a + b, 0) + Object.values(NOTE_NEW).reduce((a, b) => a + b, 0) + (STATE.role === 'user' ? inboxUnread() : 0);
 function msgBadge(){ const n = unreadTotal(); $$('[data-r="msg"]').forEach(b => { let d = b.querySelector('.bdg'); if (n > 0){ if (!d){ d = document.createElement('span'); d.className = 'bdg'; b.appendChild(d); } d.textContent = n > 99 ? '99+' : n; } else d && d.remove(); }); }
 function msgPreview(m){ if (!m) return ''; const who = m.me ? '我：' : ''; return who + (m.t === 'text' ? m.text : m.t === 'img' ? '[图片]' : m.t === 'post' ? '[帖子] ' + (POST(m.ref)?.title || '') : m.t === 'co' ? '[合作邀约] ' + (CO_BY(m.ref)?.title || '') : m.t === 'cosys' ? m.text : '[商品] ' + (P(m.ref)?.title || '')); }
+
+/* ================= 用户端：和后台联动的部分 =================
+   官方通知（私信列表最上面）、首页公告条、账号受限提示、没有邀请码时申请入驻 */
+const MEGA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 10v4h3l6 4V6L6 10H3z"/><path d="M16 9a4 4 0 010 6M19 6.5a8 8 0 010 11" stroke-linecap="round"/></svg>';
+function limitBar(){ if (STATE.role !== 'user') return ''; const b = banOf(ME), m = muteOf(ME); if (!b && !m) return '';
+  return `<div class="ann warn"><span class="ann-i">${IC.x}</span><span class="ann-t"><b>${b ? `账号已被封禁${b.until ? '至 ' + fmtDay(b.until) : ''}` : `禁言中，${fmtDay(m.until)} 解除`}</b><span>${esc((b || m).reason)} · 期间不能发帖、评论和私信</span></span><button class="pill sm lt" data-act="sysbox">申诉</button></div>`; }
+function annBar(){ if (STATE.role === 'admin') return ''; const seen = store.get('annSeen', []);
+  const a = ADM.ann.find(x => x.on && !seen.includes(x.id) && (x.aud === 'all' || STATE.seller));
+  return limitBar() + (a ? `<div class="ann"><span class="ann-i">${MEGA}</span><span class="ann-t"><b>${esc(a.title)}</b>${a.body ? `<span>${esc(a.body)}</span>` : ''}</span><button class="ann-x" data-act="ann-x" data-id="${a.id}" aria-label="关闭公告">${IC.x}</button></div>` : ''); }
+function sysRow(){ const L = ADM.inbox[ME] || [], n = inboxUnread(), m = L[0];
+  return `<a class="mrow sysrow" data-act="sysbox"><span class="av md sys-av" aria-hidden="true">Z</span><span class="mt"><b>CTRL Z 官方</b><span>${esc(m ? m.title + '：' + m.text : '审核结果、结算和平台通知会发在这里')}</span></span><span class="mr">${m ? `<time>${ago(m.ts)}</time>` : ''}${n ? `<i class="bdg">${n}</i>` : ''}</span></a>`; }
+Object.assign(ACTIONS, {
+  'ann-x': b => { const s = store.get('annSeen', []); s.push(b.dataset.id); store.set('annSeen', s); const el = b.closest('.ann'); if (el && !reduced()){ el.animate([{opacity:1, transform:'none'}, {opacity:0, transform:'translateY(-8px) scale(.98)'}], {duration:200, easing:'ease-in'}).onfinish = () => rerender(); } else rerender(); },
+  sysbox: () => { const L = ADM.inbox[ME] || [];
+    sheet(`<h3>CTRL Z 官方</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">审核结果、处罚、结算和平台通知。对处理有异议可以直接回复申诉。</p>
+      <div class="sysbox">${L.map(m => `<div class="sysm ${m.read ? '' : 'new'}"><b>${esc(m.title)}</b><p>${esc(m.text)}</p><time>${fmtDay(m.ts)} ${fmtDT(m.ts).slice(6)}</time></div>`).join('') || '<div class="rnone">还没有通知</div>'}</div>
+      <label class="ad-lab">回复 / 申诉</label><textarea class="inp" id="sysR" placeholder="说明情况，客服会在 1 个工作日内处理"></textarea><button class="pill" data-act="sys-reply" style="align-self:flex-start">发送</button>`);
+    L.forEach(m => m.read = true); admSave(); msgBadge(); const r = $('.m-list .sysrow .bdg'); r && r.remove(); },
+  'sys-reply': () => { const v = $('#sysR').value.trim(); if (!v){ fxPop($('#sysR'), 'fx-shake', 300); return; }
+    REPORTS.unshift({id:'rp' + Date.now().toString(36), kind:'user', ref:ME, reason:'用户申诉：' + v, who:ME, time:fmtDT(Date.now()).slice(0, 5), st:'待处理', appeal:true}); admSave(); closeSheet(); toast('已发送，客服会尽快处理'); },
+  /* 入驻申请：只保存打码后的实名信息（原型）；正式版走实名认证接口 */
+  'apply-open': () => { if (needLogin()) return; if (ADM.apps.some(a => a.uid === ME && a.st === '待审核')){ toast('申请已提交，正在审核', 'blue'); return; }
+    sheet(`<h3>申请入驻</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">平台只做原创资源交易。审核通过后会通过「CTRL Z 官方」发给你邀请码。</p>
+      <label class="ad-lab">真实姓名</label><input class="inp" id="apN" autocomplete="name" placeholder="仅用于实名认证，不会公开">
+      <label class="ad-lab">身份证号</label><input class="inp" id="apI" inputmode="numeric" placeholder="18 位">
+      <label class="ad-lab">手机号</label><input class="inp" id="apP" inputmode="tel" placeholder="11 位">
+      <label class="ad-lab">想卖什么</label><div class="ad-chips" id="apC">${Object.entries(CATS).map(([k, c]) => `<button class="chip" data-act="ap-cat" data-v="${k}">${esc(c.cn)}</button>`).join('')}</div>
+      <label class="ad-lab">作品链接</label><input class="inp" id="apL" placeholder="B 站 / 小红书 / 个人主页 / 网盘">
+      <label class="ad-lab">介绍一下自己（可选）</label><textarea class="inp" id="apX"></textarea>
+      <button class="pill lg" data-act="apply-go">提交申请</button>`); },
+  'ap-cat': b => { b.classList.toggle('on'); },
+  'apply-go': () => { const n = $('#apN').value.trim(), id = $('#apI').value.trim(), ph = $('#apP').value.trim(), l = $('#apL').value.trim(), cats = $$('#apC .on').map(x => x.dataset.v);
+    const bad = !n ? '#apN' : !/^\d{17}[\dXx]$/.test(id) ? '#apI' : !/^1\d{10}$/.test(ph) ? '#apP' : !cats.length ? '#apC' : !l ? '#apL' : null;
+    if (bad){ fxPop($(bad), 'fx-shake', 300); toast(bad === '#apC' ? '选一下想卖的分类' : '这一项格式不对', 'orange', 'x'); return; }
+    ADM.apps.unshift({id:'ap' + Date.now().toString(36), uid:ME, name:USERS[ME]?.name || ME, real:n[0] + '*'.repeat(Math.max(1, n.length - 1)), idno:id.slice(0, 4) + '**********' + id.slice(-4), phone:ph.slice(0, 3) + '****' + ph.slice(-4), cats, link:l, note:$('#apX').value.trim() || '—', ts:Date.now(), st:'待审核'});
+    admSave(); closeSheet(); toast('申请已提交，1–2 个工作日内会通知你', 'pink'); }
+});
 function msgList(sel){
   const ids = Object.keys(CHATS).filter(id => USERS[id]).sort((a, b) => lastTs(b) - lastTs(a));
   return `<div class="m-quick">${[['likes','喜欢','pink',IC.heartF],['fans','新粉丝','blue','<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.4-7 8-7s7 2.5 8 7z"/></svg>'],['at','回复与@','yellow',RIC.cm]].map(([k,l,c,ic]) => { const n = NOTE_NEW[k] || 0; return `<button class="mq c-${c} mq-${k} ${n ? 'live' : ''}" data-act="note" data-v="${k}" data-n="${n}" aria-label="${l}${n ? '，' + n + ' 条新的' : ''}"><span class="mq-h"><span class="g">${ic}</span><b>${l}</b></span><span class="mq-n">${n}</span></button>`; }).join('')}</div>
-  <div class="m-list">${ids.map(id => { const m = CHATS[id][CHATS[id].length - 1], u = USERS[id]; return `<a class="mrow ${sel === id ? 'on' : ''}" data-go="msg-${id}">${av(id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>${esc(msgPreview(m))}</span></span><span class="mr"><time>${ago(m.ts)}</time>${CHAT_UNREAD[id] ? `<i class="bdg">${CHAT_UNREAD[id]}</i>` : ''}</span></a>`; }).join('') || '<div class="rnone">还没有私信</div>'}</div>`;
+  <div class="m-list">${STATE.role === 'user' ? sysRow() : ''}${ids.map(id => { const m = CHATS[id][CHATS[id].length - 1], u = USERS[id]; return `<a class="mrow ${sel === id ? 'on' : ''}" data-go="msg-${id}">${av(id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>${esc(msgPreview(m))}</span></span><span class="mr"><time>${ago(m.ts)}</time>${CHAT_UNREAD[id] ? `<i class="bdg">${CHAT_UNREAD[id]}</i>` : ''}</span></a>`; }).join('') || '<div class="rnone">还没有私信</div>'}</div>`;
 }
 function bubble(m, uid){
   let inner = '';
@@ -6314,7 +6927,7 @@ function autoReply(uid){
     else { CHAT_UNREAD[uid] = (CHAT_UNREAD[uid] || 0) + 1; msgBadge(); toast(`${USERS[uid].name}：${R[n % R.length]}`, 'blue'); if (CUR.key === 'msg|'){ rerender(); const row = $(`.mrow[data-go="msg-${uid}"]`); fxPop(row, 'fx-flash', 1100); fxPop(row?.querySelector('.bdg'), 'fx-up'); } } }, 1300); }, 700);
 }
 Object.assign(ACTIONS, {
-  'cv-send': b => { const uid = b.dataset.id, i = $('#cvIn'), v = i.value.trim(); if (!v){ fxPop(i, 'fx-shake', 300); return; } i.value = ''; autoGrow(i); sendMsg(uid, {t:'text', text:v});
+  'cv-send': b => { const uid = b.dataset.id, i = $('#cvIn'), v = i.value.trim(); if (!v){ fxPop(i, 'fx-shake', 300); return; } if (!speakOk(v)) return; i.value = ''; autoGrow(i); sendMsg(uid, {t:'text', text:v});
     if (!reduced()){ const last = $$('#cvB .msg.me').pop(); last && last.animate([{transform:'translate(18px, 22px) scale(.55)', opacity:0}, {transform:'none', opacity:1}], {duration:340, easing:'cubic-bezier(.3,1.3,.5,1)'});
       const ic = b.querySelector('svg'); ic && ic.animate([{transform:'none'}, {transform:'translate(18px,-14px) rotate(-25deg)', opacity:0, offset:.45}, {transform:'translate(-12px,10px)', opacity:0, offset:.46}, {transform:'none', opacity:1}], {duration:520, easing:'ease-out'}); } i.focus(); },
   /* 私信里分享：整屏页面（手机顶到状态栏，大屏是居中对话框），「我的作品 / 收藏 / 已购」三个页签，左右滑切换 */
@@ -6361,9 +6974,11 @@ function noteSync(){ ['likes','fans','at'].forEach(k => { const q = $(`.mq-${k}`
    · 流程：主页「合作」页签选业务 → 填邀约 → 对方在私信卡片上 接下 / 婉拒 / 再聊聊 / 改价
      → 委托方担保付款（钱先放平台）→ 创作者交付 → 委托方验收（含 2 次免费修改，交付后 7 天不处理自动验收）→ 平台打款给创作者 → 双方互评
    · 平台服务费从创作者到手里扣（CO_FEE），委托方只付合作金额 */
-const CO_FEE = .05;          // ⚠️ 合作服务费比例（示例），改这一个数即可
-const CO_FREE_REV = 2;       // 免费修改次数
-const CO_AUTO_DAYS = 7;      // 交付后多少天不验收就自动确认
+let CO_FEE = .05;            // ⚠️ 合作服务费比例（示例；后台「平台参数」可改）
+let CO_FREE_REV = 2;         // 免费修改次数
+let CO_AUTO_DAYS = 7;        // 交付后多少天不验收就自动确认
+function applyParams(){ PLAT = ADM.params.plat; CO_FEE = ADM.params.coFee; CO_FREE_REV = ADM.params.coRev; CO_AUTO_DAYS = ADM.params.coAuto; }
+applyParams();
 const SVC_DEF = {
   arr:   {n:'编曲', c:'pink',   ph:'比如：一首 lo-fi 单曲的完整编曲', f:[['style','风格','text','lo-fi / city pop / 氛围…'], ['bpm','BPM','num','90'], ['len','时长','one',['1 分钟内','1–3 分钟','3–5 分钟','5 分钟以上']]]},
   mix:   {n:'混音', c:'blue',   ph:'比如：第一首单曲的混音', f:[['tracks','分轨数','one',['8 轨内','8–24 轨','24–48 轨','48 轨以上']], ['len','歌曲时长','one',['3 分钟内','3–5 分钟','5 分钟以上']], ['ref','参考曲','text','歌名或链接']]},
@@ -6428,11 +7043,14 @@ const coOther = o => o.from === ME ? o.to : o.from;
 function coInject(){ CO.orders.forEach(o => { if (o.from !== ME && o.to !== ME) return; const u = coOther(o), list = CHATS[u] ||= [];
   o.log.forEach(e => { if (list.some(m => m.coe === e)) return; list.push(e.k === 'card' ? {me:e.by === ME, t:'co', ref:o.id, v:e.v, ts:e.ts, coe:e} : {me:false, t:'cosys', ref:o.id, text:e.text, ts:e.ts, coe:e}); });
   list.sort((a, b) => a.ts - b.ts); }); }
+/* 原型：一单正在「平台介入」的合作（rin 委托 ASH/09 做演出视觉，交付规格不符） */
+if (!CO.orders.some(o => o.id === 'c5')) CO.orders.push({id:'c5', from:'rin', to:'ash', svc:'vj', title:'演出用 CRT 故障循环定制', note:'livehouse 用，16:9 横屏，8 段循环，每段 30 秒。', budget:1500, price:1500, due:'10 月 3 日前', fields:{date:'10 月 5 日', venue:'MAO · 16:9 横屏', len:'8 段循环'}, st:'dispute', v:1, rev:2, why:'交付的是 4:3 竖构图，和约定的 16:9 不符，改了两次还是不对',
+  ts:NOW0 - 16*24*H, paidAt:NOW0 - 15*24*H, delivAt:NOW0 - 6*24*H, log:[{k:'card', v:1, by:'rin', ts:NOW0 - 16*24*H}, {k:'sys', text:'rin.wav 已担保付款 ¥1,500 · 钱在平台托管', ts:NOW0 - 15*24*H}, {k:'sys', text:'ASH/09 交付了作品（8 段循环 · 4:3）', ts:NOW0 - 6*24*H}, {k:'sys', text:'rin.wav 申请了第 1 次修改：画幅要 16:9', ts:NOW0 - 5*24*H}, {k:'sys', text:'rin.wav 申请了第 2 次修改：还是 4:3', ts:NOW0 - 3*24*H}, {k:'sys', text:'已申请平台介入：交付与约定不符 · 托管的钱已冻结', ts:NOW0 - 2*24*H}]});
 coInject();
 
 /* ================= 合作：主页页签、邀约表单、私信卡片、托管 / 交付 / 验收 / 互评 ================= */
 const CO_ST = {sent:['c-pink','等回复'], counter:['c-orange','改价中'], declined:['k','已婉拒'], withdrawn:['k','已撤回'], accepted:['c-yellow','待付款'], paid:['c-blue','进行中'],
-  delivered:['c-green','待验收'], revising:['c-violet','修改中'], done:['c-green','已完成'], dispute:['c-orange','平台介入中']};
+  delivered:['c-green','待验收'], revising:['c-violet','修改中'], done:['c-green','已完成'], dispute:['c-orange','平台介入中'], refunded:['k','已退款']};
 const cny = n => n == null ? '面议' : '¥' + Math.round(n).toLocaleString();
 const coNet = p => p == null ? null : Math.round(p*(1 - CO_FEE));
 const coDay = ts => { const d = new Date(ts); return `${d.getMonth() + 1} 月 ${d.getDate()} 日`; };
@@ -6451,6 +7069,7 @@ function coActs(o){
     case 'delivered': return from ? A('confirm', '确认验收') + A('revise', o.rev < CO_FREE_REV ? `申请修改 · 剩 ${CO_FREE_REV - o.rev} 次` : '免费修改已用完', 'lt') + A('deliv', '查看交付', 'lt') : A('deliv', '查看交付', 'lt') + W(`等 TA 验收 · ${coDay(o.delivAt + CO_AUTO_DAYS*24*H)}自动确认`);
     case 'done': return (o.deliv ? A('deliv', '查看交付', 'lt') : '') + (o.rated?.[ME] ? W('已评价') : A('rate', '评价 TA'));
     case 'dispute': return W('客服会在 24 小时内联系双方') + A('chat', '再聊聊', 'lt');
+    case 'refunded': return W(o.ruling ? '平台裁决：' + o.ruling.text : '已退款');
     default: return '';
   }
 }
@@ -6692,7 +7311,7 @@ function coView(o){ if (!o) return; const D = SVC_DEF[o.svc], u = coOther(o), sy
     ${['paid','delivered','revising'].includes(o.st) && o.price != null ? `<button class="co-dsp" data-act="co-a" data-a="dispute" data-id="${o.id}">遇到问题？申请平台介入</button>` : ''}`); }
 
 /* ================= 我 ================= */
-function myComments(){ const out = []; POSTS.forEach(p => { (COMMENTS[p.id] || []).concat(UI.newCmts[p.id] || []).forEach(c => { if (c.u === ME) out.push({p, c}); }); }); return out.reverse(); }
+function myComments(){ const out = []; POSTS.forEach(p => { (COMMENTS[p.id] || []).concat(UI.newCmts[p.id] || []).filter(c => !ADM.taken.cmt[cmtKey(p.id, c)]).forEach(c => { if (c.u === ME) out.push({p, c}); }); }); return out.reverse(); }
 function meHead(){
   const u = USERS[ME], nProd = PRODUCTS.filter(p => p.seller === ME).length, owned = STATE.owned.size;
   return `<div class="mh">
@@ -7166,7 +7785,7 @@ Object.assign(ACTIONS, {
     if (on){ const r = b.getBoundingClientRect(); burst(r.left + r.width/2, r.top + r.height/2, [USERS[id].c, 'ink']); } rerender(); if (on) $$(`[data-act="follow"][data-id="${id}"]`).forEach(x => fxPop(x, 'fx-jelly')); },
   share: () => { closeSheet(); try { navigator.clipboard.writeText(location.href).then(() => toast('链接已复制'), () => toast('复制失败，请从地址栏复制', 'orange', 'x')); } catch(e){ toast('复制失败，请从地址栏复制', 'orange', 'x'); } },
   copy: b => { try { navigator.clipboard.writeText(b.dataset.v).then(() => toast('已复制 ' + b.dataset.v), () => toast(b.dataset.v, 'blue')); } catch(e){ toast(b.dataset.v, 'blue'); } },
-  cmt: b => { if (needLogin()) return; const i = $('#cmtIn'), v = i.value.trim(), ir = i.getBoundingClientRect(); if (v && !reduced()){ const g = document.createElement('span'); g.className = 'fx-ghost'; g.textContent = v; g.style.cssText = `left:${ir.left + 14}px;top:${ir.top + ir.height/2}px`; document.body.appendChild(g);
+  cmt: b => { if (needLogin()) return; if ($('#cmtIn').value.trim() && !speakOk($('#cmtIn').value)) return; const i = $('#cmtIn'), v = i.value.trim(), ir = i.getBoundingClientRect(); if (v && !reduced()){ const g = document.createElement('span'); g.className = 'fx-ghost'; g.textContent = v; g.style.cssText = `left:${ir.left + 14}px;top:${ir.top + ir.height/2}px`; document.body.appendChild(g);
       g.animate([{transform:'translateY(-50%)', opacity:1}, {transform:'translateY(-260%) scale(.92)', opacity:0}], {duration:460, easing:'cubic-bezier(.3,.7,.4,1)'}).onfinish = () => g.remove(); setTimeout(() => { const c = $$('#post .cmt.fresh').pop(); c && c.animate([{transform:'translateY(-14px) scale(.97)', opacity:0}, {transform:'none', opacity:1}], {duration:380, easing:'cubic-bezier(.3,1.25,.5,1)'}); }, 30); }
     if (!v){ i.focus(); i.animate([{transform:'translateX(-5px)'},{transform:'translateX(5px)'},{transform:'none'}], {duration:220}); return; } i.value = ''; i.blur(); (UI.newCmts[b.dataset.id] ||= []).push({u: STATE.role === 'admin' ? 'admin' : ME, t:v, time:'刚刚', likes:0}); POST(b.dataset.id).cmts++; UI.freshCmt = b.dataset.id; renderPost(CUR.post); UI.freshCmt = null; UI.dirty = true; const sc = $('#post .scroll'); sc && sc.scrollTo({top:sc.scrollHeight, behavior:'smooth'}); if (IS_MOBILE) scrollTo({top:document.body.scrollHeight}); },
   /* 评论点赞：再点一次取消 */
@@ -7339,11 +7958,13 @@ Object.assign(ACTIONS, {
   'cp-publish': () => {
     const C = UI.cp, d = cpDraft(), k = cpKind(), n = POSTS.length + 1, id = 's' + (90 + n);
     if (C.audio?.ld) return;
+    const ck = speakOk(d.title + ' ' + (d.ex || '') + ' ' + cpRest()); if (!ck) return;
     const p = {...d, id, qn:String(18 + n).padStart(3, '0'), tags:[k === 'question' ? '提问' : '新作品'], seed:n};
     if (p.tcover) p.tcover = {...p.tcover};
     if (C.audio){ TRACKS['post:' + id] = TRACKS['post:draft']; delete TRACKS['post:draft']; }
     if (GEN.owner?.endsWith('draft')) GEN.stop();
     POSTS.unshift(p); BODY[id] = (cpRest() || p.title).split(/\n+/).filter(Boolean);
+    if (ck.lv === 'review'){ REVIEW.push({id:'r' + id, kind:'帖子', ref:id, title:p.title, who:ME, cat:KIND[k][0], time:fmtDT(Date.now()), flags:['⚠ 命中送审词「' + ck.w + '」'], cover:p.cover || 'grid'}); admSave(); }
     closeSheet(); UI.feed = {type:'all', cat:'all', tag:null, sort:'new'}; toast('发出去了 · ' + KIND[k][0], 'pink');
     if (CUR.key === 'feed|') rerender(); else go('feed');
   }

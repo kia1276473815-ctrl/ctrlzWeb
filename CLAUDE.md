@@ -47,6 +47,19 @@
   - 私信通知是一条三格通知条：「喜欢 / 新粉丝 / 回复与@」+ 大号未读数（不要改回「赞和收藏 / 新增关注 / 评论和@」；不要加电平灯这类含义不明的装饰）
   - 「我」头部是创作者名片：展示字体大名字、头像后垫黄色孔版色块、票根式虚线数据条
 
+## 管理后台（`#admin-页签`）
+- 数据都在 `ADM`（浏览器本地 `store 'adm'`，原型阶段）；接后端时把各个「adm 操作」换成接口，页面不用改。待审核 / 举报 / 退款 / 邀请码队列也随 `ADM` 保存
+- 员工角色 RBAC：super / mod 内容审核 / cs 客服 / fin 财务 / ops 运营（`ADM_ROLES`）。页签按角色可见（`ADM_TABS` 第 4 项），**每个写操作开头都要 `admGuard(页签)`，结尾 `admLog(操作, 对象, 说明)` 写操作日志**；至少保留一位启用的超级管理员
+- 对用户的结果一律用 `notify(uid, 标题, 正文)` 发到私信最上面的「CTRL Z 官方」（`sysRow` / `sysbox`，可回复申诉 → 进举报队列）。驳回要带原因（`rsnSheet` / `RJ_REASON`）
+- 下架：帖子从 `POSTS` 挪进 `TAKEN_P`（用户端 `POST()` 取不到，管理员能看）；商品走 `onSale`；评论没有 id，用 `cmtKey(帖子id, 评论)` 认，读评论统一用 `cmtsOf(pid)`。下架 / 恢复都会通知作者
+- 账号处置：`ADM.acct[uid]` 的 ban / mute / warns / verified；用户端发帖、评论、私信、上架前调 `canSpeak()`，发文字用 `speakOk(text)`（同时查敏感词 `ADM.words`：block 拦截、review 能发但进待审核）
+- 订单流水 `ledger()` 由商品订单 + 已购 + 退款 + 合作订单推出来；结算 `payoutRows(月份)`；导出用 `csvDownload`（已防公式注入）
+- 平台参数 `PLAT / CO_FEE / CO_FREE_REV / CO_AUTO_DAYS` 是 `let`，由 `applyParams()` 从 `ADM.params` 读，后台改了马上生效（有上限 `PM_MAX`）
+- 合作纠纷裁决：全额放款 / 部分退款 / 全额退款，写进 `o.ruling`、订单状态 done 或 refunded，双方收到通知、私信卡片显示裁决
+- 运营配置：商城海报（`slidesConf` / `applySlides`）和分类（`catsConf` / `applyCats`，`c.off` 的分类不显示）；首页公告条 `annBar()`（含被禁言 / 封禁时的受限提示）
+- 用户端入驻申请 `apply-open`：只存打码后的实名信息，正式版走实名认证接口
+- 后台页签 ≤1020px 横排（隐藏分组标题），以上是左侧竖排
+
 ## 材质层（液态玻璃 / 毛玻璃 / 3D）
 - 液态玻璃折射 `LG`：思路来自 shuding/liquid-glass（MIT），SVG 位移贴图做 `backdrop-filter:url()`，只有 Chromium 生效；其它浏览器用 CSS 版（`.lgx` / `.lg-rim` / 高光边）。要加折射的元素登记在 `LG` 的 `SPEC` 里
 - **坑**：带 `view-transition-name`（`.tb`、`.hd`、`.player`）或 filter / opacity / mask 的元素是「背景根」，它里面的子元素用 backdrop-filter 看不到页面。所以底栏的模糊和折射加在 `.tb` 自己身上，`.tb-glass` 只负责着色
