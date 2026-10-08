@@ -1643,7 +1643,9 @@ html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
 .co-sw i{position:relative;flex:none;width:34px;height:20px;border-radius:999px;background:var(--rule-2);transition:background .2s}
 .co-sw i::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--card);transition:transform .2s var(--spring)}
 .co-svc.on .co-sw i{background:var(--green)} .co-svc.on .co-sw i::after{transform:translateX(14px)}
-.co-p{font-size:12.5px;color:var(--ink-3)} .co-svc.on .co-p{color:var(--ink-2)}
+.co-p{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;font-size:12.5px;color:var(--ink-3);padding:4px 0;min-height:28px} .co-svc.on .co-p{color:var(--ink-2)}
+.co-p svg{width:13px;height:13px;opacity:.7} .co-p:hover{color:var(--ink)}
+.co-ny{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:14px} .co-ny input{width:18px;height:18px;accent-color:var(--ink)}
 .co-list{display:flex;flex-direction:column}
 .co-req{padding:14px 18px;border-top:1px solid var(--rule)}
 .co-top{display:flex;align-items:center;gap:12px}
@@ -1651,6 +1653,47 @@ html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
 .co-top .co-m{display:block;font-size:12.5px;color:var(--ink-3);margin-top:3px}
 .co-req p{margin:10px 0 0;font-size:14px;color:var(--ink-2)}
 .co-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+/* 头像：图片头像、「我」页面的更换入口、更换面板、绘制编辑器、管理员审核 */
+.av > img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.mh-av{position:relative;flex:none;padding:0;border-radius:50%;cursor:pointer}
+.mh-av:active{transform:scale(.97)}
+.mh-cam{position:absolute;right:0;bottom:0;width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;box-shadow:0 0 0 3px var(--paper)}
+.mh-cam svg{width:15px;height:15px}
+.mh-pend{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);white-space:nowrap;font:700 11px/1 var(--f-b);padding:5px 8px;border-radius:999px;background:var(--yellow);color:var(--on)}
+.avs-note{padding:12px 14px;border-radius:12px;background:var(--orange-t);font-size:13.5px;margin-bottom:12px}
+.avs-pend{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:var(--yellow-t);margin-bottom:12px}
+.avs-pend img{width:52px;height:52px;border-radius:50%;object-fit:cover;flex:none}
+.avs-pend b{display:block;font-size:14.5px} .avs-pend span{display:block;font-size:12.5px;color:var(--ink-2);margin-top:3px}
+.avs-opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.avs-o{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:16px;border-radius:16px;background:var(--paper);box-shadow:inset 0 0 0 1px var(--rule);text-align:left;cursor:pointer;transition:box-shadow .15s}
+.avs-o:hover{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.avs-o .g{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--c);color:var(--on);margin-bottom:4px}
+.avs-o .g svg{width:20px;height:20px}
+.avs-o b{font-size:15px} .avs-o > span:last-child{font-size:12.5px;color:var(--ink-3)}
+.ave-c{position:relative;width:min(100%,300px);aspect-ratio:1;margin:0 auto 6px;border-radius:18px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--rule)}
+.ave-c canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+#avcC{cursor:grab}
+.ave-ring{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 400px rgba(20,20,24,.28);pointer-events:none}
+.ave-row{display:flex;align-items:center;gap:12px;margin-top:12px}
+.ave-row .lab{flex:none;width:34px}
+.ave-sw{display:flex;gap:6px;flex-wrap:wrap}
+.ave-sw button{width:30px;height:30px;border-radius:50%;background:var(--sw);box-shadow:inset 0 0 0 1px var(--rule-2)}
+.ave-sw button.on{box-shadow:inset 0 0 0 1px var(--rule-2),0 0 0 2px var(--card),0 0 0 4px var(--ink)}
+.ave-add{display:flex;gap:6px;flex-wrap:wrap}
+.ave-add button{width:40px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--paper);color:var(--ink);box-shadow:inset 0 0 0 1px var(--rule)}
+.ave-add button:hover:not(:disabled){box-shadow:inset 0 0 0 1.5px var(--ink)}
+.ave-add button:disabled{opacity:.35;cursor:not-allowed}
+.ave-add svg{width:20px;height:20px}
+.ave-n{position:absolute;right:10px;top:10px;font:700 12px/1 var(--f-b);padding:6px 9px;border-radius:999px;background:rgba(20,20,24,.62);color:#fff;pointer-events:none}
+.ave-row input[type=range]{flex:1;min-width:0;accent-color:var(--ink)}
+.ave-sel .ave-row .pill{flex:none}
+#aveC{cursor:pointer}
+.ave-end{margin-top:18px;flex-wrap:wrap}
+.avq{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:12px}
+.avq-i{display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px;border-radius:18px;background:var(--card);text-align:center}
+.avq-i img{width:120px;height:120px;border-radius:50%;object-fit:cover}
+.avq-i b{display:block;font-size:15px} .avq-i span{display:block;font-size:12.5px;color:var(--ink-3);margin-top:3px}
+.avq-a{display:flex;gap:8px}
 </style>
 
 </head>
@@ -2376,7 +2419,7 @@ function setRole(r, silent){
   const b = $('#meBtn');
   if (r === 'guest'){ b.className = 'av'; b.style.background = 'var(--card)'; b.style.boxShadow = 'inset 0 0 0 1px var(--rule)'; b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1.2-3.8 4-5.5 7.5-5.5s6.3 1.7 7.5 5.5"/></svg>'; }
   else if (r === 'admin'){ b.className = 'av c-orange'; b.style.background = ''; b.style.boxShadow = ''; b.textContent = 'AZ'; }
-  else { b.className = 'av ' + ucls(ME); b.style.background = ''; b.style.boxShadow = ''; b.textContent = USERS[ME].ini; }
+  else { b.className = 'av ' + ucls(ME); b.style.background = ''; b.style.boxShadow = ''; if (AVIMG[ME]) b.innerHTML = `<img src="${AVIMG[ME]}" alt="">`; else b.textContent = USERS[ME].ini; }
   badge();
   if (!silent){ toast(`现在以「${ROLE_NAME[r]}」身份浏览`, 'blue'); rerender(); }
 }
@@ -3580,7 +3623,112 @@ ACTIONS.totop = () => { const s = CUR.post ? postScroller() : null; (s || window
 
 /* ================= 共享组件 ================= */
 const ucls = uid => 'c-' + (USERS[uid]?.c || 'orange');
-function av(uid, cls=''){ const u = USERS[uid]; if (!u) return `<span class="av c-orange ${cls}">AZ</span>`; return `<span class="av ${ucls(uid)} ${cls}">${esc(u.ini)}</span>`; }
+function av(uid, cls=''){ const u = USERS[uid]; if (!u) return `<span class="av c-orange ${cls}">AZ</span>`; const img = AVIMG[uid]; return `<span class="av ${ucls(uid)} ${cls}">${img ? `<img src="${img}" alt="">` : esc(u.ini)}</span>`; }
+/* ================= 头像：自己画（马上生效）/ 上传照片（管理员审核通过后才换上） ================= */
+const AVIMG = store.get('avImgs', {});   // 已生效的头像 {用户: 图片}
+const AVQ = store.get('avq', []);        // 待审核的上传头像 [{id, uid, img, time}]
+const AVREJ = store.get('avRej', {});    // 被驳回、还没告诉本人的 {用户: true}
+const avSave = () => { store.set('avImgs', AVIMG); store.set('avq', AVQ); store.set('avRej', AVREJ); };
+function setAvatar(uid, src){ if (src) AVIMG[uid] = src; else delete AVIMG[uid]; avSave(); if (STATE.role === 'user' && uid === ME) setRole('user', true); }
+const avStamp = () => { const d = new Date(), z = n => String(n).padStart(2, '0'); return `${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`; };
+const AV_BG = ['#FFE14A', '#FF4FA7', '#2E5BFF', '#FF6B2C', '#10B26A', '#7B61FF', '#F7F6F1', '#141418'];
+Object.assign(ACTIONS, {
+  'av-edit': () => { if (needLogin()) return; const pend = AVQ.find(q => q.uid === ME), rej = AVREJ[ME]; if (rej){ delete AVREJ[ME]; avSave(); }
+    sheet(`<h3>更换头像</h3>
+      ${rej ? `<div class="avs-note">上次上传的头像没有通过审核，换一张试试</div>` : ''}
+      ${pend ? `<div class="avs-pend"><img src="${pend.img}" alt=""><div style="min-width:0;flex:1"><b>上传的头像审核中</b><span>管理员通过后自动换上 · ${esc(pend.time)}</span></div><button class="pill sm lt" data-act="av-cancel">撤回</button></div>` : ''}
+      <div class="avs-opts">
+        <button class="avs-o" data-act="av-draw"><span class="g c-pink">${RIC.pen}</span><b>拼一个头像</b><span>用几何图形拼 · 马上生效</span></button>
+        <label class="avs-o"><input type="file" accept="image/*" id="avFile" hidden><span class="g c-blue">${IC.up}</span><b>上传照片</b><span>需要管理员审核</span></label>
+        ${AVIMG[ME] ? `<button class="avs-o" data-act="av-reset"><span class="g c-yellow" style="font:900 15px/1 var(--f-x)">Aa</span><b>用回首字母</b><span>马上生效</span></button>` : ''}
+      </div>`, d => { $('#avFile', d).addEventListener('change', e => { const f = e.target.files[0]; if (f) avCrop(f); }); }); },
+  'av-reset': () => { setAvatar(ME, null); closeSheet(); toast('换回了首字母头像'); rerender(); },
+  'av-cancel': () => { const i = AVQ.findIndex(q => q.uid === ME); if (i >= 0) AVQ.splice(i, 1); avSave(); closeSheet(); toast('已撤回', 'blue'); rerender(); },
+  /* 头像编辑器：不能自由绘制（防止违规内容），只能用几何图形拼，最多 5 个 */
+  'av-draw': () => {
+    sheet(`<h3>拼一个头像</h3><div class="ave"><div class="ave-c"><canvas id="aveC" width="512" height="512" aria-label="头像画布：拖动图形调整位置"></canvas><i class="ave-ring"></i><span class="ave-n" id="aveN">0 / 5</span></div>
+      <div class="ave-row"><span class="lab">底色</span><div class="ave-sw" id="aveBg">${AV_BG.map((c, i) => `<button class="${i === 0 ? 'on' : ''}" data-act="ave-bg" data-c="${c}" style="--sw:${c}" aria-label="底色 ${c}"></button>`).join('')}</div></div>
+      <div class="ave-row"><span class="lab">添加</span><div class="ave-add">${Object.entries(AV_SHAPES).map(([k, x]) => `<button data-act="ave-add" data-t="${k}" aria-label="添加${x.n}"><svg viewBox="0 0 24 24">${x.ic}</svg></button>`).join('')}</div></div>
+      <div class="ave-sel" id="aveSel"></div>
+      <div class="ave-row ave-end"><span class="mut2" style="font-size:12.5px">点选图形后可以改颜色、大小和角度</span><span style="flex:1"></span><button class="pill" data-act="ave-save">用这个头像</button></div></div>`, d => avEditor($('#aveC', d)));
+  },
+  'ave-bg': b => { AVE.bg = b.dataset.c; avePick(b); AVE.draw(); },
+  'ave-add': b => { if (AVE.sh.length >= 5){ toast('最多放 5 个图形', 'orange', 'x'); return; }
+    const n = AVE.sh.length, c = AV_FILL.filter(x => x !== AVE.bg)[n % (AV_FILL.length - 1)];
+    AVE.sh.push({t:b.dataset.t, x:256 + (n % 3 - 1) * 60, y:256 + (n % 2 ? 50 : -30), s:200 - n * 18, r:0, c}); AVE.sel = AVE.sh.length - 1; AVE.sync(); },
+  'ave-col': b => { const x = AVE.sh[AVE.sel]; if (!x) return; x.c = b.dataset.c; AVE.sync(); },
+  'ave-del': () => { if (AVE.sel < 0) return; AVE.sh.splice(AVE.sel, 1); AVE.sel = -1; AVE.sync(); },
+  'ave-top': () => { if (AVE.sel < 0) return; const x = AVE.sh.splice(AVE.sel, 1)[0]; AVE.sh.push(x); AVE.sel = AVE.sh.length - 1; AVE.sync(); },
+  'ave-save': () => { const o = document.createElement('canvas'); o.width = o.height = 256; AVE.paint(o.getContext('2d'), 256 / 512, false);   // 导出时不画选中框
+    setAvatar(ME, o.toDataURL('image/png')); closeSheet(); toast('头像换好了', 'pink'); rerender(); },
+  'avc-send': () => { const o = document.createElement('canvas'); o.width = o.height = 256; o.getContext('2d').drawImage(AVC.cv, 0, 0, 256, 256);
+    const i = AVQ.findIndex(q => q.uid === ME); if (i >= 0) AVQ.splice(i, 1);
+    AVQ.push({id:'av' + Date.now(), uid:ME, img:o.toDataURL('image/jpeg', .86), time:avStamp()}); avSave(); closeSheet(); toast('已提交，管理员审核通过后换上', 'yellow'); rerender(); },
+  'avq-ok': b => { const i = AVQ.findIndex(q => q.id === b.dataset.id); if (i < 0) return; const q = AVQ.splice(i, 1)[0]; setAvatar(q.uid, q.img); toast(`已通过：${USERS[q.uid]?.name || q.uid} 的头像`, 'green'); rerender(); },
+  'avq-no': b => { const i = AVQ.findIndex(q => q.id === b.dataset.id); if (i < 0) return; const q = AVQ.splice(i, 1)[0]; AVREJ[q.uid] = true; avSave(); toast(`已驳回：${USERS[q.uid]?.name || q.uid} 的头像`, 'orange', 'x'); rerender(); }
+});
+const avePick = b => b.parentElement.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+let AVE = null, AVC = null;
+/* 几何图形：都以 (0,0) 为中心、边长 s 的方框为基准；hit 用图形自己的坐标（已去掉旋转）判断是否点中 */
+const AV_SHAPES = {
+  circle:{n:'圆', ic:'<circle cx="12" cy="12" r="8" fill="currentColor"/>', draw:(g, s) => { g.beginPath(); g.arc(0, 0, s/2, 0, Math.PI*2); g.fill(); }, hit:(x, y, s) => Math.hypot(x, y) <= s/2},
+  square:{n:'方块', ic:'<rect x="5" y="5" width="14" height="14" fill="currentColor"/>', draw:(g, s) => g.fillRect(-s/2, -s/2, s, s), hit:(x, y, s) => Math.abs(x) <= s/2 && Math.abs(y) <= s/2},
+  tri:{n:'三角', ic:'<path d="M12 4l9 16H3z" fill="currentColor"/>', draw:(g, s) => { const h = s*.866; g.beginPath(); g.moveTo(0, -h/2); g.lineTo(s/2, h/2); g.lineTo(-s/2, h/2); g.closePath(); g.fill(); },
+    hit:(x, y, s) => { const h = s*.866; return y >= -h/2 && y <= h/2 && Math.abs(x) <= (y + h/2) / h * s/2; }},
+  half:{n:'半圆', ic:'<path d="M3 15a9 9 0 0118 0z" fill="currentColor"/>', draw:(g, s) => { g.beginPath(); g.arc(0, s/4, s/2, Math.PI, 0); g.closePath(); g.fill(); }, hit:(x, y, s) => y <= s/4 && Math.hypot(x, y - s/4) <= s/2},
+  ring:{n:'圆环', ic:'<circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor" stroke-width="3.5"/>', draw:(g, s) => { g.lineWidth = s*.16; g.beginPath(); g.arc(0, 0, s*.42, 0, Math.PI*2); g.stroke(); }, hit:(x, y, s) => { const d = Math.hypot(x, y); return d >= s*.28 && d <= s/2; }},
+  bar:{n:'长条', ic:'<rect x="3" y="9.5" width="18" height="5" fill="currentColor"/>', draw:(g, s) => g.fillRect(-s/2, -s*.13, s, s*.26), hit:(x, y, s) => Math.abs(x) <= s/2 && Math.abs(y) <= s*.16}
+};
+const AV_FILL = ['#FF4FA7', '#2E5BFF', '#FFE14A', '#FF6B2C', '#10B26A', '#7B61FF', '#141418', '#F7F6F1'];
+function avEditor(cv){
+  const g = cv.getContext('2d');
+  AVE = {cv, bg:AV_BG[0], sh:[], sel:-1,
+    paint(ctx, k, outline){ ctx.save(); ctx.scale(k, k); ctx.fillStyle = AVE.bg; ctx.fillRect(0, 0, 512, 512);
+      AVE.sh.forEach((x, i) => { ctx.save(); ctx.translate(x.x, x.y); ctx.rotate(x.r * Math.PI / 180); ctx.fillStyle = ctx.strokeStyle = x.c; AV_SHAPES[x.t].draw(ctx, x.s);
+        if (outline && i === AVE.sel){ ctx.setLineDash([10, 8]); ctx.lineWidth = 3; ctx.strokeStyle = '#141418'; ctx.strokeRect(-x.s/2 - 10, -x.s/2 - 10, x.s + 20, x.s + 20); ctx.strokeStyle = '#FFFFFF'; ctx.lineDashOffset = 9; ctx.strokeRect(-x.s/2 - 10, -x.s/2 - 10, x.s + 20, x.s + 20); }
+        ctx.restore(); }); ctx.restore(); },
+    draw(){ AVE.paint(g, 1, true); },
+    /* 画布 + 计数 + 选中图形的工具条一起刷新 */
+    sync(){ AVE.draw(); const n = $('#aveN'); if (n) n.textContent = `${AVE.sh.length} / 5`; $$('[data-act="ave-add"]').forEach(b => b.disabled = AVE.sh.length >= 5);
+      const x = AVE.sh[AVE.sel], box = $('#aveSel'); if (!box) return;
+      box.innerHTML = x ? `<div class="ave-row"><span class="lab">颜色</span><div class="ave-sw">${AV_FILL.map(c => `<button class="${c === x.c ? 'on' : ''}" data-act="ave-col" data-c="${c}" style="--sw:${c}" aria-label="颜色 ${c}"></button>`).join('')}</div></div>
+        <div class="ave-row"><span class="lab">大小</span><input type="range" id="aveS" min="40" max="460" value="${x.s}"></div>
+        <div class="ave-row"><span class="lab">角度</span><input type="range" id="aveR" min="0" max="359" value="${(Math.round(x.r) % 360 + 360) % 360}"></div>
+        <div class="ave-row"><span class="lab"></span><button class="pill sm lt" data-act="ave-top">放到最上层</button><button class="pill sm lt" data-act="ave-del">删除这个${AV_SHAPES[x.t].n}</button></div>`
+        : `<p class="mut2" style="font-size:13px;margin:12px 0 0">${AVE.sh.length ? '点画布上的图形来选中它，拖动可以挪位置' : '从上面选一个图形加进来，最多 5 个'}</p>`;
+      if (x){ $('#aveS').addEventListener('input', e => { x.s = +e.target.value; AVE.draw(); }); $('#aveR').addEventListener('input', e => { x.r = +e.target.value; AVE.draw(); }); } }};
+  AVE.sync();
+  const pt = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * 512 / r.width, (e.clientY - r.top) * 512 / r.height]; };
+  const hitAt = (px, py) => { for (let i = AVE.sh.length - 1; i >= 0; i--){ const x = AVE.sh[i], a = -x.r * Math.PI / 180, dx = px - x.x, dy = py - x.y;
+    if (AV_SHAPES[x.t].hit(dx*Math.cos(a) - dy*Math.sin(a), dx*Math.sin(a) + dy*Math.cos(a), x.s)) return i; } return -1; };
+  let drag = null;
+  cv.addEventListener('pointerdown', e => { e.preventDefault(); const [px, py] = pt(e), i = hitAt(px, py), changed = i !== AVE.sel; AVE.sel = i;
+    if (i >= 0){ cv.setPointerCapture(e.pointerId); drag = {dx:AVE.sh[i].x - px, dy:AVE.sh[i].y - py}; } if (changed) AVE.sync(); else AVE.draw(); });
+  cv.addEventListener('pointermove', e => { if (!drag) return; const [px, py] = pt(e), x = AVE.sh[AVE.sel]; x.x = Math.max(0, Math.min(512, px + drag.dx)); x.y = Math.max(0, Math.min(512, py + drag.dy)); AVE.draw(); });
+  const up = () => { drag = null; }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+}
+/* 上传：拖动调整位置、滑块缩放，裁成正方形后提交审核 */
+function avCrop(file){
+  const url = URL.createObjectURL(file), img = new Image();
+  img.onload = () => {
+    sheet(`<h3>调整照片</h3><div class="ave"><div class="ave-c"><canvas id="avcC" width="512" height="512" aria-label="裁剪预览"></canvas><i class="ave-ring"></i></div>
+      <div class="ave-row"><span class="lab">缩放</span><input type="range" id="avcZ" min="1" max="4" step="0.01" value="1" style="flex:1;accent-color:var(--ink)"></div>
+      <p class="mut2" style="font-size:13px;margin:10px 0 0">拖动照片调整位置。提交后需要管理员审核，通过前别人看到的还是原来的头像。</p>
+      <div class="ave-row ave-end"><button class="pill sm lt" data-act="av-edit">重新选择</button><span style="flex:1"></span><button class="pill" data-act="avc-send">提交审核</button></div></div>`, d => {
+      const cv = $('#avcC', d), g = cv.getContext('2d'), base = 512 / Math.min(img.width, img.height); AVC = {cv, z:1, x:0, y:0};
+      const clampXY = () => { const w = img.width * base * AVC.z, h = img.height * base * AVC.z, mx = (w - 512) / 2, my = (h - 512) / 2; AVC.x = Math.max(-mx, Math.min(mx, AVC.x)); AVC.y = Math.max(-my, Math.min(my, AVC.y)); };
+      const draw = () => { clampXY(); const w = img.width * base * AVC.z, h = img.height * base * AVC.z; g.fillStyle = '#F7F6F1'; g.fillRect(0, 0, 512, 512); g.drawImage(img, (512 - w) / 2 + AVC.x, (512 - h) / 2 + AVC.y, w, h); };
+      draw(); $('#avcZ', d).addEventListener('input', e => { AVC.z = +e.target.value; draw(); });
+      let p0 = null; const k = () => 512 / cv.getBoundingClientRect().width;
+      cv.addEventListener('pointerdown', e => { e.preventDefault(); cv.setPointerCapture(e.pointerId); p0 = [e.clientX, e.clientY]; });
+      cv.addEventListener('pointermove', e => { if (!p0) return; AVC.x += (e.clientX - p0[0]) * k(); AVC.y += (e.clientY - p0[1]) * k(); p0 = [e.clientX, e.clientY]; draw(); });
+      const up = () => { p0 = null; }; cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+      return () => URL.revokeObjectURL(url);
+    });
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); toast('这张图打不开，换一张试试', 'orange', 'x'); };
+  img.src = url;
+}
 const catOf = p => p.attach[0] ? P(p.attach[0]).cat : null;
 const isSolved = p => STATE.solved[p.id] ?? p.solved;
 const likes = p => p.likes + (STATE.liked.has(p.id) ? 1 : 0);
@@ -4118,9 +4266,9 @@ ROUTES.seller = arg => {
       return `<div class="li c-${CATS[cat].c}" style="grid-template-columns:72px minmax(0,1fr) auto"><img src="${cover(cv, 3, 160, 160)}" alt="" style="width:72px;height:72px"><div style="min-width:0"><h4>${esc(title)}</h4><div class="m" style="margin:4px 0 0">${sp.note ? esc(sp.note) : `${sp.views.toLocaleString()} 次浏览 · ${sp.sales} 单 · 下单率 ${sp.conv}`}</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="tag c-${sc}">${sp.st}</span>${p ? `<a class="pill sm lt" data-go="item-${p.id}">查看</a>` : sp.st === '已驳回' ? `<button class="pill sm" data-go="seller-upload">去修改</button>` : ''}</div></div>`; }).join('')}</div>`;
   if (t === 'collab'){ const SV = Object.fromEntries(COLLAB.svcs.map(x => [x.k, x])), stc = {new:['c-pink','待回复'], doing:['c-blue','进行中'], done:['c-green','已完成']};
     body = `<div class="box" style="margin-top:0"><div class="box-h"><h3>我接的业务</h3><span class="mut2" style="font-size:13px">开启后会显示在你的主页，别人可以向你发起合作</span></div>
-      <div class="co-svcs">${COLLAB.svcs.map(x => `<div class="co-svc ${x.on ? 'on' : ''}"><button class="co-sw" data-act="co-svc" data-k="${x.k}" role="switch" aria-checked="${x.on}"><i></i>${x.n}</button><span class="co-p">${x.from == null ? '面议' : '¥' + x.from.toLocaleString() + ' 起'}</span></div>`).join('')}</div></div>
+      <div class="co-svcs">${COLLAB.svcs.map(x => `<div class="co-svc ${x.on ? 'on' : ''}"><button class="co-sw" data-act="co-svc" data-k="${x.k}" role="switch" aria-checked="${x.on}"><i></i>${x.n}</button><button class="co-p" data-act="co-price" data-k="${x.k}" aria-label="设置${x.n}的价格">${x.from == null ? '面议' : '¥' + x.from.toLocaleString() + ' 起'}${RIC.pen}</button></div>`).join('')}</div></div>
     <div class="box"><div class="box-h"><h3>合作邀约</h3><span class="mut2" style="font-size:13px">${COLLAB.reqs.filter(r => r.st === 'new').length} 条待回复</span></div>
-      <div class="co-list">${COLLAB.reqs.map(r => `<div class="co-req"><div class="co-top">${av(r.u, 'md')}<div style="min-width:0;flex:1"><b>${esc(r.title)}</b><span class="co-m">${esc(USERS[r.u].name)} · ${SV[r.svc]?.n || ''} · ${esc(r.budget)} · ${esc(r.due)}</span></div><span class="tag ${stc[r.st][0]}">${stc[r.st][1]}</span></div>
+      <div class="co-list">${COLLAB.reqs.map(r => `<div class="co-req"><div class="co-top">${av(r.u, 'md')}<div style="min-width:0;flex:1"><b>${esc(r.title)}</b><span class="co-m">${esc(USERS[r.u].name)} · ${SV[r.svc]?.n || ''} · ${r.quote != null ? `报价 ¥${r.quote.toLocaleString()}` : `预算 ${esc(r.budget)}`} · ${esc(r.due)}</span></div><span class="tag ${stc[r.st][0]}">${stc[r.st][1]}</span></div>
         <p>${esc(r.note)}</p><div class="co-acts">${r.st === 'new' ? `<button class="pill sm" data-act="co-ok" data-id="${r.id}">接受</button><button class="pill sm lt" data-act="co-no" data-id="${r.id}">婉拒</button>` : ''}<a class="pill sm lt" data-go="msg-${r.u}">发私信</a></div></div>`).join('') || '<div class="rnone">还没有合作邀约</div>'}</div></div>`; }
   if (t === 'upload') body = uploadView();
   return `<div class="wrap"><div class="ph"><h1 class="x">工作室<span class="s">studio</span></h1><p class="sub">${esc(u.shop)}</p></div>
@@ -4130,7 +4278,22 @@ ACTIONS['edit-store'] = () => { const u = USERS[ME]; sheet(`<h3>编辑店铺</h3
 ACTIONS['save-store'] = () => { USERS[ME].shop = $('#st-n').value || USERS[ME].shop; USERS[ME].bio = $('#st-b').value; closeSheet(); toast('店铺已更新'); rerender(); };
 Object.assign(ACTIONS, {
   'co-svc': b => { const x = COLLAB.svcs.find(v => v.k === b.dataset.k); x.on = !x.on; b.setAttribute('aria-checked', x.on); b.parentElement.classList.toggle('on', x.on); },
-  'co-ok': b => { const r = COLLAB.reqs.find(v => v.id === b.dataset.id); r.st = 'doing'; toast(`接下了「${r.title}」，去私信里聊细节吧`); rerender(); },
+  /* 设置一项业务的起价；也可以设成「面议」 */
+  'co-price': b => { const x = COLLAB.svcs.find(v => v.k === b.dataset.k);
+    sheet(`<h3>${x.n} · 价格</h3><div class="fg"><div class="fl full"><label for="coP">起价（元）</label><input class="inp" id="coP" type="number" inputmode="numeric" min="0" step="50" placeholder="比如 800" value="${x.from ?? ''}" ${x.from == null ? 'disabled' : ''}></div></div>
+      <div class="rail" style="flex-wrap:wrap;margin-top:12px">${[300, 500, 800, 1200, 2000].map(v => `<button class="chip" data-act="co-pq" data-v="${v}">¥${v.toLocaleString()}</button>`).join('')}</div>
+      <label class="co-ny"><input type="checkbox" id="coNy" ${x.from == null ? 'checked' : ''} onchange="const i=document.getElementById('coP');i.disabled=this.checked;if(!this.checked)i.focus()">面议（不写价格，聊过再定）</label>
+      <button class="pill" data-act="co-psave" data-k="${x.k}" style="margin-top:16px">保存</button>`); },
+  'co-pq': b => { const i = $('#coP'), n = $('#coNy'); if (n) n.checked = false; i.disabled = false; i.value = b.dataset.v; },
+  'co-psave': b => { const x = COLLAB.svcs.find(v => v.k === b.dataset.k), ny = $('#coNy').checked, v = Math.round(+$('#coP').value);
+    if (!ny && !(v > 0)){ toast('填一个大于 0 的价格，或者选面议', 'orange', 'x'); return; }
+    x.from = ny ? null : v; x.on = true; closeSheet(); toast(`${x.n}：${ny ? '面议' : '¥' + v.toLocaleString() + ' 起'}`); rerender(); },
+  /* 接下邀约时确认报价（默认填对方的预算） */
+  'co-ok': b => { const r = COLLAB.reqs.find(v => v.id === b.dataset.id), n = parseInt(String(r.budget).replace(/\D/g, '')) || '';
+    sheet(`<h3>接下「${esc(r.title)}」</h3><p class="mut2" style="margin:-4px 0 14px;font-size:13.5px">${esc(USERS[r.u].name)} 的预算：${esc(r.budget)}</p><div class="fg"><div class="fl full"><label for="coQ">你的报价（元）</label><input class="inp" id="coQ" type="number" inputmode="numeric" min="0" step="50" value="${n}" placeholder="按分成合作可以留空"></div></div>
+      <button class="pill" data-act="co-okgo" data-id="${r.id}" style="margin-top:16px">确认接下</button>`); },
+  'co-okgo': b => { const r = COLLAB.reqs.find(v => v.id === b.dataset.id), v = Math.round(+$('#coQ').value); r.quote = v > 0 ? v : null; r.st = 'doing'; closeSheet();
+    toast(`接下了「${r.title}」${r.quote ? '，报价 ¥' + r.quote.toLocaleString() : ''}，去私信里聊细节吧`); rerender(); },
   'co-no': b => { const r = COLLAB.reqs.find(v => v.id === b.dataset.id); COLLAB.reqs.splice(COLLAB.reqs.indexOf(r), 1); toast('已婉拒', 'blue'); rerender(); }
 });
 function ordersTable(list){ return `<table class="t"><tbody>${list.map(o => `<tr class="${o.st === 'refund' ? 'dim' : ''}"><td>${av(USERS[o.buyer] ? o.buyer : 'x','sm').replace('AZ', esc((o.buyer[0] || '?').toUpperCase()))}</td><td style="font-weight:600">雨夜磁带 Lo-Fi 采样包</td><td class="mut2">@${esc(USERS[o.buyer]?.name || o.buyer)}</td><td>${o.pay}</td><td class="r n">${yuan2(o.amt)}</td><td class="mut2 n">${o.time}</td></tr>`).join('')}</tbody></table>`; }
@@ -4193,7 +4356,7 @@ ROUTES.admin = arg => {
   if (arg) UI.adminTab = arg;
   if (STATE.role !== 'admin') return gate('管理', '只有平台管理员能进入。', `<button class="pill lg" data-act="role" data-v="admin">以管理员身份查看</button>`);
   const t = UI.adminTab;
-  const nav = [['review','待审核', REVIEW.length],['reports','举报', REPORTS.filter(r => r.st === '待处理').length],['refunds','退款', REFUNDS.filter(r => r.st === '待处理').length],['payout','结算', 0],['invites','邀请码', 0]];
+  const nav = [['review','待审核', REVIEW.length],['reports','举报', REPORTS.filter(r => r.st === '待处理').length],['refunds','退款', REFUNDS.filter(r => r.st === '待处理').length],['avatars','头像', AVQ.length],['payout','结算', 0],['invites','邀请码', 0]];
   let body = '';
   if (t === 'review'){ const r = REVIEW[0];
     body = r ? `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><span class="lab">还剩 ${REVIEW.length} 个</span><span class="mut2" style="font-size:12.5px">键盘 A 通过 · R 驳回</span></div>
@@ -4204,6 +4367,8 @@ ROUTES.admin = arg => {
       : `<div class="empty"><span class="stamp big pop">ALL CLEAR<small>审完了</small></span></div>`;
     onMount(() => { const kd = e => { if (e.target.closest('input,textarea') || !REVIEW.length || $('#layer .sheet')) return; if (e.key.toLowerCase() === 'a') ACTIONS['rv-ok'](); if (e.key.toLowerCase() === 'r') ACTIONS['rv-no'](); }; document.addEventListener('keydown', kd); onClean(() => document.removeEventListener('keydown', kd)); });
   }
+  if (t === 'avatars') body = AVQ.length ? `<div class="avq">${AVQ.map(q => `<div class="avq-i"><img src="${q.img}" alt="待审核头像"><div style="min-width:0"><b>${esc(USERS[q.uid]?.name || q.uid)}</b><span>${esc(q.time)} · 上传的头像</span></div><div class="avq-a"><button class="pill sm" data-act="avq-ok" data-id="${q.id}" style="background:var(--green);color:var(--on)">${IC.check}通过</button><button class="pill sm lt" data-act="avq-no" data-id="${q.id}">${IC.x}驳回</button></div></div>`).join('')}</div>`
+    : `<div class="empty"><span class="stamp big pop">ALL CLEAR<small>没有待审核的头像</small></span></div>`;
   if (t === 'reports') body = `<div style="display:flex;flex-direction:column;gap:10px">${REPORTS.map(r => `<div class="box" style="margin:0;padding:16px 18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;${r.st !== '待处理' ? 'opacity:.5' : ''}"><div><b style="font-size:15px">${esc(r.target)}</b><div class="mut" style="font-size:13.5px;margin-top:4px">${esc(r.reason)} · 来自 @${esc(USERS[r.who]?.name || r.who)} · ${r.time}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${r.st === '待处理' ? `<button class="pill sm lt" data-act="rp" data-id="${r.id}" data-v="已忽略">忽略</button><button class="pill sm" data-act="rp" data-id="${r.id}" data-v="已下架">下架</button>` : `<span class="tag c-green">${r.st.replace('已处理 · ','已')}</span>`}</div></div>`).join('')}</div>`;
   if (t === 'refunds') body = `<div style="display:flex;flex-direction:column;gap:10px">${REFUNDS.map(r => `<div class="box" style="margin:0;padding:16px 18px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center"><div><b style="font-size:15px">${esc(r.item)} · ${yuan2(r.amt)}</b><div class="mut" style="font-size:13.5px;margin-top:4px">@${esc(r.buyer)} · ${esc(r.reason)} · <b style="color:${r.dl === '未下载' ? 'var(--green)' : 'var(--orange)'}">${r.dl}</b></div></div><div style="display:flex;gap:6px">${r.st === '待处理' ? `<button class="pill sm lt" data-act="rf" data-no="${r.no}" data-v="已拒绝">拒绝</button><button class="pill sm" data-act="rf" data-no="${r.no}" data-v="已退款">退款</button>` : `<span class="tag c-${r.st === '已退款' ? 'violet' : 'orange'}">${r.st}</span>`}</div></div>`).join('')}</div>`;
   if (t === 'payout'){ const rows = [['nova',142,8436,.0068],['merc',96,9810,.0072],['lowf',121,6120,.0066],['ash',58,5240,.0075],['rin',5,216,.0074]]; const sum = rows.reduce((a, [, n, g, r]) => { a.g += g; a.f += g*r; a.p += g*.01; return a; }, {g:0, f:0, p:0});
@@ -4516,7 +4681,7 @@ function meHead(){
   const u = USERS[ME], nProd = PRODUCTS.filter(p => p.seller === ME).length, owned = STATE.owned.size;
   return `<div class="mh">
     <div class="mh-top"><button class="rl-ic dk" data-act="me-menu" aria-label="更多">${'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>'}</button><span style="flex:1"></span><button class="rl-ic dk" data-act="me-share" aria-label="分享主页">${RIC.fwd}</button></div>
-    <div class="mh-id">${av(ME, 'xl')}<div style="min-width:0"><h1>${esc(u.name)}</h1><span class="mut2">${['CTRL Z 号 · ' + esc(u.id), esc(u.city || '')].filter(Boolean).join(' · ')}</span></div></div>
+    <div class="mh-id"><button class="mh-av" data-act="av-edit" aria-label="更换头像">${av(ME, 'xl')}<i class="mh-cam">${RIC.pen}</i>${AVQ.some(q => q.uid === ME) ? '<span class="mh-pend">审核中</span>' : ''}</button><div style="min-width:0"><h1>${esc(u.name)}</h1><span class="mut2">${['CTRL Z 号 · ' + esc(u.id), esc(u.city || '')].filter(Boolean).join(' · ')}</span></div></div>
     <p class="mh-bio">${esc(u.bio)}</p>
     <div class="mh-st"><button data-act="me-list" data-v="follow"><b>${u.follow + STATE.follows.size}</b>关注</button><button data-act="me-list" data-v="fans"><b>${u.fans.toLocaleString()}</b>粉丝</button><span><b>${u.likes}</b>获赞与收藏</span></div>
     <div class="mh-q">
@@ -4556,7 +4721,7 @@ Object.assign(ACTIONS, {
     closeSheet(); const r = STATE.role, g = r === 'guest';   // 首页左上角也能打开；未登录时顶部换成登录入口，不显示账号相关项
     $('#layer').innerHTML = `<div class="sov drw-ov" data-ov><nav class="drw" aria-label="更多">${g ? `<div class="drw-u"><button class="pill" data-act="login">登录 / 注册</button></div>` : `<div class="drw-u">${av(ME, 'md')}<b>${esc(USERS[ME].name)}</b></div>
       <a href="#me-edit">${RIC.pen}编辑资料</a><a href="#me-orders">${IC.dl}订单</a><a href="#me-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2-1.2L14.2 3h-4.4l-.4 2.6a7 7 0 00-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 000 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 002 1.2l.4 2.6h4.4l.4-2.6a7 7 0 002-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>设置</a>
-      <a href="#user-${ME}">${av(ME, 'sm')}别人眼中的我</a><a href="#seller">${GLYPH.sample}工作室</a>`}
+      <a href="#seller"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.7 2.7 0 005.33 0 2.7 2.7 0 005.34 0A2.7 2.7 0 0020 9"/><path d="M5 11.5V20h14v-8.5"/><path d="M10 20v-5h4v5"/></svg>工作室</a>`}
       <button class="drw-sw" data-act="vislab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M4 12h3l2-5 3 10 2-6 2 3h4"/></svg>可视化实验室</button><button class="drw-sw drw-thm" data-act="theme">${isDark() ? IC.sun : IC.moon}${isDark() ? '浅色模式' : '深色模式'}</button>${g ? '' : `<button class="drw-sw" data-act="switch-acc">${IC.user}切换账号</button><button class="drw-out" data-act="logout">${IC.back}退出登录</button>`}
       <div class="drw-f"><span class="lab">原型 · 切换身份</span><div class="roles">${Object.entries(ROLE_NAME).map(([k, l]) => `<button class="${r === k ? 'on' : ''}" data-act="role" data-v="${k}">${l}</button>`).join('')}</div>${STATE.seller ? '<button class="more" data-act="unseller">撤回卖家资格</button>' : ''}</div></nav></div>`;
   }
