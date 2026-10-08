@@ -1206,7 +1206,7 @@ body.reels-open .totop{display:none}
 .shr-card{display:grid;grid-template-columns:56px minmax(0,1fr);gap:12px;align-items:center;padding:10px;border-radius:12px;background:var(--paper)}
 .shr-card img,.shr-card .mth{width:56px;height:56px;border-radius:8px;object-fit:cover}
 .shr-card b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.shr-card span{font-size:12px;color:var(--ink-3)}
+.shr-card div span{font-size:12px;color:var(--ink-3)}   /* 只管文字说明，不影响头像（头像也是 span） */
 .shr-to{display:flex;gap:6px;overflow-x:auto;padding:4px 2px 6px;scrollbar-width:none}
 .shr-to button{position:relative;flex:none;width:68px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-2)}
 .shr-to button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1714,6 +1714,19 @@ html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
 .dlx-n{margin:0;font-size:12.5px;color:var(--ink-3)}
 .dlx-c{display:inline-block;width:7px;height:7px;margin-left:2px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-2px);transition:transform .2s}
 [data-act="dl-x"].open .dlx-c{transform:rotate(225deg) translate(-1px,-1px)}
+/* 分享面板 */
+.shr-card.u{grid-template-columns:44px minmax(0,1fr)}
+.shr-msg{display:flex;gap:8px;margin-top:6px}
+.shr-msg .inp{flex:1;min-width:0}
+.shr-msg .inp:disabled{opacity:.5}
+.shr-msg .pill{flex:none;height:44px;padding:0 20px}
+.shr-apps{display:flex;gap:18px;margin-top:18px;padding-top:16px;border-top:1px solid var(--rule)}
+.shr-apps button{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;color:var(--ink-2);width:68px}
+.shr-apps .g{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:var(--paper);color:var(--ink);box-shadow:inset 0 0 0 1px var(--rule);transition:transform .15s var(--spring)}
+.shr-apps button:active .g{transform:scale(.92)}
+.shr-apps .g svg{width:22px;height:22px}
+.pill.sq-ic{width:40px;padding:0}
+.pill.sq-ic svg{width:18px;height:18px}
 </style>
 
 </head>
@@ -4007,7 +4020,7 @@ ACTIONS.pclose = () => {
 /* 点话题 = 用这个话题搜帖子 */
 ACTIONS.tagjump = b => { closeSearch(); openSearch('all', 'post'); const q = $('#sq'); q.value = b.dataset.v.replace(/^#/, ''); q.dispatchEvent(new Event('input')); };
 ACTIONS.reply = b => { const i = $('#cmtIn'); i.value = '@' + b.dataset.v + ' '; i.focus(); };
-ACTIONS['more-post'] = b => sheet(`<h3>这篇帖子</h3><button class="pill lt lg" data-act="share">${IC.share}复制链接</button><button class="pill lt lg" data-act="report" data-id="${b.dataset.id}">${IC.flag}举报</button>`);
+ACTIONS['more-post'] = b => sheet(`<h3>这篇帖子</h3><button class="pill lt lg" data-act="shr-open" data-k="post" data-id="${b.dataset.id}">${IC.share}分享</button><button class="pill lt lg" data-act="report" data-id="${b.dataset.id}">${IC.flag}举报</button>`);
 document.addEventListener('keydown', e => {
   if (!CUR.post || e.target.closest('input,textarea')) return;
   if (e.key === 'Escape') ACTIONS.pclose();
@@ -4243,7 +4256,7 @@ ROUTES.user = id => {
   return `<div class="wrap ${ucls(u.id)}">
   <div class="prof">${av(u.id, 'xl')}<div style="min-width:0"><span class="lab">${esc(u.role)} · ${esc(u.city)}</span><h1 class="x" style="margin-top:10px">${esc(u.name)}</h1><p class="bio">${esc(u.bio)}</p></div>
     <div class="acts" style="display:flex;flex-direction:column;gap:18px;align-items:flex-start"><div class="stats"><div><b data-roll="${u.fans}">${u.fans}</b><span>关注者</span></div><div><b data-roll="${u.follow}">${u.follow}</b><span>关注中</span></div><div><b>${u.likes}</b><span>获赞</span></div></div>
-      ${isMe ? `<a class="pill ol" href="#me-edit">编辑资料</a>` : `<div style="display:flex;gap:8px"><button class="pill ${STATE.follows.has(u.id) ? 'lt' : ''}" data-act="follow" data-id="${u.id}">${STATE.follows.has(u.id) ? '已关注' : '关注'}</button><a class="pill ol" href="#msg-${u.id}">私信</a></div>`}</div></div>
+      ${isMe ? `<a class="pill ol" href="#me-edit">编辑资料</a>` : `<div style="display:flex;gap:8px"><button class="pill ${STATE.follows.has(u.id) ? 'lt' : ''}" data-act="follow" data-id="${u.id}">${STATE.follows.has(u.id) ? '已关注' : '关注'}</button><a class="pill ol" href="#msg-${u.id}">私信</a><button class="pill ol sq-ic" data-act="shr-open" data-k="user" data-id="${u.id}" aria-label="分享主页">${RIC.fwd}</button></div>`}</div></div>
   <div class="utabs"><button class="${tab==='works'?'on':''}" data-act="utab" data-v="works">作品 <i>${works.length}</i></button>${showShop ? `<button class="${tab==='shop'?'on':''}" data-act="utab" data-v="shop">店铺 <i>${shop.length}</i></button>` : ''}</div>
   ${tab === 'works' ? (works.length ? `<div class="mason">${works.map(postCard).join('')}</div>` : '<div class="empty"><div class="x">空</div><span>还没有发布作品</span></div>')
     : isMe && !STATE.seller ? `<div class="shopband grain c-yellow" style="align-items:center"><div style="position:relative;z-index:2"><div class="x">把你的作品<br>卖给同行</div><p style="margin-top:12px;font-size:15px;max-width:30ch">采样、预设、.tox、视觉循环都可以上架。平台只收 1%。</p></div><button class="pill lg" data-act="sell" style="position:relative;z-index:2">${IC.plus}上架作品</button></div>`
@@ -4654,20 +4667,36 @@ Object.assign(ACTIONS, {
 /* ================= 转发到私信 ================= */
 function shareTargets(){ const ids = [...new Set([...Object.keys(CHATS), ...STATE.follows])].filter(id => USERS[id] && id !== ME); return ids.sort((a, b) => lastTs(b) - lastTs(a)); }
 const lastTs = uid => { const m = CHATS[uid]; return m && m.length ? m[m.length - 1].ts : 0; };
+/* 统一的分享面板（视频流、帖子、商品、个人主页都用它）：
+   上半部分 = 私信联系人，点头像选人（可多选），附一句话后发送；下半部分 = 复制链接 / 发到其它 App（手机系统分享）。
+   输入框和发送按钮一直在，选人前是灰的，面板高度不会跳 */
+const SHARE_PATH = {post:'#post-', prod:'#item-', user:'#user-'};
+const shareUrl = (k, id) => location.href.split('#')[0] + SHARE_PATH[k] + id;
 function shareSheet(k, id){
-  if (needLogin()) return; const obj = k === 'post' ? POST(id) : P(id); if (!obj) return;
-  const pick = new Set();
-  sheet(`<h3>转发给</h3>
-    <div class="shr-card">${k === 'post' ? miniThumb(obj) : `<img src="${cover(obj.cover, hash(obj.id) % 50, 120, 120)}" alt="">`}<div style="min-width:0"><b>${esc(obj.title)}</b><span>${k === 'post' ? esc(USERS[obj.author].name) : esc(obj.kind) + ' · ' + (obj.price ? yuan(obj.price) : '免费')}</span></div></div>
-    <div class="shr-to">${shareTargets().map(uid => `<button data-act="shr-pick" data-id="${uid}">${av(uid, 'md')}<span>${esc(USERS[uid].name)}</span><i>${IC.check}</i></button>`).join('')}</div>
-    <input class="inp" id="shrMsg" placeholder="附一句话（可不填）" autocomplete="off">
-    <div style="display:flex;gap:8px"><button class="pill lg pk" data-act="shr-send" id="shrGo" style="flex:1" disabled>发送</button><button class="pill lg lt" data-act="share">复制链接</button></div>`,
+  if (needLogin()) return; const obj = k === 'post' ? POST(id) : k === 'prod' ? P(id) : USERS[id]; if (!obj) return;
+  const pick = new Set(), to = shareTargets().filter(uid => !(k === 'user' && uid === id));   // 不把主页分享给主页的主人
+  const card = k === 'user' ? `${av(id, 'md')}<div style="min-width:0"><b>${esc(obj.name)}${id === ME ? '（我）' : ''}</b><span>${esc(obj.role || '')} · 主页</span></div>`
+    : `${k === 'post' ? miniThumb(obj) : `<img src="${cover(obj.cover, hash(obj.id) % 50, 120, 120)}" alt="">`}<div style="min-width:0"><b>${esc(obj.title)}</b><span>${k === 'post' ? esc(USERS[obj.author].name) : esc(obj.kind) + ' · ' + (obj.price ? yuan(obj.price) : '免费')}</span></div>`;
+  sheet(`<h3>分享给</h3>
+    <div class="shr-card ${k === 'user' ? 'u' : ''}">${card}</div>
+    <div class="shr-to">${to.length ? to.map(uid => `<button data-act="shr-pick" data-id="${uid}">${av(uid, 'md')}<span>${esc(USERS[uid].name)}</span><i>${IC.check}</i></button>`).join('') : '<p class="mut2" style="font-size:13px;margin:8px 0">还没有私信联系人，可以先复制链接发给朋友</p>'}</div>
+    <div class="shr-msg"><input class="inp" id="shrMsg" placeholder="先选人，再附一句话（可不填）" autocomplete="off" disabled><button class="pill pk" data-act="shr-send" id="shrGo" disabled>发送</button></div>
+    <div class="shr-apps">
+      <button data-act="shr-copy"><span class="g">${IC.link}</span>复制链接</button>
+      <button data-act="shr-sys"><span class="g">${IC.share}</span>其它 App</button>
+    </div>`,
     d => { d._pick = pick; d._obj = {k, id}; });
 }
 Object.assign(ACTIONS, {
-  'shr-pick': b => { const d = b.closest('.sheet'), id = b.dataset.id; d._pick.has(id) ? d._pick.delete(id) : d._pick.add(id); b.classList.toggle('on', d._pick.has(id)); const g = $('#shrGo'); g.disabled = !d._pick.size; g.textContent = d._pick.size ? `发送给 ${d._pick.size} 人` : '发送'; },
+  'shr-copy': b => { const {k, id} = b.closest('.sheet')._obj, u = shareUrl(k, id), ok = () => { closeSheet(); toast('链接已复制'); };
+    try { navigator.clipboard.writeText(u).then(ok, () => fallbackCopy(u) ? ok() : toast(u, 'blue')); } catch(e){ fallbackCopy(u) ? ok() : toast(u, 'blue'); } },
+  /* 手机浏览器支持时调起系统分享（微信、QQ 等都在里面）；不支持就复制链接，让人自己粘贴 */
+  'shr-sys': b => { const {k, id} = b.closest('.sheet')._obj, u = shareUrl(k, id), o = k === 'user' ? USERS[id] : k === 'post' ? POST(id) : P(id), title = k === 'user' ? `${o.name} 的主页 · CTRL Z` : `${o.title} · CTRL Z`;
+    if (navigator.share){ navigator.share({title, text:title, url:u}).then(() => closeSheet(), () => {}); return; }
+    (fallbackCopy(u) ? toast('链接已复制，粘贴到其它 App 就能分享') : toast(u, 'blue')); closeSheet(); },
+  'shr-pick': b => { const d = b.closest('.sheet'), id = b.dataset.id; d._pick.has(id) ? d._pick.delete(id) : d._pick.add(id); b.classList.toggle('on', d._pick.has(id)); const g = $('#shrGo'), m = $('#shrMsg'); g.disabled = m.disabled = !d._pick.size; m.placeholder = d._pick.size ? '附一句话（可不填）' : '先选人，再附一句话（可不填）'; g.textContent = d._pick.size > 1 ? `发送 ${d._pick.size}` : '发送'; },
   'shr-send': b => { const d = b.closest('.sheet'), {k, id} = d._obj, msg = $('#shrMsg').value.trim(), to = [...d._pick];
-    to.forEach(uid => { const c = CHATS[uid] ||= []; c.push({me:true, t:k, ref:id, ts:Date.now()}); if (msg) c.push({me:true, t:'text', text:msg, ts:Date.now() + 1}); autoReply(uid); });
+    to.forEach(uid => { const c = CHATS[uid] ||= []; c.push(k === 'user' ? {me:true, t:'text', text:`推荐个主页：${USERS[id].name} ${shareUrl(k, id)}`, ts:Date.now()} : {me:true, t:k, ref:id, ts:Date.now()}); if (msg) c.push({me:true, t:'text', text:msg, ts:Date.now() + 1}); autoReply(uid); });
     closeSheet(); toast(`已发送给 ${to.map(u => USERS[u].name).join('、')}`, 'pink'); msgBadge(); if (CUR.key?.startsWith('msg|')) rerender(); }
 });
 
@@ -4765,7 +4794,8 @@ Object.assign(ACTIONS, {
   'fav-sub': b => { UI.favSub = b.dataset.v; rerender(); },
   'hist-clear': () => { STATE.hist = []; store.set('hist', []); rerender(); },
   'goto-cmt': b => { const p = POST(b.dataset.p); UI.flashCmt = {p:p.id, t:b.dataset.t}; if (inStream(p)){ go('v-' + p.id); setTimeout(() => openReelCm(), 350); } else go('post-' + p.id); },
-  'me-share': () => { try { navigator.clipboard.writeText(location.href.split('#')[0] + '#user-' + ME); toast('主页链接已复制'); } catch(e){ toast('复制失败', 'orange', 'x'); } },
+  'me-share': () => shareSheet('user', ME),
+  'shr-open': b => shareSheet(b.dataset.k, b.dataset.id),
   'me-list': b => { const k = b.dataset.v, ids = k === 'follow' ? [...STATE.follows] : NOTES.fans.map(n => n.u).concat(['nova', 'lowf']).filter((v, i, a) => a.indexOf(v) === i);
     sheet(`<h3>${k === 'follow' ? '我关注的' : '我的粉丝'}</h3><div class="m-list">${ids.map(id => `<a class="mrow" data-go="user-${id}">${av(id, 'md')}<span class="mt"><b>${esc(USERS[id].name)}</b><span>${esc(USERS[id].role)}</span></span><button class="pill sm ${STATE.follows.has(id) ? 'lt' : ''}" data-act="follow" data-id="${id}">${STATE.follows.has(id) ? (k === 'fans' ? '互相关注' : '已关注') : '回关'}</button></a>`).join('') || '<div class="rnone">还没有</div>'}</div>`); },
   'me-menu': () => {
