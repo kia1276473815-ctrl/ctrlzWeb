@@ -91,8 +91,10 @@ img{display:block}
 .hd.sc{border-bottom-color:var(--rule)}
 /* 往下滑收起顶栏、往上滑再浮出（所有尺寸）；贴在顶栏下面的页签条、侧栏一起上移 */
 html.hd-off{--hdy:0px}
-html.hd-off .hd{transform:translateY(calc(-100% - env(safe-area-inset-top,0px) - 2px))}
-.sticky-f,.info,.snav,.htabs,.mtabs,.m-main,.toasts,.stk-hd{transition:top .3s var(--ease)}
+@media (max-width:760px){ html.hd-off .hd{transform:translateY(calc(-100% - env(safe-area-inset-top,0px) - 2px))} }
+.htabs{transition:top .3s var(--ease),transform .3s var(--ease)}
+html.hd-off .htabs{transform:translateY(calc(-100% - env(safe-area-inset-top,0px) - 8px))}
+.sticky-f,.info,.snav,.mtabs,.m-main,.toasts,.stk-hd{transition:top .3s var(--ease)}
 .wm{font:900 26px/1 var(--f-x);font-stretch:125%;letter-spacing:-.04em;display:flex;align-items:baseline;white-space:nowrap}
 .wm span{color:var(--pink);margin-left:.18em;position:relative}
 .wm span::before{content:"Z";position:absolute;left:2px;top:2px;color:var(--blue);mix-blend-mode:multiply;z-index:-1}
@@ -102,14 +104,14 @@ html.hd-off .hd{transform:translateY(calc(-100% - env(safe-area-inset-top,0px) -
 .nav a.on{color:var(--paper);background:var(--ink)}
 .hd-r{display:flex;align-items:center;gap:10px}
 .hd[data-s=none] .sbtn{display:none} /* 「我」板块不提供搜索 */
-/* 顶栏左上角：所有页面都不显示 logo；首页和「我」放菜单（三条横线），商城、私信留空，子页面是返回箭头 */
+/* 无顶栏设计：不显示 logo。
+   手机：一级页面（首页 / 商城 / 私信 / 我）没有顶栏，菜单、搜索放在各页面自己的第一行；子页面保留「返回 + 页名 + 搜索」的顶栏
+   平板 / 电脑：顶栏变成左侧边栏（见文末「左侧边栏」），页面里的菜单、搜索入口不重复显示 */
 .hd .wm{display:none}
 .hd-r{margin-left:auto}
 .hd-menu{flex:none;margin-left:-8px}
-.hd:not(.at-home):not(.at-me) .hd-menu{display:none}
-/* 「我」：平板 / 电脑的菜单在顶栏里，页面里那个就不重复了；手机上整条顶栏隐藏，页面直接从顶部开始 */
-@media (min-width:761px){ .mh-top [data-act="me-menu"]{display:none} }
-@media (max-width:760px){ html.no-hd .hd{display:none} html.no-hd{--hdy:0px} html.no-hd .mep{padding-top:calc(8px + env(safe-area-inset-top,0px))} }
+@media (max-width:760px){ .hd .hd-menu{display:none} html.no-hd .hd{display:none} html.no-hd{--hdy:0px} html.no-hd #app{padding-top:env(safe-area-inset-top,0px)} }
+@media (min-width:761px){ .mh-top [data-act="me-menu"],.pg-only{display:none !important} }
 .sbtn{display:flex;align-items:center;gap:10px;height:40px;padding:0 8px 0 16px;border-radius:999px;background:var(--card);border:1px solid var(--rule);color:var(--ink-3);font-size:14px;min-width:220px;transition:border-color .2s}
 .sbtn:hover{border-color:var(--rule-2);color:var(--ink-2)}
 .sbtn svg{width:16px;height:16px}
@@ -268,7 +270,7 @@ main{min-height:80vh}
 .nav{position:relative}
 .nav a{z-index:1}
 .nav a.on{background:transparent}
-.nav-ink{position:absolute;top:0;height:100%;border-radius:999px;background:var(--ink);transition:left .38s var(--spring),width .38s var(--spring),opacity .2s;pointer-events:none;opacity:0}
+.nav-ink{position:absolute;top:0;left:0;border-radius:999px;background:var(--ink);transition:left .38s var(--spring),width .38s var(--spring),top .38s var(--spring),height .38s var(--spring),opacity .2s;pointer-events:none;opacity:0}
 /* 滑杆数值气泡 */
 .rng b::after,.tl b::after{content:attr(data-v);position:absolute;left:50%;bottom:calc(100% + 10px);transform:translateX(-50%) translateY(4px);background:var(--ink);color:var(--paper);font:800 11px/1 var(--f-b);padding:5px 7px;border-radius:6px;white-space:nowrap;opacity:0;transition:opacity .15s,transform .15s;pointer-events:none}
 .rng.drag b::after,.tl.drag b::after{opacity:1;transform:translateX(-50%)}
@@ -1100,9 +1102,13 @@ canvas[data-wave]:focus-visible{box-shadow:0 0 0 2px var(--on)}
 /* 首页 */
 .home{padding-top:6px}
 .htabs{position:sticky;top:calc(var(--hdy) + env(safe-area-inset-top,0px));z-index:20;display:flex;justify-content:center;gap:clamp(18px,4vw,36px);padding:10px 0 12px;margin-bottom:6px;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-.htabs button{position:relative;font:700 17px/1 var(--f-b);color:var(--ink-3);padding:6px 2px;transition:color .2s}
-.htabs button.on{color:var(--ink)}
-.htabs button.on::after{content:"";position:absolute;left:50%;bottom:-4px;width:20px;height:3px;margin-left:-10px;border-radius:2px;background:var(--pink)}
+.ht-t{display:flex;justify-content:center;gap:clamp(18px,4vw,36px)}
+.hfeed{touch-action:pan-y}
+.htabs .ht-l,.htabs .ht-r{position:absolute;top:50%;margin-top:-22px}
+.htabs .ht-l{left:calc(var(--g) - 10px)} .htabs .ht-r{right:calc(var(--g) - 10px)}
+.ht-t button{position:relative;font:700 17px/1 var(--f-b);color:var(--ink-3);padding:6px 2px;transition:color .2s}
+.ht-t button.on{color:var(--ink)}
+.ht-t button.on::after{content:"";position:absolute;left:50%;bottom:-4px;width:20px;height:3px;margin-left:-10px;border-radius:2px;background:var(--pink)}
 .sugg{margin:4px 0 18px}
 .sugg .lab{display:block;margin-bottom:10px}
 .sugg-r{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
@@ -1213,6 +1219,7 @@ body.reels-open .totop{display:none}
 .msgp{display:grid;grid-template-columns:minmax(280px,360px) minmax(0,1fr);gap:20px;padding-top:18px;padding-bottom:20px}
 .m-side{min-width:0}
 .m-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.m-ha{display:flex;align-items:center;gap:6px}
 .m-head h1{font-size:clamp(34px,4vw,48px)}
 .m-quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
 .mq{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 6px 12px;border-radius:14px;background:var(--card);font-size:13px}
@@ -1588,6 +1595,40 @@ html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
   .vl-ft{bottom:calc(-14px - env(safe-area-inset-bottom,0px))}
   .vl-ft .pill{flex:1;justify-content:center}
 }
+
+/* ===== 平板 / 电脑：左侧边栏（替代顶栏，参考小红书网页版） =====
+   竖排：返回（仅子页面）→ 首页 / 商城 / 私信 → 搜索（按板块）→ 发布 → 我 …… 底部：深浅色、更多（菜单） */
+@media (min-width:761px){
+  :root{--hd:0px;--sbw:84px}
+  body{padding-left:var(--sbw)}
+  #hd{position:fixed;left:0;top:0;bottom:0;width:var(--sbw);height:auto;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding:calc(18px + env(safe-area-inset-top,0px)) 10px calc(16px + env(safe-area-inset-bottom,0px));border-bottom:0;border-right:1px solid var(--rule);background:var(--paper);backdrop-filter:none;-webkit-backdrop-filter:none;transform:none;overflow-y:auto;scrollbar-width:none}
+  #hd::-webkit-scrollbar{display:none}
+  #hd .hd-r{display:contents}
+  #hd .wm,#hd .hd-tt{display:none}
+  #hd #hdBack{order:0;margin-bottom:12px}
+  #hd .nav{order:1;flex:none;flex-direction:column;gap:2px;width:100%}
+  #hd .nav-ink{border-radius:16px}
+  #hd .nav a,#hd .sbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:100%;height:62px;padding:0;border-radius:16px;font:600 11px/1 var(--f-b);color:var(--ink-2);background:none;border:0;min-width:0}
+  #hd .nav a svg,#hd .sbtn svg{width:23px;height:23px;flex:none}
+  #hd .nav a:not(.on):hover,#hd .sbtn:hover{background:var(--rule)}
+  #hd .nav a.on{color:var(--paper)}
+  #hd .sbtn{order:2}
+  #hd .sbtn .t,#hd .sbtn kbd{display:none}
+  #hd .sbtn::after{content:"搜索"}
+  #hd[data-s=none] .sbtn{display:none}
+  #hd .pill.post-btn{order:3;display:grid;place-items:center;width:52px;height:52px;padding:0;margin:8px 0 6px;border-radius:16px;background:var(--pink);color:#141418;font-size:0;gap:0}
+  #hd .pill.post-btn svg{width:24px;height:24px}
+  #hd #meBtn{order:4;display:grid;position:relative;overflow:visible;margin:10px 0 22px;width:38px;height:38px;font-size:13px}
+  #hd #meBtn::after{content:"我";position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);font:600 11px/1 var(--f-b);color:var(--ink-2);white-space:nowrap}
+  #hd #meBtn.on{box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--ink)}
+  #hd #meBtn.on::after{color:var(--ink)}
+  #hd #thmBtn{order:8;margin-top:auto}
+  #hd .hd-menu{order:9;display:grid;margin:6px 0 0}
+  .msgp{padding-top:20px}   /* 没有顶栏了，私信标题与顶部留点距离 */
+}
+/* 商城（手机）：海报顶部的搜索条 */
+.bn-sq{position:absolute;z-index:6;top:calc(12px + env(safe-area-inset-top,0px));left:var(--g);right:var(--g);height:42px;display:flex;align-items:center;gap:10px;padding:0 16px;border-radius:999px;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:var(--ink-3);font-size:14px;box-shadow:0 2px 12px rgba(20,20,24,.1)}
+.bn-sq svg{width:18px;height:18px;flex:none;color:var(--ink-2)}
 </style>
 
 </head>
@@ -1599,9 +1640,9 @@ html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
   <a class="wm" href="#home" aria-label="CTRL Z 首页">CTRL<span>Z</span></a>
   <span class="hd-tt" id="hdTt"></span>
   <nav class="nav" aria-label="主导航"><span class="nav-ink"></span>
-    <a href="#home" data-r="home">首页</a>
-    <a href="#shop" data-r="shop">商城</a>
-    <a href="#msg" data-r="msg">私信</a>
+    <a href="#home" data-r="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20h-5.5v-5.5h-5V20H4z"/></svg><span>首页</span></a>
+    <a href="#shop" data-r="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8h16l-1.2 12H5.2z"/><path d="M9 8a3 3 0 016 0"/></svg><span>商城</span></a>
+    <a href="#msg" data-r="msg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg><span>私信</span></a>
   </nav>
   <div class="hd-r">
     <button class="hd-back thm" id="thmBtn" data-act="theme" aria-label="切换深浅色"></button>
@@ -3468,7 +3509,7 @@ const HDS = {y:0, acc:0, lock:0};
 const hdShow = on => document.documentElement.classList.toggle('hd-off', !on);
 addEventListener('scroll', () => { const y = scrollY, dy = y - HDS.y; HDS.y = y;
   $('#hd').classList.toggle('sc', y > 8);
-  if (y < $('#hd').offsetHeight + 24){ HDS.acc = 0; hdShow(true); return; }
+  if (y < 80){ HDS.acc = 0; hdShow(true); return; }
   if (performance.now() < HDS.lock || HST.ov || CUR.post || RL.on) return;
   HDS.acc = Math.sign(dy) === Math.sign(HDS.acc) ? HDS.acc + dy : dy;
   if (HDS.acc > 24) hdShow(false); else if (HDS.acc < -12) hdShow(true); }, {passive:true});
@@ -3604,7 +3645,7 @@ function fitText(root=document){
   $$('.ph h1, .prof h1, .bn-txt h2, .shopband .x, footer .x', root).forEach(el => { el.style.fontSize = ''; const par = el.parentElement, cs = getComputedStyle(par); const avail = par.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight); const w = el.scrollWidth; if (avail > 0 && w > avail + 1){ const fs = parseFloat(getComputedStyle(el).fontSize); el.style.fontSize = Math.floor(fs*avail/w*.98) + 'px'; } });
 }
 let _fitT; addEventListener('resize', () => { clearTimeout(_fitT); _fitT = setTimeout(() => fitText(), 120); });
-function navInk(){ const ink = $('.nav-ink'), a = $('.nav a.on'); if (!ink) return; if (a){ ink.style.left = a.offsetLeft + 'px'; ink.style.width = a.offsetWidth + 'px'; ink.style.opacity = 1; } else ink.style.opacity = 0; }
+function navInk(){ const ink = $('.nav-ink'), a = $('.nav a.on'); if (!ink) return; if (a){ Object.assign(ink.style, {left:a.offsetLeft + 'px', top:a.offsetTop + 'px', width:a.offsetWidth + 'px', height:a.offsetHeight + 'px', opacity:1}); } else ink.style.opacity = 0; }
 addEventListener('resize', navInk);
 const reduced = () => STATE.settings.rm || matchMedia('(prefers-reduced-motion:reduce)').matches;
 function flip(mutate){
@@ -3757,6 +3798,7 @@ ROUTES.shop = arg => {
   return `<section class="bn c-pink" tabindex="0" aria-roledescription="carousel" aria-label="精选海报">
     <canvas></canvas><div class="bcur" aria-hidden="true"></div>
     <div class="bn-top"><span class="lab">FOR GEN Z BY GEN Z</span></div>
+    <button class="bn-sq pg-only" data-act="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>搜商品：采样、预设、.tox</button>
     <div class="bn-txt"></div>
     <div class="bn-ctl"><div class="bn-seg">${SLIDES.map((s, i) => `<button data-act="bn-to" data-i="${i}" aria-label="第 ${i+1} 张"><i></i></button>`).join('')}</div>
       <span class="bn-cnt"></span><button class="bn-a" data-act="bn-prev" aria-label="上一张">${IC.arrow}</button><button class="bn-a" data-act="bn-next" aria-label="下一张">${IC.arrow}</button></div>
@@ -4142,13 +4184,39 @@ ROUTES.home = () => {
   const sugg = Object.values(USERS).filter(u => u.id !== ME && !STATE.follows.has(u.id));
   onMount(root => mountWaves(root));
   return `<div class="wrap home">
-    <div class="htabs" role="tablist"><button role="tab" class="${tab === 'fol' ? 'on' : ''}" data-act="htab" data-v="fol">关注</button><button role="tab" class="${tab === 'rec' ? 'on' : ''}" data-act="htab" data-v="rec">推荐</button></div>
-    ${tab === 'fol' ? `<div class="sugg"><span class="lab">${list.length ? '还可以关注' : '先关注几位创作者'}</span><div class="sugg-r">${sugg.map(u => `<div class="sg ${ucls(u.id)}"><a data-go="user-${u.id}">${av(u.id, 'md')}<b>${esc(u.name)}</b><span>${esc(u.role.split(' · ')[0])}</span></a><button class="pill sm" data-act="follow" data-id="${u.id}">关注</button></div>`).join('')}</div></div>` : ''}
-    ${list.length ? `<div class="mason">${list.map(postCard).join('')}</div>` : `<div class="empty"><div class="x">空</div><span>关注的人还没有发东西</span></div>`}
+    <div class="htabs"><button class="rl-ic dk ht-l pg-only" data-act="me-menu" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><div class="ht-t" role="tablist"><button role="tab" class="${tab === 'fol' ? 'on' : ''}" data-act="htab" data-v="fol">关注</button><button role="tab" class="${tab === 'rec' ? 'on' : ''}" data-act="htab" data-v="rec">推荐</button></div><button class="rl-ic dk ht-r pg-only" data-act="search" aria-label="搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div>
+    <div class="hfeed">${tab === 'fol' ? `<div class="sugg"><span class="lab">${list.length ? '还可以关注' : '先关注几位创作者'}</span><div class="sugg-r">${sugg.map(u => `<div class="sg ${ucls(u.id)}"><a data-go="user-${u.id}">${av(u.id, 'md')}<b>${esc(u.name)}</b><span>${esc(u.role.split(' · ')[0])}</span></a><button class="pill sm" data-act="follow" data-id="${u.id}">关注</button></div>`).join('')}</div></div>` : ''}
+    ${list.length ? `<div class="mason">${list.map(postCard).join('')}</div>` : `<div class="empty"><div class="x">空</div><span>关注的人还没有发东西</span></div>`}</div>
   </div>`;
 };
 ROUTES.feed = ROUTES.home;
-ACTIONS.htab = b => { UI.homeTab = b.dataset.v; flip(rerender); };
+/* 首页「关注 / 推荐」切换：点页签或左右滑动都会让内容朝对应方向滑走、新内容从另一侧滑入。
+   手指左滑 → 去右边的页签（推荐），右滑 → 去左边的页签（关注）；已在最边上时只有阻尼回弹 */
+const HOME_TABS = ['fol', 'rec'];
+function homeSwitch(to, from){   // from = 松手时内容已经被拖动的距离（点页签时为 0）
+  const cur = UI.homeTab || 'rec'; if (to === cur) return;
+  const dir = HOME_TABS.indexOf(to) > HOME_TABS.indexOf(cur) ? -1 : 1, W = innerWidth, f = $('#app .hfeed');
+  const swap = () => { UI.homeTab = to; rerender(); const n = $('#app .hfeed'); if (n && !reduced()) n.animate([{transform:`translateX(${-dir * W * .35}px)`, opacity:0}, {transform:'none', opacity:1}], {duration:260, easing:'cubic-bezier(.2,.9,.1,1)'}); };
+  if (!f || reduced()){ swap(); return; }
+  f.animate([{transform:`translateX(${from || 0}px)`, opacity:1}, {transform:`translateX(${dir * W * .45}px)`, opacity:0}], {duration:from ? 140 : 170, easing:'ease-in', fill:'forwards'}).onfinish = swap;
+}
+ACTIONS.htab = b => homeSwitch(b.dataset.v, 0);
+(() => {
+  let f = null, sx = 0, sy = 0, dx = 0, t0 = 0, lock = null;
+  document.addEventListener('touchstart', e => { f = null;
+    if (e.touches.length !== 1 || routeOf(CUR.hash) !== 'home' || CUR.post || RL.on || HST.ov) return;
+    const t = e.touches[0]; if (t.clientX < 24 || e.target.closest('.sugg-r,.rail,input,textarea')) return;   // 左边缘留给返回手势；本身能横向滚动的区域不抢
+    f = e.target.closest('.hfeed'); if (!f) return; sx = t.clientX; sy = t.clientY; dx = 0; lock = null; t0 = performance.now(); }, {passive:true});
+  document.addEventListener('touchmove', e => { if (!f) return; const t = e.touches[0], ddx = t.clientX - sx, ddy = t.clientY - sy;
+    if (!lock){ if (Math.abs(ddx) < 10 && Math.abs(ddy) < 10) return; lock = Math.abs(ddx) > Math.abs(ddy) * 1.3 ? 'x' : 'y'; if (lock === 'y'){ f = null; return; } }
+    const i = HOME_TABS.indexOf(UI.homeTab || 'rec'), edge = (ddx > 0 && i === 0) || (ddx < 0 && i === HOME_TABS.length - 1);
+    dx = edge ? ddx * .25 : ddx; f.style.transform = `translateX(${dx}px)`; f.style.opacity = 1 - Math.min(.35, Math.abs(dx) / innerWidth); }, {passive:true});
+  const end = () => { if (!f || lock !== 'x'){ f = null; return; } const el = f; f = null;
+    const i = HOME_TABS.indexOf(UI.homeTab || 'rec'), v = Math.abs(dx) / Math.max(1, performance.now() - t0), j = i + (dx < 0 ? 1 : -1);
+    if (HOME_TABS[j] && (Math.abs(dx) > innerWidth * .22 || (Math.abs(dx) > 40 && v > .45))){ el.style.transform = el.style.opacity = ''; homeSwitch(HOME_TABS[j], dx); return; }
+    el.animate([{transform:`translateX(${dx}px)`}, {transform:'none'}], {duration:220, easing:'cubic-bezier(.3,1.4,.5,1)'}); el.style.transform = el.style.opacity = ''; };
+  document.addEventListener('touchend', end); document.addEventListener('touchcancel', end);
+})();
 
 /* ================= 短视频：全屏，上下滑切换 ================= */
 const RL = {on:false, list:[], i:0, st:null, off:null, el:null, lock:0, cm:false, wl:{}};
@@ -4360,7 +4428,7 @@ ROUTES.msg = arg => {
   onMount(root => { const b = $('#cvB', root); if (b) b.scrollTop = b.scrollHeight; const i = $('#cvImg', root); i && i.addEventListener('change', e => { const f = e.target.files[0]; if (f) sendMsg(uid, {t:'img', url:URL.createObjectURL(f)}); }); const t = $('#cvIn', root); t && t.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) ACTIONS['cv-send']({dataset:{id:uid}}); }); });
   document.body.classList.toggle('in-conv', !!uid);
   onClean(() => document.body.classList.remove('in-conv'));
-  return `<div class="wrap msgp ${uid ? 'has-conv' : ''}"><div class="m-side"><div class="m-head"><h1 class="x">私信</h1><button class="pill sm lt" data-act="new-chat">${IC.plus}发起私信</button></div>${msgList(uid)}</div>
+  return `<div class="wrap msgp ${uid ? 'has-conv' : ''}"><div class="m-side"><div class="m-head"><h1 class="x">私信</h1><span class="m-ha"><button class="rl-ic dk pg-only" data-act="search" aria-label="搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button><button class="pill sm lt" data-act="new-chat">${IC.plus}发起私信</button></span></div>${msgList(uid)}</div>
     <div class="m-main">${uid ? conv(uid) : '<div class="m-empty"><div class="x">DM</div><span>选一个会话，或者从作品里直接转发给朋友</span></div>'}</div></div>`;
 };
 function sendMsg(uid, m){ (CHATS[uid] ||= []).push({me:true, ts:Date.now(), ...m}); refreshConv(uid); autoReply(uid); }
@@ -5022,7 +5090,7 @@ function syncSearchBtn(){ const s = searchScope(), hd = $('#hd'), b = $('#hd .sb
 document.addEventListener('rendered', syncSearchBtn);
 document.addEventListener('rendered', () => { const r = routeOf(CUR.hash), meRoot = r === 'me' && !parentOf(CUR.hash);
   $('#hd').classList.toggle('at-home', r === 'home'); $('#hd').classList.toggle('at-me', meRoot);
-  document.documentElement.classList.toggle('no-hd', meRoot && !!$('.mep .mh-top')); });   // 只有个人主页（有页面内菜单）才在手机上隐藏顶栏
+  document.documentElement.classList.toggle('no-hd', !parentOf(CUR.hash)); });   // 一级页面在手机上没有顶栏
 function contactIds(){ return [...new Set([...Object.keys(CHATS), ...STATE.follows])].filter(id => USERS[id] && id !== ME); }
 function openSearch(scope, tab){
   scope = scope === undefined ? searchScope() : scope; if (!scope || $('#srch')) return; const S = SCOPES[scope];
