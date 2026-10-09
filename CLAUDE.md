@@ -87,7 +87,8 @@
 - 退款：订单状态一律用 `ordSt(o)`（由 `REFUNDS` 推出来，`refundSync()` 同步订单和已购）；下载 / 查看链接用 `dlMark(pid)` 计数；未下载且 7 天内极速退款，否则进后台审核
 - 收款账户 `ADM.payee[uid]`（只存打码后的信息）：工作室概览最上面 `payeeBox()`（含结算记录）；后台没绑定的不能打款，会通知对方去绑定
 - 版权：举报原因含「版权」必须附证明；下架时通知里带 `{act:'counter', rp}`，作者在官方通知里提交反通知（`counter`）→ 后台举报队列「反通知」→ 恢复内容 / 维持下架，结果通知双方。`notify(uid, 标题, 正文, extra)` 的 extra 会合进消息
-- 媒体机审接口位 `modScan()`：带图片 / 音频的帖子先发后审进「待审核」，接内容安全接口后由回调决定
+- 媒体机审接口位 `modScan()`：原型里带图片 / 音频的帖子进「待审核」，接内容安全接口后由回调决定
+- **先审后发（连着后端时）**：命中送审词、带图片 / 音视频的帖子，和命中送审词的评论，后端存成 `status = review`，只有作者自己看得到。`apiPost` / `apiCmt` 把它映射成 `p.review` / `c.review`，卡片显示「审核中」（`.pend-t`）、帖子页顶部有提示、评论旁有标签；自己审核中的帖子存在 `LIVE.pend`，`liveFeed` 每次把它们补在信息流最前面，`liveMeExtras` 从 `/posts?author=自己` 重新读。后台「待审核」队列 = 商品 + 帖子（`rvOfLivePost`，`r.lk = 'post'`）+ 评论（`rvOfLiveCmt`，`r.lk = 'cmt'`）；帖子 / 评论通过走 `/admin/posts|comments/{id}/approve`，驳回走 `/takedown`（理由用 `RJ_REASON.content`），没有「要求补充材料」
 
 ## 功能补齐（第二轮）
 - 个性化推荐开关 `STATE.settings.pers`（设置「账号与隐私」）：关掉后首页「推荐」按发布时间排（`byTime` / `relTs` 把「2 小时前 / 昨天 / 10-02」换成时间戳），页顶提示 `.pers-off`

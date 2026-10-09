@@ -2400,6 +2400,7 @@ html.rm .fx-em *{animation:none}
 .ad-mini{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink-2);max-height:180px;overflow:auto}
 .ad-warn{padding:10px 12px;border-radius:12px;background:var(--orange-t);font-size:13.5px;font-weight:600}
 .ad-warn.y{background:var(--yellow-t)}
+.card .bd .pend-t{height:20px;font-size:11px;margin-bottom:6px;display:inline-flex;align-self:flex-start;width:max-content}
 /* 一次性凭据（新建后台账号后显示一次） */
 .cred{display:flex;flex-direction:column;gap:8px}
 .cred > div{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--paper)}
@@ -5316,7 +5317,7 @@ function postCard(p){
   else { const s = isSolved(p); cv = `<div class="cv grain"><div class="qcv"><div style="display:flex;justify-content:space-between;align-items:flex-start"><span class="q">?</span>${s ? '<span class="stamp">SOLVED<small>已解决</small></span>' : `<span class="tag k">Q.${p.qn}</span>`}</div><p>${esc(p.ex)}</p></div></div>`; }
   const onCv = p.attach.length && (p.type === 'image' || p.type === 'video') && !p.failed && cv && attachChip(p.attach[0]);   // 图片 / 视频封面：商品条做成毛玻璃压在封面下沿
   if (onCv) cv = cv.replace(/^<div class="cv/, '<div class="cv has-att').replace(/<\/div>$/, onCv + '</div>');
-  return `<article class="card ${postCls(p)} ${p.tcover && p.type === 'image' ? 'tpost' : ''}" data-t="${p.type}" data-go="${p.failed ? 'post-' + p.id : postHref(p)}" data-flip="p-${p.id}">${modBtn(p)}${cv}<div class="bd"><h3>${esc(p.title)}</h3>${p.attach.length && !onCv ? attachChip(p.attach[0]) : ''}<div class="meta"><a class="who" data-go="user-${u.id}">${av(u.id,'sm')}<span>${esc(u.name)}</span></a>${likeBtn(p)}</div></div></article>`;
+  return `<article class="card ${postCls(p)} ${p.tcover && p.type === 'image' ? 'tpost' : ''}" data-t="${p.type}" data-go="${p.failed ? 'post-' + p.id : postHref(p)}" data-flip="p-${p.id}">${modBtn(p)}${cv}<div class="bd">${p.review ? '<span class="tag c-yellow pend-t">审核中</span>' : ''}<h3>${esc(p.title)}</h3>${p.attach.length && !onCv ? attachChip(p.attach[0]) : ''}<div class="meta"><a class="who" data-go="user-${u.id}">${av(u.id,'sm')}<span>${esc(u.name)}</span></a>${likeBtn(p)}</div></div></article>`;
 }
 function sleeve(pr){
   const u = USERS[pr.seller], c = CATS[pr.cat], own = STATE.owned.has(pr.id);
@@ -5974,12 +5975,12 @@ function renderPost(id, fresh){
       <div class="top"><a data-go="user-${u.id}" style="display:flex;gap:10px;align-items:center;flex:1;min-width:0;cursor:pointer">${av(u.id,'md')}<span style="min-width:0"><b style="display:block">${esc(u.name)}</b><span class="mut2" style="font-size:12.5px">${esc(u.role)} · ${p.time}</span></span></a>
         ${me !== p.author ? `<button class="pill sm ${STATE.follows.has(u.id) ? 'lt' : ''}" data-act="follow" data-id="${u.id}" style="">${STATE.follows.has(u.id) ? '已关注' : '关注'}</button>` : ''}</div>
       <div class="scroll">
-        <h1>${esc(p.title)}</h1>
+        <h1>${esc(p.title)}</h1>${p.review ? '<p class="ad-warn y" style="margin:8px 0 0">审核中：通过后大家才能看到，现在只有你自己看得到</p>' : ''}
         <div class="body">${(BODY[p.id] || [p.ex]).map(t => `<p>${esc(t)}</p>`).join('')}${CODE[p.id] && p.type !== 'question' ? `<pre>${esc(CODE[p.id])}</pre>` : ''}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px">${p.tags.map(t => `<a class="chip" data-act="tagjump" data-v="${esc(t)}" style="height:28px;font-size:12.5px">#${esc(t)}</a>`).join('')}</div>
         ${p.attach.filter(a => onSale(P(a))).length ? `<div class="used"><span class="lab">这件作品用到</span>${p.attach.filter(a => onSale(P(a))).map(pid => { const pr = P(pid); return `<a class="c-${CATS[pr.cat].c}" data-go="item-${pid}"><img src="${cover(pr.cover, hash(pr.id)%50, 160, 160)}" alt=""><span style="min-width:0"><b style="font-size:13px;display:block">${esc(pr.en)}</b><span style="font-size:13.5px">${esc(pr.title)}</span></span><span class="pill sm cc">${yuan(pr.price)}</span></a>`; }).join('')}</div>` : ''}
         <div style="margin-top:22px"><span class="lab">${p.type === 'question' ? '回答' : '评论'} ${cm.length}</span>
-        ${cm.map((c, ci) => `<div class="cmt ${c.best ? 'best' : ''} ${UI.freshCmt === p.id && ci === cm.length - 1 ? 'fresh' : ''} ${UI.flashCmt && UI.flashCmt.p === p.id && UI.flashCmt.t === c.t ? 'flash' : ''}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">楼主</span>' : ''}${c.best ? '<span class="tag c-green" style="height:18px;font-size:10px">最佳</span>' : ''}<span>${c.time}</span></div><p>${esc(c.t)}</p>${c.code ? `<pre class="code">${esc(CODE[c.code])}</pre>` : ''}<div class="ctl"><button data-act="clike" data-k="${p.id}:${ci}" class="${STATE.clikes.has(p.id + ':' + ci) ? 'on' : ''}" aria-pressed="${STATE.clikes.has(p.id + ':' + ci)}"><i class="hk">${STATE.clikes.has(p.id + ':' + ci) ? '♥' : '♡'}</i><span>${c.likes + (STATE.clikes.has(p.id + ':' + ci) ? 1 : 0)}</span></button><button data-act="reply" data-v="${esc(USERS[c.u]?.name || '')}">回复</button>${cmtCtl(p.id, c)}</div></div></div>`).join('')}</div>
+        ${cm.map((c, ci) => `<div class="cmt ${c.best ? 'best' : ''} ${UI.freshCmt === p.id && ci === cm.length - 1 ? 'fresh' : ''} ${UI.flashCmt && UI.flashCmt.p === p.id && UI.flashCmt.t === c.t ? 'flash' : ''}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">楼主</span>' : ''}${c.best ? '<span class="tag c-green" style="height:18px;font-size:10px">最佳</span>' : ''}${c.review ? '<span class="tag c-yellow" style="height:18px;font-size:10px">审核中</span>' : ''}<span>${c.time}</span></div><p>${esc(c.t)}</p>${c.code ? `<pre class="code">${esc(CODE[c.code])}</pre>` : ''}<div class="ctl"><button data-act="clike" data-k="${p.id}:${ci}" class="${STATE.clikes.has(p.id + ':' + ci) ? 'on' : ''}" aria-pressed="${STATE.clikes.has(p.id + ':' + ci)}"><i class="hk">${STATE.clikes.has(p.id + ':' + ci) ? '♥' : '♡'}</i><span>${c.likes + (STATE.clikes.has(p.id + ':' + ci) ? 1 : 0)}</span></button><button data-act="reply" data-v="${esc(USERS[c.u]?.name || '')}">回复</button>${cmtCtl(p.id, c)}</div></div></div>`).join('')}</div>
       </div>
       <div class="foot"><textarea id="cmtIn" rows="1" placeholder="${STATE.role === 'guest' ? '登录后参与' : p.type === 'question' ? '你会怎么解决？' : '说点什么…'}" autocomplete="off" enterkeyhint="send"></textarea><button class="pill sm ic" data-act="cmt" data-id="${p.id}" aria-label="发送">${IC.arrow}</button>
         <span class="cdock"><button class="pill sm ic lt" data-act="like" data-id="${p.id}" aria-label="喜欢" style="${STATE.liked.has(p.id) ? 'color:var(--pink)' : ''}">${STATE.liked.has(p.id) ? IC.heartF : IC.heart}</button>
@@ -6695,17 +6696,17 @@ ADMV.dash = () => {
 };
 
 /* 审核：驳回要选原因并通知本人；本人的商品状态同步到工作室 */
-const RJ_REASON = {review:['标题或素材用了别人的商标', '没写兼容版本或依赖', '试听素材不合规范', '疑似侵权', '内容含违规信息'], avatar:['不是本人或含他人肖像', '含文字 / 二维码 / 联系方式', '画面不适合公开展示'], apply:['作品不足以证明原创能力', '实名信息不一致', '暂不开放该品类']};
+const RJ_REASON = {review:['标题或素材用了别人的商标', '没写兼容版本或依赖', '试听素材不合规范', '疑似侵权', '内容含违规信息'], avatar:['不是本人或含他人肖像', '含文字 / 二维码 / 联系方式', '画面不适合公开展示'], content:['含违规或引流信息', '疑似搬运 / 侵权', '侵犯他人肖像、隐私或名誉', '用了 AI 生成但没标注', '外链不安全'], apply:['作品不足以证明原创能力', '实名信息不一致', '暂不开放该品类']};
 /* 待审核：左边是队列，右边是选中这一项的完整详情——买家会看到的内容、来源与授权材料、发布者资质和历史、审核清单。
    操作：通过 / 要求补充材料（留在队列里，标成「待补充」）/ 驳回 */
 const rvCur = () => REVIEW.find(x => x.id === UI.rvSel) || REVIEW[0];
 const rvWarn = x => x.warn || x.flags.some(f => /^⚠|^未|敏感/.test(f));
 function rvDetail(r){
-  const p = r.kind === '帖子' && r.ref ? (POST(r.ref) || TAKEN_P[r.ref]) : null, a = ADM.acct[r.who] || {}, d = r.decl, done = new Set(r.ck || []), ck = RV_CK[r.kind] || RV_CK['帖子'];
+  const p = r.kind === '帖子' && r.ref ? (r.lp || POST(r.ref) || TAKEN_P[r.ref]) : null, a = ADM.acct[r.who] || {}, d = r.decl, done = new Set(r.ck || []), ck = RV_CK[r.kind] || RV_CK['帖子'];
   const app = ADM.apps.find(x => x.uid === r.who || x.name === uname(r.who)), sells = r.seller ? r.seller.onSale : PRODUCTS.filter(x => x.seller === r.who).length;
   const downs = r.seller ? r.seller.takenDown : Object.values(TAKEN_P).filter(x => x.author === r.who).length, reps = REPORTS.filter(x => repAuthor(x) === r.who).length;
   const kv = (k, v) => v ? `<span>${k}<b>${v}</b></span>` : '';
-  const body = p ? (BODY[p.id] || [p.ex || '']) : [];
+  const body = r.lp ? r.lp.body : p ? (BODY[p.id] || [p.ex || '']) : [];
   const imgs = p ? (p.imgs || (p.img ? [p.img] : [])) : [];
   return `<div class="rv-hd"><img src="${cover(r.cover, 5, 360, 360)}" alt=""><div class="rv-ht">
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="tag ${r.kind === '商品' ? 'c-pink' : 'k'}">${r.kind}</span><span class="mut2" style="font-size:13px">${esc(r.cat)} · ${r.time} 提交</span>${r.st === '待补充' ? stTag('等卖家补充', 'yellow') : ''}</div>
@@ -6713,7 +6714,8 @@ function rvDetail(r){
       ${r.flags.length ? `<div class="flags">${r.flags.map(f => `<span class="flag ${/^⚠|^未|敏感/.test(f) ? 'w' : ''}">${esc(f.replace('⚠ ', ''))}</span>`).join('')}</div>` : ''}</div></div>
     ${r.st === '待补充' ? `<p class="ad-warn y">已要求补充：${esc(r.ask || '')}</p>` : ''}
     <section class="rv-s"><h4>内容</h4>${r.kind === '商品' ? `${r.fileUrl ? `<a class="pill sm lt" href="${esc(r.fileUrl)}" target="_blank" rel="noopener" style="align-self:flex-start">${IC.dl}下载交付文件检查</a>` : ''}<div class="ad-kv col">${kv('文件', esc(r.files || ''))}${kv('试听方式', esc(r.tpl || ''))}</div>${r.desc ? `<p class="rv-p">${esc(r.desc)}</p>` : '<p class="mut2">没有填介绍</p>'}`
-      : p ? `${body.map(t => `<p class="rv-p">${esc(t)}</p>`).join('')}${imgs.length ? `<div class="rv-imgs">${imgs.map(s => `<img src="${esc(s)}" alt="">`).join('')}</div>` : ''}${p.tags?.length ? `<p class="mut2">${p.tags.map(t => '#' + esc(t)).join(' ')}</p>` : ''}<button class="pill sm lt" data-act="mod-open" data-id="${p.id}" style="align-self:flex-start">打开原帖</button>` : '<p class="mut2">原帖已经不在了</p>'}</section>
+      : p ? `${body.map(t => `<p class="rv-p">${esc(t)}</p>`).join('')}${imgs.length ? `<div class="rv-imgs">${imgs.map(s => `<img src="${esc(s)}" alt="">`).join('')}</div>` : ''}${p.tags?.length ? `<p class="mut2">${p.tags.map(t => '#' + esc(t)).join(' ')}</p>` : ''}${r.lp ? (r.lp.link ? `<p class="mut2" style="word-break:break-all">外链：<a href="${esc(r.lp.link)}" target="_blank" rel="noopener noreferrer">${esc(r.lp.link)}</a></p>` : '') : `<button class="pill sm lt" data-act="mod-open" data-id="${p.id}" style="align-self:flex-start">打开原帖</button>`}`
+      : r.lk === 'cmt' ? `<p class="rv-p">${esc(r.text)}</p><p class="mut2">评论在帖子「${esc(r.postTitle)}」下</p>` : '<p class="mut2">原帖已经不在了</p>'}</section>
     ${r.kind === '商品' ? `<section class="rv-s"><h4>来源与授权</h4>
       ${r.lic ? `<div class="lic">${r.lic.map(x => `<span>${IC.check.replace('<svg', '<svg width="13" height="13"')}${esc(x)}</span>`).join('')}<span class="no">转售原文件</span></div>` : ''}
       <div class="ad-kv col">${kv('原创 / 授权承诺', r.orig ? '已勾选 · ' + fmtDT(r.orig) : '<em style="color:var(--orange);font-style:normal">没有记录</em>')}${d ? kv('来源', esc(d.src || '')) + kv('AI', esc(d.ai || '')) + kv('人声 / 肖像', esc(d.voice || '') + (d.vurl ? ` <a class="rv-doc" href="${esc(d.vurl)}" target="_blank" rel="noopener">${IC.dl}${esc(d.vdoc || '打开授权书')}</a>` : d.vdoc ? ` <span class="rv-doc">${IC.dl}${esc(d.vdoc)}</span>` : '')) : ''}</div>
@@ -6724,7 +6726,7 @@ function rvDetail(r){
       ${app ? `<p class="mut2" style="font-size:12.5px;margin:0">入驻资料：实名 ${esc(app.real)} · 作品 ${esc(app.link)}</p>` : ''}
       ${admCan('users') ? `<button class="pill sm lt" data-act="us-open" data-id="${esc(r.who)}" style="align-self:flex-start">在用户管理里查看</button>` : ''}</section>
     <section class="rv-s"><h4>审核清单 <span class="mut2" style="font-weight:400">${done.size} / ${ck.length}</span></h4><div class="rv-ck">${ck.map((t, i) => `<button class="${done.has(i) ? 'on' : ''}" data-act="rv-ck" data-i="${i}" role="checkbox" aria-checked="${done.has(i)}"><i>${IC.check}</i><span>${esc(t)}</span></button>`).join('')}</div></section>
-    <div class="qact"><button class="pill lg" data-act="rv-ok" style="background:var(--green);color:var(--on)">${IC.check}通过<kbd>A</kbd></button><button class="pill lg lt" data-act="rv-ask">要求补充材料</button><button class="pill lg lt" data-act="rv-no">${IC.x}驳回<kbd>R</kbd></button></div>`;
+    <div class="qact"><button class="pill lg" data-act="rv-ok" style="background:var(--green);color:var(--on)">${IC.check}通过<kbd>A</kbd></button>${r.lk ? '' : '<button class="pill lg lt" data-act="rv-ask">要求补充材料</button>'}<button class="pill lg lt" data-act="rv-no">${IC.x}驳回<kbd>R</kbd></button></div>`;
 }
 ADMV.review = () => {
   if (API.on() && !LADM.review){ ladmShop('review'); return ladmWait('待审核', '读取中'); }
@@ -7337,7 +7339,7 @@ document.addEventListener('keydown', e => {
 });
 /* 评论面板：从底部升起，盖住下半屏，视频继续在上半屏播放 */
 function reelCmList(p){ const cm = cmtsOf(p.id); const fl = UI.flashCmt && UI.flashCmt.p === p.id ? UI.flashCmt.t : null;
-  return cm.map(c => `<div class="cmt ${fl === c.t ? 'flash' : ''}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">作者</span>' : ''}<span>${c.time}</span></div><p>${esc(c.t)}</p><div class="ctl"><button data-act="rl-cl">♥ ${c.likes}</button><button data-act="rl-re" data-v="${esc(USERS[c.u]?.name || '')}">回复</button>${cmtCtl(p.id, c)}</div></div></div>`).join('') || '<div class="rnone">还没有评论，来说第一句</div>'; }
+  return cm.map(c => `<div class="cmt ${fl === c.t ? 'flash' : ''}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">作者</span>' : ''}${c.review ? '<span class="tag c-yellow" style="height:18px;font-size:10px">审核中</span>' : ''}<span>${c.time}</span></div><p>${esc(c.t)}</p><div class="ctl"><button data-act="rl-cl">♥ ${c.likes}</button><button data-act="rl-re" data-v="${esc(USERS[c.u]?.name || '')}">回复</button>${cmtCtl(p.id, c)}</div></div></div>`).join('') || '<div class="rnone">还没有评论，来说第一句</div>'; }
 function openReelCm(focus){
   const p = reelCur(), box = $('.rl-cm', RL.el); if (!p) return; RL.cm = true;
   const n = cmtsOf(p.id).length;
@@ -9344,7 +9346,7 @@ const US_ACT = {warn:'warn', mute1:'mute1', mute7:'mute7', ban7:'ban7', ban0:'ba
       try { await STAFF.req('POST', `/admin/users/${encodeURIComponent(uid)}/actions`, {action:act, reason:$('#usWhy')?.value.trim() || '违反社区规范'}); } catch(e){ apiFail(e); return; }
       LADM.users = null; }
     usDo0(b); }; }
-const LIVE = {u:new Set(), prof:{}, cmts:{}, pendingId:null};
+const LIVE = {u:new Set(), prof:{}, cmts:{}, pendingId:null, pend:{}};   // pend：自己审核中的帖子（信息流里没有，要自己补上）
 const apiFail = e => { toast(esc(e?.message || '出错了，请稍后再试'), 'orange', 'x'); if (e?.code === 'phone_required') setTimeout(() => ACTIONS['live-bind'](), 500); };   // 没绑手机号：直接弹出绑定
 const liveUser = () => API.on() && STATE.role === 'user';
 
@@ -9362,7 +9364,7 @@ function apiPost(p){
   const s = p.style || {}, id = p.id, liked = !!p.liked, body = String(p.body || '').split(/\n+/).filter(Boolean), t = +new Date(p.createdAt);
   liked ? STATE.liked.add(id) : STATE.liked.delete(id);
   const o = {id, author:p.author.id, title:p.title, ex:body[0] || p.title, tags:p.tags || [], likes:p.likeCount - (liked ? 1 : 0), favs:0, cmts:p.commentCount, time:ago(t), ts:t,
-    attach:[], seed:hash(id) % 50, qn:s.qn || id.slice(-3).toUpperCase(), solved:false, h:s.h || 1, word:s.word || 'SOUND', edited:p.edited, live:true};
+    attach:[], seed:hash(id) % 50, qn:s.qn || id.slice(-3).toUpperCase(), solved:false, h:s.h || 1, word:s.word || 'SOUND', edited:p.edited, live:true, review:p.status === 'review'};
   const imgs = (p.media || []).filter(m => m.kind === 'image' && m.url).map(m => m.url);
   if (p.type === 'image' && imgs.length) Object.assign(o, {type:'image', img:imgs[0], imgs, h:s.h || 1});
   else if (p.type === 'question') o.type = 'question';
@@ -9370,17 +9372,21 @@ function apiPost(p){
   else Object.assign(o, {type:'image', tcover:{pal:s.pal || 'paper'}});   // 文字帖（以及暂未接通的声音 / 可视化）按文字卡显示
   BODY[id] = body.length ? body : [p.title];
   COMMENTS[id] ||= [];   // 不让真实帖子用上原型的示例评论
+  if (o.review) LIVE.pend[id] = o; else delete LIVE.pend[id];   // 先审后发：审核中的只有作者自己看得到
   return o;
 }
-const apiCmt = c => (apiUser(c.author), {id:c.id, u:c.author.id, t:c.body, time:ago(+new Date(c.createdAt)), likes:0});
+const apiCmt = c => (apiUser(c.author), {id:c.id, u:c.author.id, t:c.body, time:ago(+new Date(c.createdAt)), likes:0, review:c.status === 'review'});
 
 /* —— 读取 —— */
 async function liveFeed(){
-  const r = await API.req('GET', '/posts?tab=rec&limit=50');
-  POSTS.splice(0, POSTS.length, ...r.items.map(apiPost));
+  const r = await API.req('GET', '/posts?tab=rec&limit=50'), feed = r.items.map(apiPost), got = new Set(feed.map(p => p.id));
+  POSTS.splice(0, POSTS.length, ...Object.values(LIVE.pend).filter(p => p.author === ME && !got.has(p.id)), ...feed);   // 自己审核中的帖子放最前面（带「审核中」）
 }
 async function liveMeExtras(){
-  const [fo, bl, nt, prof] = await Promise.all([API.req('GET', `/users/${ME}/following?limit=50`), API.req('GET', '/me/blocks'), API.req('GET', '/notifications?limit=50'), API.req('GET', `/users/${ME}`)]);
+  const [fo, bl, nt, prof, mine] = await Promise.all([API.req('GET', `/users/${ME}/following?limit=50`), API.req('GET', '/me/blocks'), API.req('GET', '/notifications?limit=50'), API.req('GET', `/users/${ME}`),
+    API.req('GET', `/posts?author=${encodeURIComponent(ME)}&limit=50`)]);
+  LIVE.pend = {};
+  mine.items.filter(p => p.status === 'review').forEach(p => { const o = apiPost(p), i = POSTS.findIndex(x => x.id === o.id); i >= 0 ? POSTS[i] = o : POSTS.unshift(o); });
   STATE.follows = new Set(fo.items.map(u => apiUser(u).id));
   STATE.blocks = new Set(bl.items.map(u => apiUser(u).id));
   ADM.inbox[ME] = nt.items.map(n => ({id:n.id, title:n.title, text:n.body, ts:+new Date(n.createdAt), read:n.read, ...n.extra}));
@@ -9399,7 +9405,7 @@ function liveLoggedOut(){ if (!API.tok && STATE.role !== 'user') return; API.set
 /* 启动：同步部分先清掉示例内容（避免先闪一下假数据），再异步拉真实数据 */
 function liveReset(){
   if (!API.on()) return;
-  POSTS.splice(0); liveShopReset(); if (STATE.role === 'admin') setRole('guest', true);
+  POSTS.splice(0); LIVE.pend = {}; liveShopReset(); if (STATE.role === 'admin') setRole('guest', true);
   if (!API.tok && STATE.role === 'user') setRole('guest', true);
 }
 async function liveBoot(){
@@ -9439,7 +9445,8 @@ wrapAct('follow', async (orig, b, e) => {
 async function liveCmtSent(pid, before){
   const L = UI.newCmts[pid] || []; if (L.length <= before || !liveUser() || !POST(pid)?.live) return;
   const c = L[L.length - 1];
-  try { const r = await API.req('POST', `/posts/${pid}/comments`, {body:c.t}); c.id = r.id; }
+  try { const r = await API.req('POST', `/posts/${pid}/comments`, {body:c.t}); c.id = r.id;
+    if (r.status === 'review'){ c.review = true; const p = POST(pid); if (p) p.cmts = Math.max(0, p.cmts - 1); toast('评论已提交审核，通过后大家才能看到', 'orange'); if (RL.on && typeof openReelCm === 'function') openReelCm(); else softRefresh(); } }
   catch(err){ L.splice(L.indexOf(c), 1); const p = POST(pid); if (p) p.cmts = Math.max(0, p.cmts - 1); apiFail(err); if (RL.on && typeof openReelCm === 'function') openReelCm(); else softRefresh(); }
 }
 wrapAct('cmt', (orig, b, e) => { const pid = b.dataset.id, n = (UI.newCmts[pid] || []).length; orig(b, e); liveCmtSent(pid, n); });
@@ -9468,11 +9475,13 @@ wrapAct('cp-publish', async (orig, b, e) => {
     const r = await API.req('POST', '/posts', {type, title:p.title, body:(BODY[old] || []).join('\n'), tags:p.tags || [], uploadIds, style});
     const np = apiPost(r), i = POSTS.indexOf(p); if (i >= 0) POSTS[i] = np; delete BODY[old];
     if (CUR.post === old) ACTIONS.pclose(); rerender();
+    if (np.review) toast('已提交审核，通过后大家才能看到；现在只有你自己看得到', 'orange');
   } catch(err){ const i = POSTS.indexOf(p); if (i >= 0) POSTS.splice(i, 1); delete BODY[old]; apiFail(err); if (CUR.post === old) ACTIONS.pclose(); rerender(); }
 });
 wrapAct('post-esave', async (orig, b, e) => {
   const id = b.dataset.id; orig(b, e); const p = POST(id); if (!p?.live || !liveUser()) return;
-  try { apiPost(await API.req('PATCH', `/posts/${id}`, {title:p.title, body:(BODY[id] || []).join('\n')})); }
+  try { const np = apiPost(await API.req('PATCH', `/posts/${id}`, {title:p.title, body:(BODY[id] || []).join('\n')}));
+    if (np.review && !p.review){ p.review = true; toast('改动要重新审核，通过前只有你自己看得到', 'orange'); softRefresh(); } }
   catch(err){ apiFail(err); try { Object.assign(p, apiPost(await API.req('GET', `/posts/${id}`))); } catch(_){} softRefresh(); }
 });
 wrapAct('post-dgo', async (orig, b, e) => {
@@ -9775,7 +9784,9 @@ function liveWalletView(){
 async function ladmUsersQuiet(){ if (LADM.users) return; try { (LADM.users = (await STAFF.req('GET', '/admin/users?limit=50')).items).forEach(u => apiUser(u)); LADM.uq = ''; } catch(e){} }
 async function ladmShop(k){ if (LADM.busy[k]) return; LADM.busy[k] = true;
   try {
-    if (k === 'review'){ const r = await STAFF.req('GET', '/admin/products?status=queue'); LADM.review = r.items; REVIEW.splice(0, REVIEW.length, ...r.items.map(rvOfLive)); }
+    if (k === 'review'){   // 先审后发：商品、帖子、评论都进这一个队列
+      const [pr, ps, cs] = await Promise.all([STAFF.req('GET', '/admin/products?status=queue'), STAFF.req('GET', '/admin/posts?view=review&limit=50'), STAFF.req('GET', '/admin/comments?view=review&limit=50')]);
+      LADM.review = pr.items; REVIEW.splice(0, REVIEW.length, ...pr.items.map(rvOfLive), ...ps.items.map(rvOfLivePost), ...cs.items.map(rvOfLiveCmt)); }
     if (k === 'orders') LADM.orders = await STAFF.req('GET', '/admin/orders');
     if (k === 'refunds') LADM.refunds = (await STAFF.req('GET', '/admin/refunds?status=all')).items;
     if (k === 'vouchers'){ await ladmUsersQuiet(); LADM.vouchers = await STAFF.req('GET', '/admin/vouchers'); }
@@ -9789,11 +9800,25 @@ const rvOfLive = p => ({id:p.id, live:true, kind:'商品', sp:p.id, title:p.titl
   price:f2y(p.price), en:p.en, desc:p.desc, files:`${p.fileName} · ${fmtSize(p.fileSize)}`, fileUrl:p.fileUrl, tpl:({sample:'敲打 16 个 pad', preset:'XY 板 + 键盘弹奏', video:'12 秒视频循环'})[p.tpl] || '',
   lic:['发行作品', '演出与直播', '切片改编'].concat(p.extPrice != null ? ['扩展许可 ¥' + f2y(p.extPrice)] : [], p.aiTrain ? ['允许训练 AI'] : []), orig:+new Date(p.createdAt),
   decl:declView(p.decl, p.docs), st:p.status === 'need_info' ? '待补充' : '', ask:p.reviewNote, ck:p.checklist || []});
+/* 帖子 / 评论（lk = post / cmt）：通过 = 公开；驳回 = 不通过，后端会通知作者。没有「要求补充材料」 */
+const RV_TYPE = {text:'文字', image:'图片', video:'视频链接', question:'提问', audio:'声音'};
+const rvOfLivePost = p => { const body = String(p.body || '').split(/\n+/).filter(Boolean), s = p.style || {};
+  return {id:p.id, live:true, lk:'post', kind:'帖子', ref:p.id, title:p.title, who:apiUser(p.author).id, cat:RV_TYPE[p.type] || p.type, time:fmtDT(+new Date(p.createdAt)).slice(0, 11),
+    flags:p.flags.map(f => /送审词/.test(f) ? '⚠ ' + f : f), cover:p.type === 'video' ? 'wave' : 'grid',
+    lp:{id:p.id, body:body.length ? body : [p.title], imgs:p.media.filter(m => m.kind === 'image').map(m => m.url), tags:p.tags || [], link:typeof s.url === 'string' ? s.url : ''}}; };
+const rvOfLiveCmt = c => ({id:c.id, live:true, lk:'cmt', kind:'评论', title:c.body.slice(0, 40), who:apiUser(c.author).id, cat:'评论', time:fmtDT(+new Date(c.createdAt)).slice(0, 11),
+  flags:['⚠ 命中送审词'], cover:'wave', text:c.body, postTitle:c.postTitle});
 const rvLiveDo = async (action, reason = '') => { const r = rvCur(); if (!r) return;
+  if (r.lk){ if (action === 'ask') return;
+    const base = `/admin/${r.lk === 'post' ? 'posts' : 'comments'}/${encodeURIComponent(r.id)}`;
+    try { await STAFF.req('POST', base + (action === 'approve' ? '/approve' : '/takedown'), action === 'approve' ? undefined : {reason});
+      toast(action === 'approve' ? '已通过，大家现在都能看到' : '已驳回，已通知作者', action === 'approve' ? 'green' : 'blue');
+      LADM.review = null; UI.rvSel = null; ladmShop('review'); } catch(e){ apiFail(e); }
+    return; }
   try { await STAFF.req('POST', `/admin/products/${r.id}/review`, {action, reason, checklist:r.ck || []}); toast({approve:'已通过，已经上架', reject:'已驳回', ask:'已发给卖家'}[action], action === 'approve' ? 'green' : 'blue');
     LADM.review = null; UI.rvSel = null; ladmShop('review'); } catch(e){ apiFail(e); } };
 wrapAct('rv-ok', orig => { const r = rvCur(); if (!r?.live) return orig(); if (admGuard('review')) rvLiveDo('approve'); });
-wrapAct('rv-no', orig => { const r = rvCur(); if (!r?.live) return orig(); if (admGuard('review')) rsnSheet(`驳回「${esc(r.title)}」`, 'review', why => rvLiveDo('reject', why)); });
+wrapAct('rv-no', orig => { const r = rvCur(); if (!r?.live) return orig(); if (admGuard('review')) rsnSheet(`驳回「${esc(r.title)}」`, r.lk ? 'content' : 'review', why => rvLiveDo('reject', why)); });
 wrapAct('rv-ask-go', orig => { const r = rvCur(); if (!r?.live) return orig(); const picks = $$('#askR .on').map(x => x.textContent), x = $('#askX').value.trim();
   if (!picks.length && !x){ fxPop($('#askX'), 'fx-shake', 300); toast('选一项或写一句要补什么', 'orange', 'x'); return; }
   closeSheet(); rvLiveDo('ask', picks.join('；') + (x ? (picks.length ? '。' : '') + x : '')); });
