@@ -1511,7 +1511,34 @@ body.reels-open .totop{display:none}
 .mh-st{display:flex;gap:22px;flex-wrap:wrap}
 .mh-st > *{display:flex;align-items:baseline;gap:6px;font-size:13px;color:var(--ink-3)}
 .mh-st b{font:800 18px/1 var(--f-b);color:var(--ink);font-variant-numeric:tabular-nums}
-.mh-q{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:640px}
+.mh-q{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:900px}
+/* 余额 / 代金券 */
+.wal-h{display:flex;flex-direction:column;gap:8px;padding:22px 22px 20px}
+.wal-h > b{font-size:clamp(40px,7vw,56px);line-height:1;letter-spacing:-.01em}
+.wal-h .tag{align-self:flex-start}
+.vc-r{gap:14px}
+.vc-r.dim,.set-r.dim{opacity:.5}
+.vc-a{display:flex;flex-direction:column;min-width:92px}
+.vc-a b{font-size:20px;line-height:1.1}
+.vc-a i{font-style:normal;font-size:11.5px;color:var(--ink-3);margin-top:3px}
+.vc-m{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.vc-m b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vc-m .mut2{font-size:12px}
+.vc-f{display:flex;flex-direction:column;gap:8px}
+.vc-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.vc-g label{display:flex;flex-direction:column;gap:6px;min-width:0}
+.vc-tg{display:flex;align-items:center;gap:10px;width:100%;padding:10px 0;text-align:left;color:inherit}
+.vc-tg > i{width:20px;height:20px;border-radius:6px;border:2px solid var(--ink-3);display:grid;place-items:center;flex:none;transition:background .2s,border-color .2s}
+.vc-tg > i svg{width:13px;height:13px;opacity:0;transition:opacity .15s}
+.vc-tg.on > i{background:var(--pink);border-color:var(--pink);color:#141418}
+.vc-tg.on > i svg{opacity:1}
+.vc-tg > span:nth-of-type(1){flex:1;display:flex;flex-direction:column;font-weight:600}
+.vc-tg em{font-style:normal;font-size:12px;font-weight:400;color:var(--ink-3)}
+/* 内容审核 / 超级管理员在信息流里看到的「管理」小按钮 */
+.card{position:relative}
+.modb{position:absolute;left:8px;top:8px;z-index:4;display:flex;align-items:center;gap:4px;height:28px;padding:0 10px 0 8px;border-radius:99px;background:#141418;color:#F2F2EE;font:700 12px/1 var(--f-b);box-shadow:0 4px 12px -4px rgba(0,0,0,.4)}
+.modb svg{width:14px;height:14px}
+.modb:hover{background:var(--pink);color:#141418}
 .mqc{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--card);min-width:0;transition:transform .2s var(--spring)}
 .mqc:hover{transform:translateY(-2px)}
 .mqc .g{width:38px;height:38px;border-radius:11px;background:var(--c);color:#141418;display:grid;place-items:center;flex:none}
@@ -1551,7 +1578,7 @@ body.reels-open .totop{display:none}
 .drw-f{margin-top:auto;padding:14px 8px 0;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:10px;align-items:flex-start}
 .msub .sub-h{display:flex;align-items:center;gap:12px;padding:16px 0 20px}
 .msub .sub-h h1{font:900 clamp(24px,3.4vw,36px)/1 var(--f-b)}
-@media (max-width:760px){ .mtabs{top:calc(var(--hdy) + env(safe-area-inset-top,0px))} .htabs{top:calc(var(--hdy) + env(safe-area-inset-top,0px))} .mh-q{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .mqc{padding:10px 12px;gap:10px} .mqc .g{width:34px;height:34px} }
+@media (max-width:760px){ .mtabs{top:calc(var(--hdy) + env(safe-area-inset-top,0px))} .htabs{top:calc(var(--hdy) + env(safe-area-inset-top,0px))} .mh-q{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .mqc-wal{grid-column:1/-1} .mqc{padding:10px 12px;gap:10px} .mqc .g{width:34px;height:34px} }
 @media (max-height:440px){ .rl-d,.rl-att{display:none} .rl-info{padding:40px 14px 14px;gap:6px} .rl-info h3{font-size:14px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;overflow:hidden} .rl-top{padding-top:4px} .rl-ic{width:38px;height:38px} .rl-cm{height:80%} }
 
 /* ===== 声音流（替代短视频）：封面会跟着声音动，底部是可点选 / 拖动的真实波形 ===== */
@@ -2863,9 +2890,30 @@ const ADM = Object.assign({
     {id:'ap2', name:'tide.wav', real:'周*', idno:'4403**********0611', phone:'186****0912', cats:['sample', 'visual'], link:'xiaohongshu.com/user/5f2…', note:'海边实录采样 + 胶片扫描素材。', ts:NOW0 - 46*H, st:'待审核'}
   ],
   audit:[],
-  params:{plat:.03, coFee:.05, coRev:2, coAuto:7}
+  params:{plat:.03, coFee:.05, coRev:2, coAuto:7},
+  vouchers:[],                               // 代金券：{id, uid, amt 面额, exp 到期时间（0 = 长期）, note 说明, by, ts, off 撤回时间}
+  vuse:[]                                    // 抵扣记录：{vid, uid, no 订单号, amt, ts}；订单退款后这笔自动算回券里
 }, store.get('adm', {}));
 const admSave = () => store.set('adm', ADM);
+/* ================= 代金券（原型：存在 ADM 里，接后端时换成券表 + 抵扣流水） =================
+   超级管理员发给用户；可以拆开分几次用，付款时先用快过期的；只能买商品，不能提现 / 转让。
+   券的剩余 = 面额 − 没退款的抵扣（订单退款后，抵扣的钱自动回到原来那张券上；券已过期就不再能用）。
+   卖家照原价结算，券抵扣的部分由平台承担 */
+const r2 = x => Math.round(x*100)/100, VC_MAX = 2000;
+const vcUsed = v => ADM.vuse.filter(u => u.vid === v.id && rfOf(u.no)?.st !== '已退款').reduce((a, u) => a + u.amt, 0);
+const vcLeft = v => r2(v.amt - vcUsed(v));
+const vcSt = v => v.off ? ['已撤回', ''] : vcLeft(v) <= 0 ? ['已用完', ''] : v.exp && v.exp < Date.now() ? ['已过期', ''] : ['可用', 'green'];
+const vcOf = uid => ADM.vouchers.filter(v => v.uid === uid);
+const vcLive = uid => vcOf(uid).filter(v => vcSt(v)[0] === '可用').sort((a, b) => (a.exp || 9e15) - (b.exp || 9e15));
+const vcBal = uid => r2(vcLive(uid).reduce((a, v) => a + vcLeft(v), 0));
+// 扣 amt 元（先扣快过期的），记到订单 no 上；返回实际扣掉的
+function vcSpend(uid, amt, no){ let need = r2(amt);
+  for (const v of vcLive(uid)){ if (need <= 0) break; const x = Math.min(need, vcLeft(v)); ADM.vuse.push({vid:v.id, uid, no, amt:r2(x), ts:Date.now()}); need = r2(need - x); }
+  admSave(); return r2(amt - need); }
+/* 在首页 / 视频流里直接处理内容：内容审核和超级管理员。以管理员身份浏览时用当前后台账号；
+   普通身份登录、但这个用户被设成了后台成员（staff.uid）时用他自己的成员身份 */
+const MOD_ROLES = ['super', 'mod'];
+function modActor(){ const s = STATE.role === 'admin' ? admMe() : ADM.staff.find(x => x.uid === ME && x.on); return s && MOD_ROLES.includes(s.role) ? s : null; }
 PLAT = ADM.params.plat;
 REPORTS.forEach(r => { if (r.kind === 'cmt' && !r.key) r.key = r.ref + ':' + hash(r.au + '|' + r.text); });
 // 待审核 / 举报 / 退款 / 邀请码队列：第一次用种子数据，之后用本地保存的
@@ -5171,7 +5219,7 @@ function postCard(p){
   else { const s = isSolved(p); cv = `<div class="cv grain"><div class="qcv"><div style="display:flex;justify-content:space-between;align-items:flex-start"><span class="q">?</span>${s ? '<span class="stamp">SOLVED<small>已解决</small></span>' : `<span class="tag k">Q.${p.qn}</span>`}</div><p>${esc(p.ex)}</p></div></div>`; }
   const onCv = p.attach.length && (p.type === 'image' || p.type === 'video') && !p.failed && cv && attachChip(p.attach[0]);   // 图片 / 视频封面：商品条做成毛玻璃压在封面下沿
   if (onCv) cv = cv.replace(/^<div class="cv/, '<div class="cv has-att').replace(/<\/div>$/, onCv + '</div>');
-  return `<article class="card ${postCls(p)} ${p.tcover && p.type === 'image' ? 'tpost' : ''}" data-t="${p.type}" data-go="${p.failed ? 'post-' + p.id : postHref(p)}" data-flip="p-${p.id}">${cv}<div class="bd"><h3>${esc(p.title)}</h3>${p.attach.length && !onCv ? attachChip(p.attach[0]) : ''}<div class="meta"><a class="who" data-go="user-${u.id}">${av(u.id,'sm')}<span>${esc(u.name)}</span></a>${likeBtn(p)}</div></div></article>`;
+  return `<article class="card ${postCls(p)} ${p.tcover && p.type === 'image' ? 'tpost' : ''}" data-t="${p.type}" data-go="${p.failed ? 'post-' + p.id : postHref(p)}" data-flip="p-${p.id}">${modBtn(p)}${cv}<div class="bd"><h3>${esc(p.title)}</h3>${p.attach.length && !onCv ? attachChip(p.attach[0]) : ''}<div class="meta"><a class="who" data-go="user-${u.id}">${av(u.id,'sm')}<span>${esc(u.name)}</span></a>${likeBtn(p)}</div></div></article>`;
 }
 function sleeve(pr){
   const u = USERS[pr.seller], c = CATS[pr.cat], own = STATE.owned.has(pr.id);
@@ -5871,7 +5919,32 @@ function postExit(done){
 /* 点话题 = 用这个话题搜帖子 */
 ACTIONS.tagjump = b => { closeSearch(); openSearch('all', 'post'); const q = $('#sq'); q.value = b.dataset.v.replace(/^#/, ''); q.dispatchEvent(new Event('input')); };
 ACTIONS.reply = b => { const i = $('#cmtIn'); i.value = '@' + b.dataset.v + ' '; i.focus(); };
-ACTIONS['more-post'] = b => POST(b.dataset.id)?.author === ME && STATE.role === 'user' ? sheet(`<h3>我的帖子</h3><button class="pill lt lg" data-act="post-edit" data-id="${b.dataset.id}">${RIC.pen}编辑</button><button class="pill lt lg" data-act="shr-open" data-k="post" data-id="${b.dataset.id}">${IC.share}分享</button><button class="pill lt lg au-lo" data-act="post-del" data-id="${b.dataset.id}">删除</button>`) : sheet(`<h3>这篇帖子</h3><button class="pill lt lg" data-act="shr-open" data-k="post" data-id="${b.dataset.id}">${IC.share}分享</button><button class="pill lt lg" data-act="report" data-k="post" data-id="${b.dataset.id}">${IC.flag}举报</button>`);
+ACTIONS['more-post'] = b => POST(b.dataset.id)?.author === ME && STATE.role === 'user' ? sheet(`<h3>我的帖子</h3><button class="pill lt lg" data-act="post-edit" data-id="${b.dataset.id}">${RIC.pen}编辑</button><button class="pill lt lg" data-act="shr-open" data-k="post" data-id="${b.dataset.id}">${IC.share}分享</button><button class="pill lt lg au-lo" data-act="post-del" data-id="${b.dataset.id}">删除</button>`) : sheet(`<h3>这篇帖子</h3><button class="pill lt lg" data-act="shr-open" data-k="post" data-id="${b.dataset.id}">${IC.share}分享</button><button class="pill lt lg" data-act="report" data-k="post" data-id="${b.dataset.id}">${IC.flag}举报</button>${modActor() ? `<button class="pill lt lg" data-act="mod-post" data-id="${b.dataset.id}">${SHIELD}管理员操作</button>` : ''}`);
+/* —— 在首页 / 视频流里直接处理内容（内容审核、超级管理员）：下架、警告作者，或两个一起；都记操作日志，下架的能在后台「内容」里恢复 —— */
+const SHIELD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4" stroke-linecap="round"/></svg>';
+const MOD_RS = ['违规广告 / 引流', '色情低俗', '侵犯版权', '引战 / 人身攻击', '不实信息', '其他'];
+const modBtn = p => modActor() && p.author !== ME ? `<button class="modb" data-act="mod-post" data-id="${p.id}" aria-label="管理员操作">${SHIELD}管理</button>` : '';
+function modSheet(id){ const s = modActor(), p = POST(id); if (!s || !p) return; const kind = inStream(p) || p.type === 'video' ? '视频' : '帖子';
+  sheet(`<h3>管理员操作</h3><div class="ad-u big">${uav(p.author, 'md')}<span><b>${esc(uname(p.author))}</b><i>${kind}「${esc(p.title)}」 · 被警告过 ${acctOf(p.author).warns.length} 次</i></span></div>
+    ${p.live ? '<p class="ad-warn y">这条来自真实后端：现在的下架 / 警告只在这台设备的原型里生效（刷新后帖子还会出现），等后台接口接通才会真正下架。</p>' : ''}
+    <label class="ad-lab">原因（会发给作者）</label><div class="ad-rs" id="modR">${MOD_RS.map((r, i) => `<button class="pill lt ${i ? '' : 'on'}" data-act="rs-pick">${r}</button>`).join('')}</div>
+    <textarea class="inp" id="modX" placeholder="补充说明（可选）"></textarea>
+    <div class="ad-acts"><button class="pill pk" data-act="mod-do" data-v="take" data-id="${p.id}">下架</button><button class="pill lt" data-act="mod-do" data-v="warn" data-id="${p.id}">警告作者</button><button class="pill lt" data-act="mod-do" data-v="both" data-id="${p.id}">下架并警告</button></div>
+    <p class="mut2" style="font-size:12px;margin:0">以「${esc(s.name)} · ${ADM_ROLES[s.role][0]}」的身份操作，会记进操作日志。</p>`); }
+// 视频流里下架当前这条：从列表里拿掉，接着放下一条；没有了就关掉视频流
+function reelDrop(){ const track = $('.rl-track', RL.el); $$('.rl-s', track).forEach(s => { const k = +s.dataset.k; RL.wl[k] && RL.wl[k](); delete RL.wl[k]; s.remove(); });
+  RL.list.splice(RL.i, 1); if (!RL.list.length){ closeReels(); navUp(CUR.hash); } else goReel(Math.min(RL.i, RL.list.length - 1), true); }
+Object.assign(ACTIONS, {
+  'mod-post': b => modSheet(b.dataset.id),
+  'rl-mod': () => { const p = reelCur(); p && modSheet(p.id); },
+  'mod-do': b => { const s = modActor(), p = POST(b.dataset.id), v = b.dataset.v; if (!s){ toast('当前身份没有这个权限', 'orange', 'x'); return; } if (!p) return;
+    const x = $('#modX')?.value.trim(), why = ($('#modR .on')?.textContent || '违反社区规范') + (x ? '：' + x : ''), au = p.author, kind = inStream(p) || p.type === 'video' ? '视频' : '帖子';
+    if (v !== 'take'){ acctOf(au).warns.unshift({ts:Date.now(), reason:why}); admLog('警告作者', '@' + uname(au), `${kind}「${p.title}」：${why}`, s);
+      notify(au, '社区警告', `你的${kind}「${p.title}」${v === 'both' ? '已被下架，账号同时' : ''}被管理员警告。原因：${why}。多次违规会被限制使用，如有异议可以回复这条通知申诉。`); }
+    if (v !== 'warn') takeDown('post', p.id, why, v === 'take', undefined, s);
+    admSave(); closeSheet(); toast(v === 'warn' ? `已警告 ${esc(uname(au))}` : v === 'both' ? '已下架并警告' : '已下架', v === 'warn' ? 'orange' : 'green');
+    if (v !== 'warn'){ if (RL.on && reelCur()?.id === p.id) reelDrop(); else if (CUR.post === p.id) ACTIONS.pclose(); setTimeout(rerender, 60); } }
+});
 document.addEventListener('keydown', e => {
   if (!CUR.post || e.target.closest('input,textarea')) return;
   if (e.key === 'Escape') ACTIONS.pclose();
@@ -6075,10 +6148,22 @@ function pvVideo(pr){
 }
 
 /* ================= 购买（前端模拟） ================= */
-function grant(pr, pay, price){
+// vc：这一单用代金券抵扣的金额（price 仍是商品原价，卖家按原价结算）
+function grant(pr, pay, price, vc = 0){
   STATE.owned.add(pr.id); const d = new Date();
   STATE.orders.unshift({no:`CZ${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}-${String(Math.random()*9999|0).padStart(4,'0')}`, pid:pr.id, price, pay, time:`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`, st:'已完成', fresh:true});
-  if (price > 0){ const no = STATE.orders[0].no; notify(ME, '购买成功', `「${pr.title}」${yuan2(price)} · 订单号 ${no}。已放进「已购资源」，在订单详情里可以保存凭证、申请发票。`); notify(pr.seller, '有新订单', `${uname(ME)} 买了「${pr.title}」${yuan2(price)}，按月结算到你的收款账户。`); }
+  const no = STATE.orders[0].no; if (vc > 0) STATE.orders[0].vc = vcSpend(ME, vc, no);
+  if (price > 0){ const o = STATE.orders[0]; notify(ME, '购买成功', `「${pr.title}」${yuan2(price)}${o.vc ? `（代金券抵扣 ${yuan2(o.vc)}，实付 ${yuan2(r2(price - o.vc))}）` : ''} · 订单号 ${no}。已放进「已购资源」，在订单详情里可以保存凭证、申请发票。`); notify(pr.seller, '有新订单', `${uname(ME)} 买了「${pr.title}」${yuan2(price)}，按月结算到你的收款账户。`); }
+}
+/* 付款面板下半截：代金券抵扣开关 + 付款方式（全额抵扣时不用选）+ 合计 + 按钮。切换开关 / 付款方式只重画这一块 */
+const vcDed = pr => UI.vcUse === false ? 0 : Math.min(vcBal(ME), pr.price);
+function payBox(pr){
+  const bal = vcBal(ME), ded = vcDed(pr), cash = r2(pr.price - ded);
+  return `${cash > 0 ? `<div class="pays">${[['微信支付','green'],['支付宝','blue'],['银行卡','ink']].map(([m,c]) => `<button data-act="paym" data-m="${m}" class="${UI.pay===m?'on':''}"><i style="background:${INK[c]}"></i>${m}</button>`).join('')}</div>` : ''}
+    <div class="sum">${pr.orig ? `<div><span class="mut">原价</span><span class="num">${yuan2(pr.orig)}</span></div><div><span class="mut">限时优惠</span><span class="num" style="color:var(--pink)">−${yuan2(pr.orig - pr.price)}</span></div>` : ''}
+      ${bal > 0 ? `<button class="vc-tg ${UI.vcUse === false ? '' : 'on'}" data-act="vc-tg" data-id="${pr.id}" role="switch" aria-checked="${UI.vcUse !== false}"><i>${IC.check}</i><span>代金券抵扣<em>余额 ${yuan2(bal)}</em></span><span class="num" style="color:var(--pink)">${ded ? '−' + yuan2(ded) : '不使用'}</span></button>` : ''}
+      <div class="tot"><span>${ded ? '实付' : '合计'}</span><b class="num">${yuan2(cash)}</b></div></div>
+    <button class="pill lg" data-act="do-pay" data-id="${pr.id}" id="payBtn">${cash > 0 ? `${payVerb(UI.pay)} ${yuan2(cash)}` : '用代金券支付'}</button>`;
 }
 ACTIONS.buy0 = b => {
   if (needLogin()) return; const pr = P(b.dataset.id);
@@ -6086,18 +6171,17 @@ ACTIONS.buy0 = b => {
   UI.pay = UI.pay || '微信支付';
   sheet(`<h3>${esc(pr.title)}</h3>
     <div style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:center" class="c-${CATS[pr.cat].c}"><img src="${cover(pr.cover, hash(pr.id)%50, 160, 160)}" alt="" style="width:64px;height:64px;border-radius:12px"><div><b class="x" style="font-size:18px">${esc(pr.en)}</b><div class="mut2" style="font-size:13px;margin-top:4px">${esc(USERS[pr.seller].shop)}</div></div></div>
-    <div class="pays">${[['微信支付','green'],['支付宝','blue'],['银行卡','ink']].map(([m,c]) => `<button data-act="paym" data-m="${m}" class="${UI.pay===m?'on':''}"><i style="background:${INK[c]}"></i>${m}</button>`).join('')}</div>
-    <div class="sum">${pr.orig ? `<div><span class="mut">原价</span><span class="num">${yuan2(pr.orig)}</span></div><div><span class="mut">限时优惠</span><span class="num" style="color:var(--pink)">−${yuan2(pr.orig - pr.price)}</span></div>` : ''}<div class="tot"><span>合计</span><b class="num">${yuan2(pr.price)}</b></div></div>
-    <button class="pill lg" data-act="do-pay" data-id="${pr.id}" id="payBtn">${payVerb(UI.pay)} ${yuan2(pr.price)}</button>
+    <div id="payBox" style="display:contents">${payBox(pr)}</div>
     <p class="mut2" style="font-size:12px;text-align:center;line-height:1.6">数字商品，下载后不退款（文件损坏除外）</p>`);
 };
 ACTIONS.paym = b => { UI.pay = b.dataset.m; $$('.pays button').forEach(x => x.classList.toggle('on', x === b)); const pb = $('#payBtn'); pb.textContent = pb.textContent.replace(/^用\S+?支付/, payVerb(UI.pay)); };
+ACTIONS['vc-tg'] = b => { UI.vcUse = UI.vcUse === false; const box = $('#payBox'); if (box) box.innerHTML = payBox(P(b.dataset.id)); };
 const payVerb = m => '用' + m.replace(/支付$/, '') + '支付';
 ACTIONS['do-pay'] = b => {
-  const pr = P(b.dataset.id), sh = $('#layer .sheet');
-  sh.innerHTML = `<div class="done"><div class="ring-p" id="rp" style="--p:0"></div><b style="font-size:18px">正在等待${UI.pay}…</b></div>`;
+  const pr = P(b.dataset.id), sh = $('#layer .sheet'), ded = vcDed(pr), cash = r2(pr.price - ded);
+  sh.innerHTML = `<div class="done"><div class="ring-p" id="rp" style="--p:0"></div><b style="font-size:18px">${cash > 0 ? `正在等待${UI.pay}…` : '正在用代金券支付…'}</b></div>`;
   const t0 = performance.now(); const tick = now => { const k = Math.min(1, (now - t0)/1200); const r = $('#rp'); if (!r) return; r.style.setProperty('--p', k*100); if (k < 1) requestAnimationFrame(tick); else done(); }; requestAnimationFrame(tick);
-  const done = () => { grant(pr, UI.pay, pr.price); sfx('ok');
+  const done = () => { grant(pr, cash > 0 ? UI.pay : '代金券', pr.price, ded); sfx('ok');
     setTimeout(() => { const st = $('#layer .stamp'); if (st){ const r = st.getBoundingClientRect(); fxShapes(r.left + r.width/2, r.top + r.height/2, 28, 170, ['pink','blue','yellow','orange','green'], 70); fxPop($('#layer .sheet'), 'fx-thud', 400); haptic(16); } }, 140);
     setTimeout(() => { const st = $('#layer .stamp'); flyTo(st ? st.getBoundingClientRect() : null, cover(pr.cover, hash(pr.id)%50, 200, 200), () => { STATE.libNew++; badge(); }); }, 520);
     sh.innerHTML = `<button class="x-close" data-act="close-re" aria-label="关闭">${IC.x}</button><div class="done"><span class="stamp big pop" style="--sc:var(--blue)">PAID<small>已付款</small></span><b style="font-size:20px;margin-top:10px">${esc(pr.title)} 是你的了</b><span class="mut" style="font-size:14px">已放进资源库，随时可以下载</span></div><button class="pill lg" data-act="dl" data-id="${pr.id}">${IC.dl}现在下载</button><button class="pill lg lt" data-act="close-re">继续逛</button>`;
@@ -6193,7 +6277,7 @@ function meLegacy(arg){
   const nav = [['lib','资源库', owned.length],['orders','订单', 0],['favs','收藏', 0],['settings','设置', 0]];
   let body = '';
   if (t === 'lib') body = `<div class="lib">${owned.map(p => `<div class="li c-${CATS[p.cat].c}"><img src="${cover(p.cover, hash(p.id)%50, 180, 180)}" alt="" data-go="item-${p.id}" style="cursor:pointer"><div style="min-width:0"><div class="lab" style="display:flex;gap:6px;align-items:center"><span class="dot"></span>${esc(p.en)}</div><h4>${esc(p.title)}</h4><div class="m">${esc(p.size)}${verNew(p) ? ` · <b style="color:var(--pink)">有新版本 ${esc(p.ver)}</b>` : ''}</div><div class="li-b">${dlBtns(p, 'sm')}${prvMine(p.id) ? '' : `<button class="pill sm lt" data-act="prv-write" data-id="${p.id}">评价</button>`}</div></div>${dlOf(p.id).links.length || dlOf(p.id).texts.length ? `<div class="dlx" id="dlx-${p.id}" hidden>${dlPanel(p)}</div>` : ''}</div>`).join('')}</div>`;
-  if (t === 'orders') body = `<div class="box"><div class="tw"><table class="t"><thead><tr><th>资源</th><th>付款方式</th><th class="r">金额</th><th>时间</th><th>状态</th><th></th></tr></thead><tbody>${STATE.orders.map(o => { const p = P(o.pid); return `<tr class="ad-click" data-act="ord-open" data-no="${o.no}"><td><a data-go="item-${p.id}" style="cursor:pointer;font-weight:600">${esc(p.title)}</a>${o.fresh ? ' <span class="tag c-pink">新</span>' : ''}<div class="mut2" style="font-size:11.5px;font-family:var(--f-b)">${o.no}</div></td><td>${o.pay}</td><td class="r n">${yuan2(o.price)}</td><td class="mut2 n">${o.time}</td><td><span class="st"><span class="dot c-${ordSt(o) === '已完成' ? 'green' : ordSt(o) === '退款中' ? 'orange' : 'violet'}"></span>${ordSt(o)}</span>${rfOf(o.no)?.st === '已拒绝' ? '<div class="mut2" style="font-size:11.5px">退款未通过</div>' : ''}</td><td class="r"><button class="pill sm lt" data-act="ord-open" data-no="${o.no}">详情</button> ${ordSt(o) === '已完成' && o.price > 0 && !rfOf(o.no) ? `<button class="pill sm lt" data-act="refund" data-no="${o.no}">退款</button>` : ''}</td></tr>`; }).join('')}</tbody></table></div></div>`;
+  if (t === 'orders') body = `<div class="box"><div class="tw"><table class="t"><thead><tr><th>资源</th><th>付款方式</th><th class="r">金额</th><th>时间</th><th>状态</th><th></th></tr></thead><tbody>${STATE.orders.map(o => { const p = P(o.pid); return `<tr class="ad-click" data-act="ord-open" data-no="${o.no}"><td><a data-go="item-${p.id}" style="cursor:pointer;font-weight:600">${esc(p.title)}</a>${o.fresh ? ' <span class="tag c-pink">新</span>' : ''}<div class="mut2" style="font-size:11.5px;font-family:var(--f-b)">${o.no}</div></td><td>${o.pay}${o.vc && o.pay !== '代金券' ? ' + 代金券' : ''}</td><td class="r n">${yuan2(o.price)}${o.vc ? `<div class="mut2" style="font-size:11.5px">券 −${yuan2(o.vc)}</div>` : ''}</td><td class="mut2 n">${o.time}</td><td><span class="st"><span class="dot c-${ordSt(o) === '已完成' ? 'green' : ordSt(o) === '退款中' ? 'orange' : 'violet'}"></span>${ordSt(o)}</span>${rfOf(o.no)?.st === '已拒绝' ? '<div class="mut2" style="font-size:11.5px">退款未通过</div>' : ''}</td><td class="r"><button class="pill sm lt" data-act="ord-open" data-no="${o.no}">详情</button> ${ordSt(o) === '已完成' && o.price > 0 && !rfOf(o.no) ? `<button class="pill sm lt" data-act="refund" data-no="${o.no}">退款</button>` : ''}</td></tr>`; }).join('')}</tbody></table></div></div>`;
   if (t === 'favs'){ const fp = PRODUCTS.filter(p => STATE.favs.has(p.id)), fs = POSTS.filter(p => STATE.favs.has(p.id)); onMount(root => mountWaves(root));
     body = `${fp.length ? `<div class="grid-p">${fp.map(sleeve).join('')}</div>` : ''}${fs.length ? `<div class="mason" style="margin-top:32px">${fs.map(postCard).join('')}</div>` : ''}${!fp.length && !fs.length ? '<div class="empty"><div class="x">空</div><span>看到喜欢的就点书签</span></div>' : ''}`; }
   const profBox = `<div class="box"><div class="box-h"><h3>资料</h3></div><div class="box-b"><div class="fg"><div class="fl"><label for="pf-n">名字</label><input class="inp" id="pf-n" value="${esc(u.name)}"></div><div class="fl"><label for="pf-c">城市</label><input class="inp" id="pf-c" value="${esc(u.city)}"></div><div class="fl full"><label for="pf-b">一句话介绍</label><textarea class="inp" id="pf-b">${esc(u.bio)}</textarea></div></div><button class="pill" data-act="save-prof" style="margin-top:14px">保存</button></div></div>`;
@@ -6346,6 +6430,7 @@ const ADM_TABS = [
   ['refunds', '退款', '交易', ['super', 'cs', 'fin']],
   ['disputes', '合作纠纷', '交易', ['super', 'cs']],
   ['payout', '结算打款', '交易', ['super', 'fin']],
+  ['vouchers', '代金券', '交易', ['super']],
   ['notice', '公告与站内信', '运营', ['super', 'ops', 'cs']],
   ['ops', '海报与分类', '运营', ['super', 'ops']],
   ['words', '敏感词', '运营', ['super', 'mod']],
@@ -6369,7 +6454,7 @@ function invIssue(uid){
   if (uid) notify(uid, '你收到了开店邀请码', `CTRL Z 邀请你开店，邀请码是 ${code}。在「上架作品」里填入就能开通商品售卖，平台只收 ${+(PLAT*100).toFixed(1)}%。这个邀请码绑定了你的账号，只有你自己能用。`);
   admLog('生成邀请码', code, uid ? '发给 @' + uname(uid) : '通用'); return code;
 }
-function admLog(act, target, detail = ''){ const me = admMe(); ADM.audit.unshift({ts:Date.now(), by:me.name, role:me.role, act, target, detail}); ADM.audit.length = Math.min(ADM.audit.length, 600); admSave(); }
+function admLog(act, target, detail = '', me = admMe()){ ADM.audit.unshift({ts:Date.now(), by:me.name, role:me.role, act, target, detail}); ADM.audit.length = Math.min(ADM.audit.length, 600); admSave(); }
 const uname = uid => USERS[uid]?.name || uid;
 const uav = (uid, cls = 'sm') => USERS[uid] ? av(uid, cls) : `<span class="av c-${['pink','blue','yellow','orange','green','violet'][hash(uid) % 6]} ${cls}">${esc(String(uid).slice(0, 2).toUpperCase())}</span>`;
 const adH = (title, sub, right = '') => `<div class="ad-h"><div class="ad-ht"><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div>${right ? `<div class="ad-hr">${right}</div>` : ''}</div>`;
@@ -6392,7 +6477,7 @@ function ledger(){
     for (let i = 0; i < n; i++){ const ts = now - Math.floor(R()*44)*DAY - Math.floor(R()*DAY); const pay = ['微信支付', '支付宝', '微信支付', '支付宝', '银行卡'][Math.floor(R()*5)];
       L.push({no:'CZ' + ymd(ts) + '-' + (1000 + Math.floor(R()*9000)), type:'prod', ref:pr.id, title:pr.title, buyer:ADM_BUYERS.concat(['mio'])[Math.floor(R()*10)], seller:pr.seller, amt:pr.price, pay, ts, st:R() < .05 ? 'refund' : 'paid'}); } });
   SELLER_ORDERS.forEach(o => { const m = o.no.match(/CZ(\d{4})(\d\d)(\d\d)-(\d\d)(\d\d)/); L.push({no:o.no, type:'prod', ref:'p2', title:P('p2').title, buyer:o.buyer, seller:'rin', amt:o.amt, pay:o.pay, ts:m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5]).getTime() : now, st:o.st === 'refund' ? 'refund' : 'paid'}); });
-  STATE.orders.forEach(o => { const pr = P(o.pid); if (!pr || !o.price || L.some(x => x.no === o.no)) return; L.push({no:o.no, type:'prod', ref:o.pid, title:pr.title, buyer:ME, seller:pr.seller, amt:o.price, pay:o.pay, ts:Date.parse(String(o.time).replace(' ', 'T')) || now, st:o.st === '已退款' ? 'refund' : 'paid'}); });
+  STATE.orders.forEach(o => { const pr = P(o.pid); if (!pr || !o.price || L.some(x => x.no === o.no)) return; L.push({no:o.no, type:'prod', ref:o.pid, title:pr.title, buyer:ME, seller:pr.seller, amt:o.price, vc:o.vc || 0, pay:o.pay, ts:Date.parse(String(o.time).replace(' ', 'T')) || now, st:o.st === '已退款' ? 'refund' : 'paid'}); });
   REFUNDS.forEach(r => { if (L.some(x => x.no === r.no)) return; const pr = PRODUCTS.find(p => p.title === r.item); L.push({no:r.no, type:'prod', ref:pr?.id, title:r.item, buyer:r.buyer, seller:pr?.seller || 'ash', amt:r.amt, pay:'微信支付', ts:now - 6*DAY, st:r.st === '已退款' ? 'refund' : 'refunding'}); });
   CO.orders.forEach(o => { if (o.price == null || !o.paidAt) return;
     L.push({no:'CO' + ymd(o.paidAt) + '-' + o.id.toUpperCase(), type:'co', ref:o.id, title:o.title, buyer:o.from, seller:o.to, amt:o.price, pay:o.pay || '微信支付', ts:o.paidAt,
@@ -6405,7 +6490,7 @@ const monthOf = ts => { const d = new Date(ts); return d.getFullYear() + '-' + p
 function payoutRows(month){
   const M = {};
   ledger().forEach(x => { if (monthOf(x.ts) !== month) return; const r = M[x.seller] ||= {seller:x.seller, n:0, gross:0, fee:0, plat:0, co:0, coFee:0};
-    if (x.type === 'prod' && x.st === 'paid'){ r.n++; r.gross += x.amt; r.fee += x.amt*(FEE[x.pay] || .006); r.plat += x.amt*PLAT; }
+    if (x.type === 'prod' && x.st === 'paid'){ r.n++; r.gross += x.amt; r.fee += (x.amt - (x.vc || 0))*(FEE[x.pay] || .006); r.plat += x.amt*PLAT; }   // 券抵扣的部分没走支付通道，不收手续费；卖家照原价结算
     if (x.type === 'co' && x.st === 'released'){ const amt = x.amt - (x.part || 0); r.n++; r.co += amt; r.coFee += amt*CO_FEE; } });
   return Object.values(M).map(r => ({...r, net:r.gross - r.fee - r.plat + r.co - r.coFee})).filter(r => r.n).sort((a, b) => b.net - a.net);
 }
@@ -6480,11 +6565,11 @@ ADMV.users = () => { const q = fq('users'), f = UI.adf?.us || 'all', L = ledger(
 };
 /* 用户管理里的「后台与开店」：设为后台成员（超级管理员）、发绑定本人的开店邀请码（运营）；没有权限的部分不显示 */
 function usPerm(uid){
-  const cS = admCan('staff'), cI = admCan('invites'); if (!cS && !cI) return '';
+  const cS = admCan('staff'), cI = admCan('invites'), cV = admCan('vouchers'); if (!cS && !cI && !cV) return '';
   const sf = ADM.staff.find(s => s.uid === uid), inv = INVITES.filter(i => i.uid === uid);
   const staff = !cS ? '' : sf ? `<span class="tag c-${ADM_ROLES[sf.role][1] === 'ink' ? 'pink' : ADM_ROLES[sf.role][1]}">${sf.on ? '后台成员' : '已停用'} · ${ADM_ROLES[sf.role][0]}</span><button class="pill sm lt" data-act="us-staff-go">去人员与权限</button>`
     : `<select class="inp ad-sel" id="usRole" aria-label="后台角色">${Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}" ${k === 'mod' ? 'selected' : ''}>${n}</option>`).join('')}</select><button class="pill sm" data-act="us-staff" data-id="${esc(uid)}">设为管理员</button>`;
-  return `<label class="ad-lab">后台与开店</label><div class="ad-acts">${staff}${cI ? `<button class="pill sm lt" data-act="us-inv" data-id="${esc(uid)}">${IC.plus}发开店邀请码</button>` : ''}</div>
+  return `<label class="ad-lab">后台、开店与代金券</label><div class="ad-acts">${staff}${cI ? `<button class="pill sm lt" data-act="us-inv" data-id="${esc(uid)}">${IC.plus}发开店邀请码</button>` : ''}${cV ? `<button class="pill sm lt" data-act="us-vc" data-id="${esc(uid)}">${IC.plus}发代金券<span class="mut2">（余额 ${yuan2(vcBal(uid))}）</span></button>` : ''}</div>
     ${cI && inv.length ? `<div class="ad-mini">${inv.map(i => `<span>${i.code} · ${i.st === '已入驻' ? '已开店' : '未使用'} · ${esc(i.by)} ${i.time}</span>`).join('')}</div>` : ''}`;
 }
 function userSheet(uid){
@@ -6586,6 +6671,23 @@ ADMV.words = () => `${adH('敏感词', '「拦截」：发帖 / 评论 / 私信�
     <div class="ad-chips">${ADM.words[lv].map((w, i) => `<span class="tag c-${c}">${esc(w)}<button data-act="wd-del" data-lv="${lv}" data-i="${i}" aria-label="删除 ${esc(w)}">×</button></span>`).join('')}</div>
     <div class="ad-inl"><input class="inp" id="wd-${lv}" placeholder="加一个词，回车也行"><button class="pill sm" data-act="wd-add" data-lv="${lv}">添加</button></div></div>`).join('')}
   <div class="box ad-form"><h3 style="font-size:18px;font-weight:900">试一下</h3><div class="ad-inl"><input class="inp" id="wdT" placeholder="输入一段话看看会不会被拦"><button class="pill sm lt" data-act="wd-test">检测</button></div><span id="wdR" class="mut" style="font-size:13.5px"></span></div>`;
+
+/* 代金券（超级管理员）：发给一个或几个用户；列表里看剩余、到期、撤回 */
+const VC_EXP = [[30, '30 天'], [90, '90 天'], [365, '1 年'], [0, '长期']];
+const vcForm = uid => `<div class="ad-form vc-f">${uid ? `<input type="hidden" class="vcTo" value="${esc(uid)}">` : `<label class="ad-lab">发给谁（填用户 ID 或昵称，几个人用逗号隔开）</label><input class="inp vcTo" list="vcUs" placeholder="例如：yuu.td, lune" autocomplete="off">${uidList('vcUs')}`}
+  <div class="vc-g"><label><span class="ad-lab">面额（元）</span><input class="inp vcAmt" type="number" min="1" max="${VC_MAX}" step="1" value="20"></label>
+    <label><span class="ad-lab">有效期</span><select class="inp vcExp">${VC_EXP.map(([d, l]) => `<option value="${d}" ${d === 90 ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+  <label class="ad-lab">说明（用户能看到）</label><input class="inp vcNote" placeholder="例如：内测感谢 / 活动奖励" maxlength="30">
+  <button class="pill pk" data-act="vc-send" style="align-self:flex-start">${IC.plus}发放</button></div>`;
+ADMV.vouchers = () => { const V = ADM.vouchers.slice().reverse(), q = fq('vc'), f = UI.adf?.vc || 'all';
+  const sum = fn => r2(V.reduce((a, v) => a + fn(v), 0)), L = V.filter(v => (f === 'all' || vcSt(v)[0] === f) && (!q || (v.uid + ' ' + uname(v.uid) + ' ' + (v.note || '')).toLowerCase().includes(q)));
+  return `${adH('代金券', `发给用户买商品用：可以拆开分几次用，付款时先用快过期的；不能提现、不能转让。券抵扣的部分由平台承担，卖家照原价结算。单张最多 ${yuan2(VC_MAX)}`)}
+  <div class="box"><div class="box-b"><div class="ad-kv"><span>已发放<b>${yuan2(sum(v => v.amt))}</b></span><span>已抵扣<b>${yuan2(sum(vcUsed))}</b></span><span>未使用<b>${yuan2(sum(v => vcSt(v)[0] === '可用' ? vcLeft(v) : 0))}</b></span><span>过期 / 撤回作废<b>${yuan2(sum(v => ['已过期', '已撤回'].includes(vcSt(v)[0]) ? Math.max(0, vcLeft(v)) : 0))}</b></span></div></div></div>
+  <div class="box" style="margin-top:12px">${vcForm('')}</div>
+  <div class="ad-bar2" style="margin-top:12px">${adSeg('vc', [['all', '全部'], ['可用', '可用'], ['已用完', '已用完'], ['已过期', '已过期'], ['已撤回', '已撤回']], f)}${adQ('vc', '搜用户或说明')}</div>
+  <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>用户</th><th class="r">面额</th><th class="r">剩余</th><th>有效期</th><th>状态</th><th>说明</th><th>发放</th><th></th></tr></thead><tbody>${L.map(v => { const [st, c] = vcSt(v);
+    return `<tr><td><span class="ad-u">${uav(v.uid)}<span><b>${esc(uname(v.uid))}</b><i>@${esc(v.uid)}</i></span></span></td><td class="r n">${yuan2(v.amt)}</td><td class="r n">${yuan2(Math.max(0, vcLeft(v)))}</td><td class="mut2 n">${v.exp ? fmtDay(v.exp) : '长期'}</td><td>${stTag(st, c)}</td><td class="mut2">${esc(v.note || '—')}</td><td class="mut2">${esc(v.by)} ${fmtDT(v.ts).slice(0, 5)}</td><td class="r">${st === '可用' ? `<button class="pill sm lt" data-act="vc-off" data-id="${v.id}">撤回</button>` : ''}</td></tr>`; }).join('') || '<tr><td colspan="8" class="mut">还没有发过代金券</td></tr>'}</tbody></table></div></div>`;
+};
 
 /* 邀请码 */
 ADMV.invites = () => `${adH('邀请码', '商品售卖许可：创作者开店要用。可以发给指定用户（只有本人能用，会通过官方通知发给他），也可以生成通用码；入驻申请通过时会自动生成一个')}
@@ -6709,7 +6811,7 @@ Object.assign(ACTIONS, {
   // 退款
   'rf-do': b => { if (!admGuard('refunds')) return; const r = REFUNDS.find(x => x.no === b.dataset.no); if (!r) return; const ok = b.dataset.v === 'ok';
     r.st = ok ? '已退款' : '已拒绝'; ADM.lst[r.no] = ok ? 'refund' : 'paid'; refundSync(); admLog(ok ? '同意退款' : '拒绝退款', `${r.no} ${r.item}`, yuan2(r.amt));
-    notify(r.buyer, ok ? '退款已同意' : '退款申请没有通过', ok ? `「${r.item}」的 ${yuan2(r.amt)} 会原路退回，1–3 个工作日到账。` : `「${r.item}」${r.dl === '未下载' ? '' : r.dl + '，'}按《退款规则》不支持退款。如果文件有问题可以联系卖家，或回复这条通知说明。`);
+    notify(r.buyer, ok ? '退款已同意' : '退款申请没有通过', ok ? `「${r.item}」${r.amt > 0 ? `的 ${yuan2(r.amt)} 会原路退回，1–3 个工作日到账${r.vc ? `；代金券 ${yuan2(r.vc)} 已退回你的余额` : ''}` : `：代金券 ${yuan2(r.vc || 0)} 已退回你的余额`}。` : `「${r.item}」${r.dl === '未下载' ? '' : r.dl + '，'}按《退款规则》不支持退款。如果文件有问题可以联系卖家，或回复这条通知说明。`);
     admSave(); toast(r.st, ok ? 'green' : 'orange', ok ? 'check' : 'x'); rerender(); },
   // 纠纷
   'dp-open': b => disputeSheet(b.dataset.id),
@@ -6779,6 +6881,21 @@ Object.assign(ACTIONS, {
     notify(uid, '你成为了 CTRL Z 后台成员', `角色：${ADM_ROLES[role][0]}。你可以在「管理」里处理对应的工作，所有后台操作都会记进操作日志。`);
     admSave(); toast(`已设为管理员：${esc(uname(uid))} · ${ADM_ROLES[role][0]}`, 'green'); rerender(); userSheet(uid); },
   'us-staff-go': () => { closeSheet(); admTab('staff'); },
+  // 代金券：表单在「代金券」页签或用户弹窗里（.vc-f），按钮所在的那一份表单为准
+  'us-vc': b => { if (!admGuard('vouchers')) return; const uid = b.dataset.id; sheet(`<h3>发代金券给 ${esc(uname(uid))}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">现在余额 ${yuan2(vcBal(uid))}；会通过「CTRL Z 官方」通知他。</p>${vcForm(uid)}`); },
+  'vc-send': b => { if (!admGuard('vouchers')) return; const f = b.closest('.vc-f'), to = $('.vcTo', f), amt = r2(+$('.vcAmt', f).value), days = +$('.vcExp', f).value, note = $('.vcNote', f).value.trim();
+    const names = to.value.split(/[,，、\s]+/).filter(Boolean), uids = names.map(findUid);
+    if (!names.length){ fxPop(to.type === 'hidden' ? f : to, 'fx-shake', 300); toast('填一下发给谁', 'orange', 'x'); return; }
+    const bad = names.filter((_, i) => !uids[i]); if (bad.length){ fxPop(to, 'fx-shake', 300); toast('没找到：' + esc(bad.join('、')), 'orange', 'x'); return; }
+    if (!(amt >= 1 && amt <= VC_MAX)){ fxPop($('.vcAmt', f), 'fx-shake', 300); toast(`面额要在 ¥1 到 ${yuan2(VC_MAX)} 之间`, 'orange', 'x'); return; }
+    const me = admMe(), exp = days ? Date.now() + days*864e5 : 0, list = [...new Set(uids)];
+    list.forEach(uid => { ADM.vouchers.push({id:'vc' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), uid, amt, exp, note, by:me.name, ts:Date.now(), off:0});
+      notify(uid, '你收到一张代金券', `${yuan2(amt)}${exp ? `，${fmtDay(exp)} 前有效` : '，长期有效'}。买商品时自动抵扣，可以分几次用完。${note ? '说明：' + note : ''}`, {act:'wallet'}); });
+    admLog('发代金券', list.map(u => '@' + uname(u)).join('、'), `${yuan2(amt)} × ${list.length}${note ? ' · ' + note : ''}`); admSave();
+    toast(`已发出 ${list.length} 张 ${yuan2(amt)} 代金券`, 'pink'); const one = to.type === 'hidden' && list[0]; if (one){ closeSheet(); rerender(); userSheet(one); } else rerender(); },
+  'vc-off': b => { if (!admGuard('vouchers')) return; const v = ADM.vouchers.find(x => x.id === b.dataset.id); if (!v || vcSt(v)[0] !== '可用') return; const left = vcLeft(v);
+    v.off = Date.now(); notify(v.uid, '代金券已撤回', `面额 ${yuan2(v.amt)} 的代金券已被平台撤回，剩余的 ${yuan2(left)} 不能再用。已经用掉的部分不受影响。如有疑问可以回复这条通知。`);
+    admLog('撤回代金券', '@' + uname(v.uid), `面额 ${yuan2(v.amt)}，作废剩余 ${yuan2(left)}`); admSave(); toast('已撤回', 'orange'); rerender(); },
   'us-inv': b => { if (!admGuard('invites')) return; const uid = b.dataset.id, code = invIssue(uid); admSave(); toast(`已发给 ${esc(uname(uid))}：${code}`, 'pink'); rerender(); userSheet(uid); }
 });
 /* 头像审核：沿用原来的通过 / 驳回，补上原因、通知和日志 */
@@ -6787,13 +6904,13 @@ Object.assign(ACTIONS, {
   ACTIONS['avq-no'] = b => { if (!admGuard('avatars')) return; const q = AVQ.find(x => x.id === b.dataset.id); if (!q) return;
     rsnSheet('为什么驳回这个头像？', 'avatar', why => { const i = AVQ.findIndex(x => x.id === q.id); if (i < 0) return; AVQ.splice(i, 1); AVREJ[q.uid] = true; avSave(); admLog('头像驳回', '@' + uname(q.uid), why); notify(q.uid, '头像没有通过审核', `原因：${why}。可以换一张再试。`); toast('已驳回', 'orange', 'x'); rerender(); }); }; }
 /* 下架：帖子从列表里拿走（管理员还能看），商品停售，评论隐藏；可以通知作者 */
-function takeDown(k, id, why, tell, extra){
-  ADM.taken[k][id] = {reason:why, ts:Date.now(), by:admMe().name};
+function takeDown(k, id, why, tell, extra, by = admMe()){
+  ADM.taken[k][id] = {reason:why, ts:Date.now(), by:by.name};
   let au = null, name = id;
   if (k === 'post'){ const i = POSTS.findIndex(p => p.id === id); if (i >= 0){ TAKEN_P[id] = POSTS.splice(i, 1)[0]; } const p = TAKEN_P[id]; au = p?.author; name = `帖子「${p?.title || id}」`; }
   if (k === 'prod'){ const p = P(id); au = p?.seller; name = `商品「${p?.title || id}」`; }
   if (k === 'cmt'){ const f = allCmts().find(({pid, c}) => cmtKey(pid, c) === id); au = f?.c.u; name = `评论「${f?.c.t || ''}」`; }
-  admLog('下架内容', name, why); if (tell && au) notify(au, '内容被下架了', `你的${name}已被下架。原因：${why}。${extra ? '如果你认为没有侵权，可以提交反通知。' : '如有异议可以回复这条通知申诉。'}`, extra);
+  admLog('下架内容', name, why, by); if (tell && au) notify(au, '内容被下架了', `你的${name}已被下架。原因：${why}。${extra ? '如果你认为没有侵权，可以提交反通知。' : '如有异议可以回复这条通知申诉。'}`, extra);
 }
 function annSheet(a){ sheet(`<h3>${a ? '编辑公告' : '新公告'}</h3><label class="ad-lab">标题</label><input class="inp" id="anT" value="${esc(a?.title || '')}" placeholder="一句话说清楚" autofocus><label class="ad-lab">内容</label><textarea class="inp" id="anX" placeholder="可选">${esc(a?.body || '')}</textarea>
   <label class="ad-lab">给谁看</label><div class="seg ad-seg" id="anA">${[['all', '所有人'], ['creators', '只给创作者']].map(([v, l]) => `<button class="${(a?.aud || 'all') === v ? 'on' : ''}" data-act="an-aud" data-v="${v}">${l}</button>`).join('')}</div><button class="pill lg" data-act="an-save" data-id="${a?.id || ''}">保存</button>`); }
@@ -6889,7 +7006,7 @@ function buildReels(){
   const el = RL.el = $('#reels');
   el.innerHTML = `<div class="rl" role="dialog" aria-label="声音流">
     <div class="rl-col">
-      <div class="rl-top"><button class="rl-ic" data-act="rl-close" aria-label="返回">${IC.back}</button><span class="rl-pos"></span><span style="flex:1"></span><button class="rl-ic" data-act="search" data-v="all" aria-label="搜索">${IC.search}</button><button class="rl-ic" data-act="rl-share" aria-label="转发">${RIC.fwd}</button></div>
+      <div class="rl-top"><button class="rl-ic" data-act="rl-close" aria-label="返回">${IC.back}</button><span class="rl-pos"></span><span style="flex:1"></span>${modActor() ? `<button class="rl-ic" data-act="rl-mod" aria-label="管理员操作：下架或警告">${SHIELD}</button>` : ''}<button class="rl-ic" data-act="search" data-v="all" aria-label="搜索">${IC.search}</button><button class="rl-ic" data-act="rl-share" aria-label="转发">${RIC.fwd}</button></div>
       <div class="rl-view"><div class="rl-track"></div></div>
       <div class="rl-bar"><button class="rl-say" data-act="rl-cmts" data-focus="1">${RIC.pen}<span>说点什么…</span></button>
         <button class="rl-b" data-act="rl-like" aria-label="点赞"><span class="i"></span><b></b></button>
@@ -7078,7 +7195,7 @@ Object.assign(ACTIONS, {
   'ann-x': b => { const s = store.get('annSeen', []); s.push(b.dataset.id); store.set('annSeen', s); const el = b.closest('.ann'); if (el && !reduced()){ el.animate([{opacity:1, transform:'none'}, {opacity:0, transform:'translateY(-8px) scale(.98)'}], {duration:200, easing:'ease-in'}).onfinish = () => rerender(); } else rerender(); },
   sysbox: () => { const L = ADM.inbox[ME] || [];
     sheet(`<h3>CTRL Z 官方</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">审核结果、处罚、结算和平台通知。对处理有异议可以直接回复申诉。</p>
-      <div class="sysbox">${L.map(m => `<div class="sysm ${m.read ? '' : 'new'}"><b>${esc(m.title)}</b><p>${esc(m.text)}</p>${m.act === 'counter' && !m.done ? `<button class="pill sm lt" data-act="counter" data-id="${m.rp}" style="align-self:flex-start">我没有侵权，提交反通知</button>` : ''}<time>${fmtDay(m.ts)} ${fmtDT(m.ts).slice(6)}</time></div>`).join('') || '<div class="rnone">还没有通知</div>'}</div>
+      <div class="sysbox">${L.map(m => `<div class="sysm ${m.read ? '' : 'new'}"><b>${esc(m.title)}</b><p>${esc(m.text)}</p>${m.act === 'counter' && !m.done ? `<button class="pill sm lt" data-act="counter" data-id="${m.rp}" style="align-self:flex-start">我没有侵权，提交反通知</button>` : ''}${m.act === 'wallet' ? `<a class="pill sm lt" href="#me-wallet" style="align-self:flex-start">查看余额</a>` : ''}<time>${fmtDay(m.ts)} ${fmtDT(m.ts).slice(6)}</time></div>`).join('') || '<div class="rnone">还没有通知</div>'}</div>
       <label class="ad-lab">回复 / 申诉</label><textarea class="inp" id="sysR" placeholder="说明情况，客服会在 1 个工作日内处理"></textarea><button class="pill" data-act="sys-reply" style="align-self:flex-start">发送</button>`);
     L.forEach(m => m.read = true); admSave(); msgBadge(); const r = $('.m-list .sysrow .bdg'); r && r.remove(); },
   'sys-reply': () => { const v = $('#sysR').value.trim(); if (!v){ fxPop($('#sysR'), 'fx-shake', 300); return; }
@@ -7230,6 +7347,15 @@ function setExtra(){ const cl = closingOf(ME);
     ${apiBox()}
     <div class="box"><div class="box-h"><h3>关于</h3></div><div class="box-b set-l">${DOC_ORD.map(k => `<a class="set-r" href="#doc-${k}">${DOCS[k].t}<span class="mut2">›</span></a>`).join('')}</div></div>`; }
 const MESUB = {
+  /* 余额：代金券余额 + 每张券 + 抵扣记录 */
+  wallet: () => { const V = vcOf(ME).slice().sort((a, b) => (vcSt(a)[0] === '可用' ? 0 : 1) - (vcSt(b)[0] === '可用' ? 0 : 1) || b.ts - a.ts), bal = vcBal(ME);
+    const soon = r2(vcLive(ME).filter(v => v.exp && v.exp - Date.now() < 7*864e5).reduce((a, v) => a + vcLeft(v), 0));
+    const U = ADM.vuse.filter(u => u.uid === ME).sort((a, b) => b.ts - a.ts);
+    return `<div class="box wal-h"><span class="lab">代金券余额</span><b class="x num">${yuan2(bal)}</b><span class="mut2">买商品时自动抵扣，可以分几次用完 · 不能提现，也不能转给别人</span>${soon ? `<span class="tag c-orange">${yuan2(soon)} 在 7 天内到期</span>` : ''}${bal > 0 ? `<a class="pill" href="#shop" style="align-self:flex-start">去逛逛</a>` : ''}</div>
+    <div class="box"><div class="box-h"><h3>我的代金券</h3></div><div class="box-b set-l">${V.map(v => { const [st, c] = vcSt(v), left = vcLeft(v);
+      return `<div class="set-r vc-r ${st === '可用' ? '' : 'dim'}"><span class="vc-a"><b class="num">${yuan2(Math.max(0, left))}</b><i>面额 ${yuan2(v.amt)}</i></span><span class="vc-m"><b>${esc(v.note || 'CTRL Z 代金券')}</b><span class="mut2">${v.exp ? fmtDay(v.exp) + ' 到期' : '长期有效'} · ${fmtDay(v.ts)} 收到</span></span>${stTag(st, c)}</div>`; }).join('') || '<div class="rnone">还没有代金券</div>'}</div></div>
+    <div class="box"><div class="box-h"><h3>使用记录</h3></div><div class="box-b set-l">${U.map(u => { const o = STATE.orders.find(x => x.no === u.no), p = o && P(o.pid), back = rfOf(u.no)?.st === '已退款';
+      return `<div class="set-r ${back ? 'dim' : ''}"><span><b>${p ? esc(p.title) : esc(u.no)}</b><span class="mut2" style="display:block;font-size:12px">${fmtDT(u.ts)} · ${u.no}${back ? ' · 已退款，退回余额' : ''}</span></span><b class="num" style="color:${back ? 'var(--ink-3)' : 'var(--pink)'}">−${yuan2(u.amt)}</b></div>`; }).join('') || '<div class="rnone">还没用过</div>'}</div></div>`; },
   blocks: () => { const L = [...STATE.blocks]; return `<p class="mut" style="font-size:14px;margin:0 0 14px">被拉黑的人看不到你的消息入口，你也不会再看到 TA 的帖子和评论。</p>
     <div class="box"><div class="box-b set-l">${L.map(uid => `<div class="set-r"><span class="ad-u">${uav(uid, 'sm')}<b>${esc(uname(uid))}</b></span><button class="pill sm lt" data-act="blk" data-id="${esc(uid)}">解除</button></div>`).join('') || '<div class="rnone">黑名单是空的</div>'}</div></div>`; },
   close: () => { const cl = closingOf(ME), ck = closeChecks(), ok = ck.every(c => c[0]);
@@ -7259,8 +7385,9 @@ Object.assign(ACTIONS, {
       <button class="pill lg" data-act="do-refund" data-no="${o.no}">${fast ? '确认退款' : '提交申请'}</button>`); },
   'do-refund': b => { const o = STATE.orders.find(x => x.no === b.dataset.no), p = P(o.pid), n = STATE.dlc[o.pid] || 0, fast = !n && (Date.now() - ordTs(o))/864e5 <= 7, x = $('#rfX').value.trim();
     if (!fast && !x){ fxPop($('#rfX'), 'fx-shake', 300); $('#rfX').focus(); return; }
-    const r = {no:o.no, pid:o.pid, item:p.title, amt:o.price, buyer:ME, reason:($('#rfR .on')?.textContent || '其他') + (x ? '：' + x : ''), dl:n ? `已下载 ${n} 次` : '未下载', ts:Date.now(), st:fast ? '已退款' : '待处理', auto:fast};
-    REFUNDS.unshift(r); if (fast){ ADM.lst[o.no] = 'refund'; notify(ME, '退款成功', `「${p.title}」的 ${yuan2(o.price)} 已原路退回，1–3 个工作日到账。`); } else ADM.lst[o.no] = 'refunding';
+    const cash = r2(o.price - (o.vc || 0)), vcTxt = o.vc ? `代金券 ${yuan2(o.vc)} 退回你的余额` : '';   // 只退实付的现金；券抵扣的部分自动回到原来那张券上
+    const r = {no:o.no, pid:o.pid, item:p.title, amt:cash, vc:o.vc || 0, buyer:ME, reason:($('#rfR .on')?.textContent || '其他') + (x ? '：' + x : ''), dl:n ? `已下载 ${n} 次` : '未下载', ts:Date.now(), st:fast ? '已退款' : '待处理', auto:fast};
+    REFUNDS.unshift(r); if (fast){ ADM.lst[o.no] = 'refund'; notify(ME, '退款成功', `「${p.title}」${cash > 0 ? `的 ${yuan2(cash)} 已原路退回，1–3 个工作日到账${vcTxt ? '；' + vcTxt : ''}` : '：' + vcTxt}。`); } else ADM.lst[o.no] = 'refunding';
     admSave(); refundSync(); closeSheet(); toast(fast ? '已退款，原路退回' : '已提交，平台会在 1 个工作日内处理', fast ? 'green' : 'orange', fast ? 'check' : undefined); badge(); rerender(); },
   // 收款账户
   payee: () => { const p = ADM.payee[ME], k0 = p?.kind || 'alipay';
@@ -7365,7 +7492,7 @@ function receiptPNG(o){ const p = P(o.pid), W = 720, H = 920, c = document.creat
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);   // 同步生成，保证在点击手势内触发下载；文件名用英文，部分浏览器会丢掉中文下载名
   toast('凭证已保存'); }
 function ordSheet(no){ const o = STATE.orders.find(x => x.no === no); if (!o) return; const p = P(o.pid), inv = invOf(no), st = ordSt(o);
-  sheet(`<h3>订单详情</h3><div class="ad-kv col"><span>订单号<b class="n">${o.no}</b></span><span>资源<b>${esc(p.title)}</b></span><span>卖家<b>${esc(uname(p.seller))}</b></span><span>金额<b>${o.price ? yuan2(o.price) : '免费'}</b></span><span>支付方式<b>${esc(o.pay)}</b></span><span>时间<b>${esc(o.time)}</b></span><span>状态<b>${st}</b></span>${inv ? `<span>发票<b>${inv.st}${inv.invNo ? ' · ' + esc(inv.invNo) : ''}</b></span>` : ''}</div>
+  sheet(`<h3>订单详情</h3><div class="ad-kv col"><span>订单号<b class="n">${o.no}</b></span><span>资源<b>${esc(p.title)}</b></span><span>卖家<b>${esc(uname(p.seller))}</b></span><span>金额<b>${o.price ? yuan2(o.price) : '免费'}</b></span>${o.vc ? `<span>代金券抵扣<b>−${yuan2(o.vc)}</b></span><span>实付<b>${yuan2(r2(o.price - o.vc))}</b></span>` : ''}<span>支付方式<b>${esc(o.pay)}</b></span><span>时间<b>${esc(o.time)}</b></span><span>状态<b>${st}</b></span>${inv ? `<span>发票<b>${inv.st}${inv.invNo ? ' · ' + esc(inv.invNo) : ''}</b></span>` : ''}</div>
     <div class="ad-acts"><a class="pill sm lt" data-go="item-${p.id}">查看资源</a><button class="pill sm lt" data-act="ord-rcpt" data-no="${o.no}">${IC.dl}保存凭证</button>${o.price > 0 && st !== '已退款' && !inv ? `<button class="pill sm lt" data-act="inv-open" data-no="${o.no}">申请发票</button>` : ''}<a class="pill sm lt" href="#msg-${p.seller}">联系卖家</a>${st === '已完成' && o.price > 0 && !rfOf(o.no) ? `<button class="pill sm lt" data-act="refund" data-no="${o.no}">退款</button>` : ''}</div>`); }
 
 /* —— 登录设备（原型：本机 + 示例设备） —— */
@@ -7936,6 +8063,7 @@ function meHead(){
     <div class="mh-q">
       <a class="mqc mqc-prod" href="#seller-products"><span class="g c-pink">${GLYPH.sample}</span><span><b>我的产品</b><span>${STATE.seller ? nProd + ' 件在售 · 上架新作品' : '开店需要邀请码'}</span></span></a>
       <a class="mqc mqc-lib" href="#me-lib"><span class="g c-blue">${IC.dl}</span><span><b>已购资源</b><span>${owned} 件可下载${STATE.libNew ? ` · <em>${STATE.libNew} 件新到</em>` : ''}</span></span></a>
+      <a class="mqc mqc-wal" href="#me-wallet"><span class="g c-yellow"><b class="x" style="font-size:19px;line-height:1">¥</b></span><span><b>余额</b><span>代金券 ${yuan2(vcBal(ME))}</span></span></a>
     </div></div>`;
 }
 function meTabBody(t){
@@ -7971,7 +8099,7 @@ Object.assign(ACTIONS, {
   'me-menu': () => {
     closeSheet(); const r = STATE.role, g = r === 'guest';   // 首页左上角也能打开；未登录时顶部换成登录入口，不显示账号相关项
     $('#layer').innerHTML = `<div class="sov drw-ov" data-ov><nav class="drw" aria-label="更多">${g ? `<div class="drw-u"><button class="pill" data-act="login">登录 / 注册</button></div>` : `<div class="drw-u">${av(ME, 'md')}<b>${esc(USERS[ME].name)}</b></div>
-      <a href="#me-edit">${RIC.pen}编辑资料</a><a href="#me-orders">${IC.dl}订单</a><a href="#me-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2-1.2L14.2 3h-4.4l-.4 2.6a7 7 0 00-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 000 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 002 1.2l.4 2.6h4.4l.4-2.6a7 7 0 002-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>设置</a>
+      <a href="#me-edit">${RIC.pen}编辑资料</a><a href="#me-orders">${IC.dl}订单</a><a href="#me-wallet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M16 14.5h2"/></svg>余额</a><a href="#me-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2-1.2L14.2 3h-4.4l-.4 2.6a7 7 0 00-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 000 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 002 1.2l.4 2.6h4.4l.4-2.6a7 7 0 002-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>设置</a>
       <a href="#seller"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.7 2.7 0 005.33 0 2.7 2.7 0 005.34 0A2.7 2.7 0 0020 9"/><path d="M5 11.5V20h14v-8.5"/><path d="M10 20v-5h4v5"/></svg>工作室</a>`}
       <button class="drw-sw" data-act="vislab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M4 12h3l2-5 3 10 2-6 2 3h4"/></svg>可视化实验室</button><button class="drw-sw drw-thm" data-act="theme">${isDark() ? IC.sun : IC.moon}${isDark() ? '浅色模式' : '深色模式'}</button>${g ? '' : `<button class="drw-sw" data-act="switch-acc">${IC.user}切换账号</button><button class="drw-out" data-act="logout">${IC.back}退出登录</button>`}
       <div class="drw-f"><span class="lab">原型 · 切换身份</span><div class="roles">${Object.entries(ROLE_NAME).map(([k, l]) => `<button class="${r === k ? 'on' : ''}" data-act="role" data-v="${k}">${l}</button>`).join('')}</div>${STATE.seller ? '<button class="more" data-act="unseller">撤回卖家资格</button>' : ''}</div></nav></div>`;
@@ -7979,7 +8107,7 @@ Object.assign(ACTIONS, {
 });
 
 ROUTES.me = arg => {
-  if (STATE.role === 'guest' || STATE.role === 'admin' || ['lib','orders','settings','edit','blocks','close'].includes(arg)) return meLegacy(arg || 'lib');
+  if (STATE.role === 'guest' || STATE.role === 'admin' || ['lib','orders','settings','edit','blocks','close','wallet'].includes(arg)) return meLegacy(arg || 'lib');
   if (['works','cmts','favs','hist','collab'].includes(arg)) UI.meTab = arg;
   return meProfile();
 };
@@ -8262,7 +8390,7 @@ function pageSwap(dir, fn){
 }
 
 /* ---------- 手机顶栏：一级页只留 Logo + 搜索；二级页 = 返回 + 页面名 ---------- */
-const ME_SUB_T = {lib:'已购资源', orders:'订单', settings:'设置', edit:'编辑资料', blocks:'黑名单', close:'注销账号'};
+const ME_SUB_T = {lib:'已购资源', orders:'订单', settings:'设置', edit:'编辑资料', blocks:'黑名单', close:'注销账号', wallet:'余额'};
 function pageTitle(){
   const [r, ...a] = (location.hash || '#home').slice(1).split('-'); const arg = a.join('-');
   if (r === 'item'){ const p = P(arg); return p ? {t:p.title, late:true} : null; }
