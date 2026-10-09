@@ -2993,7 +2993,7 @@ const vcLeft = v => r2(v.amt - vcUsed(v));
 const vcSt = v => v.off ? ['已撤回', ''] : vcLeft(v) <= 0 ? ['已用完', ''] : v.exp && v.exp < Date.now() ? ['已过期', ''] : ['可用', 'green'];
 const vcOf = uid => ADM.vouchers.filter(v => v.uid === uid);
 const vcLive = uid => vcOf(uid).filter(v => vcSt(v)[0] === '可用').sort((a, b) => (a.exp || 9e15) - (b.exp || 9e15));
-const vcBal = uid => r2(vcLive(uid).reduce((a, v) => a + vcLeft(v), 0));
+const vcBal = uid => API.on() && uid === ME ? (LSHOP.wallet?.balance || 0)/100 : r2(vcLive(uid).reduce((a, v) => a + vcLeft(v), 0));   // 连着后端：余额以后端为准
 // 扣 amt 元（先扣快过期的），记到订单 no 上；返回实际扣掉的
 function vcSpend(uid, amt, no){ let need = r2(amt);
   for (const v of vcLive(uid)){ if (need <= 0) break; const x = Math.min(need, vcLeft(v)); ADM.vuse.push({vid:v.id, uid, no, amt:r2(x), ts:Date.now()}); need = r2(need - x); }
@@ -6278,13 +6278,14 @@ ACTIONS['do-pay'] = b => {
   const pr = P(b.dataset.id), sh = $('#layer .sheet'), ded = vcDed(pr), cash = r2(pr.price - ded);
   sh.innerHTML = `<div class="done"><div class="ring-p" id="rp" style="--p:0"></div><b style="font-size:18px">${cash > 0 ? `正在等待${UI.pay}…` : '正在用代金券支付…'}</b></div>`;
   const t0 = performance.now(); const tick = now => { const k = Math.min(1, (now - t0)/1200); const r = $('#rp'); if (!r) return; r.style.setProperty('--p', k*100); if (k < 1) requestAnimationFrame(tick); else done(); }; requestAnimationFrame(tick);
-  const done = () => { grant(pr, cash > 0 ? UI.pay : '代金券', pr.price, ded); sfx('ok');
+  const done = () => { grant(pr, cash > 0 ? UI.pay : '代金券', pr.price, ded); paidUI(pr, sh); };
+};
+function paidUI(pr, sh){ sfx('ok');
     setTimeout(() => { const st = $('#layer .stamp'); if (st){ const r = st.getBoundingClientRect(); fxShapes(r.left + r.width/2, r.top + r.height/2, 28, 170, ['pink','blue','yellow','orange','green'], 70); fxPop($('#layer .sheet'), 'fx-thud', 400); haptic(16); } }, 140);
     setTimeout(() => { const st = $('#layer .stamp'); flyTo(st ? st.getBoundingClientRect() : null, cover(pr.cover, hash(pr.id)%50, 200, 200), () => { STATE.libNew++; badge(); }); }, 520);
     sh.innerHTML = `<button class="x-close" data-act="close-re" aria-label="关闭">${IC.x}</button><div class="done"><span class="stamp big pop" style="--sc:var(--blue)">PAID<small>已付款</small></span><b style="font-size:20px;margin-top:10px">${esc(pr.title)} 是你的了</b><span class="mut" style="font-size:14px">已放进资源库，随时可以下载</span></div><button class="pill lg" data-act="dl" data-id="${pr.id}">${IC.dl}现在下载</button><button class="pill lg lt" data-act="close-re">继续逛</button>`;
     foil($('#layer .stamp'), 'gold');
-  };
-};
+}
 ACTIONS['close-re'] = () => { closeSheet(); rerender(); };
 ACTIONS.dl = b => {
   const id = b.dataset.id, pr = P(id);
@@ -6395,7 +6396,7 @@ ACTIONS.metab = b => go('me-' + b.dataset.v);
 ACTIONS['save-prof'] = () => { USERS[ME].name = $('#pf-n').value || USERS[ME].name; USERS[ME].city = $('#pf-c').value; USERS[ME].bio = $('#pf-b').value; toast('已保存'); rerender(); };
 
 /* ================= 工作室（卖家） ================= */
-const calcOrder = o => { if (o.st === 'refund') return {fee:0, plat:0, net:0}; const fee = o.amt*FEE[o.pay], plat = o.amt*PLAT; return {fee, plat, net:o.amt - fee - plat}; };
+const calcOrder = o => { if (o.st === 'refund') return {fee:0, plat:0, net:0}; const fee = (o.cash ?? o.amt)*(FEE[o.pay] ?? .006), plat = o.amt*PLAT; return {fee, plat, net:o.amt - fee - plat}; };
 ROUTES.seller = arg => {
   if (arg) UI.sellerTab = {settle:'overview', store:'products'}[arg] || arg;   // 旧链接：收入与结算并进了概览，店铺并进了我的产品
   if (STATE.role === 'guest') return gate('工作室', '先登录，再用邀请码开店。', `<button class="pill lg" data-act="login">登录</button>`);
@@ -6424,8 +6425,8 @@ ROUTES.seller = arg => {
     <div class="box"><div class="box-h"><h3>往月</h3></div><div class="tw"><table class="t"><tbody>${[['八月',59,2640],['七月',38,1720],['六月',51,2310]].map(([m,n,g]) => `<tr><td style="font-weight:600">${m}</td><td class="n">${n} 单</td><td class="r n">${yuan2(g)}</td><td class="r n neg">−${yuan2(g*.0172)}</td><td class="r n">${yuan2(g*(1-.0172))}</td><td class="r"><span class="tag c-green">已到账</span></td></tr>`).join('')}</tbody></table></div></div>`; }
   if (t === 'products') body = `<div class="shopband grain c-pink sp-shop"><div style="position:relative;z-index:2;min-width:0"><span class="lab" style="color:var(--ink)">我的店铺</span><div class="x" style="margin-top:8px">${esc(u.shop)}</div></div><div class="sp-acts"><button class="pill sm lt" data-act="edit-store">编辑店铺</button><a class="pill sm" data-go="user-${ME}" data-tab="shop">买家眼中的店</a></div></div>
     <div class="sp-h"><h3>${SELLER_PRODUCTS.length} 件资源</h3><a class="pill" data-go="seller-upload">${IC.plus}上架新资源</a></div>
-    <div style="display:flex;flex-direction:column;gap:10px">${SELLER_PRODUCTS.map(sp => { const p = sp.pid ? P(sp.pid) : null; const title = p ? p.title : sp.title, cat = p ? p.cat : sp.cat, cv = p ? p.cover : sp.cover; const sc = {'已上架':'green','审核中':'yellow','待补充':'orange','已驳回':'orange','已下架':'violet'}[sp.st];
-      return `<div class="li c-${CATS[cat].c}" style="grid-template-columns:72px minmax(0,1fr) auto"><img src="${cover(cv, 3, 160, 160)}" alt="" style="width:72px;height:72px"><div style="min-width:0"><h4>${esc(title)}</h4><div class="m" style="margin:4px 0 0">${sp.note ? esc(sp.note) : `${sp.views.toLocaleString()} 次浏览 · ${sp.sales} 单 · 下单率 ${sp.conv}`}</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="tag c-${sc}">${sp.st}</span>${p ? `<a class="pill sm lt" data-go="item-${p.id}">查看</a><button class="pill sm" data-act="sp-manage" data-id="${p.id}">管理</button>` : sp.st === '已驳回' ? `<button class="pill sm" data-go="seller-upload">去修改</button>` : ''}</div></div>`; }).join('')}</div>`;
+    <div style="display:flex;flex-direction:column;gap:10px">${SELLER_PRODUCTS.map(sp => { const p = sp.pid ? P(sp.pid) : null; const title = p ? p.title : sp.title, cat = p ? p.cat : sp.cat, cv = p ? p.cover : sp.cover; const sc = {'已上架':'green','审核中':'yellow','待补充':'orange','已驳回':'orange','已下架':'violet','平台下架':'orange'}[sp.st];
+      return `<div class="li c-${CATS[cat].c}" style="grid-template-columns:72px minmax(0,1fr) auto"><img src="${cover(cv, 3, 160, 160)}" alt="" style="width:72px;height:72px"><div style="min-width:0"><h4>${esc(title)}</h4><div class="m" style="margin:4px 0 0">${sp.note ? esc(sp.note) : `${sp.views.toLocaleString()} 次浏览 · ${sp.sales} 单 · 下单率 ${sp.conv}`}</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="tag c-${sc}">${sp.st}</span>${p ? `<a class="pill sm lt" data-go="item-${p.id}">查看</a><button class="pill sm" data-act="sp-manage" data-id="${p.id}">管理</button>` : sp.live && (sp.st === '待补充' || sp.st === '已驳回') ? `<button class="pill sm" data-act="sp-redo" data-id="${sp.id}">${sp.st === '待补充' ? '补充材料' : '修改后重新提交'}</button>` : sp.st === '已驳回' ? `<button class="pill sm" data-go="seller-upload">去修改</button>` : ''}</div></div>`; }).join('')}</div>`;
   if (t === 'collab'){ const mine = CO.orders.filter(o => o.to === ME), sent = CO.orders.filter(o => o.from === ME), r = repOf(ME), todo = coTodo().length;
     const held = mine.filter(o => ['paid','delivered','revising'].includes(o.st) && o.price).reduce((a, o) => a + coNet(o.price), 0), got = mine.filter(o => o.st === 'done' && o.price).reduce((a, o) => a + coNet(o.price), 0);
     body = `<div class="kpis k3" style="margin-bottom:18px"><div class="kpi"><span class="lab">托管中 · 验收后到手</span><b class="num">${cny(held)}</b><span class="d">钱在平台，对方验收后打给你</span></div><div class="kpi"><span class="lab">合作已到手</span><b class="num" data-roll="${got}" data-pre="¥">${cny(got)}</b><span class="d">已扣 ${CO_FEE*100}% 平台服务费</span></div><div class="kpi"><span class="lab">好评度</span><b class="num">${r.avg.toFixed(1)}</b><span class="d">${r.n} 条评价 · 准时率 ${Math.round(r.ontime*100)}%</span></div></div>
@@ -6454,7 +6455,7 @@ Object.assign(ACTIONS, {
     x.from = ny ? null : v; x.on = true; closeSheet(); toast(`${x.n}：${ny ? '面议' : '¥' + v.toLocaleString() + ' 起'}`); rerender(); },
   /* 接下邀约时确认报价（默认填对方的预算） */
 });
-function ordersTable(list){ return `<table class="t"><tbody>${list.map(o => `<tr class="${o.st === 'refund' ? 'dim' : ''}"><td>${av(USERS[o.buyer] ? o.buyer : 'x','sm').replace('AZ', esc((o.buyer[0] || '?').toUpperCase()))}</td><td style="font-weight:600">雨夜磁带 Lo-Fi 采样包</td><td class="mut2">@${esc(USERS[o.buyer]?.name || o.buyer)}</td><td>${o.pay}</td><td class="r n">${yuan2(o.amt)}</td><td class="mut2 n">${o.time}</td></tr>`).join('')}</tbody></table>`; }
+function ordersTable(list){ return `<table class="t"><tbody>${list.map(o => `<tr class="${o.st === 'refund' ? 'dim' : ''}"><td>${av(USERS[o.buyer] ? o.buyer : 'x','sm').replace('AZ', esc((o.buyer[0] || '?').toUpperCase()))}</td><td style="font-weight:600">${esc(o.title || '雨夜磁带 Lo-Fi 采样包')}</td><td class="mut2">@${esc(USERS[o.buyer]?.name || o.buyer)}</td><td>${o.pay}</td><td class="r n">${yuan2(o.amt)}</td><td class="mut2 n">${o.time}</td></tr>`).join('')}</tbody></table>`; }
 /* 工作室页签是页内切换：原地替换网址（不新增返回记录）、不翻页、不跳回顶部 */
 ACTIONS.stab = b => { const h = '#seller-' + b.dataset.v; if (curH() === h) return; NAVX.inpage = true;
   if (HST.d > 0 && routeOf(HST.stk[HST.d - 1]) === 'seller') navBackTo(HST.d - 1, h); else navReplace(h); };   // 在「上架」子页点页签：先退回再切换
@@ -6470,15 +6471,16 @@ function uploadView(){
   const steps = [
     ['是什么', `<div class="fg"><div class="fl full"><div class="seg up-grp" style="margin-bottom:12px">${[['sound','采样包作品'],['visual','视觉作品']].map(([k,l]) => `<button class="${G === k ? 'on' : ''}" data-act="up-grp" data-v="${k}">${l}</button>`).join('')}</div><label>分类</label><div class="rail" style="flex-wrap:wrap">${Object.entries(CATS).filter(([k]) => GROUP_CATS[G].includes(k)).map(([k,cc]) => `<button class="chip c-${cc.c} ${U.cat===k?'on':''}" data-act="up-set" data-k="cat" data-v="${k}"><span class="dot"></span>${cc.subs ? (cc.t || cc.k) + ' · ' + cc.subs[G === 'visual' ? 'vis' : 'aud'][1] : cc.cn}</button>`).join('')}</div></div>
       <div class="fl"><label for="up-t">名字</label><input class="inp" id="up-t" data-up="title" value="${esc(U.title)}"></div><div class="fl"><label for="up-e">英文名</label><input class="inp" id="up-e" data-up="en" value="${esc(U.en)}"></div>
-      <div class="fl full"><label for="up-p">价格</label><div style="display:flex;gap:10px;align-items:center"><input class="inp" id="up-p" data-up="price" inputmode="decimal" value="${U.price}" style="max-width:140px"><span class="mut" style="font-size:13px" id="up-est">每单到手约 ¥${est(.01)}（扣 ${PLAT*100}% 平台费和支付手续费）</span></div></div></div>`, !!U.title],
+      <div class="fl full"><label for="up-p">价格</label><div style="display:flex;gap:10px;align-items:center"><input class="inp" id="up-p" data-up="price" inputmode="decimal" value="${U.price}" style="max-width:140px"><span class="mut" style="font-size:13px" id="up-est">每单到手约 ¥${est(.01)}（扣 ${PLAT*100}% 平台费和支付手续费）</span></div></div>
+      <div class="fl full"><label for="up-d">介绍</label><textarea class="inp" id="up-d" data-up="desc" rows="3" placeholder="里面有什么、怎么用、适合什么风格">${esc(U.desc || '')}</textarea></div></div>`, !!U.title],
     ['封面', `<div class="cvp">${visQuick(U.look.tpl).map(k => [k, COVER_TPLS[k]]).map(([k,n]) => `<button class="${U.look.tpl===k?'on':''}" data-act="up-look" data-k="tpl" data-v="${k}" aria-label="${n}"><img src="${cover({tpl:k, pal:U.look.pal, txt:U.en}, 1, 160, 160)}" alt="" width="160" height="160"><span>${n}</span></button>`).join('')}<button class="cvp-all" data-act="up-vlab"><b>${Object.keys(VIS).length}</b><span>全部模板</span></button></div>
       <div class="palp" style="margin-top:12px">${Object.entries(COVER_PALS).map(([k,p]) => `<button class="${U.look.pal===k?'on':''}" data-act="up-look" data-k="pal" data-v="${k}"><i style="background:${INK[p.a]}"></i><i style="background:${INK[p.b]}"></i>${p.n}</button>`).join('')}</div>`, true],
-    ['文件', `<div class="drop ${U.file ? 'ok' : ''}" data-act="up-file">${U.file ? IC.check : IC.up}<b>${U.file ? 'CITY_NOISE.zip · 612 MB' : '把文件拖进来，或点这里'}</b><span>${U.file ? '校验通过' : '.zip / .wav / .vital / .tox / .toe / .amxd / .maxpat / .pd / .mov'}</span></div>`, U.file],
+    ['文件', `<div class="drop ${U.file ? 'ok' : ''}" data-act="up-file">${U.file ? IC.check : IC.up}<b>${U.file ? (U.fileName ? esc(U.fileName) + ' · ' + fmtSize(U.fileSize) : 'CITY_NOISE.zip · 612 MB') : '把文件拖进来，或点这里'}</b><span>${U.file ? '校验通过' : '.zip / .wav / .vital / .tox / .toe / .amxd / .maxpat / .pd / .mov'}</span></div>`, U.file],
     ['怎么试听', `<div class="tplp">${[['sample','敲打','16 个 pad','pink','<svg viewBox="0 0 60 40"><g fill="#141418"><rect x="2" y="2" width="12" height="16" rx="3"/><rect x="17" y="2" width="12" height="16" rx="3"/><rect x="32" y="2" width="12" height="16" rx="3"/><rect x="47" y="2" width="12" height="16" rx="3"/><rect x="2" y="22" width="12" height="16" rx="3"/><rect x="17" y="22" width="12" height="16" rx="3"/><rect x="32" y="22" width="12" height="16" rx="3"/><rect x="47" y="22" width="12" height="16" rx="3"/></g></svg>'],['preset','弹奏','XY 板 + 键盘','blue','<svg viewBox="0 0 60 40"><rect x="2" y="2" width="56" height="20" rx="3" fill="#fff"/><circle cx="38" cy="10" r="5" fill="#141418"/><g fill="#141418"><rect x="2" y="26" width="5" height="12"/><rect x="10" y="26" width="5" height="12"/><rect x="26" y="26" width="5" height="12"/><rect x="34" y="26" width="5" height="12"/><rect x="42" y="26" width="5" height="12"/></g></svg>'],['video','视频','12 秒循环','orange','<svg viewBox="0 0 60 40"><rect x="2" y="2" width="56" height="30" rx="3" fill="#141418"/><path d="M26 10l10 7-10 7z" fill="#fff"/><rect x="2" y="35" width="30" height="3" rx="1.5" fill="#141418"/></svg>']].map(([k,l,s,cc,svg]) => `<button class="c-${cc} ${U.tpl===k?'on':''}" data-act="up-set" data-k="tpl" data-v="${k}"><span class="ic">${svg}</span><b>${l}</b><span class="mut2" style="font-size:12px">${s}</span></button>`).join('')}</div>`, true],
     ['来源与授权', declStep(U), !!(U.decl && U.decl.orig)]
   ];
   return `<div class="up"><div class="stepper">${steps.map(([h, inner, ok], i) => `<div class="step ${ok ? 'ok' : ''}"><span class="no">${ok ? IC.check.replace('<svg','<svg width="16" height="16"') : i+1}</span><div style="min-width:0"><h4>${h}</h4>${inner}</div></div>`).join('')}
-    <button class="pill lg" data-act="up-submit" ${U.file ? '' : 'disabled'} style="align-self:flex-start">${U.file ? '提交审核' : '还差文件'}</button></div>
+    <button class="pill lg" data-act="up-submit" ${U.file ? '' : 'disabled'} style="align-self:flex-start">${U.file ? (U.editId ? '重新提交审核' : '提交审核') : '还差文件'}</button></div>
     <div class="stk-hd" style="position:sticky;top:calc(var(--hdy) + 20px)"><span class="lab" style="display:block;margin-bottom:10px">买家会看到</span>
       <article class="slv c-${c.c}"><div class="cv" data-qbox="upload"><img src="${fakeCover}" alt="" width="480" height="480"><span class="pv"><button class="pbtn" data-act="qplay" data-id="upload" aria-label="试听封面">${IC.play}</button></span></div><div class="bd"><div class="en"><span class="dot"></span><span id="pv-en">${esc(U.en)}</span></div><h3 id="pv-t">${esc(U.title)}</h3><div class="ft"><span class="price" id="pv-p">¥${U.price}</span><span class="by">${av(ME,'sm')}<span>${esc(USERS[ME].name)}</span></span></div></div></article>
       <p class="mut2" style="font-size:12.5px;margin-top:12px">${COVER_TPLS[U.look.tpl]} · ${COVER_PALS[U.look.pal].n} · 试听方式：${({sample:'敲打 16 个 pad', preset:'XY 板 + 键盘弹奏', video:'12 秒视频循环'})[U.tpl]}</p></div></div>`;
@@ -6531,7 +6533,7 @@ const declFlags = d => { const tp = (d.src.third || d.src.oss) ? d.third : [];
   return ['新上架'].concat(d.src.ai ? ['含 AI 生成内容'] : [], tp.length ? [`含第三方素材 ${tp.length} 项`] : [], tp.some(t => TP_WARN(t.lic)) ? ['⚠ 有附加条件的许可（GPL / BY-SA / 其他），重点核对'] : [],
     tp.some(t => !t.doc) ? ['⚠ 有素材只给了来源链接，没有授权文件'] : [], d.voice === 'yes' ? ['含人声 / 肖像 / 表演授权'] : []); };
 // 选文件：原型里只记文件名（正式版上传到对象存储，审核员可以打开）
-const pickFile = cb => { const i = Object.assign(document.createElement('input'), {type:'file', accept:'.pdf,.png,.jpg,.jpeg,.webp'}); i.onchange = () => i.files[0] && cb(i.files[0].name); i.click(); };
+const pickFile = cb => { const i = Object.assign(document.createElement('input'), {type:'file', accept:'.pdf,.png,.jpg,.jpeg,.webp'}); i.onchange = () => i.files[0] && cb(i.files[0].name, i.files[0]); i.click(); };
 Object.assign(ACTIONS, {
   'dc-src': b => { const d = declOf(UI.up), k = b.dataset.k; d.src[k] = !d.src[k];
     if (k === 'own' && d.src.own){ d.src.third = d.src.oss = false; } if ((k === 'third' || k === 'oss') && d.src[k]){ d.src.own = false; if (!d.third.length) d.third.push({n:'', lic:'', link:'', doc:''}); } rerender(); },
@@ -6564,7 +6566,7 @@ function onboarding(){
     ${inviteForm('seller-upload')}
     <div class="kpis k3" style="margin-top:28px"><div class="kpi cc c-pink grain"><b style="position:relative;z-index:2">${PLAT*100}%</b><span class="d" style="color:var(--ink);position:relative;z-index:2">平台只收这么多</span></div><div class="kpi cc c-blue grain"><b style="position:relative;z-index:2;color:var(--paper)">月结</b><span class="d" style="color:var(--paper);position:relative;z-index:2">每月结算一次</span></div><div class="kpi cc c-yellow grain"><b style="position:relative;z-index:2">0.6–1%</b><span class="d" style="color:var(--ink);position:relative;z-index:2">支付手续费由卖家承担</span></div></div></div></div>`;
 }
-const inviteForm = next => `<form class="invf" data-next="${next}" onsubmit="return false"><input class="inp x" id="inv" value="CTRLZ-T4V-01M" aria-label="邀请码" autocapitalize="characters" spellcheck="false"><button class="pill lg" data-act="inv-check" aria-label="开通">${IC.arrow}</button></form>${agreeBox('invAgree')}`;
+const inviteForm = next => `<form class="invf" data-next="${next}" onsubmit="return false"><input class="inp x" id="inv" value="${API.on() ? '' : 'CTRLZ-T4V-01M'}" placeholder="CTRLZ-XXX-XXX" aria-label="邀请码" autocapitalize="characters" spellcheck="false"><button class="pill lg" data-act="inv-check" aria-label="开通">${IC.arrow}</button></form>${agreeBox('invAgree')}`;
 function inviteSheet(next){ sheet(`<h3>上架作品需要邀请码</h3><p class="mut" style="font-size:14px;margin-top:-6px">填一次就好，开通后可以直接上架。</p>${inviteForm(next)}<button class="pill lt" data-act="apply-open" style="align-self:flex-start">没有邀请码？申请入驻</button>`, d => { setTimeout(() => { const i = $('#inv', d); i && i.select(); }, 80); }); }
 ACTIONS.sell = () => { if (needLogin() || !canSpeak()) return; if (STATE.role === 'admin'){ toast('管理员身份不能开店', 'orange', 'x'); return; } closeSheet(); if (STATE.seller){ UI.sellerTab = 'upload'; go('seller-upload'); } else inviteSheet('seller-upload'); };
 ACTIONS['inv-check'] = b => {
@@ -6612,7 +6614,8 @@ const admMe = () => API.on() ? (STAFF.me || {id:'-', name:'未登录', role:'non
 const admCan = tab => (ADM_TABS.find(t => t[0] === tab) || [, , , []])[3].includes(admMe().role);
 const admGuard = tab => { if (STATE.role === 'admin' && admCan(tab)) return true; toast('当前角色没有这个权限', 'orange', 'x'); return false; };
 // 后台页签之间切换 = 页内页签：原地换网址、不新增返回记录、不播翻页动画（同 stab / doc-tab）
-const admTab = k => { const h = '#admin-' + k; if (curH() === h) return; UI.adminTab = k; NAVX.inpage = true; navReplace(h); };
+const admTab = k => { const h = '#admin-' + k; if (curH() === h) return; UI.adminTab = k; if (typeof LADM !== 'undefined' && k !== 'users') LADM[k] = null;   // 接后端的页签：每次切过去都重新读
+  NAVX.inpage = true; navReplace(h); };
 // 按 ID 或昵称找用户（「@」可带可不带）；空串 → ''，找不到 → null
 const findUid = v => { v = String(v || '').trim().replace(/^@/, ''); if (!v) return ''; const all = allUids(), lv = v.toLowerCase(); return all.find(u => u === v) || all.find(u => uname(u).toLowerCase() === lv) || null; };
 const uidList = id => `<datalist id="${id}">${allUids().map(u => `<option value="${esc(u)}">${esc(uname(u))}</option>`).join('')}</datalist>`;
@@ -6641,6 +6644,7 @@ function csvDownload(name, rows){
 /* —— 交易流水（原型）：按商品销量生成确定的示例订单 + 真实发生的购买 / 店铺订单 / 合作订单。接后端后直接换成订单表查询 —— */
 const LST = {paid:['已支付', 'green'], refund:['已退款', ''], refunding:['退款中', 'orange'], held:['托管中', 'blue'], released:['已放款', 'green'], dispute:['纠纷中', 'orange']};
 function ledger(){
+  if (API.on()) return [];   // 连着后端：示例订单不掺进来；后台「订单流水」读 /admin/orders
   const L = [], R = rng(20261008), DAY = 864e5, now = NOW0, ymd = ts => { const d = new Date(ts); return '' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()); };
   PRODUCTS.forEach(pr => { if (pr.seller === 'rin' || !pr.price) return; const n = 3 + Math.floor(Math.min(9, pr.sales/220));
     for (let i = 0; i < n; i++){ const ts = now - Math.floor(R()*44)*DAY - Math.floor(R()*DAY); const pay = ['微信支付', '支付宝', '微信支付', '支付宝', '银行卡'][Math.floor(R()*5)];
@@ -6698,8 +6702,8 @@ const rvCur = () => REVIEW.find(x => x.id === UI.rvSel) || REVIEW[0];
 const rvWarn = x => x.warn || x.flags.some(f => /^⚠|^未|敏感/.test(f));
 function rvDetail(r){
   const p = r.kind === '帖子' && r.ref ? (POST(r.ref) || TAKEN_P[r.ref]) : null, a = ADM.acct[r.who] || {}, d = r.decl, done = new Set(r.ck || []), ck = RV_CK[r.kind] || RV_CK['帖子'];
-  const app = ADM.apps.find(x => x.uid === r.who || x.name === uname(r.who)), sells = PRODUCTS.filter(x => x.seller === r.who).length;
-  const downs = Object.values(TAKEN_P).filter(x => x.author === r.who).length, reps = REPORTS.filter(x => repAuthor(x) === r.who).length;
+  const app = ADM.apps.find(x => x.uid === r.who || x.name === uname(r.who)), sells = r.seller ? r.seller.onSale : PRODUCTS.filter(x => x.seller === r.who).length;
+  const downs = r.seller ? r.seller.takenDown : Object.values(TAKEN_P).filter(x => x.author === r.who).length, reps = REPORTS.filter(x => repAuthor(x) === r.who).length;
   const kv = (k, v) => v ? `<span>${k}<b>${v}</b></span>` : '';
   const body = p ? (BODY[p.id] || [p.ex || '']) : [];
   const imgs = p ? (p.imgs || (p.img ? [p.img] : [])) : [];
@@ -6708,14 +6712,14 @@ function rvDetail(r){
       <h3>${esc(r.title)}</h3>${r.en ? `<span class="x" style="font-size:14px">${esc(r.en)}</span>` : ''}${r.price != null ? `<b class="num" style="font-size:20px">${r.price ? yuan2(r.price) : '免费'}</b>` : ''}
       ${r.flags.length ? `<div class="flags">${r.flags.map(f => `<span class="flag ${/^⚠|^未|敏感/.test(f) ? 'w' : ''}">${esc(f.replace('⚠ ', ''))}</span>`).join('')}</div>` : ''}</div></div>
     ${r.st === '待补充' ? `<p class="ad-warn y">已要求补充：${esc(r.ask || '')}</p>` : ''}
-    <section class="rv-s"><h4>内容</h4>${r.kind === '商品' ? `<div class="ad-kv col">${kv('文件', esc(r.files || ''))}${kv('试听方式', esc(r.tpl || ''))}</div>${r.desc ? `<p class="rv-p">${esc(r.desc)}</p>` : '<p class="mut2">没有填介绍</p>'}`
+    <section class="rv-s"><h4>内容</h4>${r.kind === '商品' ? `${r.fileUrl ? `<a class="pill sm lt" href="${esc(r.fileUrl)}" target="_blank" rel="noopener" style="align-self:flex-start">${IC.dl}下载交付文件检查</a>` : ''}<div class="ad-kv col">${kv('文件', esc(r.files || ''))}${kv('试听方式', esc(r.tpl || ''))}</div>${r.desc ? `<p class="rv-p">${esc(r.desc)}</p>` : '<p class="mut2">没有填介绍</p>'}`
       : p ? `${body.map(t => `<p class="rv-p">${esc(t)}</p>`).join('')}${imgs.length ? `<div class="rv-imgs">${imgs.map(s => `<img src="${esc(s)}" alt="">`).join('')}</div>` : ''}${p.tags?.length ? `<p class="mut2">${p.tags.map(t => '#' + esc(t)).join(' ')}</p>` : ''}<button class="pill sm lt" data-act="mod-open" data-id="${p.id}" style="align-self:flex-start">打开原帖</button>` : '<p class="mut2">原帖已经不在了</p>'}</section>
     ${r.kind === '商品' ? `<section class="rv-s"><h4>来源与授权</h4>
       ${r.lic ? `<div class="lic">${r.lic.map(x => `<span>${IC.check.replace('<svg', '<svg width="13" height="13"')}${esc(x)}</span>`).join('')}<span class="no">转售原文件</span></div>` : ''}
-      <div class="ad-kv col">${kv('原创 / 授权承诺', r.orig ? '已勾选 · ' + fmtDT(r.orig) : '<em style="color:var(--orange);font-style:normal">没有记录</em>')}${d ? kv('来源', esc(d.src || '')) + kv('AI', esc(d.ai || '')) + kv('人声 / 肖像', esc(d.voice || '') + (d.vdoc ? ` <span class="rv-doc">${IC.dl}${esc(d.vdoc)}</span>` : '')) : ''}</div>
-      ${d?.third?.length ? `<div class="rv-docs">${d.third.map(t => `<div><b>${esc(t.n)}</b><span>${esc(t.lic)}</span>${t.doc ? `<span class="rv-doc">${IC.dl}${esc(t.doc)}</span>` : '<span class="rv-doc no">没附授权文件</span>'}</div>`).join('')}</div>` : ''}
+      <div class="ad-kv col">${kv('原创 / 授权承诺', r.orig ? '已勾选 · ' + fmtDT(r.orig) : '<em style="color:var(--orange);font-style:normal">没有记录</em>')}${d ? kv('来源', esc(d.src || '')) + kv('AI', esc(d.ai || '')) + kv('人声 / 肖像', esc(d.voice || '') + (d.vurl ? ` <a class="rv-doc" href="${esc(d.vurl)}" target="_blank" rel="noopener">${IC.dl}${esc(d.vdoc || '打开授权书')}</a>` : d.vdoc ? ` <span class="rv-doc">${IC.dl}${esc(d.vdoc)}</span>` : '')) : ''}</div>
+      ${d?.third?.length ? `<div class="rv-docs">${d.third.map(t => `<div><b>${esc(t.n)}</b><span>${esc(t.lic)}</span>${t.url ? `<a class="rv-doc" href="${esc(t.url)}" target="_blank" rel="noopener">${IC.dl}${esc(t.doc || '打开授权文件')}</a>` : t.doc ? `<span class="rv-doc">${IC.dl}${esc(t.doc)}</span>` : '<span class="rv-doc no">没附授权文件</span>'}</div>`).join('')}</div>` : ''}
       ${d ? '' : '<p class="ad-warn y">这次提交没有附来源说明和授权文件（上架表单还没收集这些）。</p>'}</section>` : ''}
-    <section class="rv-s"><h4>发布者</h4><div class="ad-u big">${uav(r.who, 'md')}<span><b>${esc(uname(r.who))}</b><i>@${esc(r.who)} · ${a.verified ? '已实名' : '未实名'}${app ? ' · 入驻申请' + esc(app.st.split(' ')[0]) : ''}</i></span></div>
+    <section class="rv-s"><h4>发布者</h4><div class="ad-u big">${uav(r.who, 'md')}<span><b>${esc(uname(r.who))}</b><i>@${esc(r.who)} · ${(r.seller ? r.seller.verified : a.verified) ? '已实名' : '未实名'}${r.seller?.agreedSeller ? ' · 卖家协议 ' + esc(r.seller.agreedSeller) : ''}${app ? ' · 入驻申请' + esc(app.st.split(' ')[0]) : ''}</i></span></div>
       <div class="ad-kv">${kv('在售商品', String(sells))}${kv('被警告', String((a.warns || []).length))}${kv('被下架', String(downs))}${kv('被举报', String(reps))}</div>
       ${app ? `<p class="mut2" style="font-size:12.5px;margin:0">入驻资料：实名 ${esc(app.real)} · 作品 ${esc(app.link)}</p>` : ''}
       ${admCan('users') ? `<button class="pill sm lt" data-act="us-open" data-id="${esc(r.who)}" style="align-self:flex-start">在用户管理里查看</button>` : ''}</section>
@@ -6723,6 +6727,7 @@ function rvDetail(r){
     <div class="qact"><button class="pill lg" data-act="rv-ok" style="background:var(--green);color:var(--on)">${IC.check}通过<kbd>A</kbd></button><button class="pill lg lt" data-act="rv-ask">要求补充材料</button><button class="pill lg lt" data-act="rv-no">${IC.x}驳回<kbd>R</kbd></button></div>`;
 }
 ADMV.review = () => {
+  if (API.on() && !LADM.review){ ladmShop('review'); return ladmWait('待审核', '读取中'); }
   if (!REVIEW.length) return adH('待审核', '商品、帖子上架前在这里过一遍') + adEmpty('ALL CLEAR', '审完了');
   const r = rvCur(); UI.rvSel = r.id;
   return `${adH('待审核', `${REVIEW.length} 个 · 点左边切换 · 键盘 A 通过 / R 驳回`)}
@@ -6751,7 +6756,7 @@ ADMV.apply = () => { const f = UI.adf?.ap || 'todo', list = ADM.apps.filter(a =>
 };
 
 /* 用户 */
-const allUids = () => [...Object.keys(USERS), ...ADM_BUYERS];
+const allUids = () => API.on() ? [...LIVE.u] : [...Object.keys(USERS), ...ADM_BUYERS];   // 连着后端：只认后端里真实的用户
 const uState = uid => banOf(uid) ? ['封禁', 'orange'] : muteOf(uid) ? ['禁言', 'yellow'] : ADM.closing?.[uid] ? ['注销中', 'violet'] : ['正常', 'green'];
 ADMV.users = () => { if (API.on()) return ladmUsersView(); const q = fq('users'), f = UI.adf?.us || 'all', L = ledger();
   const list = allUids().filter(uid => (!q || (uid + ' ' + uname(uid)).toLowerCase().includes(q)) && (f === 'all' || (f === 'creator' ? USERS[uid] && uid !== 'mio' : f === 'limited' ? banOf(uid) || muteOf(uid) : f === 'warned' ? (ADM.acct[uid]?.warns || []).length : true)));
@@ -6803,7 +6808,7 @@ ADMV.content = () => { const k = UI.adf?.ct || 'post', q = fq('content'), f = UI
 const cAct = (k, id, T) => T[id] ? `<button class="pill sm lt" data-act="ct-on" data-k="${k}" data-id="${esc(id)}" title="${esc(T[id].reason)}">恢复</button>` : `<button class="pill sm" data-act="ct-off" data-k="${k}" data-id="${esc(id)}">下架</button>`;
 
 /* 订单流水：筛选、搜索、导出 */
-ADMV.orders = () => { const q = fq('orders'), f = UI.adf?.ot || 'all', s = UI.adf?.os || 'all', n = UI.adn || 30;
+ADMV.orders = () => { if (API.on()) return liveOrdersView(); const q = fq('orders'), f = UI.adf?.ot || 'all', s = UI.adf?.os || 'all', n = UI.adn || 30;
   const list = ledger().filter(x => (f === 'all' || x.type === f) && (s === 'all' || x.st === s) && (!q || (x.no + x.title + uname(x.buyer) + uname(x.seller)).toLowerCase().includes(q)));
   return `${adH('订单流水', `共 ${list.length} 笔 · 合计 ${yuan2(list.reduce((a, x) => a + x.amt, 0))}`, `${adQ('orders', '订单号 / 商品 / 用户')}<button class="pill sm lt" data-act="od-csv">${IC.dl}导出 CSV</button>`)}
   <div class="ad-bar2">${adSeg('ot', [['all', '全部'], ['prod', '商品'], ['co', '合作']], f)}${adSeg('os', [['all', '全部状态'], ['paid', '已支付'], ['held', '托管中'], ['released', '已放款'], ['refunding', '退款中'], ['refund', '已退款'], ['dispute', '纠纷中']], s)}</div>
@@ -6811,7 +6816,7 @@ ADMV.orders = () => { const q = fq('orders'), f = UI.adf?.ot || 'all', s = UI.ad
 };
 
 /* 退款 */
-ADMV.refunds = () => `${adH('退款', '已下载过的资源默认不退，特殊情况（文件损坏等）可同意')}
+ADMV.refunds = () => API.on() ? liveRefundsView() : `${adH('退款', '已下载过的资源默认不退，特殊情况（文件损坏等）可同意')}
   <div class="ad-list">${REFUNDS.map(r => `<div class="ad-row ${r.st === '待处理' ? '' : 'dim'}"><div class="ad-rm"><b>${esc(r.item)} · ${yuan2(r.amt)}</b><span class="mut">${r.no} · @${esc(r.buyer)} · ${esc(r.reason)} · <b style="color:${r.dl === '未下载' ? 'var(--green)' : 'var(--orange)'}">${r.dl}</b></span>${r.st !== '待处理' ? `<span class="mut2">${esc(r.st)}${r.auto ? ' · 极速退款（未下载，系统自动通过）' : ''}</span>` : ''}</div>
     <div class="ad-ra">${r.st === '待处理' ? `<button class="pill sm lt" data-act="rf-do" data-v="no" data-no="${r.no}">拒绝</button><button class="pill sm" data-act="rf-do" data-v="ok" data-no="${r.no}">同意退款</button>` : ''}</div></div>`).join('') || '<div class="rnone">没有退款申请</div>'}</div>`;
 
@@ -6879,7 +6884,7 @@ const vcForm = uid => `<div class="ad-form vc-f">${uid ? `<input type="hidden" c
     <label><span class="ad-lab">有效期</span><select class="inp vcExp">${VC_EXP.map(([d, l]) => `<option value="${d}" ${d === 90 ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
   <label class="ad-lab">说明（用户能看到）</label><input class="inp vcNote" placeholder="例如：内测感谢 / 活动奖励" maxlength="30">
   <button class="pill pk" data-act="vc-send" style="align-self:flex-start">${IC.plus}发放</button></div>`;
-ADMV.vouchers = () => { const V = ADM.vouchers.slice().reverse(), q = fq('vc'), f = UI.adf?.vc || 'all';
+ADMV.vouchers = () => { if (API.on()) return liveVouchersView(); const V = ADM.vouchers.slice().reverse(), q = fq('vc'), f = UI.adf?.vc || 'all';
   const sum = fn => r2(V.reduce((a, v) => a + fn(v), 0)), L = V.filter(v => (f === 'all' || vcSt(v)[0] === f) && (!q || (v.uid + ' ' + uname(v.uid) + ' ' + (v.note || '')).toLowerCase().includes(q)));
   return `${adH('代金券', `发给用户买商品用：可以拆开分几次用，付款时先用快过期的；不能提现、不能转让。券抵扣的部分由平台承担，卖家照原价结算。单张最多 ${yuan2(VC_MAX)}`)}
   <div class="box"><div class="box-b"><div class="ad-kv"><span>已发放<b>${yuan2(sum(v => v.amt))}</b></span><span>已抵扣<b>${yuan2(sum(vcUsed))}</b></span><span>未使用<b>${yuan2(sum(v => vcSt(v)[0] === '可用' ? vcLeft(v) : 0))}</b></span><span>过期 / 撤回作废<b>${yuan2(sum(v => ['已过期', '已撤回'].includes(vcSt(v)[0]) ? Math.max(0, vcLeft(v)) : 0))}</b></span></div></div></div>
@@ -6890,7 +6895,7 @@ ADMV.vouchers = () => { const V = ADM.vouchers.slice().reverse(), q = fq('vc'), 
 };
 
 /* 邀请码 */
-ADMV.invites = () => `${adH('邀请码', '商品售卖许可：创作者开店要用。可以发给指定用户（只有本人能用，会通过官方通知发给他），也可以生成通用码；入驻申请通过时会自动生成一个')}
+ADMV.invites = () => API.on() ? liveInvitesView() : `${adH('邀请码', '商品售卖许可：创作者开店要用。可以发给指定用户（只有本人能用，会通过官方通知发给他），也可以生成通用码；入驻申请通过时会自动生成一个')}
   <div class="box ad-form"><label class="ad-lab" for="invTo">发给谁（填用户 ID 或昵称；不填 = 通用码，谁拿到都能用）</label>
     <div class="ad-inl"><input class="inp" id="invTo" list="invUs" placeholder="例如：yuu.td" autocomplete="off"><button class="pill sm pk" data-act="inv-new">${IC.plus}生成</button></div>${uidList('invUs')}</div>
   <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>邀请码</th><th>状态</th><th>生成人</th><th>时间</th><th></th></tr></thead><tbody>${INVITES.slice().reverse().map(i => `<tr><td class="n" style="font-weight:800;letter-spacing:.03em">${i.code}</td><td>${i.st === '已入驻' ? `<span style="font-weight:600">${esc(i.to)}</span> <span class="mut2">已开店</span>` : stTag('未使用', 'yellow')}${i.st !== '已入驻' ? (i.uid ? ` <span class="mut2">只限 @${esc(uname(i.uid))}</span>` : i.to !== '—' ? ` <span class="mut2">给 ${esc(i.to)}</span>` : ' <span class="mut2">通用</span>') : ''}</td><td class="mut2">${esc(i.by)}</td><td class="mut2 n">${i.time}</td><td class="r">${i.st === '未使用' ? `<button class="pill sm lt" data-act="copy" data-v="${i.code}">复制</button>` : ''}</td></tr>`).join('')}</tbody></table></div></div>`;
@@ -7623,11 +7628,11 @@ const docSheet = k => sheet(`<h3>${DOCS[k].t}</h3>${docHTML(k)}`);   // 登录�
 /* —— 卖家同意协议：开店时必须勾选（不能默认勾上），记下版本和时间；协议改版（v 变了）后，进工作室要重新确认，确认前不能上架新商品 —— */
 const AGREE_DOCS = ['seller', 'license'];
 const agreeOf = uid => (ADM.agree[uid] ||= {});
-const agreeNeed = uid => AGREE_DOCS.some(k => agreeOf(uid)[k]?.v !== DOCS[k].v);
+const agreeNeed = uid => API.on() && uid === ME ? !!LSHOP.seller?.needs?.length : AGREE_DOCS.some(k => agreeOf(uid)[k]?.v !== DOCS[k].v);
 function agreeRec(uid){ const a = agreeOf(uid), ts = Date.now(); AGREE_DOCS.forEach(k => a[k] = {v:DOCS[k].v, ts}); admSave(); }
 const agreeBox = id => `<label class="agr"><input type="checkbox" id="${id}"><span>我已阅读并同意 <a href="#doc-seller">《卖家服务协议》</a> 和 <a href="#doc-license">《素材使用许可》</a></span></label>
   <details class="agr-sum"><summary>先看要点</summary><ul>${DOCS.seller.sum.map(p => `<li>${docB(p)}</li>`).join('')}</ul></details>`;
-function agreeBar(){ if (STATE.role !== 'user' || !STATE.seller || !agreeNeed(ME)) return ''; const old = agreeOf(ME).seller;
+function agreeBar(){ if (STATE.role !== 'user' || !STATE.seller || !agreeNeed(ME)) return ''; const old = API.on() ? (LSHOP.seller?.agreements?.seller ? {v:LSHOP.seller.agreements.seller.version} : null) : agreeOf(ME).seller;
   return `<div class="agr-bar"><div><b>${old ? '卖家服务协议更新了' : '请确认卖家服务协议'}</b><span>${old ? `你之前同意的是版本 ${esc(old.v)}，现在是 ${DOCS.seller.v}。` : '继续卖东西之前需要确认一下。'}确认前可以照常查看工作室，但不能上架新商品。</span>${agreeBox('agrBar')}</div><button class="pill" data-act="agree-go">确认</button></div>`; }
 ACTIONS['agree-go'] = () => { const c = $('#agrBar'); if (!c?.checked){ c && fxPop(c.closest('label'), 'fx-shake', 300); toast('先勾选同意', 'orange', 'x'); return; } agreeRec(ME); toast('已确认', 'green'); rerender(); };
 
@@ -7695,7 +7700,7 @@ function setExtra(){ const cl = closingOf(ME);
     <div class="box"><div class="box-h"><h3>关于</h3></div><div class="box-b set-l">${DOC_ORD.map(k => `<a class="set-r" href="#doc-${k}">${DOCS[k].t}<span class="mut2">›</span></a>`).join('')}</div></div>`; }
 const MESUB = {
   /* 余额：代金券余额 + 每张券 + 抵扣记录 */
-  wallet: () => { const V = vcOf(ME).slice().sort((a, b) => (vcSt(a)[0] === '可用' ? 0 : 1) - (vcSt(b)[0] === '可用' ? 0 : 1) || b.ts - a.ts), bal = vcBal(ME);
+  wallet: () => { if (API.on()) return liveWalletView(); const V = vcOf(ME).slice().sort((a, b) => (vcSt(a)[0] === '可用' ? 0 : 1) - (vcSt(b)[0] === '可用' ? 0 : 1) || b.ts - a.ts), bal = vcBal(ME);
     const soon = r2(vcLive(ME).filter(v => v.exp && v.exp - Date.now() < 7*864e5).reduce((a, v) => a + vcLeft(v), 0));
     const U = ADM.vuse.filter(u => u.uid === ME).sort((a, b) => b.ts - a.ts);
     return `<div class="box wal-h"><span class="lab">代金券余额</span><b class="x num">${yuan2(bal)}</b><span class="mut2">买商品时自动抵扣，可以分几次用完 · 不能提现，也不能转给别人</span>${soon ? `<span class="tag c-orange">${yuan2(soon)} 在 7 天内到期</span>` : ''}${bal > 0 ? `<a class="pill" href="#shop" style="align-self:flex-start">去逛逛</a>` : ''}</div>
@@ -7839,7 +7844,7 @@ function receiptPNG(o){ const p = P(o.pid), W = 720, H = 920, c = document.creat
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);   // 同步生成，保证在点击手势内触发下载；文件名用英文，部分浏览器会丢掉中文下载名
   toast('凭证已保存'); }
 function ordSheet(no){ const o = STATE.orders.find(x => x.no === no); if (!o) return; const p = P(o.pid), inv = invOf(no), st = ordSt(o);
-  sheet(`<h3>订单详情</h3><div class="ad-kv col"><span>订单号<b class="n">${o.no}</b></span><span>资源<b>${esc(p.title)}</b></span><span>卖家<b>${esc(uname(p.seller))}</b></span><span>金额<b>${o.price ? yuan2(o.price) : '免费'}</b></span>${o.vc ? `<span>代金券抵扣<b>−${yuan2(o.vc)}</b></span><span>实付<b>${yuan2(r2(o.price - o.vc))}</b></span>` : ''}<span>支付方式<b>${esc(o.pay)}</b></span><span>时间<b>${esc(o.time)}</b></span><span>状态<b>${st}</b></span>${inv ? `<span>发票<b>${inv.st}${inv.invNo ? ' · ' + esc(inv.invNo) : ''}</b></span>` : ''}</div>
+  sheet(`<h3>订单详情</h3><div class="ad-kv col"><span>订单号<b class="n">${o.no}</b></span><span>资源<b>${esc(p.title)}</b></span><span>卖家<b>${esc(uname(p.seller))}</b></span><span>金额<b>${o.price ? yuan2(o.price) : '免费'}</b></span>${o.vc ? `<span>代金券抵扣<b>−${yuan2(o.vc)}</b></span><span>实付<b>${yuan2(r2(o.price - o.vc))}</b></span>` : ''}<span>支付方式<b>${esc(o.pay)}</b></span>${o.lic ? `<span>许可编号<b class="n">${esc(o.lic)}</b></span>` : ''}<span>时间<b>${esc(o.time)}</b></span><span>状态<b>${st}</b></span>${inv ? `<span>发票<b>${inv.st}${inv.invNo ? ' · ' + esc(inv.invNo) : ''}</b></span>` : ''}</div>
     <div class="ad-acts"><a class="pill sm lt" data-go="item-${p.id}">查看资源</a><button class="pill sm lt" data-act="ord-rcpt" data-no="${o.no}">${IC.dl}保存凭证</button>${o.price > 0 && st !== '已退款' && !inv ? `<button class="pill sm lt" data-act="inv-open" data-no="${o.no}">申请发票</button>` : ''}<a class="pill sm lt" href="#msg-${p.seller}">联系卖家</a>${st === '已完成' && o.price > 0 && !rfOf(o.no) ? `<button class="pill sm lt" data-act="refund" data-no="${o.no}">退款</button>` : ''}</div>`); }
 
 /* —— 登录设备（原型：本机 + 示例设备） —— */
@@ -9233,7 +9238,7 @@ const STAFF = {
   load(){ try { const j = JSON.parse(sessionStorage.getItem('ctrlz2.staff') || 'null'); if (j){ this.tok = j.tok; this.me = j.me; } } catch(e){} },
   save(){ try { this.tok ? sessionStorage.setItem('ctrlz2.staff', JSON.stringify({tok:this.tok, me:this.me})) : sessionStorage.removeItem('ctrlz2.staff'); } catch(e){} },
   set(tok, s){ this.tok = tok; this.me = {id:s.id, name:s.name, role:s.role, email:s.email, on:true}; this.save(); },
-  drop(tell){ this.tok = this.me = null; this.save(); if (STATE.role === 'admin'){ setRole(API.tok ? 'user' : 'guest', true); if (tell) toast('后台登录已过期，请重新登录', 'blue'); rerender(); } },
+  drop(tell){ this.tok = this.me = null; this.save(); for (const k in LADM) if (k !== 'busy') LADM[k] = null;   /* 换人登录不串数据 */ if (STATE.role === 'admin'){ setRole(API.tok ? 'user' : 'guest', true); if (tell) toast('后台登录已过期，请重新登录', 'blue'); rerender(); } },
   async req(method, path, body){
     const h = {}; if (body !== undefined) h['Content-Type'] = 'application/json'; if (this.tok) h.Authorization = 'Bearer ' + this.tok;
     let res; try { res = await fetch(API.base + path, {method, headers:h, body: body === undefined ? undefined : JSON.stringify(body)}); }
@@ -9394,7 +9399,7 @@ function liveLoggedOut(){ if (!API.tok && STATE.role !== 'user') return; API.set
 /* 启动：同步部分先清掉示例内容（避免先闪一下假数据），再异步拉真实数据 */
 function liveReset(){
   if (!API.on()) return;
-  POSTS.splice(0); if (STATE.role === 'admin') setRole('guest', true);
+  POSTS.splice(0); liveShopReset(); if (STATE.role === 'admin') setRole('guest', true);
   if (!API.tok && STATE.role === 'user') setRole('guest', true);
 }
 async function liveBoot(){
@@ -9408,8 +9413,8 @@ async function liveBoot(){
     }
     if (API.tok) liveMe(await API.req('GET', '/me'));
     if (STAFF.tok && /^#admin/.test(location.hash) && await STAFF.check()) setRole('admin', true);   // 刷新后台页面：会话还有效就留在后台
-    await liveFeed();
-    if (liveUser()) await liveMeExtras();
+    await liveFeed(); await liveShop();
+    if (liveUser()){ await liveMeExtras(); await liveMine(); }
   } catch(e){ apiFail(e); }
   rerender(); msgBadge(); badge();
 }
@@ -9578,7 +9583,7 @@ wrapAct('au-3p', async (orig, b) => {
     return id;
   };
 }
-async function liveAfterLogin(){ try { liveMe(await API.req('GET', '/me')); await liveFeed(); await liveMeExtras(); } catch(e){ apiFail(e); } rerender(); msgBadge(); }
+async function liveAfterLogin(){ try { liveMe(await API.req('GET', '/me')); await liveFeed(); await liveMeExtras(); await liveShop(); await liveMine(); } catch(e){ apiFail(e); } rerender(); msgBadge(); }
 
 /* 别人的主页、帖子评论：第一次打开时从后端拉 */
 { const userRoute0 = ROUTES.user;
@@ -9615,6 +9620,249 @@ const apiBox = () => `<div class="box"><div class="box-h"><h3>原型 · 数据�
   ${API.on() ? `<div class="set-r"><span>后端地址<span class="mut2" style="display:block;font-size:12.5px;word-break:break-all">${esc(API.base)}</span></span><button class="pill sm lt" data-act="api-off">切回本地模拟</button></div>
     <p class="mut2" style="font-size:12.5px;margin:6px 0 0">已接通：登录、信息流、帖子、评论、点赞、关注、拉黑、官方通知、设置。商城、私信、合作、工作室、管理后台仍是本地模拟。</p>`
   : `<div class="set-r"><span>现在用的是浏览器里的示例数据</span><button class="pill sm" data-act="api-set">连接后端</button></div>`}</div></div>`;
+
+/* ================= 商城接后端（第 2 阶段） =================
+   连着后端时：商品、开店、上架、下单付款（代金券）、已购下载、退款、余额都读写后端；
+   后台的待审核、订单流水、退款、代金券、邀请码、主页下架也走后端。金额：后端是「分」，页面里是「元」（f2y / y2f）。
+   做法和帖子一样：把后端数据灌进原型的 PRODUCTS / STATE.orders / SELLER_PRODUCTS / SELLER_ORDERS / REVIEW，页面代码基本不用改 */
+const f2y = f => Math.round(f || 0) / 100, y2f = y => Math.round(+y * 100);
+const PAY_M = {'微信支付':'wechat', '支付宝':'alipay', '银行卡':'card'}, PAY_N = {wechat:'微信支付', alipay:'支付宝', card:'银行卡', voucher:'代金券', free:'免费领取'};
+const SP_ST = {review:'审核中', need_info:'待补充', on_sale:'已上架', rejected:'已驳回', off:'已下架', taken_down:'平台下架'};
+const fmtSize = n => n >= 1e9 ? (n/1e9).toFixed(1) + ' GB' : n >= 1e6 ? (n/1e6).toFixed(1) + ' MB' : n >= 1e3 ? Math.round(n/1e3) + ' KB' : (n || 0) + ' B';
+const LSHOP = {wallet:null, seller:null, mine:{}, wTry:false};
+const ymdhm = iso => { const d = new Date(iso); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
+function liveShopReset(){ PRODUCTS.splice(0); SELLER_PRODUCTS.splice(0); SELLER_ORDERS.splice(0); STATE.orders = []; STATE.owned = new Set(); MONTHLY.forEach(m => m[1] = 0); }
+
+/* —— 后端数据 → 原型的数据结构 —— */
+function apiProduct(p){
+  apiUser(p.seller); const old = P(p.id), ext = (String(p.fileName || '').split('.').pop() || '').toUpperCase();
+  const o = Object.assign(old || {}, {id:p.id, kind:p.kind || CATS[p.cat]?.cn || '', cat:CATS[p.cat] ? p.cat : 'sample', title:p.title, en:p.en || p.title, seller:p.seller.id,
+    price:f2y(p.price), ext:p.extPrice == null ? null : f2y(p.extPrice), count:p.fileName || '—', format:ext || '—', compat:'见商品介绍', size:fmtSize(p.fileSize), sales:p.salesCount, rating:5,
+    cover:{tpl:'orbit', pal:'pb', ...(p.cover || {}), txt:p.en || p.title}, desc:p.desc, files:p.fileName, tpl:['sample', 'preset', 'video'].includes(p.tpl) ? p.tpl : undefined,
+    live:true, status:p.status, selfOff:p.status !== 'on_sale', hasAi:p.hasAi, aiTrain:p.aiTrain, ver:old?.ver || 'v1.0', vlog:old?.vlog || []});
+  const T = tplOf(o); if (T === 'sample'){ o.pads ||= PADS_CONCRETE; o.bpm ||= 92; } if (T === 'preset') o.presets ||= PRESETS_TERMINAL; if (T === 'video') o.vis ||= 'grid';   // 试听先用通用的演示内容
+  if (!old) PRODUCTS.push(o); return o;
+}
+const apiOrder = o => (apiUser(o.seller), {id:o.id, no:o.no, pid:o.productId, price:f2y(o.price), vc:f2y(o.voucherAmount), pay:PAY_N[o.payMethod] || o.payMethod, time:ymdhm(o.paidAt || o.createdAt),
+  st:o.status === 'refunded' ? '已退款' : o.refund?.status === 'pending' ? '退款中' : '已完成', live:true, dl:o.downloads, lic:o.licenseNo, rfx:o.refund, fresh:false});
+function liveApplyOrder(o){ STATE.orders = [apiOrder(o), ...STATE.orders.filter(x => x.id !== o.id)]; STATE.owned.add(o.productId); const p = P(o.productId); if (p) p.sales++; }
+
+/* —— 读取 —— */
+async function liveShop(){ try { const r = await API.req('GET', '/products'); PRODUCTS.splice(0); r.items.forEach(apiProduct); } catch(e){ apiFail(e); } }
+async function liveMine(){
+  if (!liveUser()) return;
+  try {
+    const [s, od, w] = await Promise.all([API.req('GET', '/me/seller'), API.req('GET', '/me/orders'), API.req('GET', '/me/wallet')]);
+    LSHOP.seller = s; LSHOP.wallet = w; STATE.seller = s.seller;
+    STATE.orders = od.items.map(apiOrder); STATE.owned = new Set(od.items.filter(o => o.status === 'paid').map(o => o.productId));
+    od.items.forEach(o => { STATE.dlc[o.productId] = o.downloads; });
+    for (const id of [...STATE.owned].filter(id => !P(id))){ try { apiProduct(await API.req('GET', `/products/${id}`)); } catch(e){} }   // 买过但已经下架的，也要能在资源库里看到
+    if (!s.seller){ SELLER_PRODUCTS.splice(0); SELLER_ORDERS.splice(0); return; }
+    const [mp, sl] = await Promise.all([API.req('GET', '/me/products'), API.req('GET', '/me/sales')]);
+    LSHOP.mine = Object.fromEntries(mp.items.map(p => [p.id, p]));
+    SELLER_PRODUCTS.splice(0, SELLER_PRODUCTS.length, ...mp.items.map(p => { apiProduct(p);
+      return {id:p.id, pid:['on_sale', 'off', 'taken_down'].includes(p.status) ? p.id : null, title:p.title, cat:CATS[p.cat] ? p.cat : 'sample', st:SP_ST[p.status] || p.status, views:0, sales:p.salesCount, conv:'—',
+        cover:{...p.cover, txt:p.en || p.title}, live:true, note:p.status === 'need_info' ? '需要补充：' + p.reviewNote : p.status === 'rejected' ? '驳回原因：' + p.reviewNote : p.status === 'taken_down' ? '平台下架：' + p.reviewNote : p.status === 'review' ? '审核中 · 通常 1–2 个工作日' : ''}; }));
+    SELLER_ORDERS.splice(0, SELLER_ORDERS.length, ...sl.items.map(o => ({no:o.no, buyer:apiUser(o.buyer).id, amt:f2y(o.price), cash:f2y(o.cashAmount ?? o.price), pay:PAY_N[o.payMethod] || o.payMethod, st:o.status === 'refunded' ? 'refund' : 'paid', time:o.paidAt ? ymdhm(o.paidAt).slice(5) : '', title:o.title})));
+    const now = new Date();   // 每月收入：最近 6 个月
+    MONTHLY.splice(0, MONTHLY.length, ...Array.from({length:6}, (_, i) => { const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1), k = d.getFullYear() + '-' + pad2(d.getMonth() + 1);
+      return [pad2(d.getMonth() + 1), sl.items.filter(o => o.status === 'paid' && o.paidAt && ymdhm(o.paidAt).slice(0, 7) === k).reduce((a, o) => a + f2y(o.price), 0)]; }));
+  } catch(e){ apiFail(e); }
+}
+
+/* —— 上传：先要地址，再直传（本机是 /files/…，线上是对象存储） —— */
+const PROD_MIME = /^(application\/(zip|x-zip-compressed|octet-stream)|audio\/(wav|x-wav)|video\/(mp4|quicktime))$/;
+async function liveUpload(file, purpose){
+  const mime = purpose === 'product_file' ? (PROD_MIME.test(file.type) ? file.type : 'application/octet-stream') : (file.type || 'application/octet-stream');
+  const up = await API.req('POST', '/uploads', {purpose, mime, size:file.size});
+  const put = await fetch(up.uploadUrl, {method:'PUT', headers:up.headers, body:file}).catch(() => null);
+  if (!put || !put.ok) throw new Error('文件上传失败，请重试'); return up;
+}
+const pickAny = cb => { const i = Object.assign(document.createElement('input'), {type:'file'}); i.onchange = () => i.files[0] && cb(i.files[0]); i.click(); };
+
+/* —— 开店、协议 —— */
+wrapAct('inv-check', async (orig, b) => { if (!liveUser()) return orig(b);
+  const i = $('#inv'), v = i.value.trim().toUpperCase(), ag = $('#invAgree');
+  if (ag && !ag.checked){ fxPop(ag.closest('label'), 'fx-shake', 300); toast('先勾选同意《卖家服务协议》和《素材使用许可》', 'orange', 'x'); return; }
+  try { LSHOP.seller = await API.req('POST', '/me/seller', {code:v, agree:true}); }
+  catch(e){ i.animate([{transform:'translateX(-8px)'}, {transform:'translateX(8px)'}, {transform:'translateX(-4px)'}, {transform:'none'}], {duration:280}); apiFail(e); return; }
+  STATE.seller = true; const r = b.getBoundingClientRect(); burst(r.left + r.width/2, r.top + r.height/2, ['pink', 'yellow', 'blue']); await liveMine();
+  const next = b.closest('form').dataset.next || 'seller-upload';
+  if (next === 'cp'){ toast('开通了，选一下要卖什么', 'pink'); UI.dirty = true; drawCompose(); return; }
+  closeSheet(); UI.sellerTab = 'upload'; toast('开通了，上架你的第一件作品吧', 'pink'); UI.dirty = true; go(next); });
+wrapAct('agree-go', async (orig, b) => { if (!liveUser()) return orig(b); const c = $('#agrBar');
+  if (!c?.checked){ c && fxPop(c.closest('label'), 'fx-shake', 300); toast('先勾选同意', 'orange', 'x'); return; }
+  try { LSHOP.seller = await API.req('POST', '/me/agreements', {docs:LSHOP.seller?.needs?.length ? LSHOP.seller.needs : ['seller', 'license']}); toast('已确认', 'green'); rerender(); } catch(e){ apiFail(e); } });
+
+/* —— 上架：交付文件、授权文件真的上传；提交 / 重新提交走后端 —— */
+wrapAct('up-file', (orig, b) => { if (!liveUser()) return orig(b);
+  pickAny(async f => { const d = $('[data-act="up-file"]'); if (d) d.innerHTML = `<div class="ring-p" style="--p:45;width:56px;height:56px"></div><b>上传中…</b><span>${esc(f.name)}</span>`;
+    try { const up = await liveUpload(f, 'product_file'); Object.assign(UI.up, {file:true, fileId:up.id, fileName:f.name, fileSize:f.size}); } catch(e){ apiFail(e); } rerender(); }); });
+wrapAct('dc-doc', (orig, b) => { if (!liveUser()) return orig(b);
+  pickFile(async (name, f) => { const t = declOf(UI.up).third[+b.dataset.i]; try { const up = await liveUpload(f, 'license_doc'); t.doc = name; t.docKey = up.key; } catch(e){ apiFail(e); } rerender(); }); });
+wrapAct('dc-vdoc', (orig, b) => { if (!liveUser()) return orig(b);
+  pickFile(async (name, f) => { const d = declOf(UI.up); try { const up = await liveUpload(f, 'license_doc'); d.vdoc = name; d.vdocKey = up.key; } catch(e){ apiFail(e); } rerender(); }); });
+wrapAct('up-submit', async (orig, b) => { if (!liveUser()) return orig(b);
+  if (!canSpeak()) return;
+  if (agreeNeed(ME)){ toast('先在工作室顶部确认新版《卖家服务协议》', 'orange', 'x'); scrollTo({top:0, behavior:'smooth'}); return; }
+  const U = UI.up, d = declOf(U), err = declErr(d), edit = U.editId;
+  if (err){ const o = $('.dcl'); o?.scrollIntoView({block:'center', behavior:'smooth'}); o && fxPop(o, 'fx-shake', 300); toast(esc(err), 'orange', 'x'); return; }
+  if (!edit && !U.fileId){ toast('先上传交付文件', 'orange', 'x'); return; }
+  if (!String(U.title || '').trim()){ toast('填一下名字', 'orange', 'x'); return; }
+  const tp = d.src.third || d.src.oss;
+  const body = {title:U.title.trim(), en:String(U.en || '').trim(), cat:U.cat, price:y2f(U.price || 0), extPrice:d.ext ? y2f(d.extPrice) : null, desc:String(U.desc || '').trim(), cover:{tpl:U.look.tpl, pal:U.look.pal}, tpl:U.tpl, aiTrain:!!d.aiTrain,
+    decl:{src:DC_SRC.map(([k]) => k).filter(k => d.src[k]), third:tp ? d.third.map(t => ({n:t.n.trim(), lic:t.lic, link:String(t.link || '').trim(), ...(t.docKey ? {docKey:t.docKey} : {}), docName:t.doc || ''})) : [],
+      ai:d.src.ai ? d.ai : '', voice:d.voice, ...(d.voice === 'yes' && d.vdocKey ? {voiceDocKey:d.vdocKey} : {}), voiceDocName:d.voice === 'yes' ? d.vdoc || '' : '', pledge:true},
+    ...(U.fileId ? {fileUploadId:U.fileId, fileName:U.fileName} : {})};
+  b.disabled = true;
+  try { if (edit) await API.req('PATCH', `/products/${edit}`, body); else await API.req('POST', '/products', body);
+    Object.assign(UI.up, {file:false, fileId:null, fileName:'', fileSize:0, decl:null, editId:null, desc:''}); await liveMine();
+    toast(edit ? '已重新提交，审核通过后上架' : '已提交，审核通过后自动上架', 'yellow'); navUp('seller-products'); }
+  catch(e){ b.disabled = false; apiFail(e); } });
+// 待补充 / 被驳回：把原来的内容和声明填回上架表单，改好后重新提交
+ACTIONS['sp-redo'] = b => { const p = LSHOP.mine[b.dataset.id]; if (!p) return; const d = p.decl || {};
+  Object.assign(UI.up, {editId:p.id, title:p.title, en:p.en, cat:CATS[p.cat] ? p.cat : 'sample', price:f2y(p.price), desc:p.desc, look:{tpl:p.cover?.tpl || 'orbit', pal:p.cover?.pal || 'pb'}, tpl:p.tpl || UI.up.tpl,
+    file:true, fileId:null, fileName:p.fileName, fileSize:p.fileSize,
+    decl:{src:Object.fromEntries((d.src || ['own']).map(k => [k, true])), third:(d.third || []).map(t => ({n:t.n, lic:t.lic, link:t.link || '', doc:t.docName || (t.docKey ? '授权文件' : ''), docKey:t.docKey})),
+      ai:d.ai || '', voice:d.voice || 'none', vdoc:d.voiceDocName || (d.voiceDocKey ? '授权书' : ''), vdocKey:d.voiceDocKey, ext:p.extPrice != null, extPrice:p.extPrice != null ? String(f2y(p.extPrice)) : '', aiTrain:p.aiTrain, orig:false}});
+  if (p.reviewNote) toast('要补充：' + esc(p.reviewNote), 'blue'); UI.sellerTab = 'upload'; go('seller-upload'); };
+// 管理在售商品：改价 / 上下架直接生效；改标题、介绍会重新审核
+wrapAct('sp-save', async (orig, b) => { const p = P(b.dataset.id); if (!liveUser() || !p?.live) return orig(b);
+  const price = +$('#spP').value, t = $('#spT').value.trim(), d = $('#spD').value.trim(), off = $('#spSt .on').dataset.v === 'off';
+  if (!(price >= 0) || price > 10000){ fxPop($('#spP'), 'fx-shake', 300); toast('价格在 0–10000 元之间', 'orange', 'x'); return; } if (!t){ fxPop($('#spT'), 'fx-shake', 300); return; }
+  const body = {}; if (price !== p.price) body.price = y2f(price); if (t !== p.title) body.title = t; if (d !== (p.desc || '')) body.desc = d; if (off !== !!p.selfOff) body.off = off;
+  if (!Object.keys(body).length){ closeSheet(); return; }
+  try { const r = await API.req('PATCH', `/products/${p.id}`, body); closeSheet(); toast(r.status === 'review' ? '已保存，改了内容要重新审核' : '已保存', 'green'); await liveShop(); await liveMine(); rerender(); } catch(e){ apiFail(e); } });
+
+/* —— 买：下单付款、免费领取 —— */
+wrapAct('buy0', async (orig, b, e) => { const pr = P(b.dataset.id); if (!pr?.live) return orig(b, e); if (needLogin()) return;
+  if (pr.price > 0) return orig(b, e);   // 付费的照常打开付款面板
+  try { liveApplyOrder(await API.req('POST', '/orders', {productId:pr.id})); STATE.libNew++; badge(); toast('已放进你的资源库', 'green'); rerender(); } catch(err){ apiFail(err); } });
+wrapAct('do-pay', async (orig, b) => { const pr = P(b.dataset.id); if (!pr?.live) return orig(b);
+  const sh = $('#layer .sheet'), ded = vcDed(pr), cash = r2(pr.price - ded);
+  sh.innerHTML = `<div class="done"><div class="ring-p" id="rp" style="--p:35"></div><b style="font-size:18px">${cash > 0 ? `正在等待${UI.pay}…` : '正在用代金券支付…'}</b></div>`;
+  try { const o = await API.req('POST', '/orders', {productId:pr.id, useVoucher:UI.vcUse !== false, payMethod:PAY_M[UI.pay] || 'wechat'});
+    if (o.status !== 'paid') throw new Error('付款没有完成，请重试');
+    liveApplyOrder(o); try { LSHOP.wallet = await API.req('GET', '/me/wallet'); } catch(e){}
+    paidUI(pr, sh); }
+  catch(err){ closeSheet(); apiFail(err); } });
+/* —— 下载：拿 15 分钟的签名地址直接下载 —— */
+wrapAct('dl', async (orig, b) => { const id = b.dataset.id, pr = P(id); if (!pr?.live) return orig(b);
+  const o = STATE.orders.find(x => x.pid === id && x.live && x.st !== '已退款'); if (!o){ toast('购买后才能下载', 'orange', 'lock'); return; }
+  try { const r = await API.req('POST', `/orders/${o.id}/download`); STATE.dlc[id] = (STATE.dlc[id] || 0) + 1; o.dl = (o.dl || 0) + 1;
+    const a = Object.assign(document.createElement('a'), {href:r.url, download:r.fileName}); document.body.appendChild(a); a.click(); a.remove(); toast('开始下载：' + esc(r.fileName), 'blue', 'dl'); }
+  catch(e){ apiFail(e); } });
+/* —— 退款：后端判断能不能极速退款 —— */
+wrapAct('do-refund', async (orig, b) => { const o = STATE.orders.find(x => x.no === b.dataset.no); if (!o?.live) return orig(b);
+  const x = $('#rfX').value.trim(), reason = ($('#rfR .on')?.textContent || '其他') + (x ? '：' + x : ''), fast = !(STATE.dlc[o.pid] || 0) && (Date.now() - ordTs(o))/864e5 <= 7;
+  if (!fast && !x){ fxPop($('#rfX'), 'fx-shake', 300); $('#rfX').focus(); return; }
+  try { const r = await API.req('POST', `/orders/${o.id}/refund`, {reason}); closeSheet(); toast(r.fast ? '已退款，原路退回' : '已提交，平台会在 1 个工作日内处理', r.fast ? 'green' : 'orange', r.fast ? 'check' : undefined); await liveShop(); await liveMine(); rerender(); }
+  catch(e){ apiFail(e); } });
+
+/* —— 余额页（后端） —— */
+function liveWalletView(){
+  const w = LSHOP.wallet; if (!w){ if (!LSHOP.wTry){ LSHOP.wTry = true; liveMine().then(rerender); } return '<div class="box"><div class="box-b mut">正在读取…</div></div>'; }
+  const S = {active:['可用', 'green'], used_up:['已用完', ''], expired:['已过期', ''], revoked:['已撤回', '']}, bal = f2y(w.balance);
+  const V = w.vouchers.slice().sort((a, b) => (a.status === 'active' ? 0 : 1) - (b.status === 'active' ? 0 : 1) || +new Date(b.createdAt) - +new Date(a.createdAt));
+  const soon = f2y(w.vouchers.filter(v => v.status === 'active' && v.expiresAt && +new Date(v.expiresAt) - Date.now() < 7*864e5).reduce((a, v) => a + v.left, 0));
+  return `<div class="box wal-h"><span class="lab">代金券余额</span><b class="x num">${yuan2(bal)}</b><span class="mut2">买商品时自动抵扣，可以分几次用完 · 不能提现，也不能转给别人</span>${soon ? `<span class="tag c-orange">${yuan2(soon)} 在 7 天内到期</span>` : ''}${bal > 0 ? `<a class="pill" href="#shop" style="align-self:flex-start">去逛逛</a>` : ''}</div>
+    <div class="box"><div class="box-h"><h3>我的代金券</h3></div><div class="box-b set-l">${V.map(v => { const [st, c] = S[v.status] || [v.status, ''];
+      return `<div class="set-r vc-r ${v.status === 'active' ? '' : 'dim'}"><span class="vc-a"><b class="num">${yuan2(f2y(v.left))}</b><i>面额 ${yuan2(f2y(v.amount))}</i></span><span class="vc-m"><b>${esc(v.note || 'CTRL Z 代金券')}</b><span class="mut2">${v.expiresAt ? fmtDay(+new Date(v.expiresAt)) + ' 到期' : '长期有效'} · ${fmtDay(+new Date(v.createdAt))} 收到</span></span>${stTag(st, c)}</div>`; }).join('') || '<div class="rnone">还没有代金券</div>'}</div></div>
+    <div class="box"><div class="box-h"><h3>使用记录</h3></div><div class="box-b set-l">${w.uses.map(u => `<div class="set-r ${u.refunded ? 'dim' : ''}"><span><b>${esc(u.title)}</b><span class="mut2" style="display:block;font-size:12px">${fmtDT(+new Date(u.createdAt))} · ${u.orderNo}${u.refunded ? ' · 已退款，退回余额' : ''}</span></span><b class="num" style="color:${u.refunded ? 'var(--ink-3)' : 'var(--pink)'}">−${yuan2(f2y(u.amount))}</b></div>`).join('') || '<div class="rnone">还没用过</div>'}</div></div>`;
+}
+
+/* ================= 后台 · 商城（后端） ================= */
+async function ladmUsersQuiet(){ if (LADM.users) return; try { (LADM.users = (await STAFF.req('GET', '/admin/users?limit=50')).items).forEach(u => apiUser(u)); LADM.uq = ''; } catch(e){} }
+async function ladmShop(k){ if (LADM.busy[k]) return; LADM.busy[k] = true;
+  try {
+    if (k === 'review'){ const r = await STAFF.req('GET', '/admin/products?status=queue'); LADM.review = r.items; REVIEW.splice(0, REVIEW.length, ...r.items.map(rvOfLive)); }
+    if (k === 'orders') LADM.orders = await STAFF.req('GET', '/admin/orders');
+    if (k === 'refunds') LADM.refunds = (await STAFF.req('GET', '/admin/refunds?status=all')).items;
+    if (k === 'vouchers'){ await ladmUsersQuiet(); LADM.vouchers = await STAFF.req('GET', '/admin/vouchers'); }
+    if (k === 'invites'){ await ladmUsersQuiet(); LADM.invites = (await STAFF.req('GET', '/admin/invites')).items; }
+  } catch(e){ apiFail(e); LADM[k] ||= (k === 'orders' || k === 'vouchers') ? {items:[], sum:{}} : []; }   // 失败也落个空的，免得反复重试
+  finally { LADM.busy[k] = false; } rerender(); }
+const declView = (d, docs) => { d = d || {}; const lab = Object.fromEntries(DC_SRC), docOf = n => (docs || []).find(x => x.name.startsWith(n + ' · '));
+  return {src:(d.src || []).map(k => lab[k] || k).join(' + '), third:(d.third || []).map(t => ({n:t.n, lic:tpLab(t.lic) + (t.link ? ' · ' + t.link : ''), doc:t.docName || (t.docKey ? '授权文件' : ''), url:t.docKey ? docOf(t.n)?.url : null})),
+    ai:(d.src || []).includes('ai') ? d.ai : '没有使用 AI', voice:d.voice === 'yes' ? '有，已上传授权书' : '没有', vdoc:d.voiceDocName || '', vurl:(docs || []).find(x => x.name.startsWith('人声'))?.url}; };
+const rvOfLive = p => ({id:p.id, live:true, kind:'商品', sp:p.id, title:p.title, who:apiUser(p.seller).id, seller:p.seller, cat:CATS[p.cat]?.cn || p.cat, time:fmtDT(+new Date(p.updatedAt)).slice(0, 11), flags:p.flags, cover:{...p.cover, txt:p.en || p.title},
+  price:f2y(p.price), en:p.en, desc:p.desc, files:`${p.fileName} · ${fmtSize(p.fileSize)}`, fileUrl:p.fileUrl, tpl:({sample:'敲打 16 个 pad', preset:'XY 板 + 键盘弹奏', video:'12 秒视频循环'})[p.tpl] || '',
+  lic:['发行作品', '演出与直播', '切片改编'].concat(p.extPrice != null ? ['扩展许可 ¥' + f2y(p.extPrice)] : [], p.aiTrain ? ['允许训练 AI'] : []), orig:+new Date(p.createdAt),
+  decl:declView(p.decl, p.docs), st:p.status === 'need_info' ? '待补充' : '', ask:p.reviewNote, ck:p.checklist || []});
+const rvLiveDo = async (action, reason = '') => { const r = rvCur(); if (!r) return;
+  try { await STAFF.req('POST', `/admin/products/${r.id}/review`, {action, reason, checklist:r.ck || []}); toast({approve:'已通过，已经上架', reject:'已驳回', ask:'已发给卖家'}[action], action === 'approve' ? 'green' : 'blue');
+    LADM.review = null; UI.rvSel = null; ladmShop('review'); } catch(e){ apiFail(e); } };
+wrapAct('rv-ok', orig => { const r = rvCur(); if (!r?.live) return orig(); if (admGuard('review')) rvLiveDo('approve'); });
+wrapAct('rv-no', orig => { const r = rvCur(); if (!r?.live) return orig(); if (admGuard('review')) rsnSheet(`驳回「${esc(r.title)}」`, 'review', why => rvLiveDo('reject', why)); });
+wrapAct('rv-ask-go', orig => { const r = rvCur(); if (!r?.live) return orig(); const picks = $$('#askR .on').map(x => x.textContent), x = $('#askX').value.trim();
+  if (!picks.length && !x){ fxPop($('#askX'), 'fx-shake', 300); toast('选一项或写一句要补什么', 'orange', 'x'); return; }
+  closeSheet(); rvLiveDo('ask', picks.join('；') + (x ? (picks.length ? '。' : '') + x : '')); });
+ACTIONS['lsh-reload'] = b => { LADM[b.dataset.v] = null; rerender(); };
+
+function liveOrdersView(){ const d = LADM.orders; if (!d){ ladmShop('orders'); return ladmWait('订单流水', '读取中'); }
+  const S = {paid:['已支付', 'green'], refunded:['已退款', ''], pending:['待付款', 'yellow']};
+  return `${adH('订单流水', `已支付：成交 ${yuan2(f2y(d.sum.gmv))} · 实收现金 ${yuan2(f2y(d.sum.cash))} · 代金券抵扣 ${yuan2(f2y(d.sum.voucher))}（平台承担，卖家照原价结算）`, `<button class="pill sm lt" data-act="lsh-reload" data-v="orders">刷新</button>`)}
+  <div class="box"><div class="tw"><table class="t"><thead><tr><th>订单</th><th>买家</th><th>卖家</th><th>付款</th><th class="r">金额</th><th class="r">代金券</th><th>状态</th><th>时间</th></tr></thead><tbody>${d.items.map(o => `<tr>
+    <td><b>${esc(o.title)}</b>${o.tier === 'extended' ? ' <span class="tag">扩展许可</span>' : ''}<div class="mut2 n" style="font-size:11.5px">${o.no}</div></td><td>${esc(o.buyer.name)}</td><td>${esc(o.seller.name)}</td><td class="mut2">${PAY_N[o.payMethod] || o.payMethod}</td>
+    <td class="r n">${yuan2(f2y(o.price))}</td><td class="r n mut2">${o.voucherAmount ? '−' + yuan2(f2y(o.voucherAmount)) : ''}</td><td>${stTag(...(S[o.status] || [o.status, '']))}</td><td class="mut2 n">${fmtDT(+new Date(o.paidAt || o.createdAt))}</td></tr>`).join('') || '<tr><td colspan="8" class="mut">还没有订单</td></tr>'}</tbody></table></div></div>`; }
+
+function liveRefundsView(){ const L = LADM.refunds; if (!L){ ladmShop('refunds'); return ladmWait('退款', '读取中'); }
+  const S = {pending:['待处理', 'orange'], done:['已退款', 'green'], rejected:['已拒绝', '']};
+  return `${adH('退款', '没下载过、7 天内的会自动极速退款；这里主要是需要平台判断的（下载过 / 超过 7 天）', `<button class="pill sm lt" data-act="lsh-reload" data-v="refunds">刷新</button>`)}
+  <div class="box"><div class="tw"><table class="t"><thead><tr><th>订单</th><th>买家</th><th class="r">退回</th><th>原因</th><th>状态</th><th></th></tr></thead><tbody>${L.map(r => `<tr>
+    <td><b>${esc(r.title)}</b><div class="mut2 n" style="font-size:11.5px">${r.orderNo}</div></td><td>${esc(r.buyer.name)}</td>
+    <td class="r n">${yuan2(f2y(r.cashAmount))}${r.voucherAmount ? `<div class="mut2" style="font-size:11.5px">券 ${yuan2(f2y(r.voucherAmount))}</div>` : ''}</td>
+    <td>${esc(r.reason)}<div class="mut2" style="font-size:11.5px">${r.fast ? '极速退款' : `下载过 ${r.downloads} 次`} · ${fmtDT(+new Date(r.createdAt))}</div></td><td>${stTag(...(S[r.status] || [r.status, '']))}</td>
+    <td class="r">${r.status === 'pending' ? `<button class="pill sm lt" data-act="lrf-no" data-id="${r.id}">拒绝</button> <button class="pill sm" data-act="lrf-ok" data-id="${r.id}">同意退款</button>` : `<span class="mut2">${esc(r.decidedBy || '自动')}</span>`}</td></tr>`).join('') || '<tr><td colspan="6" class="mut">没有退款申请</td></tr>'}</tbody></table></div></div>`; }
+Object.assign(ACTIONS, {
+  'lrf-ok': async b => { if (!admGuard('refunds')) return; try { await STAFF.req('POST', `/admin/refunds/${b.dataset.id}/decide`, {ok:true}); toast('已退款', 'green', 'check'); LADM.refunds = null; rerender(); } catch(e){ apiFail(e); } },
+  'lrf-no': b => { if (!admGuard('refunds')) return; sheet(`<h3>拒绝退款</h3><label class="ad-lab" for="lrfX">原因（会发给买家）</label><textarea class="inp" id="lrfX" placeholder="例如：已下载多次，文件经核实可以正常打开"></textarea><button class="pill lg" data-act="lrf-no-go" data-id="${b.dataset.id}">拒绝</button>`); },
+  'lrf-no-go': async b => { const x = $('#lrfX').value.trim(); if (!x){ fxPop($('#lrfX'), 'fx-shake', 300); return; }
+    try { await STAFF.req('POST', `/admin/refunds/${b.dataset.id}/decide`, {ok:false, reason:x}); closeSheet(); toast('已拒绝', 'orange'); LADM.refunds = null; rerender(); } catch(e){ apiFail(e); } }
+});
+
+function liveVouchersView(){ const d = LADM.vouchers; if (!d){ ladmShop('vouchers'); return ladmWait('代金券', '读取中'); }
+  const S = {active:['可用', 'green'], used_up:['已用完', ''], expired:['已过期', ''], revoked:['已撤回', '']};
+  return `${adH('代金券', `发给用户买商品用：可以拆开分几次用，付款时先用快过期的；不能提现、不能转让。券抵扣的部分由平台承担，卖家照原价结算。单张最多 ${yuan2(VC_MAX)}`)}
+  <div class="box"><div class="box-b"><div class="ad-kv"><span>已发放<b>${yuan2(f2y(d.sum.issued))}</b></span><span>已抵扣<b>${yuan2(f2y(d.sum.used))}</b></span><span>未使用<b>${yuan2(f2y(d.sum.unused))}</b></span><span>过期 / 撤回作废<b>${yuan2(f2y(d.sum.void))}</b></span></div></div></div>
+  <div class="box" style="margin-top:12px">${vcForm('')}</div>
+  <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>用户</th><th class="r">面额</th><th class="r">剩余</th><th>有效期</th><th>状态</th><th>说明</th><th>发放</th><th></th></tr></thead><tbody>${d.items.map(v => `<tr>
+    <td><span class="ad-u">${uav(v.user.id)}<span><b>${esc(v.user.name)}</b><i>@${esc(v.user.handle)}</i></span></span></td><td class="r n">${yuan2(f2y(v.amount))}</td><td class="r n">${yuan2(f2y(v.left))}</td>
+    <td class="mut2 n">${v.expiresAt ? fmtDay(+new Date(v.expiresAt)) : '长期'}</td><td>${stTag(...(S[v.status] || [v.status, '']))}</td><td class="mut2">${esc(v.note || '—')}</td><td class="mut2">${esc(v.by)} ${fmtDT(+new Date(v.createdAt)).slice(0, 5)}</td>
+    <td class="r">${v.status === 'active' ? `<button class="pill sm lt" data-act="lvc-off" data-id="${v.id}">撤回</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="8" class="mut">还没有发过代金券</td></tr>'}</tbody></table></div></div>`; }
+wrapAct('vc-send', async (orig, b) => { if (STATE.role !== 'admin') return orig(b); if (!admGuard('vouchers')) return;
+  const f = b.closest('.vc-f'), to = $('.vcTo', f), amt = r2(+$('.vcAmt', f).value), days = +$('.vcExp', f).value, note = $('.vcNote', f).value.trim();
+  if (to.type !== 'hidden') await ladmUsersQuiet();
+  const names = to.value.split(/[,，、\s]+/).filter(Boolean), uids = names.map(findUid);
+  if (!names.length){ fxPop(to.type === 'hidden' ? f : to, 'fx-shake', 300); toast('填一下发给谁', 'orange', 'x'); return; }
+  const bad = names.filter((_, i) => !uids[i]); if (bad.length){ fxPop(to, 'fx-shake', 300); toast('没找到：' + esc(bad.join('、')), 'orange', 'x'); return; }
+  if (!(amt >= 1 && amt <= VC_MAX)){ fxPop($('.vcAmt', f), 'fx-shake', 300); toast(`面额要在 ¥1 到 ${yuan2(VC_MAX)} 之间`, 'orange', 'x'); return; }
+  const list = [...new Set(uids)]; b.disabled = true;
+  try { await STAFF.req('POST', '/admin/vouchers', {userIds:list, amount:y2f(amt), days, note}); toast(`已发出 ${list.length} 张 ${yuan2(amt)} 代金券`, 'pink'); LADM.vouchers = null;
+    if (to.type === 'hidden'){ closeSheet(); rerender(); userSheet(list[0]); } else rerender(); }
+  catch(e){ b.disabled = false; apiFail(e); } });
+ACTIONS['lvc-off'] = async b => { if (!admGuard('vouchers')) return; try { await STAFF.req('POST', `/admin/vouchers/${b.dataset.id}/revoke`); toast('已撤回', 'orange'); LADM.vouchers = null; rerender(); } catch(e){ apiFail(e); } };
+
+function liveInvitesView(){ const L = LADM.invites; if (!L){ ladmShop('invites'); return ladmWait('邀请码', '读取中'); }
+  return `${adH('邀请码', '商品售卖许可：创作者开店要用。发给指定用户的只有本人能用（会通过官方通知发给他）；不填就是通用码')}
+  <div class="box ad-form"><label class="ad-lab" for="invTo">发给谁（填用户 ID 或昵称；不填 = 通用码）</label>
+    <div class="ad-inl"><input class="inp" id="invTo" list="invUs" placeholder="例如：用户乙" autocomplete="off"><button class="pill sm pk" data-act="inv-new">${IC.plus}生成</button></div>${uidList('invUs')}</div>
+  <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>邀请码</th><th>状态</th><th>生成人</th><th>时间</th><th></th></tr></thead><tbody>${L.map(i => `<tr><td class="n" style="font-weight:800;letter-spacing:.03em">${i.code}</td>
+    <td>${i.usedBy ? `<b>${esc(i.usedBy.name)}</b> <span class="mut2">已开店</span>` : stTag('未使用', 'yellow') + (i.user ? ` <span class="mut2">只限 @${esc(i.user.name)}</span>` : ' <span class="mut2">通用</span>')}</td>
+    <td class="mut2">${esc(i.by)}</td><td class="mut2 n">${fmtDT(+new Date(i.createdAt)).slice(0, 5)}</td><td class="r">${i.usedBy ? '' : `<button class="pill sm lt" data-act="copy" data-v="${i.code}">复制</button>`}</td></tr>`).join('') || '<tr><td colspan="5" class="mut">还没有邀请码</td></tr>'}</tbody></table></div></div>`; }
+wrapAct('inv-new', async (orig, b) => { if (STATE.role !== 'admin') return orig(b); if (!admGuard('invites')) return;
+  const i = $('#invTo'), uid = findUid(i?.value); if (uid === null){ fxPop(i, 'fx-shake', 300); toast('没找到这个用户', 'orange', 'x'); return; }
+  try { const r = await STAFF.req('POST', '/admin/invites', uid ? {userId:uid} : {}); toast(uid ? `已发给 ${esc(uname(uid))}：${r.code}` : '新邀请码 ' + r.code, 'pink'); LADM.invites = null; rerender(); } catch(e){ apiFail(e); } });
+wrapAct('us-inv', async (orig, b) => { if (STATE.role !== 'admin') return orig(b); if (!admGuard('invites')) return;
+  try { const r = await STAFF.req('POST', '/admin/invites', {userId:b.dataset.id}); toast(`已发给 ${esc(uname(b.dataset.id))}：${r.code}`, 'pink'); LADM.invites = null; } catch(e){ apiFail(e); } });
+
+/* —— 主页 / 视频流里直接下架、警告：先调后台接口，成功了再更新界面 —— */
+wrapAct('mod-do', async (orig, b) => { const p = POST(b.dataset.id); if (!p?.live) return orig(b);
+  if (!STAFF.tok){ toast('先登录后台', 'orange', 'x'); return; }
+  const v = b.dataset.v, x = $('#modX')?.value.trim(), why = (($('#modR .on')?.textContent || '违反社区规范') + (x ? '：' + x : '')).slice(0, 200);
+  try { if (v !== 'warn') await STAFF.req('POST', `/admin/posts/${p.id}/takedown`, {reason:why}); if (v !== 'take') await STAFF.req('POST', `/admin/users/${p.author}/actions`, {action:'warn', reason:why}); }
+  catch(e){ apiFail(e); return; }
+  orig(b); });
 
 (function boot(){
   STATE.hist = store.get('hist', null) || [{k:'post', id:'s3', ts:Date.now() - 2*3600e3}, {k:'item', id:'p3', ts:Date.now() - 5*3600e3}, {k:'video', id:'s2', ts:Date.now() - 26*3600e3}, {k:'post', id:'s8', ts:Date.now() - 30*3600e3}];

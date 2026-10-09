@@ -109,6 +109,7 @@
 - `API.req(方法, 路径, 请求体)`：自动带 token、401 时刷新一次（同时只刷一次）；错误是带 `code` 的 Error，`apiFail(e)` 统一提示（`phone_required` 会弹出绑定手机号）
 - 做法是「不改页面代码」：`apiUser` / `apiPost` / `apiCmt` 把后端数据灌进 `USERS` / `POSTS` / `BODY` / `COMMENTS`（真实帖子 `live:true`，`COMMENTS[id]` 先置空，免得用上示例评论；`p.likes` 不含自己的赞，和 `likes()` 的算法一致）；`wrapAct(名字, fn)` 包装现有操作：先照原样改界面，再调接口，失败撤回并提示
 - 已接通：手机号登录（新用户建档存名字）、微信登录跳转（`au-3p` wx）、信息流、别人主页（`LIVE.prof`）、帖子评论（`openPost` 打开时拉）、点赞、评论、删评论、发帖（文字 / 提问 / 图片 / 视频链接；图片先 `/uploads` 再直传）、编辑删除帖子、关注、拉黑、个性化推荐、资料、登录设备、换绑 / 绑定手机号（`live-bind`）、官方通知、导出、注销、退出。声音 / 可视化帖子、商城、私信、合作、工作室、管理后台仍是本地模拟（后端第 2、3 阶段）
+- **第 2 阶段（商城）也接上了**（见 `商城接后端` 那一段）：`apiProduct` / `apiOrder` 把后端商品、订单灌进 `PRODUCTS` / `STATE.orders`；卖家的 `SELLER_PRODUCTS` / `SELLER_ORDERS` / `MONTHLY` 来自 `/me/products`、`/me/sales`；余额 `LSHOP.wallet`（分），`vcBal` / `agreeNeed` 连着后端时读 `LSHOP`。开店（`inv-check` → `/me/seller`）、协议确认、上架（交付文件和授权文件真的上传 `liveUpload`，提交 `/products`，待补充 / 驳回用 `sp-redo` 填回表单 PATCH 重新提交）、下单付款（`do-pay` → `/orders`，成功后复用 `paidUI`）、下载（签名地址）、退款都用 `wrapAct` 包装。后台的待审核（`REVIEW` 换成 `rvOfLive`）、订单流水、退款、代金券、邀请码、主页下架走 `/admin/*`，缓存在 `LADM`，切页签时重读。金额：后端「分」、页面「元」（`f2y` / `y2f`）。示例商品的试听（pads / presets / 视觉）暂时用通用的演示内容
 - 启动顺序：`liveReset()`（同步清掉示例帖子、没登录就当游客）→ `render()` → `liveBoot()`（微信回跳登录 → `/me` → 信息流 → 关注 / 黑名单 / 通知）
 - 真实后端模式只推荐真实用户（`LIVE.u`）；示例用户在后端不存在，关注它们只改本地
 - 改网址时保留 `history.state`（`replaceState(history.state, …)`），否则返回逻辑会把人退出网站
