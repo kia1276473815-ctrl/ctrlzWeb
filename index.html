@@ -2400,6 +2400,13 @@ html.rm .fx-em *{animation:none}
 .ad-mini{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink-2);max-height:180px;overflow:auto}
 .ad-warn{padding:10px 12px;border-radius:12px;background:var(--orange-t);font-size:13.5px;font-weight:600}
 .ad-warn.y{background:var(--yellow-t)}
+/* 一次性凭据（新建后台账号后显示一次） */
+.cred{display:flex;flex-direction:column;gap:8px}
+.cred > div{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--paper)}
+.cred span{font-size:12.5px;color:var(--ink-3)}
+.cred code{font:600 14px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;word-break:break-all;user-select:all}
+.cred code.sm{font-size:11.5px;font-weight:400}
+@media (max-width:480px){ .cred > div{grid-template-columns:minmax(0,1fr) auto} .cred > div > span{grid-column:1/-1} }
 .ad-us{display:flex;flex-direction:column;gap:14px}
 .ad-us .ad-u .tag{margin-left:auto}
 .ad-us .ad-u.big{padding-right:48px}   /* 给右上角关闭按钮让位 */
@@ -6746,7 +6753,7 @@ ADMV.apply = () => { const f = UI.adf?.ap || 'todo', list = ADM.apps.filter(a =>
 /* 用户 */
 const allUids = () => [...Object.keys(USERS), ...ADM_BUYERS];
 const uState = uid => banOf(uid) ? ['封禁', 'orange'] : muteOf(uid) ? ['禁言', 'yellow'] : ADM.closing?.[uid] ? ['注销中', 'violet'] : ['正常', 'green'];
-ADMV.users = () => { const q = fq('users'), f = UI.adf?.us || 'all', L = ledger();
+ADMV.users = () => { if (API.on()) return ladmUsersView(); const q = fq('users'), f = UI.adf?.us || 'all', L = ledger();
   const list = allUids().filter(uid => (!q || (uid + ' ' + uname(uid)).toLowerCase().includes(q)) && (f === 'all' || (f === 'creator' ? USERS[uid] && uid !== 'mio' : f === 'limited' ? banOf(uid) || muteOf(uid) : f === 'warned' ? (ADM.acct[uid]?.warns || []).length : true)));
   return `${adH('用户', '查资料、交易和违规记录；禁言 / 封禁 / 警告 / 实名认证', adQ('users', '搜昵称或 ID'))}
   <div class="ad-bar2">${adSeg('us', [['all', '全部'], ['creator', '创作者'], ['limited', '受限中'], ['warned', '被警告过']], f)}</div>
@@ -6758,7 +6765,9 @@ ADMV.users = () => { const q = fq('users'), f = UI.adf?.us || 'all', L = ledger(
 function usPerm(uid){
   const cS = admCan('staff'), cI = admCan('invites'), cV = admCan('vouchers'); if (!cS && !cI && !cV) return '';
   const sf = ADM.staff.find(s => s.uid === uid), inv = INVITES.filter(i => i.uid === uid);
-  const staff = !cS ? '' : API.on() ? '<span class="mut2" style="font-size:12.5px">后台成员是独立的后台账号（邮箱 + 动态口令），在服务器上创建，不能直接把 App 用户设成管理员</span>' : sf ? `<span class="tag c-${ADM_ROLES[sf.role][1] === 'ink' ? 'pink' : ADM_ROLES[sf.role][1]}">${sf.on ? '后台成员' : '已停用'} · ${ADM_ROLES[sf.role][0]}</span><button class="pill sm lt" data-act="us-staff-go">去人员与权限</button>`
+  const lsf = API.on() && LADM.staff?.find(s => s.userId === uid);
+  const staff = !cS ? '' : API.on() ? (lsf ? `<span class="tag c-${ADM_ROLES[lsf.role]?.[1] === 'ink' ? 'pink' : ADM_ROLES[lsf.role]?.[1] || 'pink'}">后台 · ${ADM_ROLES[lsf.role]?.[0] || lsf.role}</span><span class="mut2" style="font-size:12.5px">${esc(lsf.email)}</span>`
+      : `<button class="pill sm" data-act="lus-staff" data-id="${esc(uid)}">${IC.plus}给他开后台账号</button>`) : sf ? `<span class="tag c-${ADM_ROLES[sf.role][1] === 'ink' ? 'pink' : ADM_ROLES[sf.role][1]}">${sf.on ? '后台成员' : '已停用'} · ${ADM_ROLES[sf.role][0]}</span><button class="pill sm lt" data-act="us-staff-go">去人员与权限</button>`
     : `<select class="inp ad-sel" id="usRole" aria-label="后台角色">${Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}" ${k === 'mod' ? 'selected' : ''}>${n}</option>`).join('')}</select><button class="pill sm" data-act="us-staff" data-id="${esc(uid)}">设为管理员</button>`;
   return `<label class="ad-lab">后台、开店与代金券</label><div class="ad-acts">${staff}${cI ? `<button class="pill sm lt" data-act="us-inv" data-id="${esc(uid)}">${IC.plus}发开店邀请码</button>` : ''}${cV ? `<button class="pill sm lt" data-act="us-vc" data-id="${esc(uid)}">${IC.plus}发代金券<span class="mut2">（余额 ${yuan2(vcBal(uid))}）</span></button>` : ''}</div>
     ${cI && inv.length ? `<div class="ad-mini">${inv.map(i => `<span>${i.code} · ${i.st === '已入驻' ? '已开店' : '未使用'} · ${esc(i.by)} ${i.time}</span>`).join('')}</div>` : ''}`;
@@ -6887,8 +6896,7 @@ ADMV.invites = () => `${adH('邀请码', '商品售卖许可：创作者开店�
   <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>邀请码</th><th>状态</th><th>生成人</th><th>时间</th><th></th></tr></thead><tbody>${INVITES.slice().reverse().map(i => `<tr><td class="n" style="font-weight:800;letter-spacing:.03em">${i.code}</td><td>${i.st === '已入驻' ? `<span style="font-weight:600">${esc(i.to)}</span> <span class="mut2">已开店</span>` : stTag('未使用', 'yellow')}${i.st !== '已入驻' ? (i.uid ? ` <span class="mut2">只限 @${esc(uname(i.uid))}</span>` : i.to !== '—' ? ` <span class="mut2">给 ${esc(i.to)}</span>` : ' <span class="mut2">通用</span>') : ''}</td><td class="mut2">${esc(i.by)}</td><td class="mut2 n">${i.time}</td><td class="r">${i.st === '未使用' ? `<button class="pill sm lt" data-act="copy" data-v="${i.code}">复制</button>` : ''}</td></tr>`).join('')}</tbody></table></div></div>`;
 
 /* 人员与权限 */
-ADMV.staff = () => `${adH('人员与权限', '每个后台账号一个角色；停用后不能再登录后台', `<button class="pill sm" data-act="sf-new">${IC.plus}加一个人</button>`)}
-  ${API.on() ? '<p class="ad-warn y">下面还是原型里的演示成员。真实的后台账号在服务器上：第一位超级管理员用 npm run admin:create 创建，之后的成员管理接口（/admin/staff）还没接到这个页面。</p>' : ''}
+ADMV.staff = () => API.on() ? ladmStaffView() : `${adH('人员与权限', '每个后台账号一个角色；停用后不能再登录后台', `<button class="pill sm" data-act="sf-new">${IC.plus}加一个人</button>`)}
   <div class="box"><div class="tw"><table class="t"><thead><tr><th>成员</th><th>角色</th><th>状态</th><th>最近操作</th><th></th></tr></thead><tbody>${ADM.staff.map(s => { const last = ADM.audit.find(a => a.by === s.name);
     return `<tr><td>${s.uid ? `<span class="ad-u">${uav(s.uid)}<span><b>${esc(s.name)}</b><i>@${esc(s.uid)}</i></span></span>` : `<b>${esc(s.name)}</b>`}${s.id === admMe().id ? ' <span class="mut2">（当前）</span>' : ''}</td><td><select class="inp ad-sel" data-act-ch="sf-role" data-id="${s.id}" ${s.id === admMe().id ? 'disabled' : ''}>${Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}" ${s.role === k ? 'selected' : ''}>${n}</option>`).join('')}</select></td>
       <td>${s.on ? stTag('启用', 'green') : stTag('停用', '')}</td><td class="mut2 n">${last ? fmtDT(last.ts) : '—'}</td><td class="r">${s.id === admMe().id ? '' : `<button class="pill sm lt" data-act="sf-on" data-id="${s.id}">${s.on ? '停用' : '启用'}</button>`}</td></tr>`; }).join('')}</tbody></table></div></div>
@@ -7130,6 +7138,7 @@ document.addEventListener('input', e => { const i = e.target.closest?.('[data-ad
 document.addEventListener('keydown', e => { if (e.key !== 'Enter') return; const i = e.target.closest?.('#wd-block, #wd-review'); if (i){ e.preventDefault(); ACTIONS['wd-add']({dataset:{lv:i.id.slice(3)}}); } });
 document.addEventListener('change', e => { const s = e.target.closest?.('[data-act-ch]'); if (!s) return; const a = s.dataset.actCh;
   if (a === 'adm-me'){ ADM.me = s.value; admSave(); toast(`已切换到 ${esc(admMe().name)} · ${ADM_ROLES[admMe().role][0]}`, 'blue'); rerender(); }
+  if (a === 'lsf-role'){ lsfPatch(s.dataset.id, {role:s.value}); return; }
   if (a === 'sf-role'){ if (!admGuard('staff')) return; const st = ADM.staff.find(x => x.id === s.dataset.id); st.role = s.value; admLog('修改角色', st.name, ADM_ROLES[st.role][0]); admSave(); rerender(); } });
 /* 海报 / 分类的文字输入：边打边记到草稿里（保存后才生效） */
 document.addEventListener('input', e => { const i = e.target.closest?.('[data-op]'); if (!i) return; const k = i.dataset.op, idx = +i.dataset.i; if (k === 'cn') catsConf()[idx].cn = i.value; else slidesConf()[idx][k] = i.value; });
@@ -8438,7 +8447,7 @@ Object.assign(ACTIONS, {
     closeSheet(); const r = STATE.role, g = r === 'guest';   // 首页左上角也能打开；未登录时顶部换成登录入口，不显示账号相关项
     $('#layer').innerHTML = `<div class="sov drw-ov" data-ov><nav class="drw" aria-label="更多">${g ? `<div class="drw-u"><button class="pill" data-act="login">登录 / 注册</button></div>` : `<div class="drw-u">${av(ME, 'md')}<b>${esc(USERS[ME].name)}</b></div>
       <a href="#me-edit">${RIC.pen}编辑资料</a><a href="#me-orders">${IC.dl}订单</a><a href="#me-wallet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M16 14.5h2"/></svg>余额</a><a href="#me-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2-1.2L14.2 3h-4.4l-.4 2.6a7 7 0 00-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 000 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 002 1.2l.4 2.6h4.4l.4-2.6a7 7 0 002-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>设置</a>
-      <a href="#seller"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.7 2.7 0 005.33 0 2.7 2.7 0 005.34 0A2.7 2.7 0 0020 9"/><path d="M5 11.5V20h14v-8.5"/><path d="M10 20v-5h4v5"/></svg>工作室</a>`}
+      ${API.on() && LIVE.staffEmail ? `<button class="drw-sw" data-act="adm-login">${SHIELD}进入后台</button>` : ''}<a href="#seller"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.7 2.7 0 005.33 0 2.7 2.7 0 005.34 0A2.7 2.7 0 0020 9"/><path d="M5 11.5V20h14v-8.5"/><path d="M10 20v-5h4v5"/></svg>工作室</a>`}
       <button class="drw-sw" data-act="vislab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M4 12h3l2-5 3 10 2-6 2 3h4"/></svg>可视化实验室</button><button class="drw-sw drw-thm" data-act="theme">${isDark() ? IC.sun : IC.moon}${isDark() ? '浅色模式' : '深色模式'}</button>${g ? '' : `<button class="drw-sw" data-act="switch-acc">${IC.user}切换账号</button><button class="drw-out" data-act="logout">${IC.back}退出登录</button>`}
       ${protoOn() ? `<div class="drw-f"><span class="lab">原型 · 切换身份（演示模式）</span><div class="roles">${Object.entries(ROLE_NAME).map(([k, l]) => `<button class="${r === k ? 'on' : ''}" data-act="role" data-v="${k}">${l}</button>`).join('')}</div>${STATE.seller ? '<button class="more" data-act="unseller">撤回卖家资格</button>' : ''}</div>` : ''}</nav></div>`;
   }
@@ -9237,12 +9246,12 @@ const STAFF = {
   async check(){ if (!this.tok) return false; try { const r = await this.req('GET', '/admin/me'); this.set(this.tok, r.staff); return true; } catch(e){ if (e.status !== 401) apiFail(e); return false; } }
 };
 STAFF.load();
-function admLoginSheet(){
+function admLoginSheet(){ const pre = STATE.role === 'user' ? LIVE.staffEmail || '' : '';   // 关联了后台账号的 App 用户：邮箱帮他填好
   sheet(`<h3>后台登录</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">后台账号和 App 账号分开，由超级管理员创建。连续输错会被限制 15 分钟。</p>
-    <label class="ad-lab" for="alE">邮箱</label><input class="inp" id="alE" type="email" autocomplete="username">
+    <label class="ad-lab" for="alE">邮箱</label><input class="inp" id="alE" type="email" autocomplete="username" value="${esc(pre)}">
     <label class="ad-lab" for="alP">密码</label><input class="inp" id="alP" type="password" autocomplete="current-password">
     <label class="ad-lab" for="alT">动态口令（验证器 App 里的 6 位数字）</label><input class="inp" id="alT" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
-    <button class="pill lg" data-act="adm-login-go">登录后台</button>`, d => { setTimeout(() => $('#alE', d)?.focus(), 80); $('#alT', d)?.addEventListener('keydown', e => { if (e.key === 'Enter') ACTIONS['adm-login-go']($('[data-act="adm-login-go"]', d)); }); });
+    <button class="pill lg" data-act="adm-login-go">登录后台</button>`, d => { setTimeout(() => $(pre ? '#alP' : '#alE', d)?.focus(), 80); $('#alT', d)?.addEventListener('keydown', e => { if (e.key === 'Enter') ACTIONS['adm-login-go']($('[data-act="adm-login-go"]', d)); }); });
 }
 Object.assign(ACTIONS, {
   // 进后台：连着后端时，有有效会话就直接进，没有就登录；纯原型只有演示模式能进
@@ -9255,6 +9264,81 @@ Object.assign(ACTIONS, {
     catch(err){ b.disabled = false; apiFail(err); if (err.code === 'totp_required') $('#alT')?.focus(); } },
   'adm-out': async () => { try { if (STAFF.tok) await STAFF.req('POST', '/admin/auth/logout'); } catch(e){} STAFF.drop(); setRole(API.on() && API.tok ? 'user' : API.on() ? 'guest' : 'user', true); toast('已退出后台', 'blue'); go('home'); }
 });
+/* ================= 后台接后端（连着后端时） =================
+   「人员与权限」「用户」两个页签读写后端（/admin/staff、/admin/users）；超管可以新建账号（App 账号，可同时开关联的后台账号）。
+   用户弹窗里的警告 / 禁言 / 封禁也走后端（/admin/users/{id}/actions）。其余页签还是原型数据 */
+const LADM = {staff:null, users:null, uq:null, busy:{}};
+async function ladmLoad(k){ if (LADM.busy[k]) return; LADM.busy[k] = true;
+  try {
+    if (k === 'staff') LADM.staff = (await STAFF.req('GET', '/admin/staff')).items;
+    if (k === 'users'){ const q = fq('users'); LADM.uq = q; LADM.users = (await STAFF.req('GET', '/admin/users?limit=50' + (q ? '&q=' + encodeURIComponent(q) : ''))).items; LADM.users.forEach(u => apiUser(u)); }
+  } catch(e){ apiFail(e); LADM[k] ||= []; if (k === 'users') LADM.uq = fq('users'); }   // 失败也落个空列表，免得反复重试
+  finally { LADM.busy[k] = false; } rerender(); }
+const ladmWait = (title, sub) => adH(title, sub) + '<div class="box"><div class="box-b mut">正在读取…</div></div>';
+// 一次性凭据：只显示这一次（复制按钮不把密码弹在提示里）
+function credSheet(title, who, r){
+  const rows = [['后台登录邮箱', r.staff.email], ['初始密码', r.password], ['动态口令密钥', r.totpSecret]];
+  sheet(`<h3>${esc(title)}</h3><p class="ad-warn y">密码和密钥只显示这一次，请马上发给${esc(who)}。对方在验证器 App 里选「手动输入密钥」填密钥，或者用下面的绑定地址。</p>
+    <div class="cred">${rows.map(([k, v]) => `<div><span>${k}</span><code>${esc(v)}</code><button class="pill sm lt" data-act="cp-secret" data-v="${esc(v)}">复制</button></div>`).join('')}
+    <div><span>绑定地址</span><code class="sm">${esc(r.totpUri)}</code><button class="pill sm lt" data-act="cp-secret" data-v="${esc(r.totpUri)}">复制</button></div></div>
+    <button class="pill lg" data-act="cp-secret" data-v="${esc(rows.map(([k, v]) => k + '：' + v).join('\n') + '\n绑定地址：' + r.totpUri + '\n后台：' + location.origin + '/#admin')}">全部复制</button>`); }
+async function lsfPatch(id, body){ if (!admGuard('staff')) return; try { await STAFF.req('PATCH', '/admin/staff/' + encodeURIComponent(id), body); toast('已更新', 'green'); } catch(e){ apiFail(e); } ladmLoad('staff'); }
+const roleOpts = sel => Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${n}</option>`).join('');
+function ladmStaffView(){
+  if (!LADM.staff){ ladmLoad('staff'); return ladmWait('人员与权限', '后台成员（读取中）'); }
+  const me = admMe();
+  return `${adH('人员与权限', '每个后台账号一个角色；停用后立刻下线、不能再登录。新成员的初始密码和动态口令只显示一次', `<button class="pill sm" data-act="lsf-new">${IC.plus}加一个人</button>`)}
+  <div class="box"><div class="tw"><table class="t"><thead><tr><th>成员</th><th>关联 App 账号</th><th>角色</th><th>状态</th><th>最近登录</th><th></th></tr></thead><tbody>${LADM.staff.map(s => `<tr>
+    <td><b>${esc(s.name)}</b>${s.id === me.id ? ' <span class="mut2">（当前）</span>' : ''}<div class="mut2" style="font-size:12px">${esc(s.email)}</div></td>
+    <td class="mut2">${s.userId ? `<a data-go="user-${esc(s.userId)}">${esc(USERS[s.userId]?.name || '已关联')}</a>` : '—'}</td>
+    <td><select class="inp ad-sel" data-act-ch="lsf-role" data-id="${esc(s.id)}" ${s.id === me.id ? 'disabled' : ''}>${roleOpts(s.role)}</select></td>
+    <td>${s.enabled ? stTag('启用', 'green') : stTag('停用', '')}</td><td class="mut2 n">${s.lastLoginAt ? fmtDT(+new Date(s.lastLoginAt)) : '—'}</td>
+    <td class="r">${s.id === me.id ? '' : `<button class="pill sm lt" data-act="lsf-on" data-id="${esc(s.id)}" data-v="${s.enabled ? 0 : 1}">${s.enabled ? '停用' : '启用'}</button>`}</td></tr>`).join('')}</tbody></table></div></div>`;
+}
+function ladmUsersView(){
+  if (!LADM.users || LADM.uq !== fq('users')){ ladmLoad('users'); if (!LADM.users) return ladmWait('用户', '读取中'); }
+  const st = u => u.banned ? stTag('封禁', 'orange') : u.muted ? stTag('禁言', 'yellow') : u.status === 'closing' ? stTag('注销中', 'violet') : stTag('正常', 'green');
+  return `${adH('用户', '后端里的真实账号；处置会通知本人并写进操作日志', `${adQ('users', '搜昵称或 ID')}${admCan('staff') ? `<button class="pill sm pk" data-act="lus-new">${IC.plus}新建账号</button>` : ''}`)}
+  <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>用户</th><th>身份</th><th>状态</th><th>注册时间</th><th></th></tr></thead><tbody>${LADM.users.map(u => `<tr>
+    <td><span class="ad-u">${uav(u.id)}<span><b>${esc(u.name)}</b><i>@${esc(u.handle)}${u.verified ? ' · 已实名' : ''}</i></span></span></td><td class="mut2">${u.role === 'creator' ? '创作者' : '普通用户'}</td><td>${st(u)}</td>
+    <td class="mut2 n">${fmtDT(+new Date(u.createdAt))}</td><td class="r"><button class="pill sm lt" data-act="us-open" data-id="${esc(u.id)}">管理</button></td></tr>`).join('') || '<tr><td colspan="5" class="mut">没找到</td></tr>'}</tbody></table></div></div>`;
+}
+Object.assign(ACTIONS, {
+  'cp-secret': b => { const v = b.dataset.v, ok = () => toast('已复制', 'green', 'check'); try { navigator.clipboard.writeText(v).then(ok, () => fallbackCopy(v) ? ok() : toast('复制失败，请手动选中复制', 'orange')); } catch(e){ fallbackCopy(v) ? ok() : toast('复制失败，请手动选中复制', 'orange'); } },
+  'lsf-on': b => lsfPatch(b.dataset.id, {enabled:b.dataset.v === '1'}),
+  'lsf-new': () => { if (!admGuard('staff')) return; sheet(`<h3>加一个后台成员</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">只开后台账号。要同时给对方一个 App 账号，用「用户 › 新建账号」。</p>
+    <label class="ad-lab" for="lsE">邮箱（登录用）</label><input class="inp" id="lsE" type="email" autocomplete="off"><label class="ad-lab" for="lsN">名字</label><input class="inp" id="lsN" maxlength="20">
+    <label class="ad-lab" for="lsR">角色</label><select class="inp" id="lsR">${roleOpts('mod')}</select><button class="pill lg" data-act="lsf-go">添加</button>`); },
+  'lsf-go': async b => { const e = $('#lsE').value.trim(), n = $('#lsN').value.trim(); if (!e || !n){ fxPop(!e ? $('#lsE') : $('#lsN'), 'fx-shake', 300); return; } b.disabled = true;
+    try { const r = await STAFF.req('POST', '/admin/staff', {email:e, name:n, role:$('#lsR').value}); LADM.staff = null; credSheet(`已添加：${r.staff.name}`, r.staff.name, r); ladmLoad('staff'); } catch(err){ b.disabled = false; apiFail(err); } },
+  'lus-new': () => { if (!admGuard('staff')) return; sheet(`<h3>新建账号</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">手机号就是 App 账号，对方用验证码登录（本机测试时验证码直接显示在网页上，不会真的发短信）。</p>
+    <label class="ad-lab" for="nuP">手机号</label><input class="inp" id="nuP" inputmode="numeric" maxlength="11" placeholder="11 位手机号"><label class="ad-lab" for="nuN">昵称</label><input class="inp" id="nuN" maxlength="24" placeholder="对方之后可以自己改">
+    <label class="agr"><input type="checkbox" id="nuS" onchange="document.getElementById('nuSB').hidden=!this.checked"><span>同时开一个后台账号（关联这个 App 账号，对方登录后菜单里有「进入后台」）</span></label>
+    <div id="nuSB" hidden><div style="display:flex;flex-direction:column;gap:8px"><label class="ad-lab" for="nuE">后台登录邮箱</label><input class="inp" id="nuE" type="email" autocomplete="off"><label class="ad-lab" for="nuR">后台角色</label><select class="inp" id="nuR">${roleOpts('super')}</select></div></div>
+    <button class="pill lg" data-act="lus-go">建账号</button>`); },
+  'lus-go': async b => { const p = $('#nuP').value.trim(), n = $('#nuN').value.trim(), withS = $('#nuS').checked, e = $('#nuE').value.trim();
+    if (!/^1[3-9]\d{9}$/.test(p)){ fxPop($('#nuP'), 'fx-shake', 300); toast('手机号格式不对', 'orange', 'x'); return; } if (!n){ fxPop($('#nuN'), 'fx-shake', 300); return; } if (withS && !e){ fxPop($('#nuE'), 'fx-shake', 300); return; } b.disabled = true;
+    try { const r = await STAFF.req('POST', '/admin/users', {phone:p, name:n, ...(withS ? {staff:{email:e, role:$('#nuR').value}} : {})}); LADM.users = LADM.staff = null; apiUser(r.user);
+      if (r.staff) credSheet(`已建好：${r.user.name}`, r.user.name, r.staff); else { closeSheet(); toast(`已建好：${esc(r.user.name)}，手机号 ${p} 用验证码登录`, 'green', 'check'); }
+      ladmLoad('users'); } catch(err){ b.disabled = false; apiFail(err); } }
+});
+Object.assign(ACTIONS, {
+  // 用户弹窗：给这个 App 用户开一个关联的后台账号
+  'lus-staff': b => { if (!admGuard('staff')) return; const uid = b.dataset.id;
+    sheet(`<h3>给 ${esc(uname(uid))} 开后台账号</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">关联到这个 App 账号；对方登录 App 后菜单里会出现「进入后台」，进后台仍要密码和动态口令。</p>
+      <label class="ad-lab" for="lsE">后台登录邮箱</label><input class="inp" id="lsE" type="email" autocomplete="off"><label class="ad-lab" for="lsR">角色</label><select class="inp" id="lsR">${roleOpts('mod')}</select>
+      <button class="pill lg" data-act="lus-staff-go" data-id="${esc(uid)}">开通</button>`); },
+  'lus-staff-go': async b => { const uid = b.dataset.id, e = $('#lsE').value.trim(); if (!e){ fxPop($('#lsE'), 'fx-shake', 300); return; } b.disabled = true;
+    try { const r = await STAFF.req('POST', '/admin/staff', {email:e, name:uname(uid).slice(0, 20), role:$('#lsR').value, userId:uid}); LADM.staff = null; credSheet(`已开通：${uname(uid)}`, uname(uid), r); ladmLoad('staff'); } catch(err){ b.disabled = false; apiFail(err); } }
+});
+// 用户弹窗里的处置：连着后端时先调接口（后端会通知本人、写操作日志、封禁时踢下线），成功了再更新界面
+const US_ACT = {warn:'warn', mute1:'mute1', mute7:'mute7', ban7:'ban7', ban0:'ban_forever', lift:'lift'};
+{ const usDo0 = ACTIONS['us-do'];
+  ACTIONS['us-do'] = async b => { if (API.on() && STATE.role === 'admin'){ const v = b.dataset.v, uid = b.dataset.id, act = v === 'verify' ? (acctOf(uid).verified ? 'unverify' : 'verify') : US_ACT[v];
+      if (!admGuard('users')) return;
+      try { await STAFF.req('POST', `/admin/users/${encodeURIComponent(uid)}/actions`, {action:act, reason:$('#usWhy')?.value.trim() || '违反社区规范'}); } catch(e){ apiFail(e); return; }
+      LADM.users = null; }
+    usDo0(b); }; }
 const LIVE = {u:new Set(), prof:{}, cmts:{}, pendingId:null};
 const apiFail = e => { toast(esc(e?.message || '出错了，请稍后再试'), 'orange', 'x'); if (e?.code === 'phone_required') setTimeout(() => ACTIONS['live-bind'](), 500); };   // 没绑手机号：直接弹出绑定
 const liveUser = () => API.on() && STATE.role === 'user';
@@ -9299,7 +9383,7 @@ async function liveMeExtras(){
 }
 /* 用 /me 的结果设置当前账号（不弹欢迎提示） */
 function liveMe(me){
-  apiUser(me); STATE.settings.pers = me.personalized;
+  apiUser(me); STATE.settings.pers = me.personalized; LIVE.staffEmail = me.staffEmail || null;
   let a = ACC.list.find(x => x.id === me.id); if (!a){ a = {id:me.id}; ACC.list.push(a); } Object.assign(a, {name:me.name, phone:me.phone || undefined, wx:me.wechatBound}); ACC.save();
   if (me.status === 'closing') ADM.closing[me.id] = {ts:Date.now(), until:+new Date(me.closingUntil)}; else delete ADM.closing[me.id];
   ADM.acct[me.id] = {warns:[], ...(me.limits.banned ? {ban:{until:me.limits.banUntil ? +new Date(me.limits.banUntil) : 0, reason:me.limits.reason || ''}} : {}), ...(me.limits.muteUntil ? {mute:{until:+new Date(me.limits.muteUntil), reason:me.limits.reason || ''}} : {})};
