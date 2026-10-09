@@ -48,11 +48,11 @@
   - 「我」头部是创作者名片：展示字体大名字、头像后垫黄色孔版色块、票根式虚线数据条
 
 ## 管理后台（`#admin-页签`）
-- **谁能进**：连着后端时只能用后台账号登录（邮箱 + 密码 + 动态口令，`/admin/auth/login`，令牌放 sessionStorage，见 `STAFF`）；后台账号和 App 账号分开，第一位超级管理员在服务器上 `npm run admin:create -- 邮箱 名字` 创建。没连后端（GitHub Pages 纯原型）时，后台和「原型 · 切换身份」默认都不出现，`?demo=1` 打开演示模式才有（`?demo=0` 关掉，`protoOn()`）。`setRole('admin')` 会被 `admAllowed()` 拦住。**前端拦截只是不露入口，真正的保护在后端**：每个 `/admin` 接口都校验后台会话和权限，后台页面以后接接口时也只能走后端
-- 连着后端时 `admMe()` 就是登录的后台账号（角色以后端为准）。已接后端的：「人员与权限」（`ladmStaffView`：列表、加人、改角色、停用）、「用户」（`ladmUsersView`：列表、搜索、超管「新建账号」= 手机号 App 账号 + 可选关联后台账号）、用户弹窗的警告 / 禁言 / 封禁 / 解除（`us-do` 先调 `/admin/users/{id}/actions`）。数据缓存在 `LADM`，改动后置空重读。其余页签仍是原型数据
+- **谁能进**：连着后端时只能用后台会话进（关联了后台账号的 App 用户用自己的密码 `/admin/auth/via-user`，或后台邮箱 + 密码 + 动态口令 `/admin/auth/login`；令牌放 sessionStorage，见 `STAFF`）；后台账号和 App 账号分开，第一位超级管理员在服务器上 `npm run admin:create -- 邮箱 名字` 创建。没连后端（GitHub Pages 纯原型）时，后台和「原型 · 切换身份」默认都不出现，`?demo=1` 打开演示模式才有（`?demo=0` 关掉，`protoOn()`）。`setRole('admin')` 会被 `admAllowed()` 拦住。**前端拦截只是不露入口，真正的保护在后端**：每个 `/admin` 接口都校验后台会话和权限，后台页面以后接接口时也只能走后端
+- 连着后端时 `admMe()` 就是登录的后台账号（角色以后端为准）。已接后端的：「人员与权限」（`ladmStaffView`：列表、加人、改角色、停用）、「用户」（`ladmUsersView`：列表、搜索、超管「新建账号」= 用户名密码 App 账号 + 可选后台权限、「重置密码」）、用户弹窗的警告 / 禁言 / 封禁 / 解除（`us-do` 先调 `/admin/users/{id}/actions`）。数据缓存在 `LADM`，改动后置空重读。其余页签仍是原型数据
 - 新建后台账号的初始密码和动态口令只显示一次（`credSheet`，复制用 `cp-secret`，不要把密码弹在 toast 里）
-- 后台账号可以关联 App 账号（后端 `staff.userId`）：`/me` 返回 `staffEmail`，存在 `LIVE.staffEmail`，侧边菜单显示「进入后台」并预填邮箱；进后台仍要密码 + 动态口令
-- 本机测试账号：后端 `npm run demo:accounts` 生成 2 个超管 + 2 个普通用户（写进后端文件夹的「测试账号.txt」）
+- 后台账号可以关联 App 账号（后端 `staff.userId`）：`/me` 返回 `staffEmail` / `staffRole`，存在 `LIVE.staffEmail`，侧边菜单显示「进入后台」→ 再输一次自己的登录密码（`/admin/auth/via-user`，`LIVE.cfg.adminTotp` 为真时多一个动态口令框），底下留「用后台邮箱登录」（`admLoginSheet`）
+- 本机测试账号：后端 `npm run demo:accounts` 只生成一个超管（用户名 `admin`，密码写进后端文件夹的「测试账号.txt」）。其他账号在后台「用户 › 新建账号」建（用户名 + 密码 + 可选后台权限，`lus-new` / `acctSheet`），忘了密码点「重置密码」（`lus-pw`）
 - 待审核（`ADMV.review`）：左队列 + 右详情（`rvDetail`：内容、来源与授权、发布者资质与历史、审核清单 `RV_CK`）；操作是通过 / 要求补充材料（`rv-ask`，留在队列里标「待补充」，卖家那边同步）/ 驳回。卖家「提交审核」会把完整快照推进 `REVIEW`（`sp` 关联卖家的商品）；`decl` 是来源声明 + 授权文件，上架表单还没收集
 - 数据都在 `ADM`（浏览器本地 `store 'adm'`，原型阶段）；接后端时把各个「adm 操作」换成接口，页面不用改。待审核 / 举报 / 退款 / 邀请码队列也随 `ADM` 保存
 - 员工角色 RBAC：super / mod 内容审核 / cs 客服 / fin 财务 / ops 运营（`ADM_ROLES`）。页签按角色可见（`ADM_TABS` 第 4 项），**每个写操作开头都要 `admGuard(页签)`，结尾 `admLog(操作, 对象, 说明)` 写操作日志**；至少保留一位启用的超级管理员
@@ -109,7 +109,10 @@
 - 默认「本地模拟」，和原型完全一样；`?api=后端地址`（`?api=self` = 网页和接口同一个地址，本机测试时后端用 STATIC_DIR 顺便提供网页）（或「设置 › 原型 · 数据来源」）切到「真实后端」，存在 `store 'apiBase'`；令牌在 `store 'apiTok'`（refresh 暂存 localStorage，上线同域后换 httpOnly cookie）
 - `API.req(方法, 路径, 请求体)`：自动带 token、401 时刷新一次（同时只刷一次）；错误是带 `code` 的 Error，`apiFail(e)` 统一提示（`phone_required` 会弹出绑定手机号）
 - 做法是「不改页面代码」：`apiUser` / `apiPost` / `apiCmt` 把后端数据灌进 `USERS` / `POSTS` / `BODY` / `COMMENTS`（真实帖子 `live:true`，`COMMENTS[id]` 先置空，免得用上示例评论；`p.likes` 不含自己的赞，和 `likes()` 的算法一致）；`wrapAct(名字, fn)` 包装现有操作：先照原样改界面，再调接口，失败撤回并提示
-- 已接通：手机号登录（新用户建档存名字）、微信登录跳转（`au-3p` wx）、信息流、别人主页（`LIVE.prof`）、帖子评论（`openPost` 打开时拉）、点赞、评论、删评论、发帖（文字 / 提问 / 图片 / 视频链接；图片先 `/uploads` 再直传）、编辑删除帖子、关注、拉黑、个性化推荐、资料、登录设备、换绑 / 绑定手机号（`live-bind`）、官方通知、导出、注销、退出。声音 / 可视化帖子、商城、私信、合作、工作室、管理后台仍是本地模拟（后端第 2、3 阶段）
+- **登录（连着后端时）**：`GET /config` → `LIVE.cfg`。登录面板是「登录 / 注册」两个页签（用户名 + 密码，`AUTH.lm`、`au-pw` / `auPwGo`），`cfg.phoneLogin` 为真才多一个「手机号」页签（沿用原来的验证码流程），`cfg.wechatLogin` 为真才显示微信。注册后进原来的「起名字、选颜色」步骤。设置 › 账号与隐私 › 修改密码（`pw-set`，`LIVE.me.hasPassword / username`）。会话中核对密码失败后端返回 403，不要改成 401（`API.req` 遇到 401 会当登录过期）
+- **私信（连着后端时）**：`/dm/*`，`LDM` 状态。会话列表每 4 秒轮询（`dmPoll`，页面在后台不轮询），打开的会话每次读全部（`dmConv`）并标已读，只在内容变了时重画（`dmPaint`）。`sendMsg` 先放一条 `pend` 的消息再调接口；图片带 `file` 上传（`dm_image`）；撤回 / 全部已读 / 分享面板发送 / 发起私信（`GET /users?q=` 找人）都包装过。示例私信和通知在 `liveReset` 里清空
+- **声音 / 可视化帖子**：发帖时把音频传上去（`post_audio`；浏览器认不出的格式和「示例音频」用 `wavBlob` 转 WAV），后端 type 是 `audio`，`style.vis` 有值就是可视化。`apiPost` 给出 `aurl` / `adur`；`renderTrack` 遇到真实帖子就下载解码（地址过期重新取一次帖子）
+- 已接通：用户名密码登录、手机号登录（新用户建档存名字）、微信登录跳转（`au-3p` wx）、信息流、别人主页（`LIVE.prof`）、帖子评论（`openPost` 打开时拉）、点赞、评论、删评论、发帖（文字 / 提问 / 图片 / 视频链接；图片先 `/uploads` 再直传）、编辑删除帖子、关注、拉黑、个性化推荐、资料、登录设备、换绑 / 绑定手机号（`live-bind`）、官方通知、导出、注销、退出。合作仍是本地模拟
 - **第 2 阶段（商城）也接上了**（见 `商城接后端` 那一段）：`apiProduct` / `apiOrder` 把后端商品、订单灌进 `PRODUCTS` / `STATE.orders`；卖家的 `SELLER_PRODUCTS` / `SELLER_ORDERS` / `MONTHLY` 来自 `/me/products`、`/me/sales`；余额 `LSHOP.wallet`（分），`vcBal` / `agreeNeed` 连着后端时读 `LSHOP`。开店（`inv-check` → `/me/seller`）、协议确认、上架（交付文件和授权文件真的上传 `liveUpload`，提交 `/products`，待补充 / 驳回用 `sp-redo` 填回表单 PATCH 重新提交）、下单付款（`do-pay` → `/orders`，成功后复用 `paidUI`）、下载（签名地址）、退款都用 `wrapAct` 包装。后台的待审核（`REVIEW` 换成 `rvOfLive`）、订单流水、退款、代金券、邀请码、主页下架走 `/admin/*`，缓存在 `LADM`，切页签时重读。金额：后端「分」、页面「元」（`f2y` / `y2f`）。示例商品的试听（pads / presets / 视觉）暂时用通用的演示内容
 - 启动顺序：`liveReset()`（同步清掉示例帖子、没登录就当游客）→ `render()` → `liveBoot()`（微信回跳登录 → `/me` → 信息流 → 关注 / 黑名单 / 通知）
 - 真实后端模式只推荐真实用户（`LIVE.u`）；示例用户在后端不存在，关注它们只改本地

@@ -1671,6 +1671,9 @@ body.reels-open .totop{display:none}
 .au-match .hit{font-weight:600}.au-match .new{color:var(--ink-2)}.au-match .new svg{width:14px;height:14px}
 .au-match .bad,.au-rs .bad{color:var(--orange);font-weight:600}
 .au-go{margin-top:2px}
+.au-eye{flex:none;height:40px;padding:0 12px;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.au-eye:hover{color:var(--ink)}
+.au-fg{margin:-4px 0 0;font-size:12.5px;color:var(--ink-3);text-align:center}
 .au-ag{position:relative;display:flex;align-items:flex-start;gap:10px;font-size:12.5px;color:var(--ink-3);line-height:20px;border-radius:10px}
 .au-ag a{color:var(--ink);font-weight:600;cursor:pointer}
 .au-cb{width:20px;height:20px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--ink-3);display:grid;place-items:center;flex:none;color:transparent;transition:background .15s,box-shadow .15s}
@@ -6386,7 +6389,7 @@ function meLegacy(arg){
       <label style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:15px">减少动效<button class="pill sm ${STATE.settings.rm ? '' : 'lt'}" data-act="set-rm">${STATE.settings.rm ? '已开启' : '关闭'}</button></label>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:15px;flex-wrap:wrap">外观<div class="cmode">${[['system','跟随系统'],['light','浅色'],['dark','深色']].map(([k,l]) => `<button class="${(STATE.settings.theme || 'system') === k ? 'on' : ''}" data-act="set-theme" data-v="${k}">${l}</button>`).join('')}</div></div>
       <label style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:15px">按钮音效<button class="pill sm ${STATE.settings.snd ? '' : 'lt'}" data-act="set-snd">${STATE.settings.snd ? '已开启' : '关闭'}</button></label></div></div>
-    <div class="box"><div class="box-h"><h3>账号</h3></div><div class="box-b au-set">${(() => { const a = ACC.list.find(x => x.id === ME) || {}; return `<div class="au-out">${av(ME, 'md')}<span><b>${esc(USERS[ME].name)}</b><i>${a.phone ? '+86 ' + mask(a.phone) : a.email ? esc(a.email) : a.apple ? 'Apple 账号' : ''}</i></span></div>`; })()}<div class="au-2"><button class="pill lt" data-act="switch-acc">切换账号</button><button class="pill lt au-lo" data-act="logout">退出登录</button></div><a class="set-del" href="#me-close">注销账号</a></div></div>
+    <div class="box"><div class="box-h"><h3>账号</h3></div><div class="box-b au-set">${(() => { const a = ACC.list.find(x => x.id === ME) || {}; return `<div class="au-out">${av(ME, 'md')}<span><b>${esc(USERS[ME].name)}</b><i>${a.username ? '用户名 ' + esc(a.username) : a.phone ? '+86 ' + mask(a.phone) : a.email ? esc(a.email) : a.apple ? 'Apple 账号' : ''}</i></span></div>`; })()}<div class="au-2"><button class="pill lt" data-act="switch-acc">切换账号</button><button class="pill lt au-lo" data-act="logout">退出登录</button></div><a class="set-del" href="#me-close">注销账号</a></div></div>
     ${setExtra()}
     ${protoOn() ? `<div class="box"><div class="box-h"><h3>原型 · 切换身份（演示模式）</h3></div><div class="box-b" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">${roleBox}${STATE.seller ? '<button class="more" data-act="unseller">撤回卖家资格（重新体验邀请码）</button>' : ''}</div></div>` : ''}`;
   if (MESUB[t]) body = MESUB[t]();
@@ -7693,6 +7696,7 @@ function setExtra(){ const cl = closingOf(ME);
       <label class="set-r">CTRL Z 官方<span class="mut2" style="font-size:13px">审核、处罚、结算通知，不能关闭</span></label></div></div>
     <div class="box"><div class="box-h"><h3>账号与隐私</h3></div><div class="box-b set-l">
       <label class="set-r set-2"><span>个性化推荐<span class="mut2" style="display:block;font-size:12.5px">关掉后「推荐」按发布时间排列，不再参考你的关注和互动</span></span>${swBtn(STATE.settings.pers, 'pers')}</label>
+      ${API.on() ? `<button class="set-r" data-act="pw-set">${LIVE.me?.hasPassword ? '修改密码' : '设置用户名和密码'}<span class="mut2">${LIVE.me?.username ? esc(LIVE.me.username) + ' ' : ''}›</span></button>` : ''}
       <button class="set-r" data-act="acc-phone">换绑手机号<span class="mut2">${(() => { const a = ACC.list.find(x => x.id === ME); return a?.phone ? '+86 ' + mask(a.phone) : '未绑定'; })()} ›</span></button>
       <button class="set-r" data-act="acc-devs">登录设备<span class="mut2">${API.on() ? "" : DEVS.length + 1 + " 台 "}›</span></button>
       <a class="set-r" href="#me-blocks">黑名单<span class="mut2">${STATE.blocks.size ? STATE.blocks.size + ' 人' : '没有'} ›</span></a>
@@ -8007,7 +8011,7 @@ ROUTES.msg = arg => {
   if (STATE.role === 'guest') return gate('私信', '登录后可以和创作者互相私信。', `<button class="pill lg" data-act="login">登录</button>`);
   const uid = USERS[arg] && arg !== ME ? arg : null;
   if (uid){ CHATS[uid] ||= []; CHAT_UNREAD[uid] = 0; setTimeout(msgBadge); }
-  onMount(root => { const b = $('#cvB', root); if (b) b.scrollTop = b.scrollHeight; const i = $('#cvImg', root); i && i.addEventListener('change', e => { const f = e.target.files[0]; if (f) sendMsg(uid, {t:'img', url:URL.createObjectURL(f)}); }); composer($('#cvIn', root), () => ACTIONS['cv-send']({dataset:{id:uid}})); });
+  onMount(root => { const b = $('#cvB', root); if (b) b.scrollTop = b.scrollHeight; const i = $('#cvImg', root); i && i.addEventListener('change', e => { const f = e.target.files[0]; if (f) sendMsg(uid, {t:'img', url:URL.createObjectURL(f), file:f}); e.target.value = ''; }); composer($('#cvIn', root), () => ACTIONS['cv-send']({dataset:{id:uid}})); });
   document.body.classList.toggle('in-conv', !!uid);
   onClean(() => document.body.classList.remove('in-conv'));
   return `<div class="wrap msgp ${uid ? 'has-conv' : ''}"><div class="m-side"><div class="m-head"><h1 class="x">私信</h1><span class="m-ha"><button class="rl-ic dk pg-only" data-act="search" aria-label="搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button><button class="rl-ic dk dm-all" data-act="dm-readall" aria-label="全部已读" title="全部已读"${Object.values(CHAT_UNREAD).some(Boolean) ? '' : ' disabled'}>${IC.readAll}</button><button class="pill sm lt" data-act="new-chat">${IC.plus}发起私信</button></span></div>${msgList(uid)}</div>
@@ -9014,7 +9018,7 @@ function cpResListRender(){
 function cpAddImages(files){ const C = UI.cp;
   files.filter(f => /^image\//.test(f.type)).slice(0, 9 - C.imgs.length).forEach(f => { const url = URL.createObjectURL(f), im = new Image(); const it = {url, h:1}; C.imgs.push(it); im.onload = () => { it.h = clamp(im.naturalHeight/im.naturalWidth, .7, 1.4); cpRender(); }; im.src = url; });
   C.ttext = false; cpRender(); }
-async function cpAddAudio(file, demo){ const C = UI.cp; C.audio = {name: demo ? '示例音频 · lo-fi' : file.name, ld:true}; cpRender();
+async function cpAddAudio(file, demo){ const C = UI.cp; C.audio = {name: demo ? '示例音频 · lo-fi' : file.name, ld:true, file: demo ? null : file}; cpRender();
   try { if (demo){ delete TRACKS['cp-demo']; const tr = await renderTrack('cp-demo', {bars:8, bpm:88, opts:{style:'lofi', seed:5}, arr:b => ({d: b < 1 ? 0 : 1, b:1, p:1})}); TRACKS['post:draft'] = tr; }
         else await trackFromFile('post:draft', file);
         if (!UI.cp || UI.cp !== C) return; C.audio.ld = false; }
@@ -9305,10 +9309,10 @@ function ladmStaffView(){
 function ladmUsersView(){
   if (!LADM.users || LADM.uq !== fq('users')){ ladmLoad('users'); if (!LADM.users) return ladmWait('用户', '读取中'); }
   const st = u => u.banned ? stTag('封禁', 'orange') : u.muted ? stTag('禁言', 'yellow') : u.status === 'closing' ? stTag('注销中', 'violet') : stTag('正常', 'green');
-  return `${adH('用户', '后端里的真实账号；处置会通知本人并写进操作日志', `${adQ('users', '搜昵称或 ID')}${admCan('staff') ? `<button class="pill sm pk" data-act="lus-new">${IC.plus}新建账号</button>` : ''}`)}
+  return `${adH('用户', '后端里的真实账号；处置会通知本人并写进操作日志', `${adQ('users', '搜昵称、用户名或 ID')}${admCan('staff') ? `<button class="pill sm pk" data-act="lus-new">${IC.plus}新建账号</button>` : ''}`)}
   <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>用户</th><th>身份</th><th>状态</th><th>注册时间</th><th></th></tr></thead><tbody>${LADM.users.map(u => `<tr>
-    <td><span class="ad-u">${uav(u.id)}<span><b>${esc(u.name)}</b><i>@${esc(u.handle)}${u.verified ? ' · 已实名' : ''}</i></span></span></td><td class="mut2">${u.role === 'creator' ? '创作者' : '普通用户'}</td><td>${st(u)}</td>
-    <td class="mut2 n">${fmtDT(+new Date(u.createdAt))}</td><td class="r"><button class="pill sm lt" data-act="us-open" data-id="${esc(u.id)}">管理</button></td></tr>`).join('') || '<tr><td colspan="5" class="mut">没找到</td></tr>'}</tbody></table></div></div>`;
+    <td><span class="ad-u">${uav(u.id)}<span><b>${esc(u.name)}</b><i>${u.username ? '用户名 ' + esc(u.username) : '@' + esc(u.handle)}${u.verified ? ' · 已实名' : ''}</i></span></span></td><td class="mut2">${u.role === 'creator' ? '创作者' : '普通用户'}</td><td>${st(u)}</td>
+    <td class="mut2 n">${fmtDT(+new Date(u.createdAt))}</td><td class="r">${u.username && admCan('staff') ? `<button class="pill sm lt" data-act="lus-pw" data-id="${esc(u.id)}">重置密码</button> ` : ''}<button class="pill sm lt" data-act="us-open" data-id="${esc(u.id)}">管理</button></td></tr>`).join('') || '<tr><td colspan="5" class="mut">没找到</td></tr>'}</tbody></table></div></div>`;
 }
 Object.assign(ACTIONS, {
   'cp-secret': b => { const v = b.dataset.v, ok = () => toast('已复制', 'green', 'check'); try { navigator.clipboard.writeText(v).then(ok, () => fallbackCopy(v) ? ok() : toast('复制失败，请手动选中复制', 'orange')); } catch(e){ fallbackCopy(v) ? ok() : toast('复制失败，请手动选中复制', 'orange'); } },
@@ -9369,7 +9373,10 @@ function apiPost(p){
   if (p.type === 'image' && imgs.length) Object.assign(o, {type:'image', img:imgs[0], imgs, h:s.h || 1});
   else if (p.type === 'question') o.type = 'question';
   else if (p.type === 'video' && s.url) Object.assign(o, {type:'video', plat:s.plat || '', url:s.url, cover:s.cover || 'wave', dur:'--:--'});
-  else Object.assign(o, {type:'image', tcover:{pal:s.pal || 'paper'}});   // 文字帖（以及暂未接通的声音 / 可视化）按文字卡显示
+  else if (p.type === 'audio'){ const au = (p.media || []).find(m => m.kind === 'audio' && m.url), v = s.vis && typeof s.vis === 'object' ? s.vis : null;
+    Object.assign(o, v ? {type:'video', vis:{tpl:VIS[v.tpl] || COVER_TPLS[v.tpl] ? v.tpl : 'dots', pal:COVER_PALS[v.pal] ? v.pal : 'pb'}, h:1} : {type:'audio', cover:COVER_TPLS[s.cover] ? s.cover : 'wave'},
+      {dur:fmtT(+s.dur || 0), adur:+s.dur || 0, aurl:au ? au.url : null}); }   // 声音帖：音频地址在 aurl，播放时再下载（renderTrack）
+  else Object.assign(o, {type:'image', tcover:{pal:s.pal || 'paper'}});   // 文字帖按文字卡显示
   BODY[id] = body.length ? body : [p.title];
   COMMENTS[id] ||= [];   // 不让真实帖子用上原型的示例评论
   if (o.review) LIVE.pend[id] = o; else delete LIVE.pend[id];   // 先审后发：审核中的只有作者自己看得到
@@ -9456,16 +9463,19 @@ wrapAct('cmt-dgo', async (orig, b, e) => {
   if (!c?.id || !liveUser()) return;
   try { await API.req('DELETE', `/comments/${c.id}`); } catch(err){ STATE.cdel.delete(k); store.set('cdel', [...STATE.cdel]); apiFail(err); softRefresh(); }
 });
-/* 发帖：声音 / 可视化帖子要等后端接上音频处理，暂不开放 */
+/* 发帖：声音 / 可视化帖子把音频真的传上去（浏览器认不出的格式转成 WAV），封面样式和时长放在 style 里 */
 wrapAct('cp-publish', async (orig, b, e) => {
   if (!liveUser()) return orig(b, e);
-  if (['audio', 'vis'].includes(cpKind())){ toast('声音和可视化帖子还没接上后端，先发文字、图片、提问或视频链接', 'orange', 'x'); return; }
-  const C = UI.cp, imgs = (C.imgs || []).map(x => x.url), first = POSTS[0]; orig(b, e); const p = POSTS[0];
+  const C = UI.cp, imgs = (C.imgs || []).map(x => x.url), first = POSTS[0], k = cpKind(), afile = C.audio?.file; orig(b, e); const p = POSTS[0];
   if (!p || p === first) return;
-  const old = p.id, type = p.tcover ? 'text' : p.type === 'question' ? 'question' : p.type === 'image' ? 'image' : 'video';
-  const style = p.tcover ? {pal:p.tcover.pal} : p.type === 'video' ? {url:p.url, plat:p.plat, cover:p.cover} : p.type === 'image' ? {h:p.h} : {qn:p.qn};
+  const snd = k === 'audio' || k === 'vis', tr = snd ? TRACKS['post:' + p.id] : null;
+  const old = p.id, type = snd ? 'audio' : p.tcover ? 'text' : p.type === 'question' ? 'question' : p.type === 'image' ? 'image' : 'video';
+  const style = snd ? {dur:Math.round(tr?.dur || 0), ...(k === 'vis' ? {vis:{tpl:p.vis?.tpl, pal:p.vis?.pal}} : {cover:p.cover || 'wave'})}
+    : p.tcover ? {pal:p.tcover.pal} : p.type === 'video' ? {url:p.url, plat:p.plat, cover:p.cover} : p.type === 'image' ? {h:p.h} : {qn:p.qn};
   try {
     const uploadIds = [];
+    if (snd){ if (!tr?.buffer) throw new Error('音频还没处理好，稍等一下再发'); toast('正在上传音频…', 'blue');
+      uploadIds.push((await liveUpload(afile && AUD_MIME.test(afile.type) ? afile : wavBlob(tr.buffer), 'post_audio')).id); }
     for (const u of type === 'image' ? imgs : []){   // 图片：先要上传地址，再直传对象存储
       const blob = await (await fetch(u)).blob();
       const up = await API.req('POST', '/uploads', {purpose:'post_image', mime:blob.type || 'image/jpeg', size:blob.size});
@@ -9474,6 +9484,7 @@ wrapAct('cp-publish', async (orig, b, e) => {
     }
     const r = await API.req('POST', '/posts', {type, title:p.title, body:(BODY[old] || []).join('\n'), tags:p.tags || [], uploadIds, style});
     const np = apiPost(r), i = POSTS.indexOf(p); if (i >= 0) POSTS[i] = np; delete BODY[old];
+    if (snd && TRACKS['post:' + old]){ TRACKS['post:' + np.id] = TRACKS['post:' + old]; delete TRACKS['post:' + old]; }   // 自己刚发的不用再下载一遍
     if (CUR.post === old) ACTIONS.pclose(); rerender();
     if (np.review) toast('已提交审核，通过后大家才能看到；现在只有你自己看得到', 'orange');
   } catch(err){ const i = POSTS.indexOf(p); if (i >= 0) POSTS.splice(i, 1); delete BODY[old]; apiFail(err); if (CUR.post === old) ACTIONS.pclose(); rerender(); }
@@ -9627,7 +9638,7 @@ ACTIONS['api-go'] = async () => { const u = $('#apiU').value.trim().replace(/\/+
 ACTIONS['api-off'] = () => { store.set('apiBase', ''); store.set('apiTok', null); location.reload(); };
 const apiBox = () => `<div class="box"><div class="box-h"><h3>原型 · 数据来源</h3><span class="tag ${API.on() ? 'c-green' : 'k'}">${API.on() ? '真实后端' : '本地模拟'}</span></div><div class="box-b set-l">
   ${API.on() ? `<div class="set-r"><span>后端地址<span class="mut2" style="display:block;font-size:12.5px;word-break:break-all">${esc(API.base)}</span></span><button class="pill sm lt" data-act="api-off">切回本地模拟</button></div>
-    <p class="mut2" style="font-size:12.5px;margin:6px 0 0">已接通：登录、信息流、帖子、评论、点赞、关注、拉黑、官方通知、设置。商城、私信、合作、工作室、管理后台仍是本地模拟。</p>`
+    <p class="mut2" style="font-size:12.5px;margin:6px 0 0">已接通：用户名密码登录、信息流、帖子（含声音 / 可视化）、评论、点赞、关注、拉黑、私信、官方通知、设置、商城、管理后台。合作仍是本地模拟。</p>`
   : `<div class="set-r"><span>现在用的是浏览器里的示例数据</span><button class="pill sm" data-act="api-set">连接后端</button></div>`}</div></div>`;
 
 /* ================= 商城接后端（第 2 阶段） =================
@@ -9688,6 +9699,278 @@ async function liveUpload(file, purpose){
   if (!put || !put.ok) throw new Error('文件上传失败，请重试'); return up;
 }
 const pickAny = cb => { const i = Object.assign(document.createElement('input'), {type:'file'}); i.onchange = () => i.files[0] && cb(i.files[0]); i.click(); };
+
+/* ================= 用户名密码登录、进后台、私信、声音帖子（连着后端时） =================
+   · 登录面板：「登录 / 注册」两个页签（用户名 + 密码）；后端开了手机号登录（/config 的 phoneLogin）才多一个「手机号」页签，开了微信才显示微信
+   · 进后台：关联了后台账号的用户再输一次自己的密码（/admin/auth/via-user）；后端要求动态口令（线上）时多一个输入框
+   · 私信：/dm/*。打开会话时读全部消息，平时每 4 秒读一次会话列表（页面在后台时不读），有新消息弹提示
+   · 声音 / 可视化帖子：音频真的上传（post_audio），别人刷到时下载、解码，和原型里的曲子一样播放 */
+LIVE.cfg = {phoneLogin:true, passwordLogin:true, wechatLogin:false, requirePhone:true, adminTotp:true};
+async function liveCfg(){ try { Object.assign(LIVE.cfg, await API.req('GET', '/config')); } catch(e){} }
+const USER_RE = /^[A-Za-z0-9_]{3,20}$/;
+{ const me0 = liveMe;
+  liveMe = function(me){ LIVE.me = me; me0(me); const a = ACC.list.find(x => x.id === me.id); if (a){ a.username = me.username || undefined; ACC.save(); } }; }
+
+/* —— 登录面板 —— */
+const auLiveSeg = () => `<div class="au-seg" role="tablist">${[['pw', '登录'], ['reg', '注册'], ...(LIVE.cfg.phoneLogin ? [['phone', '手机号']] : [])].map(([k, l]) => `<button role="tab" aria-selected="${AUTH.lm === k}" class="${AUTH.lm === k ? 'on' : ''}" data-act="au-lm" data-v="${k}">${l}</button>`).join('')}</div>`;
+const auAgree = () => `<div class="au-ag ${AUTH.need ? 'need' : ''}"><button class="au-cb ${AUTH.agree ? 'on' : ''}" role="checkbox" aria-checked="${AUTH.agree}" data-act="au-agree" aria-label="同意协议">${IC.check}</button><span>已阅读并同意 <a data-act="au-doc" data-v="用户协议">《用户协议》</a><a data-act="au-doc" data-v="隐私政策">《隐私政策》</a></span>
+  ${AUTH.need ? `<div class="au-tip" role="alert"><span>需要先同意协议</span><button class="pill sm" data-act="au-agree-go">同意并继续</button></div>` : ''}</div>`;
+{ const render0 = auRender, sheet0 = loginSheet;
+  loginSheet = function(why){ AUTH.pw = AUTH.pw2 = AUTH.err = ''; return sheet0(why); };
+  auRender = function(focus = true){
+    if (!API.on() || AUTH.step !== 'start') return render0(focus);
+    AUTH.lm ||= 'pw'; if (AUTH.lm === 'phone' && !LIVE.cfg.phoneLogin) AUTH.lm = 'pw';
+    if (AUTH.lm === 'phone'){ AUTH.via = 'phone'; render0(focus); const sg = $('#au .au-seg'); if (sg) sg.outerHTML = auLiveSeg(); $('#au .au-rec')?.remove(); return; }
+    const box = $('#au'); if (!box) return; const reg = AUTH.lm === 'reg';
+    box.innerHTML = `<div class="au-step s-start s-pw">
+      <div class="au-hd"><span class="au-mk">CTRL<b>Z</b></span><h3>${reg ? '注册' : '登录'}</h3>${AUTH.why ? `<p class="au-why">${AUTH.why}</p>` : ''}</div>
+      ${auLiveSeg()}
+      <div class="au-in"><input id="auU" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="20" placeholder="${reg ? '用户名（字母、数字、下划线）' : '用户名'}" value="${esc(AUTH.uname || '')}"></div>
+      <div class="au-in"><input id="auPw" type="password" autocomplete="${reg ? 'new-password' : 'current-password'}" maxlength="72" placeholder="${reg ? '密码（至少 8 位）' : '密码'}" value="${esc(AUTH.pw || '')}"><button class="au-eye" type="button" data-act="au-eye" aria-label="显示密码" tabindex="-1">显示</button></div>
+      ${reg ? `<div class="au-in"><input id="auPw2" type="password" autocomplete="new-password" maxlength="72" placeholder="再输一次密码" value="${esc(AUTH.pw2 || '')}"></div>` : ''}
+      <div class="au-match" id="auM">${AUTH.err ? `<span class="bad">${esc(AUTH.err)}</span>` : reg ? '<span class="new">用户名注册后不能改，昵称以后可以随时改</span>' : ''}</div>
+      <button class="pill lg au-go" data-act="au-pw">${reg ? '注册并登录' : '登录'}</button>
+      ${auAgree()}
+      ${reg ? '' : '<p class="au-fg">忘了密码？请联系管理员重置</p>'}
+      ${LIVE.cfg.wechatLogin ? `<div class="au-or"><span>其他方式</span></div><div class="au-alt"><button data-act="au-3p" data-v="wx"><span class="au-3i c-green">${IC.chat}</span>微信</button></div>` : ''}</div>`;
+    const U = $('#auU'), P = $('#auPw'), P2 = $('#auPw2');
+    U.addEventListener('input', () => { AUTH.uname = U.value.trim(); });
+    P.addEventListener('input', () => { AUTH.pw = P.value; }); P2 && P2.addEventListener('input', () => { AUTH.pw2 = P2.value; });
+    [U, P, P2].forEach(x => x && x.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing){ e.preventDefault(); ACTIONS['au-pw'](); } }));
+    if (focus && !IS_MOBILE) setTimeout(() => (AUTH.uname ? P : U).focus(), 80);
+  };
+}
+async function auPwGo(reg, username, password){
+  if (AUTH.busy) return; AUTH.busy = true; const b = $('.au-go'); if (b){ b.disabled = true; b.textContent = reg ? '正在注册…' : '正在登录…'; }
+  try {
+    const r = await API.req('POST', reg ? '/auth/register' : '/auth/login', {username, password});
+    AUTH.busy = false; AUTH.pw = AUTH.pw2 = AUTH.err = '';
+    API.setTok({access:r.accessToken, refresh:r.refreshToken}); apiUser(r.user);
+    let a = ACC.list.find(x => x.id === r.user.id); if (!a){ a = {id:r.user.id}; ACC.list.push(a); } Object.assign(a, {name:r.user.name, username}); ACC.save();
+    if (r.isNew){ LIVE.pendingId = r.user.id; AUTH.prof = {name:'', c:USERS[r.user.id].c, tags:new Set(), fol:new Set(), phone:'', email:''}; AUTH.step = 'prof'; auRender(); }
+    else { auFinish(r.user.id, 'back'); liveAfterLogin(); }
+  } catch(e){
+    AUTH.busy = false; AUTH.err = e.message; const m = $('#auM'); if (m) m.innerHTML = `<span class="bad">${esc(e.message)}</span>`;
+    const g = $('.au-go'); if (g){ g.disabled = false; g.textContent = reg ? '注册并登录' : '登录'; auShake(g); }
+  }
+}
+Object.assign(ACTIONS, {
+  'au-lm': b => { AUTH.lm = b.dataset.v; AUTH.err = ''; AUTH.need = false; clearInterval(AUTH.timer); smsHide(); auRender(); },
+  'au-eye': b => { const show = $('#auPw').type === 'password'; $$('#auPw, #auPw2').forEach(x => x.type = show ? 'text' : 'password'); b.textContent = show ? '隐藏' : '显示'; b.setAttribute('aria-label', show ? '隐藏密码' : '显示密码'); },
+  'au-pw': () => {
+    const reg = AUTH.lm === 'reg', u = ($('#auU')?.value || '').trim(), p = $('#auPw')?.value || '', p2 = $('#auPw2')?.value || '';
+    const err = (m, el) => { AUTH.err = m; $('#auM').innerHTML = `<span class="bad">${esc(m)}</span>`; auShake(el?.parentNode); el?.focus(); };
+    if (!u) return err('请输入用户名', $('#auU'));
+    if (reg && !USER_RE.test(u)) return err('用户名只能用字母、数字、下划线，3–20 位', $('#auU'));
+    if (!p) return err('请输入密码', $('#auPw'));
+    if (reg && p.length < 8) return err('密码至少 8 位', $('#auPw'));
+    if (reg && p !== p2) return err('两次输入的密码不一样', $('#auPw2'));
+    const go = () => auPwGo(reg, u, p);
+    if (!AUTH.agree){ AUTH.need = true; AUTH.queued = () => { auRender(false); go(); }; auRender(false); auShake($('.au-ag')); return; }   // 点「同意并继续」后先把勾画上再登录
+    go();
+  }
+});
+
+/* —— 设置：用户名、修改密码 —— */
+ACTIONS['pw-set'] = () => { const me = LIVE.me || {}, has = me.hasPassword, un = me.username;
+  sheet(`<h3>${has ? '修改密码' : '设置用户名和密码'}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">${has ? '改完以后，其它设备上的登录会失效，要用新密码重新登录。' : '设置好以后，就可以用用户名和密码登录。用户名设好后不能改。'}</p>
+    ${un ? `<label class="ad-lab">用户名</label><input class="inp" value="${esc(un)}" disabled>` : `<label class="ad-lab" for="pwU">用户名</label><input class="inp" id="pwU" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="20" placeholder="字母、数字、下划线，3–20 位">`}
+    ${has ? `<label class="ad-lab" for="pwO">现在的密码</label><input class="inp" id="pwO" type="password" autocomplete="current-password" maxlength="72">` : ''}
+    <label class="ad-lab" for="pwN">新密码</label><input class="inp" id="pwN" type="password" autocomplete="new-password" maxlength="72" placeholder="至少 8 位">
+    <label class="ad-lab" for="pwN2">再输一次新密码</label><input class="inp" id="pwN2" type="password" autocomplete="new-password" maxlength="72">
+    <button class="pill lg" data-act="pw-go">保存</button>`); };
+ACTIONS['pw-go'] = async b => { const U = $('#pwU'), O = $('#pwO'), N = $('#pwN'), N2 = $('#pwN2'), bad = (el, m) => { fxPop(el, 'fx-shake', 300); toast(m, 'orange', 'x'); };
+  if (U && !USER_RE.test(U.value.trim())) return bad(U, '用户名只能用字母、数字、下划线，3–20 位');
+  if (O && !O.value) return bad(O, '先输入现在的密码');
+  if (N.value.length < 8) return bad(N, '新密码至少 8 位');
+  if (N.value !== N2.value) return bad(N2, '两次输入的新密码不一样');
+  b.disabled = true;
+  try { await API.req('POST', '/me/password', {password:N.value, ...(O ? {oldPassword:O.value} : {}), ...(U ? {username:U.value.trim()} : {})}); liveMe(await API.req('GET', '/me')); closeSheet(); toast('密码已保存', 'green', 'check'); rerender(); }
+  catch(e){ b.disabled = false; apiFail(e); } };
+
+/* —— 进后台：关联了后台账号的用户，用自己的密码 —— */
+{ const admLogin0 = ACTIONS['adm-login'];
+  ACTIONS['adm-login'] = async () => {
+    if (!API.on() || !LIVE.staffEmail || STATE.role !== 'user') return admLogin0();
+    if (await STAFF.check()){ setRole('admin'); go('admin'); return; }
+    const t = LIVE.cfg.adminTotp, noPw = !LIVE.me?.hasPassword;
+    sheet(`<h3>进入后台</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">${noPw ? '你的账号还没有密码。先设置一个密码，再用它进后台。' : `再输一次你的登录密码${t ? '，以及验证器 App 里的 6 位动态口令' : ''}。连续输错会被限制 15 分钟。`}</p>
+      ${noPw ? '<button class="pill lg" data-act="pw-set">设置密码</button>' : `<label class="ad-lab" for="avP">登录密码</label><input class="inp" id="avP" type="password" autocomplete="current-password">
+      ${t ? '<label class="ad-lab" for="avT">动态口令</label><input class="inp" id="avT" inputmode="numeric" maxlength="6" autocomplete="one-time-code">' : ''}
+      <button class="pill lg" data-act="adm-via-go">进入后台</button>`}
+      <button class="more" data-act="adm-email">用后台邮箱登录</button>`, d => { setTimeout(() => $('#avP', d)?.focus(), 80);
+        $$('#avP, #avT', d).forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') ACTIONS['adm-via-go']($('[data-act="adm-via-go"]', d)); })); });
+  };
+}
+Object.assign(ACTIONS, {
+  'adm-email': () => admLoginSheet(),
+  'adm-via-go': async b => { const P = $('#avP'), T = $('#avT'); if (!P.value){ fxPop(P, 'fx-shake', 300); return; } if (b.disabled) return; b.disabled = true;
+    try { const r = await API.req('POST', '/admin/auth/via-user', {password:P.value, ...(T?.value.trim() ? {totp:T.value.trim()} : {})}); STAFF.set(r.token, r.staff);
+      closeSheet(); setRole('admin'); toast(`已进入后台：${esc(r.staff.name)} · ${ADM_ROLES[r.staff.role]?.[0] || r.staff.role}`, 'green', 'check'); go('admin'); }
+    catch(err){ b.disabled = false; apiFail(err); if (err.code === 'wrong_password'){ P.value = ''; P.focus(); } else if (/totp/.test(err.code || '')) T?.focus(); } }
+});
+
+/* —— 后台：新建账号（用户名 + 密码）、重置密码 —— */
+function acctSheet(title, username, password, staffRole){
+  const site = location.origin + '/?api=self', rows = [['网站', site], ['用户名', username], ['密码', password]];
+  sheet(`<h3>${esc(title)}</h3><p class="ad-warn y">密码只显示这一次，请马上发给对方。对方登录后可以在「设置 › 账号与隐私」里改密码。${staffRole ? `对方是后台「${esc(ADM_ROLES[staffRole]?.[0] || staffRole)}」：登录后点左上角菜单里的「进入后台」，再输一次自己的密码就能进。` : ''}</p>
+    <div class="cred">${rows.map(([k, v]) => `<div><span>${k}</span><code>${esc(v)}</code><button class="pill sm lt" data-act="cp-secret" data-v="${esc(v)}">复制</button></div>`).join('')}</div>
+    <button class="pill lg" data-act="cp-secret" data-v="${esc(rows.map(([k, v]) => k + '：' + v).join('\n'))}">全部复制</button>`); }
+Object.assign(ACTIONS, {
+  'lus-new': () => { if (!admGuard('staff')) return; sheet(`<h3>新建账号</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">对方用用户名和密码登录。密码不填就自动生成一个，建好后只显示这一次。</p>
+    <label class="ad-lab" for="nuU">用户名（登录用，建好后不能改）</label><input class="inp" id="nuU" autocapitalize="off" spellcheck="false" maxlength="20" placeholder="字母、数字、下划线，3–20 位" autocomplete="off">
+    <label class="ad-lab" for="nuN">昵称</label><input class="inp" id="nuN" maxlength="24" placeholder="不填就用用户名">
+    <label class="ad-lab" for="nuPw">密码（可以不填）</label><input class="inp" id="nuPw" maxlength="72" placeholder="不填就自动生成" autocomplete="off">
+    <label class="ad-lab" for="nuR">后台权限</label><select class="inp" id="nuR"><option value="">没有（普通用户）</option>${roleOpts('')}</select>
+    <button class="pill lg" data-act="lus-go">建账号</button>`, d => setTimeout(() => $('#nuU', d)?.focus(), 80)); },
+  'lus-go': async b => { const u = $('#nuU').value.trim(), n = $('#nuN').value.trim() || u, pw = $('#nuPw').value, role = $('#nuR').value;
+    if (!USER_RE.test(u)){ fxPop($('#nuU'), 'fx-shake', 300); toast('用户名只能用字母、数字、下划线，3–20 位', 'orange', 'x'); return; }
+    if (pw && pw.length < 8){ fxPop($('#nuPw'), 'fx-shake', 300); toast('密码至少 8 位，或者不填自动生成', 'orange', 'x'); return; } b.disabled = true;
+    try { const r = await STAFF.req('POST', '/admin/users', {username:u, name:n, ...(pw ? {password:pw} : {}), ...(role ? {staff:{role}} : {})}); LADM.users = LADM.staff = null; apiUser(r.user);
+      acctSheet(`已建好：${r.user.name}`, u, r.password, role); ladmLoad('users'); } catch(err){ b.disabled = false; apiFail(err); } },
+  'lus-pw': b => { if (!admGuard('staff')) return; const uid = b.dataset.id;
+    sheet(`<h3>重置 ${esc(uname(uid))} 的密码？</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">会生成一个新密码（只显示一次），对方所有设备上的登录都会失效。</p><button class="pill lg" data-act="lus-pw-go" data-id="${esc(uid)}">重置</button>`); },
+  'lus-pw-go': async b => { const uid = b.dataset.id; b.disabled = true;
+    try { const r = await STAFF.req('POST', `/admin/users/${encodeURIComponent(uid)}/password`); acctSheet(`${uname(uid)} 的新密码`, r.username, r.password, null); } catch(err){ b.disabled = false; apiFail(err); } }
+});
+
+/* —— 私信 —— */
+const LDM = {timer:0, full:new Set(), loading:new Set(), look:new Set(), miss:new Set(), last:{}, sig:{}, side:'', busy:false, listed:false, blk:{}};
+const dmMap = m => ({id:m.id, me:m.from === ME, t:m.kind === 'image' ? 'img' : m.kind, text:m.body, url:m.url || undefined, ref:m.ref || undefined, ts:+new Date(m.createdAt), rc:m.recalled, read:m.read});
+const dmLive = uid => API.on() && STATE.role === 'user' && LIVE.u.has(uid);
+const dmCut = (uid, ts) => DELC[uid] && ts <= DELC[uid];   // 自己删过聊天记录：删之前的不再显示
+/* 分享来的帖子 / 商品本地没有：去后端取一次 */
+async function dmRefs(list){
+  for (const m of list){
+    if (!m.ref || m.rc || LDM.miss.has(m.ref)) continue;
+    try {
+      if (m.t === 'post' && !POST(m.ref)){ const p = apiPost(await API.req('GET', `/posts/${encodeURIComponent(m.ref)}`)); if (!POSTS.some(x => x.id === p.id)) POSTS.push(p); }
+      if (m.t === 'prod' && !P(m.ref)) apiProduct(await API.req('GET', `/products/${encodeURIComponent(m.ref)}`));
+    } catch(e){ LDM.miss.add(m.ref); }
+  }
+}
+async function dmThreads(){
+  const r = await API.req('GET', '/dm/threads'), fresh = [], open = CUR.key?.startsWith('msg|') ? CUR.key.slice(4) : '';
+  for (const t of r.items){
+    apiUser(t.peer); const uid = t.peer.id, m = dmMap(t.last); if (dmCut(uid, m.ts)) continue;
+    const had = LDM.last[uid]; LDM.last[uid] = m.id;
+    if (had !== m.id){ if (had && !m.me && uid !== open && !m.rc) fresh.push([uid, m]); if (LDM.full.has(uid) && uid !== open) LDM.full.delete(uid); }
+    if (!LDM.full.has(uid)) CHATS[uid] = [m];   // 没打开过的会话只放最后一条（列表里用）
+    CHAT_UNREAD[uid] = uid === open ? 0 : t.unread;
+  }
+  return fresh;
+}
+async function dmConv(uid){
+  const r = await API.req('GET', `/dm/with/${encodeURIComponent(uid)}`); apiUser(r.peer);
+  const list = r.items.map(dmMap).filter(m => !dmCut(uid, m.ts)), L = CHATS[uid] || [];
+  CHATS[uid] = [...list, ...L.filter(m => m.pend)]; LDM.full.add(uid); LDM.blk[uid] = r.blocked; if (list.length) LDM.last[uid] = list[list.length - 1].id;
+  if (list.some(m => !m.me && !m.read)) API.req('POST', `/dm/with/${encodeURIComponent(uid)}/read`).catch(() => {});
+  CHAT_UNREAD[uid] = 0; await dmRefs(list);
+}
+/* 只在内容真的变了时重画，免得轮询把正在看的位置冲掉 */
+function dmPaint(uid){
+  const b = $('#cvB');
+  if (b && uid && CUR.key === 'msg|' + uid){ const sig = JSON.stringify((CHATS[uid] || []).map(m => [m.id, m.rc, m.url ? 1 : 0]));
+    if (LDM.sig[uid] !== sig){ const end = b.scrollHeight - b.scrollTop - b.clientHeight < 120; LDM.sig[uid] = sig; b.innerHTML = convBody(uid); if (end) b.scrollTop = b.scrollHeight; } }
+  const side = $('.m-side .m-list'); if (side){ const h = msgList(uid).replace(/^[\s\S]*?(<div class="m-list">)/, '$1'); if (LDM.side !== h){ LDM.side = h; side.outerHTML = h; } }
+}
+async function dmPoll(){
+  if (LDM.busy || document.hidden || !API.on() || !API.tok || STATE.role !== 'user') return; LDM.busy = true;
+  try {
+    const open = CUR.key?.startsWith('msg|') ? CUR.key.slice(4) : '', fresh = await dmThreads();
+    if (open && LIVE.u.has(open)) await dmConv(open);
+    if (CUR.key?.startsWith('msg|')){ if (!open && fresh.length) rerender(); else dmPaint(open); }
+    fresh.slice(-3).forEach(([uid, m]) => toast(`${esc(uname(uid))}：${esc(msgPreview(m))}`, 'blue'));
+    msgBadge();
+  } catch(e){ /* 网络抖一下不提示，下一轮再试 */ }
+  finally { LDM.busy = false; }
+}
+function dmStart(){ if (!API.on()) return; LDM.listed = false; dmPoll(); if (!LDM.timer) LDM.timer = setInterval(dmPoll, 4000); }
+document.addEventListener('visibilitychange', () => { if (!document.hidden && LDM.timer) dmPoll(); });
+{ const msg0 = ROUTES.msg;
+  ROUTES.msg = arg => {
+    if (API.on() && STATE.role === 'user'){
+      if (arg && !USERS[arg] && !LDM.look.has(arg)){ LDM.look.add(arg); API.req('GET', `/users/${encodeURIComponent(arg)}`).then(u => { apiUser(u); if (CUR.key === 'msg|' + arg) rerender(); }).catch(() => {}); }
+      if (arg && LIVE.u.has(arg) && !LDM.full.has(arg) && !LDM.loading.has(arg)){ LDM.loading.add(arg);
+        dmConv(arg).then(() => { LDM.loading.delete(arg); if (CUR.key === 'msg|' + arg){ LDM.sig[arg] = null; dmPaint(arg); } msgBadge(); }).catch(e => { LDM.loading.delete(arg); apiFail(e); }); }
+      if (!arg && !LDM.listed){ LDM.listed = true; dmThreads().then(() => { if (CUR.key === 'msg|') rerender(); msgBadge(); }).catch(apiFail); }
+    }
+    return msg0(arg);
+  };
+}
+async function liveDmSend(uid, m){
+  const u = `/dm/with/${encodeURIComponent(uid)}`;
+  if (m.t === 'img'){ const f = m.file || await (await fetch(m.url)).blob(); const up = await liveUpload(f, 'dm_image'); return API.req('POST', u, {kind:'image', uploadId:up.id}); }
+  if (m.t === 'post' || m.t === 'prod') return API.req('POST', u, {kind:m.t, ref:m.ref});
+  return API.req('POST', u, {kind:'text', body:m.text});
+}
+{ const send0 = sendMsg;
+  sendMsg = function(uid, m){
+    if (!dmLive(uid)) return send0(uid, m);
+    if (blocked(uid)){ toast('你已拉黑对方，解除后才能发消息', 'orange', 'x'); return; } if (!canSpeak()) return;
+    const tmp = {...m, me:true, ts:Date.now(), id:'tmp' + Date.now(), pend:true}; delete tmp.file; (CHATS[uid] ||= []).push(tmp); refreshConv(uid);
+    liveDmSend(uid, m).then(r => { const L = CHATS[uid] ||= [], i = L.indexOf(tmp), nm = dmMap(r); if (m.t === 'img' && m.url) nm.url = m.url;   // 自己发的图先用本地的，免得闪一下
+        i >= 0 ? L[i] = nm : L.push(nm); LDM.last[uid] = nm.id; refreshConv(uid); })
+      .catch(e => { const L = CHATS[uid] || [], i = L.indexOf(tmp); if (i >= 0) L.splice(i, 1); refreshConv(uid); apiFail(e); });
+  };
+}
+wrapAct('msg-rc', async (orig, b, e) => { const uid = b.dataset.u; if (!dmLive(uid)) return orig(b, e);
+  const m = (CHATS[uid] || []).find(x => x.me && x.ts === +b.dataset.ts); if (!m || m.pend) return;
+  try { Object.assign(m, dmMap(await API.req('POST', `/dm/messages/${encodeURIComponent(m.id)}/recall`))); refreshConv(uid); } catch(err){ apiFail(err); } });
+wrapAct('dm-readall', (orig, b, e) => { const ids = Object.keys(CHAT_UNREAD).filter(k => CHAT_UNREAD[k] && LIVE.u.has(k)); orig(b, e);
+  ids.forEach(uid => API.req('POST', `/dm/with/${encodeURIComponent(uid)}/read`).catch(() => {})); });
+wrapAct('shr-send', (orig, b, e) => { const d = b.closest('.sheet'), to = [...d._pick];
+  if (!to.some(dmLive)) return orig(b, e);
+  const {k, id} = d._obj, msg = $('#shrMsg').value.trim(), first = k === 'user' ? {t:'text', text:`推荐个主页：${USERS[id].name} ${shareUrl(k, id)}`} : {t:k, ref:id};
+  closeSheet();
+  Promise.all(to.map(async uid => { if (!dmLive(uid)) return; await liveDmSend(uid, first); if (msg) await liveDmSend(uid, {t:'text', text:msg}); LDM.full.delete(uid); }))
+    .then(() => { toast(`已发送给 ${to.map(u => esc(uname(u))).join('、')}`, 'pink'); dmPoll(); }, apiFail); });
+wrapAct('new-chat', () => sheet(`<h3>发起私信</h3><div class="rsearch">${IC.search}<input class="inp" id="ncQ" placeholder="搜昵称或用户名" autocomplete="off"></div><div class="m-list" id="ncL"><div class="rnone">正在读取…</div></div>`, d => {
+  let seq = 0, t = 0;
+  const draw = async () => { const q = $('#ncQ', d).value.trim(), my = ++seq;
+    try { const r = await API.req('GET', '/users' + (q ? '?q=' + encodeURIComponent(q) : '')); if (my !== seq || !d.isConnected) return;
+      $('#ncL', d).innerHTML = r.items.map(u => { apiUser(u); return `<a class="mrow" data-go="msg-${esc(u.id)}">${av(u.id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>@${esc(u.handle)}</span></span>${STATE.follows.has(u.id) ? '<span class="tag k">已关注</span>' : ''}</a>`; }).join('') || `<div class="rnone">${q ? '没找到' : '还没有其他用户'}</div>`; }
+    catch(e){ apiFail(e); } };
+  $('#ncQ', d).addEventListener('input', () => { clearTimeout(t); t = setTimeout(draw, 250); }); draw(); setTimeout(() => $('#ncQ', d).focus(), 60); }));
+
+/* —— 声音 / 可视化帖子 —— */
+const AUD_MIME = /^audio\/(mpeg|mp4|aac|wav|x-wav|ogg|flac|x-flac)$/;
+/* 浏览器认不出格式的音频（以及「示例音频」）：把解码好的声音存成 16 位 WAV 再上传 */
+function wavBlob(buf){
+  const ch = Math.min(2, buf.numberOfChannels), n = buf.length, sr = buf.sampleRate, size = n*ch*2, dv = new DataView(new ArrayBuffer(44 + size));
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); dv.setUint32(4, 36 + size, true); w(8, 'WAVE'); w(12, 'fmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, ch, true);
+  dv.setUint32(24, sr, true); dv.setUint32(28, sr*ch*2, true); dv.setUint16(32, ch*2, true); dv.setUint16(34, 16, true); w(36, 'data'); dv.setUint32(40, size, true);
+  const d = Array.from({length:ch}, (_, c) => buf.getChannelData(c)); let o = 44;
+  for (let i = 0; i < n; i++) for (let c = 0; c < ch; c++){ const v = Math.max(-1, Math.min(1, d[c][i])); dv.setInt16(o, v < 0 ? v*0x8000 : v*0x7fff, true); o += 2; }
+  return new Blob([dv], {type:'audio/wav'});
+}
+/* 真实帖子的声音：下载音频文件、解码（地址过期就重新取一次帖子） */
+{ const rt0 = renderTrack;
+  renderTrack = function(key, spec){
+    const p = key.startsWith('post:') ? POST(key.slice(5)) : null;
+    if (!p?.live || TRACKS[key]) return rt0(key, spec);
+    if (!p.aurl) return Promise.resolve(null);
+    const tr = TRACKS[key] = {dur:p.adur || 0, bpm:120, events:[], peaks:null, buffer:null};
+    tr.pr = (async () => { let url = p.aurl;
+      for (let i = 0; i < 2; i++){
+        try { const r = await fetch(url.startsWith('/') ? API.base + url : url); if (!r.ok) throw new Error('http ' + r.status); return await trackFromFile(key, await r.blob()); }
+        catch(e){ if (i) break; try { const np = await API.req('GET', `/posts/${encodeURIComponent(p.id)}`); url = (np.media || []).find(m => m.kind === 'audio')?.url || url; } catch(_){ break; } }
+      }
+      delete TRACKS[key]; p.aurl = null; return null; })();
+    return tr.pr;
+  };
+}
+
+/* —— 启动 / 登录后 —— */
+{ const reset0 = liveReset;
+  liveReset = function(){ reset0(); if (!API.on()) return;   // 示例私信和通知不混进真实账号
+    refill(CHATS, {}); refill(CHAT_UNREAD, {}); NOTES.likes = []; NOTES.fans = []; NOTES.at = []; NOTE_NEW.likes = NOTE_NEW.fans = 0; };
+  const boot0 = liveBoot;
+  liveBoot = async function(){ await liveCfg(); await boot0(); if (liveUser()) dmStart(); };
+  const after0 = liveAfterLogin;
+  liveAfterLogin = async function(){ refill(CHATS, {}); refill(CHAT_UNREAD, {}); LDM.full.clear(); LDM.last = {}; await after0(); dmStart(); };
+}
 
 /* —— 开店、协议 —— */
 wrapAct('inv-check', async (orig, b) => { if (!liveUser()) return orig(b);
