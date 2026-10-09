@@ -85,6 +85,17 @@
 - 别人主页的「关注者 / 关注中」可点开（`u-list` / `relList`），自己的仍用 `me-list`
 - 点击分发是「data-act 优先于 data-go」：整行可点的列表里不要再放 data-go 链接，放到详情里
 
+## 数据接口层（本地模拟 / 真实后端）
+- 后端在私有仓库 kia1276473815-ctrl/ctrlz-server（第 1 阶段：账号、内容、互动、通知、后台接口）
+- 默认「本地模拟」，和原型完全一样；`?api=后端地址`（或「设置 › 原型 · 数据来源」）切到「真实后端」，存在 `store 'apiBase'`；令牌在 `store 'apiTok'`（refresh 暂存 localStorage，上线同域后换 httpOnly cookie）
+- `API.req(方法, 路径, 请求体)`：自动带 token、401 时刷新一次（同时只刷一次）；错误是带 `code` 的 Error，`apiFail(e)` 统一提示（`phone_required` 会弹出绑定手机号）
+- 做法是「不改页面代码」：`apiUser` / `apiPost` / `apiCmt` 把后端数据灌进 `USERS` / `POSTS` / `BODY` / `COMMENTS`（真实帖子 `live:true`，`COMMENTS[id]` 先置空，免得用上示例评论；`p.likes` 不含自己的赞，和 `likes()` 的算法一致）；`wrapAct(名字, fn)` 包装现有操作：先照原样改界面，再调接口，失败撤回并提示
+- 已接通：手机号登录（新用户建档存名字）、微信登录跳转（`au-3p` wx）、信息流、别人主页（`LIVE.prof`）、帖子评论（`openPost` 打开时拉）、点赞、评论、删评论、发帖（文字 / 提问 / 图片 / 视频链接；图片先 `/uploads` 再直传）、编辑删除帖子、关注、拉黑、个性化推荐、资料、登录设备、换绑 / 绑定手机号（`live-bind`）、官方通知、导出、注销、退出。声音 / 可视化帖子、商城、私信、合作、工作室、管理后台仍是本地模拟（后端第 2、3 阶段）
+- 启动顺序：`liveReset()`（同步清掉示例帖子、没登录就当游客）→ `render()` → `liveBoot()`（微信回跳登录 → `/me` → 信息流 → 关注 / 黑名单 / 通知）
+- 真实后端模式只推荐真实用户（`LIVE.u`）；示例用户在后端不存在，关注它们只改本地
+- 改网址时保留 `history.state`（`replaceState(history.state, …)`），否则返回逻辑会把人退出网站
+- 联调：后端 `DEV_EXPOSE_OTP=true` 时验证码会像短信一样从顶部滑下；同一 IP 10 分钟最多登录 20 次（测试别每次都登录）
+
 ## 材质层（液态玻璃 / 毛玻璃 / 3D）
 - 液态玻璃折射 `LG`：思路来自 shuding/liquid-glass（MIT），SVG 位移贴图做 `backdrop-filter:url()`，只有 Chromium 生效；其它浏览器用 CSS 版（`.lgx` / `.lg-rim` / 高光边）。要加折射的元素登记在 `LG` 的 `SPEC` 里
 - **坑**：带 `view-transition-name`（`.tb`、`.hd`、`.player`）或 filter / opacity / mask 的元素是「背景根」，它里面的子元素用 backdrop-filter 看不到页面。所以底栏的模糊和折射加在 `.tb` 自己身上，`.tb-glass` 只负责着色

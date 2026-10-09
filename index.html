@@ -6068,7 +6068,7 @@ ROUTES.user = id => {
   const showShop = shop.length || isMe, svcs = bl ? [] : svcsOf(u.id); const tab = (UI.userTab === 'shop' && !showShop) || (UI.userTab === 'collab' && !svcs.length) ? 'works' : UI.userTab;
   onMount(root => mountWaves(root));
   return `<div class="wrap ${ucls(u.id)}">
-  <div class="prof">${av(u.id, 'xl')}<div style="min-width:0"><span class="lab">${esc(u.role)} · ${esc(u.city)}</span><h1 class="x" style="margin-top:10px">${esc(u.name)}</h1><p class="bio">${esc(u.bio)}</p></div>
+  <div class="prof">${av(u.id, 'xl')}<div style="min-width:0"><span class="lab">${esc(u.role)}${u.city ? " · " + esc(u.city) : ""}</span><h1 class="x" style="margin-top:10px">${esc(u.name)}</h1><p class="bio">${esc(u.bio)}</p></div>
     <div class="acts" style="display:flex;flex-direction:column;gap:18px;align-items:flex-start"><div class="stats"><div class="st-b" role="button" tabindex="0" data-act="${isMe ? 'me-list' : 'u-list'}" data-id="${u.id}" data-v="fans"><b data-roll="${u.fans}">${u.fans}</b><span>关注者</span></div><div class="st-b" role="button" tabindex="0" data-act="${isMe ? 'me-list' : 'u-list'}" data-id="${u.id}" data-v="follow"><b data-roll="${u.follow}">${u.follow}</b><span>关注中</span></div><div><b>${u.likes}</b><span>获赞</span></div></div>
       ${isMe ? `<a class="pill ol" href="#me-edit">编辑资料</a>` : bl ? '' : `<div style="display:flex;gap:8px"><button class="pill ${STATE.follows.has(u.id) ? 'lt' : ''}" data-act="follow" data-id="${u.id}">${STATE.follows.has(u.id) ? '已关注' : '关注'}</button><a class="pill ol" href="#msg-${u.id}">私信</a><button class="pill ol sq-ic" data-act="shr-open" data-k="user" data-id="${u.id}" aria-label="分享主页">${RIC.fwd}</button></div>`}</div></div>
   ${bl ? `<div class="ann warn"><span class="ann-i">${IC.x}</span><span class="ann-t"><b>你已拉黑 TA</b><span>看不到 TA 的帖子和评论，也不能互发私信</span></span><button class="pill sm lt" data-act="blk" data-id="${u.id}">解除</button></div>` : ''}
@@ -6681,7 +6681,7 @@ ROUTES.home = () => {
   let list = POSTS.filter(p => !p.failed && !blocked(p.author));
   if (tab === 'fol') list = list.filter(p => STATE.follows.has(p.author));
   else if (!STATE.settings.pers) list = byTime(list);   // 关闭个性化推荐：按发布时间
-  const sugg = Object.values(USERS).filter(u => u.id !== ME && !STATE.follows.has(u.id) && !blocked(u.id));
+  const sugg = Object.values(USERS).filter(u => u.id !== ME && !STATE.follows.has(u.id) && !blocked(u.id) && (!API.on() || LIVE.u.has(u.id)));   // 真实后端时只推荐真实用户
   onMount(root => mountWaves(root));
   return `<div class="wrap home">
     <div class="htabs"><button class="rl-ic dk ht-l pg-only" data-act="me-menu" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><span class="ht-no" aria-hidden="true">${ISSUE_NO}<i>今日</i></span><div class="ht-t" role="tablist"><button role="tab" class="${tab === 'fol' ? 'on' : ''}" data-act="htab" data-v="fol">关注</button><button role="tab" class="${tab === 'rec' ? 'on' : ''}" data-act="htab" data-v="rec">推荐</button></div><button class="rl-ic dk ht-r pg-only" data-act="search" aria-label="搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div>
@@ -7078,10 +7078,11 @@ function setExtra(){ const cl = closingOf(ME);
     <div class="box"><div class="box-h"><h3>账号与隐私</h3></div><div class="box-b set-l">
       <label class="set-r set-2"><span>个性化推荐<span class="mut2" style="display:block;font-size:12.5px">关掉后「推荐」按发布时间排列，不再参考你的关注和互动</span></span>${swBtn(STATE.settings.pers, 'pers')}</label>
       <button class="set-r" data-act="acc-phone">换绑手机号<span class="mut2">${(() => { const a = ACC.list.find(x => x.id === ME); return a?.phone ? '+86 ' + mask(a.phone) : '未绑定'; })()} ›</span></button>
-      <button class="set-r" data-act="acc-devs">登录设备<span class="mut2">${DEVS.length + 1} 台 ›</span></button>
+      <button class="set-r" data-act="acc-devs">登录设备<span class="mut2">${API.on() ? "" : DEVS.length + 1 + " 台 "}›</span></button>
       <a class="set-r" href="#me-blocks">黑名单<span class="mut2">${STATE.blocks.size ? STATE.blocks.size + ' 人' : '没有'} ›</span></a>
       <button class="set-r" data-act="export-me">导出我的个人信息<span class="mut2">JSON 文件 ›</span></button>
       ${STATE.seller ? `<a class="set-r" data-go="seller-overview">收款账户<span class="mut2">${ADM.payee[ME] ? PAYEE_K[ADM.payee[ME].kind][0] : '未绑定'} ›</span></a>` : ''}</div></div>
+    ${apiBox()}
     <div class="box"><div class="box-h"><h3>关于</h3></div><div class="box-b set-l">${DOC_ORD.map(k => `<a class="set-r" href="#doc-${k}">${DOCS[k].t}<span class="mut2">›</span></a>`).join('')}</div></div>`; }
 const MESUB = {
   blocks: () => { const L = [...STATE.blocks]; return `<p class="mut" style="font-size:14px;margin:0 0 14px">被拉黑的人看不到你的消息入口，你也不会再看到 TA 的帖子和评论。</p>
@@ -7160,7 +7161,7 @@ function relTs(s){ s = String(s || ''); const now = Date.now(), n = parseFloat(s
   if (/刚刚/.test(s)) return now; if (/分钟/.test(s)) return now - n*6e4; if (/小时/.test(s)) return now - n*36e5;
   if (/昨天/.test(s)) return now - 864e5; if (/前天/.test(s)) return now - 2*864e5; if (/天前/.test(s)) return now - n*864e5; if (/周前/.test(s)) return now - n*7*864e5;
   const m = s.match(/(\d{1,2})-(\d{1,2})/); if (m) return new Date(new Date().getFullYear(), +m[1] - 1, +m[2]).getTime(); return now - 30*864e5; }
-const byTime = L => L.map((p, i) => [p, relTs(p.time), i]).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map(x => x[0]);
+const byTime = L => L.map((p, i) => [p, p.ts || relTs(p.time), i]).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map(x => x[0]);
 
 /* —— 不存在 / 已下架：给出说明，不悄悄跳走 —— */
 const missing = (title, sub, btn = '') => `<div class="wrap msub"><div class="sub-h"><button class="hd-back" data-act="back" aria-label="返回">${IC.back}</button><h1>${title}</h1></div>
@@ -8572,12 +8573,321 @@ function loadHarmonySC(){
     .then(f => { document.fonts.add(f); document.documentElement.classList.add('hos'); fitText(); navInk(); })
     .catch(() => {});
 }
+
+/* ================= 数据接口层（API）：本地模拟 / 真实后端 =================
+   · 默认是「本地模拟」：所有数据在浏览器里，和原型一样。
+   · 打开 ?api=https://后端地址（或在「设置 › 原型 · 数据来源」里填）切到「真实后端」：
+     登录、信息流、帖子、评论、点赞、关注、拉黑、官方通知、登录设备、个性化推荐、导出、注销都走后端（ctrlz-server 第 1 阶段接口）。
+     商城、私信、合作、工作室、管理后台仍是本地模拟（后端第 2、3 阶段再接）。
+   · 做法：不改页面代码，只在这里把后端数据「灌进」原型的数据结构（USERS / POSTS / COMMENTS …），
+     并包装现有的操作（ACTIONS）：先按原来的方式更新界面，再调接口，失败就撤回并提示。
+   · refresh token 先存在 localStorage（前端和后端暂时不同域名）；正式上线换成同站点的 httpOnly cookie */
+const API = {
+  base: '', tok: null, _ref: null,
+  init(){
+    const q = new URLSearchParams(location.search).get('api');
+    if (q !== null){ store.set('apiBase', q.trim().replace(/\/+$/, '')); store.set('apiTok', null); history.replaceState(history.state, '', location.pathname + location.hash); }
+    this.base = store.get('apiBase', ''); this.tok = store.get('apiTok', null);
+  },
+  on(){ return !!this.base; },
+  setTok(t){ this.tok = t; store.set('apiTok', t); },
+  async req(method, path, body, retry = true){
+    const h = {}; if (body !== undefined) h['Content-Type'] = 'application/json'; if (this.tok?.access) h.Authorization = 'Bearer ' + this.tok.access;
+    let res; try { res = await fetch(this.base + path, {method, headers:h, body: body === undefined ? undefined : JSON.stringify(body)}); }
+    catch(e){ throw Object.assign(new Error('连不上服务器，检查一下网络'), {code:'network'}); }
+    if (res.status === 401 && retry && this.tok?.refresh && !path.startsWith('/auth/')){ if (await this.refresh()) return this.req(method, path, body, false); }
+    const j = res.headers.get('content-type')?.includes('json') ? await res.json().catch(() => null) : null;
+    if (!res.ok){ if (res.status === 401 && !path.startsWith('/auth/')) liveLoggedOut(); throw Object.assign(new Error(j?.error?.message || '请求失败（' + res.status + '）'), {code:j?.error?.code || 'http_' + res.status, status:res.status}); }
+    return j;
+  },
+  /* 同一时间只刷新一次（几个请求同时 401 时共用一次刷新） */
+  refresh(){ return this._ref ||= (async () => {
+    try { const r = await this.req('POST', '/auth/refresh', {refreshToken:this.tok.refresh}, false); this.setTok({access:r.accessToken, refresh:r.refreshToken}); return true; }
+    catch(e){ this.setTok(null); return false; } finally { setTimeout(() => this._ref = null, 0); } })(); }
+};
+API.init();
+const LIVE = {u:new Set(), prof:{}, cmts:{}, pendingId:null};
+const apiFail = e => { toast(esc(e?.message || '出错了，请稍后再试'), 'orange', 'x'); if (e?.code === 'phone_required') setTimeout(() => ACTIONS['live-bind'](), 500); };   // 没绑手机号：直接弹出绑定
+const liveUser = () => API.on() && STATE.role === 'user';
+
+/* —— 后端数据 → 原型的数据结构 —— */
+const LIVE_COLS = ['pink', 'blue', 'yellow', 'orange', 'green', 'violet'];
+function apiUser(u, extra = {}){
+  const old = USERS[u.id] || {};
+  USERS[u.id] = Object.assign(old, {id:u.id, name:u.name, ini:nameIni(u.name), c:old.c || LIVE_COLS[hash(u.id) % LIVE_COLS.length], role:u.role === 'creator' ? '创作者' : '用户', city:u.city || '', bio:u.bio || '',
+    fans:old.fans || 0, follow:old.follow || 0, likes:old.likes || '0', cover:old.cover || 'wave', shop:u.name + ' 的店', handle:u.handle, verified:u.verified}, extra);
+  if (u.avatarUrl) AVIMG[u.id] = u.avatarUrl;
+  LIVE.u.add(u.id); return USERS[u.id];
+}
+function apiPost(p){
+  apiUser(p.author);
+  const s = p.style || {}, id = p.id, liked = !!p.liked, body = String(p.body || '').split(/\n+/).filter(Boolean), t = +new Date(p.createdAt);
+  liked ? STATE.liked.add(id) : STATE.liked.delete(id);
+  const o = {id, author:p.author.id, title:p.title, ex:body[0] || p.title, tags:p.tags || [], likes:p.likeCount - (liked ? 1 : 0), favs:0, cmts:p.commentCount, time:ago(t), ts:t,
+    attach:[], seed:hash(id) % 50, qn:s.qn || id.slice(-3).toUpperCase(), solved:false, h:s.h || 1, word:s.word || 'SOUND', edited:p.edited, live:true};
+  const imgs = (p.media || []).filter(m => m.kind === 'image' && m.url).map(m => m.url);
+  if (p.type === 'image' && imgs.length) Object.assign(o, {type:'image', img:imgs[0], imgs, h:s.h || 1});
+  else if (p.type === 'question') o.type = 'question';
+  else if (p.type === 'video' && s.url) Object.assign(o, {type:'video', plat:s.plat || '', url:s.url, cover:s.cover || 'wave', dur:'--:--'});
+  else Object.assign(o, {type:'image', tcover:{pal:s.pal || 'paper'}});   // 文字帖（以及暂未接通的声音 / 可视化）按文字卡显示
+  BODY[id] = body.length ? body : [p.title];
+  COMMENTS[id] ||= [];   // 不让真实帖子用上原型的示例评论
+  return o;
+}
+const apiCmt = c => (apiUser(c.author), {id:c.id, u:c.author.id, t:c.body, time:ago(+new Date(c.createdAt)), likes:0});
+
+/* —— 读取 —— */
+async function liveFeed(){
+  const r = await API.req('GET', '/posts?tab=rec&limit=50');
+  POSTS.splice(0, POSTS.length, ...r.items.map(apiPost));
+}
+async function liveMeExtras(){
+  const [fo, bl, nt, prof] = await Promise.all([API.req('GET', `/users/${ME}/following?limit=50`), API.req('GET', '/me/blocks'), API.req('GET', '/notifications?limit=50'), API.req('GET', `/users/${ME}`)]);
+  STATE.follows = new Set(fo.items.map(u => apiUser(u).id));
+  STATE.blocks = new Set(bl.items.map(u => apiUser(u).id));
+  ADM.inbox[ME] = nt.items.map(n => ({id:n.id, title:n.title, text:n.body, ts:+new Date(n.createdAt), read:n.read, ...n.extra}));
+  Object.assign(USERS[ME], {fans:prof.followers, follow:prof.following});
+}
+/* 用 /me 的结果设置当前账号（不弹欢迎提示） */
+function liveMe(me){
+  apiUser(me); STATE.settings.pers = me.personalized;
+  let a = ACC.list.find(x => x.id === me.id); if (!a){ a = {id:me.id}; ACC.list.push(a); } Object.assign(a, {name:me.name, phone:me.phone || undefined, wx:me.wechatBound}); ACC.save();
+  if (me.status === 'closing') ADM.closing[me.id] = {ts:Date.now(), until:+new Date(me.closingUntil)}; else delete ADM.closing[me.id];
+  ADM.acct[me.id] = {warns:[], ...(me.limits.banned ? {ban:{until:me.limits.banUntil ? +new Date(me.limits.banUntil) : 0, reason:me.limits.reason || ''}} : {}), ...(me.limits.muteUntil ? {mute:{until:+new Date(me.limits.muteUntil), reason:me.limits.reason || ''}} : {})};
+  if (ME !== me.id || STATE.role !== 'user'){ ME = me.id; store.set('me', ME); restoreAccount(ME); setRole('user', true); }
+}
+function liveLoggedOut(){ if (!API.tok && STATE.role !== 'user') return; API.setTok(null); if (STATE.role === 'user'){ signOut(true); toast('登录已过期，请重新登录', 'blue'); rerender(); } }
+
+/* 启动：同步部分先清掉示例内容（避免先闪一下假数据），再异步拉真实数据 */
+function liveReset(){
+  if (!API.on()) return;
+  POSTS.splice(0); if (STATE.role === 'admin') setRole('guest', true);
+  if (!API.tok && STATE.role === 'user') setRole('guest', true);
+}
+async function liveBoot(){
+  try {
+    const q = new URLSearchParams(location.search);
+    if (q.get('code') && q.get('state')){   // 微信授权回来
+      history.replaceState(history.state, '', location.pathname + location.hash);
+      const r = await API.req('POST', '/auth/wechat/login', {scene:/MicroMessenger/i.test(navigator.userAgent) ? 'mp' : 'web', code:q.get('code'), state:q.get('state')});
+      API.setTok({access:r.accessToken, refresh:r.refreshToken}); toast(r.isNew ? '欢迎来到 CTRL Z' : `欢迎回来，${esc(r.user.name)}`, 'pink', 'check');
+      if (r.needsPhone) setTimeout(() => ACTIONS['live-bind'](), 600);
+    }
+    if (API.tok) liveMe(await API.req('GET', '/me'));
+    await liveFeed();
+    if (liveUser()) await liveMeExtras();
+  } catch(e){ apiFail(e); }
+  rerender(); msgBadge(); badge();
+}
+
+/* —— 包装现有操作：先照原样更新界面，再调接口；失败撤回并提示 —— */
+function wrapAct(name, fn){ const orig = ACTIONS[name]; if (!orig) return; ACTIONS[name] = (b, e) => API.on() ? fn(orig, b, e) : orig(b, e); }
+const softRefresh = () => { if (CUR.post) renderPost(CUR.post); else rerender(); };
+
+wrapAct('like', async (orig, b, e) => {
+  const id = b.dataset.id, was = STATE.liked.has(id); orig(b, e); const now = STATE.liked.has(id);
+  if (was === now || !liveUser() || !POST(id)?.live) return;
+  try { const r = await API.req(now ? 'PUT' : 'DELETE', `/posts/${id}/like`); const p = POST(id); if (p) p.likes = r.likeCount - (now ? 1 : 0); }
+  catch(err){ now ? STATE.liked.delete(id) : STATE.liked.add(id); apiFail(err); softRefresh(); }
+});
+wrapAct('follow', async (orig, b, e) => {
+  const id = b.dataset.id, was = STATE.follows.has(id); orig(b, e); const now = STATE.follows.has(id);
+  if (was === now || !liveUser() || !LIVE.u.has(id)) return;
+  try { await API.req(now ? 'PUT' : 'DELETE', `/users/${id}/follow`); if (USERS[id]) USERS[id].fans = Math.max(0, (USERS[id].fans || 0) + (now ? 1 : -1)); }
+  catch(err){ now ? STATE.follows.delete(id) : STATE.follows.add(id); apiFail(err); setTimeout(softRefresh, 500); }
+});
+/* 评论（帖子页和视频流两处入口）：原操作把评论放进 UI.newCmts，这里补上服务器 id；失败就拿掉 */
+async function liveCmtSent(pid, before){
+  const L = UI.newCmts[pid] || []; if (L.length <= before || !liveUser() || !POST(pid)?.live) return;
+  const c = L[L.length - 1];
+  try { const r = await API.req('POST', `/posts/${pid}/comments`, {body:c.t}); c.id = r.id; }
+  catch(err){ L.splice(L.indexOf(c), 1); const p = POST(pid); if (p) p.cmts = Math.max(0, p.cmts - 1); apiFail(err); if (RL.on && typeof openReelCm === 'function') openReelCm(); else softRefresh(); }
+}
+wrapAct('cmt', (orig, b, e) => { const pid = b.dataset.id, n = (UI.newCmts[pid] || []).length; orig(b, e); liveCmtSent(pid, n); });
+wrapAct('rl-send', (orig, b, e) => { const pid = reelCur()?.id, n = (UI.newCmts[pid] || []).length; orig(b, e); pid && liveCmtSent(pid, n); });
+wrapAct('cmt-dgo', async (orig, b, e) => {
+  const pid = b.dataset.p, k = b.dataset.k, c = cmtsOf(pid).find(x => cmtKey(pid, x) === k); orig(b, e);
+  if (!c?.id || !liveUser()) return;
+  try { await API.req('DELETE', `/comments/${c.id}`); } catch(err){ STATE.cdel.delete(k); store.set('cdel', [...STATE.cdel]); apiFail(err); softRefresh(); }
+});
+/* 发帖：声音 / 可视化帖子要等后端接上音频处理，暂不开放 */
+wrapAct('cp-publish', async (orig, b, e) => {
+  if (!liveUser()) return orig(b, e);
+  if (['audio', 'vis'].includes(cpKind())){ toast('声音和可视化帖子还没接上后端，先发文字、图片、提问或视频链接', 'orange', 'x'); return; }
+  const C = UI.cp, imgs = (C.imgs || []).map(x => x.url), first = POSTS[0]; orig(b, e); const p = POSTS[0];
+  if (!p || p === first) return;
+  const old = p.id, type = p.tcover ? 'text' : p.type === 'question' ? 'question' : p.type === 'image' ? 'image' : 'video';
+  const style = p.tcover ? {pal:p.tcover.pal} : p.type === 'video' ? {url:p.url, plat:p.plat, cover:p.cover} : p.type === 'image' ? {h:p.h} : {qn:p.qn};
+  try {
+    const uploadIds = [];
+    for (const u of type === 'image' ? imgs : []){   // 图片：先要上传地址，再直传对象存储
+      const blob = await (await fetch(u)).blob();
+      const up = await API.req('POST', '/uploads', {purpose:'post_image', mime:blob.type || 'image/jpeg', size:blob.size});
+      const put = await fetch(up.uploadUrl, {method:'PUT', headers:up.headers, body:blob}).catch(() => null);
+      if (!put || !put.ok) throw new Error('图片上传失败，请重试'); uploadIds.push(up.id);
+    }
+    const r = await API.req('POST', '/posts', {type, title:p.title, body:(BODY[old] || []).join('\n'), tags:p.tags || [], uploadIds, style});
+    const np = apiPost(r), i = POSTS.indexOf(p); if (i >= 0) POSTS[i] = np; delete BODY[old];
+    if (CUR.post === old) ACTIONS.pclose(); rerender();
+  } catch(err){ const i = POSTS.indexOf(p); if (i >= 0) POSTS.splice(i, 1); delete BODY[old]; apiFail(err); if (CUR.post === old) ACTIONS.pclose(); rerender(); }
+});
+wrapAct('post-esave', async (orig, b, e) => {
+  const id = b.dataset.id; orig(b, e); const p = POST(id); if (!p?.live || !liveUser()) return;
+  try { apiPost(await API.req('PATCH', `/posts/${id}`, {title:p.title, body:(BODY[id] || []).join('\n')})); }
+  catch(err){ apiFail(err); try { Object.assign(p, apiPost(await API.req('GET', `/posts/${id}`))); } catch(_){} softRefresh(); }
+});
+wrapAct('post-dgo', async (orig, b, e) => {
+  const id = b.dataset.id, live = POST(id)?.live; orig(b, e); if (!live || !liveUser()) return;
+  try { await API.req('DELETE', `/posts/${id}`); } catch(err){ apiFail(err); await liveFeed().catch(() => {}); rerender(); }
+});
+wrapAct('pers', async (orig, b, e) => {
+  orig(b, e); if (!liveUser()) return;
+  try { await API.req('PATCH', '/me', {personalized:STATE.settings.pers}); await liveFeed(); rerender(); }
+  catch(err){ STATE.settings.pers = !STATE.settings.pers; applySettings(); apiFail(err); rerender(); }
+});
+wrapAct('blk-go', async (orig, b, e) => {
+  const id = b.dataset.id; orig(b, e); if (!liveUser() || !LIVE.u.has(id)) return;
+  try { await API.req('PUT', `/me/blocks/${id}`); await liveFeed(); rerender(); } catch(err){ STATE.blocks.delete(id); blkSave(); apiFail(err); rerender(); }
+});
+wrapAct('blk', async (orig, b, e) => {
+  const id = b.dataset.id, was = STATE.blocks.has(id); orig(b, e);
+  if (!was || STATE.blocks.has(id) || !liveUser() || !LIVE.u.has(id)) return;   // 只处理「解除拉黑」；拉黑在 blk-go
+  try { await API.req('DELETE', `/me/blocks/${id}`); await liveFeed(); rerender(); } catch(err){ STATE.blocks.add(id); blkSave(); apiFail(err); rerender(); }
+});
+wrapAct('save-prof', async (orig, b, e) => {
+  const name = $('#pf-n')?.value.trim(), city = $('#pf-c')?.value.trim(), bio = $('#pf-b')?.value.trim(); orig(b, e); if (!liveUser()) return;
+  try { liveMe(await API.req('PATCH', '/me', {...(name ? {name} : {}), city, bio})); rerender(); } catch(err){ apiFail(err); try { liveMe(await API.req('GET', '/me')); rerender(); } catch(_){} }
+});
+wrapAct('sysbox', (orig, b, e) => { orig(b, e); if (liveUser()) API.req('POST', '/notifications/read-all').catch(() => {}); });
+wrapAct('do-logout', async (orig, b, e) => { if (API.tok) await API.req('POST', '/auth/logout').catch(() => {}); API.setTok(null); orig(b, e); rerender(); });
+wrapAct('export-me', async orig => {
+  if (!liveUser()) return orig();
+  try { const j = await API.req('GET', '/me/export'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(j, null, 2)], {type:'application/json'})); a.download = `ctrlz-my-data-${fmtDay(Date.now())}.json`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); toast('已导出'); }
+  catch(err){ apiFail(err); }
+});
+wrapAct('close-go', async (orig, b, e) => {
+  if (!liveUser()) return orig(b, e);
+  if ($('#clIn')?.value.trim() !== '注销') return orig(b, e);   // 让原来的校验去提示
+  try { await API.req('POST', '/me/close'); orig(b, e); } catch(err){ apiFail(err); }
+});
+wrapAct('close-undo', async (orig, b, e) => { if (!liveUser()) return orig(b, e); try { await API.req('DELETE', '/me/close'); orig(b, e); } catch(err){ apiFail(err); } });
+/* 登录设备 / 换绑手机号：直接用后端的数据 */
+wrapAct('acc-devs', async orig => {
+  if (!liveUser()) return orig();
+  try { const r = await API.req('GET', '/me/sessions');
+    sheet(`<h3>登录设备</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">发现不认识的设备，可以让它退出登录，并尽快换绑手机号。</p><div class="set-l">${r.items.map(s => `<div class="set-r"><span><b>${esc(s.device)}</b><span class="mut2" style="display:block">${s.ip ? esc(s.ip) + ' · ' : ''}${ago(+new Date(s.lastUsedAt))}活跃</span></span>${s.current ? '<span class="tag c-green">本机</span>' : `<button class="pill sm lt" data-act="acc-kick" data-id="${esc(s.id)}">退出登录</button>`}</div>`).join('')}</div>`);
+  } catch(err){ apiFail(err); }
+});
+wrapAct('acc-kick', async (orig, b) => { if (!liveUser()) return orig(b); try { await API.req('DELETE', `/me/sessions/${b.dataset.id}`); toast('已让该设备退出登录', 'blue'); ACTIONS['acc-devs'](); } catch(err){ apiFail(err); } });
+wrapAct('acc-code', async (orig, b) => {
+  if (!liveUser()) return orig(b);
+  const n = $('#apN2').value.trim(); if (!/^1\d{10}$/.test(n)){ fxPop($('#apN2'), 'fx-shake', 300); toast('手机号格式不对', 'orange', 'x'); return; }
+  try { const r = await API.req('POST', '/auth/sms/send', {phone:n, purpose:LIVE.bind ? 'bind' : 'change_phone'}); AUTH.pnum = n; AUTH.via = 'phone'; if (r.devCode) smsShow(r.devCode);
+    b.disabled = true; let s = 60; b.textContent = s + ' 秒'; const iv = setInterval(() => { s--; if (!b.isConnected || s <= 0){ clearInterval(iv); b.disabled = false; b.textContent = '重新发送'; return; } b.textContent = s + ' 秒'; }, 1000);
+  } catch(err){ apiFail(err); }
+});
+wrapAct('acc-pgo', async (orig, b) => {
+  if (!liveUser()) return orig(b);
+  const c = $('#auC').value.trim(); if (!AUTH.pnum || $('#apN2').value.trim() !== AUTH.pnum){ toast('先给这个号码发验证码', 'orange', 'x'); return; }
+  try { await API.req('POST', '/me/phone', {phone:AUTH.pnum, code:c, purpose:LIVE.bind ? 'bind' : 'change_phone'}); liveMe(await API.req('GET', '/me')); LIVE.bind = false; closeSheet(); toast('手机号已绑定', 'green'); rerender(); }
+  catch(err){ fxPop($('#auC'), 'fx-shake', 300); apiFail(err); }
+});
+/* 微信新用户：先绑手机号才能发布（复用换绑面板） */
+const accPhone0 = ACTIONS['acc-phone'];
+ACTIONS['acc-phone'] = b => { LIVE.bind = false; accPhone0(b); };
+ACTIONS['live-bind'] = () => { accPhone0(); LIVE.bind = true; const h = $('#layer .sheet h3'); if (h) h.textContent = '绑定手机号'; const p = $('#layer .sheet h3 + p'); if (p) p.textContent = '按照规定，发布内容前需要绑定手机号。'; };
+/* 自己 / 别人的关注和粉丝：用后端的名单 */
+async function liveRelSheet(uid, k){
+  try { const r = await API.req('GET', `/users/${uid}/${k === 'fans' ? 'followers' : 'following'}?limit=50`), u = USERS[uid];
+    sheet(`<h3>${uid === ME ? (k === 'fans' ? '我的粉丝' : '我关注的') : `${esc(u.name)} ${k === 'fans' ? '的粉丝' : '关注的人'}`}</h3><div class="m-list">${r.items.map(x => { apiUser(x); const id = x.id;
+      return `<a class="mrow" data-go="user-${esc(id)}">${av(id, 'md')}<span class="mt"><b>${esc(x.name)}</b><span>${esc(x.bio || '')}</span></span>${id === ME ? '<span class="tag k">我</span>' : `<button class="pill sm ${STATE.follows.has(id) ? 'lt' : ''}" data-act="follow" data-id="${esc(id)}">${STATE.follows.has(id) ? '已关注' : '关注'}</button>`}</a>`; }).join('') || '<div class="rnone">还没有</div>'}</div>`);
+  } catch(err){ apiFail(err); }
+}
+wrapAct('me-list', (orig, b) => liveUser() ? liveRelSheet(ME, b.dataset.v) : orig(b));
+wrapAct('u-list', (orig, b) => LIVE.u.has(b.dataset.id) ? liveRelSheet(b.dataset.id, b.dataset.v) : orig(b));
+/* 登录：只开放手机号和微信；验证码由后端发和校验 */
+wrapAct('au-via', (orig, b, e) => { if (b.dataset.v !== 'phone'){ toast('邮箱登录暂未开放，请用手机号', 'blue'); return; } orig(b, e); });
+wrapAct('au-quick', () => toast('请用手机号登录', 'blue'));
+wrapAct('au-3p', async (orig, b) => {
+  if (b.dataset.v !== 'wx'){ toast('Apple 登录暂未开放', 'blue'); return; }
+  try { const scene = /MicroMessenger/i.test(navigator.userAgent) ? 'mp' : 'web';
+    const r = await API.req('GET', `/auth/wechat/authorize?scene=${scene}&redirect=${encodeURIComponent(location.origin + location.pathname + location.hash)}`); location.href = r.url; }
+  catch(err){ apiFail(err); }
+});
+{ const send0 = auSendCode, verify0 = auVerify, create0 = auCreate;
+  auSendCode = function(){
+    if (!API.on()) return send0();
+    AUTH.left = 60; clearInterval(AUTH.timer); AUTH.timer = setInterval(() => { AUTH.left--; const r = $('#auRs'); if (r) r.innerHTML = auRs(); if (AUTH.left <= 0) clearInterval(AUTH.timer); }, 1000);
+    API.req('POST', '/auth/sms/send', {phone:AUTH.phone}).then(r => { if (r.devCode) setTimeout(() => smsShow(r.devCode), 400); })   // 开发环境后端会把验证码带回来，像短信一样从顶部滑下
+      .catch(err => { clearInterval(AUTH.timer); AUTH.left = 0; const r = $('#auRs'); if (r) r.innerHTML = `<span class="bad">${esc(err.message)}</span>`; });
+  };
+  auVerify = function(){
+    if (!API.on()) return verify0();
+    if (AUTH.busy) return; AUTH.busy = true; const o = $('#auOtp'); o.classList.add('ld'); $('#auC').blur();
+    API.req('POST', '/auth/sms/login', {phone:AUTH.phone, code:AUTH.code}).then(r => {
+      AUTH.busy = false; smsHide(); clearInterval(AUTH.timer); o.classList.remove('ld'); o.classList.add('ok');
+      API.setTok({access:r.accessToken, refresh:r.refreshToken}); apiUser(r.user);
+      let a = ACC.list.find(x => x.id === r.user.id); if (!a){ a = {id:r.user.id}; ACC.list.push(a); } Object.assign(a, {name:r.user.name, phone:AUTH.phone}); ACC.save();
+      setTimeout(() => { if (r.isNew){ LIVE.pendingId = r.user.id; AUTH.prof = {name:'', c:USERS[r.user.id].c, tags:new Set(), fol:new Set(), phone:AUTH.phone, email:''}; AUTH.step = 'prof'; auRender(); } else { auFinish(r.user.id, 'back'); liveAfterLogin(); } }, 380);
+    }).catch(err => {
+      AUTH.busy = false; if (!$('#auOtp')) return; o.classList.remove('ld'); o.classList.add('err'); auShake(o); $('#auRs').innerHTML = `<span class="bad">${esc(err.message)}</span>`;
+      setTimeout(() => { o.classList.remove('err'); AUTH.code = ''; const C = $('#auC'); if (C){ C.value = ''; C.dispatchEvent(new Event('input')); C.focus(); } }, 1100);
+    });
+  };
+  /* 新用户建档：名字和颜色存到后端；推荐关注里的示例用户在真实后端里不存在，跳过 */
+  auCreate = function(){
+    if (!API.on() || !LIVE.pendingId) return create0();
+    const id = LIVE.pendingId, p = AUTH.prof, name = (p.name || '').trim(); LIVE.pendingId = null;
+    if (name){ USERS[id].name = name; USERS[id].ini = nameIni(name); }
+    USERS[id].c = p.c; setTimeout(liveAfterLogin, 0);
+    if (name) API.req('PATCH', '/me', {name}).catch(apiFail);
+    return id;
+  };
+}
+async function liveAfterLogin(){ try { liveMe(await API.req('GET', '/me')); await liveFeed(); await liveMeExtras(); } catch(e){ apiFail(e); } rerender(); msgBadge(); }
+
+/* 别人的主页、帖子评论：第一次打开时从后端拉 */
+{ const userRoute0 = ROUTES.user;
+  ROUTES.user = id => {
+    if (API.on() && id && id !== ME && !LIVE.prof[id]){
+      LIVE.prof[id] = 'loading';
+      Promise.all([API.req('GET', `/users/${id}`), API.req('GET', `/posts?author=${encodeURIComponent(id)}&limit=50`)]).then(([u, ps]) => {
+        apiUser(u, {fans:u.followers, follow:u.following}); u.isFollowing ? STATE.follows.add(u.id) : STATE.follows.delete(u.id);
+        ps.items.forEach(p => { const np = apiPost(p); if (!POSTS.some(x => x.id === np.id)) POSTS.push(np); });
+        LIVE.prof[id] = 'ok'; rerender();
+      }).catch(e => { LIVE.prof[id] = 'missing'; if (e.status !== 404) apiFail(e); rerender(); });
+      return `<div class="wrap msub"><div class="empty miss"><div class="x">···</div><span>正在加载</span></div></div>`;
+    }
+    if (API.on() && LIVE.prof[id] === 'loading') return `<div class="wrap msub"><div class="empty miss"><div class="x">···</div><span>正在加载</span></div></div>`;
+    return userRoute0(id);
+  };
+  const open0 = openPost;
+  openPost = function(id){
+    open0(id);
+    if (!API.on() || !POST(id)?.live || LIVE.cmts[id]) return;
+    LIVE.cmts[id] = true;
+    API.req('GET', `/posts/${id}/comments?limit=50`).then(r => { COMMENTS[id] = r.items.map(apiCmt); UI.newCmts[id] = []; if (CUR.post === id) renderPost(id); }).catch(e => { LIVE.cmts[id] = false; apiFail(e); });
+  };
+}
+
+/* 设置里切换数据来源（原型阶段用；正式上线后只连后端） */
+ACTIONS['api-set'] = () => sheet(`<h3>连接后端</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">填 ctrlz-server 的地址。后端的 CORS_ORIGINS 里要包含当前网站地址（${esc(location.origin)}）。</p>
+  <input class="inp" id="apiU" placeholder="https://api.example.com" value="${esc(API.base)}" autocomplete="off" inputmode="url"><button class="pill lg" data-act="api-go">连接</button>`);
+ACTIONS['api-go'] = async () => { const u = $('#apiU').value.trim().replace(/\/+$/, ''); if (!/^https?:\/\/\S+$/.test(u)){ fxPop($('#apiU'), 'fx-shake', 300); return; }
+  try { const r = await fetch(u + '/health'); if (!r.ok) throw 0; } catch(e){ toast('连不上这个地址，检查一下地址和后端的 CORS 设置', 'orange', 'x'); return; }
+  store.set('apiBase', u); store.set('apiTok', null); location.reload(); };
+ACTIONS['api-off'] = () => { store.set('apiBase', ''); store.set('apiTok', null); location.reload(); };
+const apiBox = () => `<div class="box"><div class="box-h"><h3>原型 · 数据来源</h3><span class="tag ${API.on() ? 'c-green' : 'k'}">${API.on() ? '真实后端' : '本地模拟'}</span></div><div class="box-b set-l">
+  ${API.on() ? `<div class="set-r"><span>后端地址<span class="mut2" style="display:block;font-size:12.5px;word-break:break-all">${esc(API.base)}</span></span><button class="pill sm lt" data-act="api-off">切回本地模拟</button></div>
+    <p class="mut2" style="font-size:12.5px;margin:6px 0 0">已接通：登录、信息流、帖子、评论、点赞、关注、拉黑、官方通知、设置。商城、私信、合作、工作室、管理后台仍是本地模拟。</p>`
+  : `<div class="set-r"><span>现在用的是浏览器里的示例数据</span><button class="pill sm" data-act="api-set">连接后端</button></div>`}</div></div>`;
+
 (function boot(){
   STATE.hist = store.get('hist', null) || [{k:'post', id:'s3', ts:Date.now() - 2*3600e3}, {k:'item', id:'p3', ts:Date.now() - 5*3600e3}, {k:'video', id:'s2', ts:Date.now() - 26*3600e3}, {k:'post', id:'s8', ts:Date.now() - 30*3600e3}];
   ACC.boot(); delcApply();
   Object.assign(STATE.settings, store.get('settings', {})); applySettings(); applyTheme(); STATE.seller = !!store.get('seller', false);
-  setRole(store.get('role', 'user'), true);
-  render(); msgBadge(); setTimeout(navInk, 300); (window.requestIdleCallback || setTimeout)(loadHarmonySC);
+  setRole(store.get('role', 'user'), true); liveReset();
+  render(); if (API.on()) liveBoot(); msgBadge(); setTimeout(navInk, 300); (window.requestIdleCallback || setTimeout)(loadHarmonySC);
   // 缓存加速（Service Worker，见 sw.js）：页面加载完再注册，不和首屏抢资源
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) addEventListener('load', () => setTimeout(() => navigator.serviceWorker.register('sw.js').catch(() => {}), 1500));
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { COVERS.clear(); if (!CUR.post) { const {r, arg} = parseHash(); renderBase(r, arg, true); } });
