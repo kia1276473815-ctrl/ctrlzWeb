@@ -663,6 +663,37 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .q-card img{width:100%;height:100%;object-fit:cover;min-height:200px}
 .q-card .bd{padding:20px;display:flex;flex-direction:column;gap:12px}
 .q-card h3{font-size:22px;font-weight:900;line-height:1.3}
+/* 待审核：左队列 + 右详情；窄屏上队列变成横向滚动的一排 */
+.rv{display:grid;grid-template-columns:260px minmax(0,1fr);gap:14px;align-items:start}
+.rv-q{display:flex;flex-direction:column;gap:6px;position:sticky;top:calc(var(--hdy, 0px) + 16px)}
+.rv-qi{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px 8px 8px;border-radius:14px;background:var(--card);text-align:left;color:inherit}
+.rv-qi.on{box-shadow:inset 0 0 0 2px var(--ink)}
+.rv-qi img{width:40px;height:40px;border-radius:10px;object-fit:cover}
+.rv-qi b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rv-qi i{display:block;font-style:normal;font-size:11.5px;color:var(--ink-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rv-d{border-radius:20px;background:var(--card);padding:20px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.rv-hd{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px}
+.rv-hd img{width:150px;height:150px;border-radius:14px;object-fit:cover}
+.rv-ht{display:flex;flex-direction:column;gap:8px;min-width:0}
+.rv-ht h3{font-size:22px;font-weight:900;line-height:1.25}
+.rv-s{display:flex;flex-direction:column;gap:10px;padding-top:16px;border-top:1px solid var(--rule)}
+.rv-s h4{font-size:13px;letter-spacing:.04em;color:var(--ink-2)}
+.rv-p{font-size:14.5px;line-height:1.7;margin:0;white-space:pre-wrap}
+.rv-imgs{display:flex;gap:8px;overflow-x:auto}
+.rv-imgs img{height:120px;border-radius:10px}
+.rv-docs{display:flex;flex-direction:column;gap:6px}
+.rv-docs > div{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--paper);font-size:13.5px}
+.rv-doc{display:inline-flex;align-items:center;gap:5px;font-weight:600}
+.rv-doc svg{width:14px;height:14px}
+.rv-doc.no{color:var(--orange);font-weight:600}
+.rv-ck{display:flex;flex-direction:column;gap:4px}
+.rv-ck button{display:flex;gap:10px;align-items:flex-start;padding:7px 4px;text-align:left;font-size:13.5px;line-height:1.5;color:inherit}
+.rv-ck i{width:18px;height:18px;border-radius:5px;border:2px solid var(--ink-3);display:grid;place-items:center;flex:none;margin-top:1px}
+.rv-ck i svg{width:12px;height:12px;opacity:0}
+.rv-ck .on i{background:var(--green);border-color:var(--green);color:#fff}
+.rv-ck .on i svg{opacity:1}
+.rv-ck .on span{color:var(--ink-3)}
+@media (max-width:860px){ .rv{grid-template-columns:minmax(0,1fr)} .rv-q{position:static;flex-direction:row;overflow-x:auto;scrollbar-width:none} .rv-qi{flex:0 0 220px} .rv-hd{grid-template-columns:96px minmax(0,1fr)} .rv-hd img{width:96px;height:96px} .rv-d{padding:16px} }
 .flags{display:flex;gap:6px;flex-wrap:wrap}
 .flag{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;font-size:12.5px;background:var(--green-t)}
 .flag.w{background:var(--orange-t)}
@@ -2299,7 +2330,7 @@ html.rm .fx-em *{animation:none}
 
 /* ===================== 管理后台 ===================== */
 .ad-ph{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.ad-who{display:flex;align-items:center;gap:8px}
+.ad-who{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;max-width:100%}
 .ad-sel{height:36px;width:auto;max-width:100%;padding:0 32px 0 12px;font-size:13.5px;font-weight:600;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a8a92' stroke-width='2.4'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center/14px;-webkit-appearance:none;appearance:none;box-shadow:inset 0 0 0 1px var(--rule);cursor:pointer}
 .ad-sel:disabled{opacity:.6;cursor:default}
 .ad-dash .snav{gap:2px}
@@ -2782,12 +2813,27 @@ const SELLER_ORDERS = [
 const MONTHLY = [['04',1260],['05',1890],['06',2310],['07',1720],['08',2640],['09',261]];
 
 /* 管理后台 */
+/* 待审核队列。商品项尽量带上卖家提交时的完整快照（审核员要能看到买家会看到的东西 + 权属材料）：
+   price / en / desc 介绍 / files 文件清单 / tpl 试听方式 / lic 许可范围 / orig 勾选原创承诺的时间 /
+   decl 来源声明 {src, third:[{n 素材, lic 许可, doc 授权文件}], ai, voice} / st '待补充' + ask 要补什么 / ck 审核清单里勾过的项 */
 const REVIEW = [
-  {id:'r1', kind:'商品', title:'城市噪声 CITY NOISE', who:'rin', cat:'音频采样', time:'10-04 22:10', flags:['预览已加水印','授权说明齐全'], cover:'topo'},
-  {id:'r2', kind:'商品', title:'BRAUN 风格旋钮 3D 模型包', who:'ash', cat:'视觉素材', time:'10-05 10:31', flags:['⚠ 标题含第三方商标'], cover:'metal', warn:true},
+  {id:'r1', kind:'商品', title:'城市噪声 CITY NOISE', who:'rin', cat:'音频采样', time:'10-04 22:10', flags:['预览已加水印','授权说明齐全'], cover:'topo',
+    price:58, en:'CITY NOISE', desc:'在上海地铁站、菜市场、外滩录的 96 段城市环境声，每段 8–40 秒，已降噪、统一响度。适合做氛围铺底和转场。', files:'CITY_NOISE.zip · 612 MB · 96 个 WAV 24bit/48kHz', tpl:'敲打 16 个 pad', lic:['发行作品', '演出与直播', '切片改编'], orig:Date.now() - 3*864e5,
+    decl:{src:'原创录音', third:[], ai:'没有使用 AI', voice:'背景里有路人说话，不可辨认个人身份；菜市场摊主的叫卖已取得口头同意并录音留证'}},
+  {id:'r2', kind:'商品', title:'BRAUN 风格旋钮 3D 模型包', who:'ash', cat:'视觉素材', time:'10-05 10:31', flags:['⚠ 标题含第三方商标'], cover:'metal', warn:true,
+    price:39, en:'KNOB KIT', desc:'12 个复古电器风格旋钮的 .blend / .fbx 模型，带 PBR 贴图。', files:'KNOB_KIT.zip · 188 MB · 12 个 .blend + .fbx + 4K 贴图', tpl:'12 秒视频循环', lic:['发行作品', '切片改编'], orig:Date.now() - 2*864e5,
+    decl:{src:'原创建模，参考了 Braun 产品外观', third:[{n:'HDRI 环境贴图', lic:'CC0（Poly Haven）', doc:'polyhaven-license.png'}], ai:'没有使用 AI', voice:''}},
   {id:'r3', kind:'帖子', title:'Ableton Link 多机同步踩坑记录', who:'merc', cat:'图文', time:'10-05 18:02', flags:['外链 2 个'], cover:'grid'},
-  {id:'r4', kind:'商品', title:'Kernel 噪声 .tox', who:'merc', cat:'TD 组件', time:'10-06 08:47', flags:['未标注 TD 版本'], cover:'particles', warn:true}
+  {id:'r4', kind:'商品', title:'Kernel 噪声 .tox', who:'merc', cat:'TD 组件', time:'10-06 08:47', flags:['未标注 TD 版本'], cover:'particles', warn:true,
+    price:45, en:'KERNEL NOISE', desc:'GLSL 写的噪声生成组件，6 种噪声、可动画参数。', files:'KERNEL_NOISE.tox · 2.1 MB', tpl:'12 秒视频循环', lic:['发行作品', '演出与直播', '切片改编'], orig:Date.now() - 864e5,
+    decl:{src:'原创，部分着色器改写自开源代码', third:[{n:'噪声函数（Ashima webgl-noise）', lic:'MIT', doc:''}], ai:'注释用 AI 辅助写过', voice:''}}
 ];
+/* 审核清单：审核员逐项看过再点通过（不强制全勾，但勾了哪些会记进操作日志） */
+const RV_CK = {
+  商品:['权属：原创，或有完整的再授权（看来源说明和授权文件）', '第三方素材：采样 / 字体 / 插件 / 模型的许可允许打包二次销售', '人声 / 肖像：可辨认的人声、人像有本人书面授权', '名称与商标：标题、封面没有冒用品牌、艺人名、作品名', 'AI 生成：用了的话已经如实标注', '描述一致：文件清单、格式、兼容版本和介绍相符', '试听合规：预览内容合规，已截短或加水印', '文件安全：压缩包里没有可执行程序或可疑脚本'],
+  帖子:['内容合规：无违法、色情、暴力、引流', '权属：不是搬运别人的作品', '人身权：不侵犯他人肖像、隐私、名誉', 'AI 生成：用了的话已经如实标注', '外链安全：不指向违规或钓鱼网站']
+};
+const RV_ASK = ['补充第三方素材的授权文件', '补充人声 / 肖像的本人授权', '说明 AI 生成的部分', '补充实名或主体资质', '修改标题 / 介绍（不实或含商标）', '补充兼容版本 / 依赖说明'];
 const REPORTS = [   // kind: post / prod / cmt / user；ref 指向真实对象
   {id:'rp1', kind:'post', ref:'s19', reason:'疑似搬运别人的作品', who:'lowf', time:'10-05', st:'待处理'},
   {id:'rp2', kind:'prod', ref:'p8', reason:'素材疑似来自其他商业素材包', who:'nova', time:'10-04', st:'待处理'},
@@ -2913,7 +2959,7 @@ function vcSpend(uid, amt, no){ let need = r2(amt);
 /* 在首页 / 视频流里直接处理内容：内容审核和超级管理员。以管理员身份浏览时用当前后台账号；
    普通身份登录、但这个用户被设成了后台成员（staff.uid）时用他自己的成员身份 */
 const MOD_ROLES = ['super', 'mod'];
-function modActor(){ const s = STATE.role === 'admin' ? admMe() : ADM.staff.find(x => x.uid === ME && x.on); return s && MOD_ROLES.includes(s.role) ? s : null; }
+function modActor(){ const s = STATE.role === 'admin' ? admMe() : !API.on() && ADM.staff.find(x => x.uid === ME && x.on); return s && MOD_ROLES.includes(s.role) ? s : null; }   // 连着后端时只认后台登录
 PLAT = ADM.params.plat;
 REPORTS.forEach(r => { if (r.kind === 'cmt' && !r.key) r.key = r.ref + ':' + hash(r.au + '|' + r.text); });
 // 待审核 / 举报 / 退款 / 邀请码队列：第一次用种子数据，之后用本地保存的
@@ -3367,9 +3413,18 @@ function rollNums(root){
 
 /* ================= 身份 ================= */
 const ROLE_NAME = {guest:'访客', user:'用户', admin:'管理员'};
+/* ================= 谁能进管理后台 =================
+   · 连着后端：只能用后台账号登录（邮箱 + 密码 + 动态口令，/admin/auth/login，见 STAFF）。后台会话只存在当前标签页，进后台前用 /admin/me 校验
+   · 没连后端（GitHub Pages 上的纯原型）：没有服务器能核验身份，所以后台和「原型 · 切换身份」默认都不出现；
+     用 ?demo=1 打开演示模式才有（?demo=0 关掉）。演示数据都在自己浏览器里，碰不到别人
+   注意：前端拦截只是不让入口露出来，真正的保护在后端——每个 /admin 接口都校验后台会话和权限 */
+const DEMO = (() => { const q = new URLSearchParams(location.search).get('demo'); if (q !== null) store.set('demo', q === '1'); return !!store.get('demo', false); })();
+const protoOn = () => DEMO && !API.on();                       // 能不能用「原型 · 切换身份」
+const admAllowed = () => API.on() ? !!STAFF.me : protoOn();     // 能不能切成管理员
 const curUser = () => STATE.role === 'guest' ? null : STATE.role === 'admin' ? 'admin' : ME;
 function setRole(r, silent){
-  if (!ROLE_NAME[r]) r = 'user'; STATE.role = r; store.set('role', r);
+  if (!ROLE_NAME[r]) r = 'user'; if (r === 'admin' && !admAllowed()) r = API.on() ? 'guest' : 'user';
+  STATE.role = r; store.set('role', r);
   const b = $('#meBtn');
   if (r === 'guest'){ b.className = 'av'; b.style.background = 'var(--card)'; b.style.boxShadow = 'inset 0 0 0 1px var(--rule)'; b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1.2-3.8 4-5.5 7.5-5.5s6.3 1.7 7.5 5.5"/></svg>'; }
   else if (r === 'admin'){ b.className = 'av c-orange'; b.style.background = ''; b.style.boxShadow = ''; b.textContent = 'AZ'; }
@@ -6271,8 +6326,9 @@ const gate = (title, sub, btn) => `<div class="wrap"><div class="ph"><h1 class="
 /* ================= 我的 ================= */
 function meLegacy(arg){
   const roleBox = `<div class="roles" style="max-width:360px">${Object.entries(ROLE_NAME).map(([k,l]) => `<button class="${STATE.role===k?'on':''}" data-act="role" data-v="${k}">${l}</button>`).join('')}</div>`;
-  if (STATE.role === 'guest') return gate('我', '登录后，买过的资源、订单和收藏都在这里。', `<button class="pill lg" data-act="login">登录</button><div style="margin-top:28px"><span class="lab" style="display:block;margin-bottom:8px">原型 · 切换身份</span>${roleBox}</div>`);
-  if (STATE.role === 'admin') return gate('我', '你正在以管理员身份浏览。', `<a class="pill lg" href="#admin">去管理后台</a><div style="margin-top:28px"><span class="lab" style="display:block;margin-bottom:8px">原型 · 切换身份</span>${roleBox}</div>`);
+  const protoBox = protoOn() ? `<div style="margin-top:28px"><span class="lab" style="display:block;margin-bottom:8px">原型 · 切换身份（演示模式）</span>${roleBox}</div>` : '';   // 只在演示模式出现
+  if (STATE.role === 'guest') return gate('我', '登录后，买过的资源、订单和收藏都在这里。', `<button class="pill lg" data-act="login">登录</button>${protoBox}`);
+  if (STATE.role === 'admin') return gate('我', '你正在以管理员身份浏览。', `<a class="pill lg" href="#admin">去管理后台</a><button class="pill lg lt" data-act="adm-out">退出后台</button>${protoBox}`);
   const t = arg, u = USERS[ME]; const owned = PRODUCTS.filter(p => STATE.owned.has(p.id)); if (t === 'lib' && STATE.libNew){ STATE.libNew = 0; setTimeout(badge); }
   const nav = [['lib','资源库', owned.length],['orders','订单', 0],['favs','收藏', 0],['settings','设置', 0]];
   let body = '';
@@ -6288,7 +6344,7 @@ function meLegacy(arg){
       <label style="display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:15px">按钮音效<button class="pill sm ${STATE.settings.snd ? '' : 'lt'}" data-act="set-snd">${STATE.settings.snd ? '已开启' : '关闭'}</button></label></div></div>
     <div class="box"><div class="box-h"><h3>账号</h3></div><div class="box-b au-set">${(() => { const a = ACC.list.find(x => x.id === ME) || {}; return `<div class="au-out">${av(ME, 'md')}<span><b>${esc(USERS[ME].name)}</b><i>${a.phone ? '+86 ' + mask(a.phone) : a.email ? esc(a.email) : a.apple ? 'Apple 账号' : ''}</i></span></div>`; })()}<div class="au-2"><button class="pill lt" data-act="switch-acc">切换账号</button><button class="pill lt au-lo" data-act="logout">退出登录</button></div><a class="set-del" href="#me-close">注销账号</a></div></div>
     ${setExtra()}
-    <div class="box"><div class="box-h"><h3>原型 · 切换身份</h3></div><div class="box-b" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">${roleBox}${STATE.seller ? '<button class="more" data-act="unseller">撤回卖家资格（重新体验邀请码）</button>' : ''}</div></div>`;
+    ${protoOn() ? `<div class="box"><div class="box-h"><h3>原型 · 切换身份（演示模式）</h3></div><div class="box-b" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">${roleBox}${STATE.seller ? '<button class="more" data-act="unseller">撤回卖家资格（重新体验邀请码）</button>' : ''}</div></div>` : ''}`;
   if (MESUB[t]) body = MESUB[t]();
   const TT = ME_SUB_T;
   return `<div class="wrap msub"><div class="sub-h"><button class="hd-back" data-act="back" aria-label="返回">${IC.back}</button><h1>${TT[t]}</h1></div>${body}</div>`;
@@ -6326,7 +6382,7 @@ ROUTES.seller = arg => {
     <div class="box"><div class="box-h"><h3>往月</h3></div><div class="tw"><table class="t"><tbody>${[['八月',59,2640],['七月',38,1720],['六月',51,2310]].map(([m,n,g]) => `<tr><td style="font-weight:600">${m}</td><td class="n">${n} 单</td><td class="r n">${yuan2(g)}</td><td class="r n neg">−${yuan2(g*.0172)}</td><td class="r n">${yuan2(g*(1-.0172))}</td><td class="r"><span class="tag c-green">已到账</span></td></tr>`).join('')}</tbody></table></div></div>`; }
   if (t === 'products') body = `<div class="shopband grain c-pink sp-shop"><div style="position:relative;z-index:2;min-width:0"><span class="lab" style="color:var(--ink)">我的店铺</span><div class="x" style="margin-top:8px">${esc(u.shop)}</div></div><div class="sp-acts"><button class="pill sm lt" data-act="edit-store">编辑店铺</button><a class="pill sm" data-go="user-${ME}" data-tab="shop">买家眼中的店</a></div></div>
     <div class="sp-h"><h3>${SELLER_PRODUCTS.length} 件资源</h3><a class="pill" data-go="seller-upload">${IC.plus}上架新资源</a></div>
-    <div style="display:flex;flex-direction:column;gap:10px">${SELLER_PRODUCTS.map(sp => { const p = sp.pid ? P(sp.pid) : null; const title = p ? p.title : sp.title, cat = p ? p.cat : sp.cat, cv = p ? p.cover : sp.cover; const sc = {'已上架':'green','审核中':'yellow','已驳回':'orange','已下架':'violet'}[sp.st];
+    <div style="display:flex;flex-direction:column;gap:10px">${SELLER_PRODUCTS.map(sp => { const p = sp.pid ? P(sp.pid) : null; const title = p ? p.title : sp.title, cat = p ? p.cat : sp.cat, cv = p ? p.cover : sp.cover; const sc = {'已上架':'green','审核中':'yellow','待补充':'orange','已驳回':'orange','已下架':'violet'}[sp.st];
       return `<div class="li c-${CATS[cat].c}" style="grid-template-columns:72px minmax(0,1fr) auto"><img src="${cover(cv, 3, 160, 160)}" alt="" style="width:72px;height:72px"><div style="min-width:0"><h4>${esc(title)}</h4><div class="m" style="margin:4px 0 0">${sp.note ? esc(sp.note) : `${sp.views.toLocaleString()} 次浏览 · ${sp.sales} 单 · 下单率 ${sp.conv}`}</div></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="tag c-${sc}">${sp.st}</span>${p ? `<a class="pill sm lt" data-go="item-${p.id}">查看</a><button class="pill sm" data-act="sp-manage" data-id="${p.id}">管理</button>` : sp.st === '已驳回' ? `<button class="pill sm" data-go="seller-upload">去修改</button>` : ''}</div></div>`; }).join('')}</div>`;
   if (t === 'collab'){ const mine = CO.orders.filter(o => o.to === ME), sent = CO.orders.filter(o => o.from === ME), r = repOf(ME), todo = coTodo().length;
     const held = mine.filter(o => ['paid','delivered','revising'].includes(o.st) && o.price).reduce((a, o) => a + coNet(o.price), 0), got = mine.filter(o => o.st === 'done' && o.price).reduce((a, o) => a + coNet(o.price), 0);
@@ -6389,7 +6445,12 @@ ACTIONS['up-vlab'] = () => visLab({tpl:UI.up.look.tpl, pal:UI.up.look.pal, onPic
 ACTIONS['up-look'] = b => { UI.up.look[b.dataset.k] = b.dataset.v; rerender(); };
 ACTIONS['up-set'] = b => { UI.up[b.dataset.k] = b.dataset.v; if (b.dataset.k === 'cat') UI.up.tpl = upTpl(b.dataset.v, UI.up.group || (GROUP_CATS.visual.includes(b.dataset.v) && !GROUP_CATS.sound.includes(b.dataset.v) ? 'visual' : 'sound')); rerender(); };
 ACTIONS['up-file'] = () => { if (UI.up.file) return; const d = $('[data-act="up-file"]'); d.innerHTML = `<div class="ring-p" id="upR" style="--p:0;width:56px;height:56px"></div><b>上传中…</b>`; const t0 = performance.now(); const s = n => { const k = Math.min(1, (n - t0)/1100); const r = $('#upR'); if (!r) return; r.style.setProperty('--p', k*100); if (k < 1) requestAnimationFrame(s); else { UI.up.file = true; rerender(); } }; requestAnimationFrame(s); };
-ACTIONS['up-submit'] = () => { if (!canSpeak()) return; if (!$('#upOrig')?.checked){ const o = $('#upOrig'); o?.scrollIntoView({block:'center', behavior:'smooth'}); o && fxPop(o.parentElement, 'fx-shake', 300); toast('请先勾选原创 / 授权承诺', 'orange', 'x'); return; } SELLER_PRODUCTS.unshift({title:UI.up.title + ' ' + UI.up.en, cat:UI.up.cat, sub:CATS[UI.up.cat].subs ? (UI.up.group === 'visual' ? 'vis' : 'aud') : undefined, st:'审核中', views:0, sales:0, conv:'—', cover:{...UI.up.look, txt:UI.up.en}, note:'刚刚提交 · 通常 1–2 个工作日'}); UI.up.file = false; toast('已提交，审核通过后自动上架', 'yellow'); navUp('seller-products'); };
+ACTIONS['up-submit'] = () => { if (!canSpeak()) return; if (!$('#upOrig')?.checked){ const o = $('#upOrig'); o?.scrollIntoView({block:'center', behavior:'smooth'}); o && fxPop(o.parentElement, 'fx-shake', 300); toast('请先勾选原创 / 授权承诺', 'orange', 'x'); return; } const U = UI.up, spId = 'sp' + Date.now().toString(36), title = U.title + ' ' + U.en, look = {...U.look, txt:U.en};
+  SELLER_PRODUCTS.unshift({id:spId, title, cat:U.cat, sub:CATS[U.cat].subs ? (U.group === 'visual' ? 'vis' : 'aud') : undefined, st:'审核中', views:0, sales:0, conv:'—', cover:look, note:'刚刚提交 · 通常 1–2 个工作日'});
+  // 送进后台待审核：带上买家会看到的内容和权属材料的快照（审核员不用回头找）
+  REVIEW.push({id:'r' + spId, kind:'商品', sp:spId, title, who:ME, cat:CATS[U.cat].cn, time:fmtDT(Date.now()).slice(0, 11), flags:['新上架'], cover:look,
+    price:+U.price || 0, en:U.en, desc:U.desc || '', files:'CITY_NOISE.zip · 612 MB', tpl:({sample:'敲打 16 个 pad', preset:'XY 板 + 键盘弹奏', video:'12 秒视频循环'})[U.tpl] || '', lic:['发行作品', '演出与直播', '切片改编'], orig:Date.now(), decl:U.decl || null});
+  admSave(); UI.up.file = false; toast('已提交，审核通过后自动上架', 'yellow'); navUp('seller-products'); };
 document.addEventListener('input', e => { const k = e.target.dataset?.up; if (!k) return; UI.up[k] = k === 'price' ? (parseFloat(e.target.value) || 0) : e.target.value; const m = {title:'pv-t', en:'pv-en'}; if (m[k]) $('#' + m[k]).textContent = e.target.value; if (k === 'price'){ $('#pv-p').textContent = '¥' + UI.up.price; $('#up-est').textContent = `每单到手约 ¥${(UI.up.price*(1 - PLAT - .01)).toFixed(2)}（扣 ${PLAT*100}% 平台费和支付手续费）`; } });
 
 function onboarding(){
@@ -6439,7 +6500,8 @@ const ADM_TABS = [
   ['params', '平台参数', '系统', ['super', 'fin']],
   ['audit', '操作日志', '系统', ['super']]
 ];
-const admMe = () => ADM.staff.find(s => s.id === ADM.me && s.on) || ADM.staff.find(s => s.on) || ADM.staff[0];
+// 当前后台账号：连着后端时就是登录的后台账号（角色以后端为准）；纯原型演示用本地的成员列表
+const admMe = () => API.on() ? (STAFF.me || {id:'-', name:'未登录', role:'none', on:false}) : ADM.staff.find(s => s.id === ADM.me && s.on) || ADM.staff.find(s => s.on) || ADM.staff[0];
 const admCan = tab => (ADM_TABS.find(t => t[0] === tab) || [, , , []])[3].includes(admMe().role);
 const admGuard = tab => { if (STATE.role === 'admin' && admCan(tab)) return true; toast('当前角色没有这个权限', 'orange', 'x'); return false; };
 // 后台页签之间切换 = 页内页签：原地换网址、不新增返回记录、不播翻页动画（同 stab / doc-tab）
@@ -6523,13 +6585,42 @@ ADMV.dash = () => {
 
 /* 审核：驳回要选原因并通知本人；本人的商品状态同步到工作室 */
 const RJ_REASON = {review:['标题或素材用了别人的商标', '没写兼容版本或依赖', '试听素材不合规范', '疑似侵权', '内容含违规信息'], avatar:['不是本人或含他人肖像', '含文字 / 二维码 / 联系方式', '画面不适合公开展示'], apply:['作品不足以证明原创能力', '实名信息不一致', '暂不开放该品类']};
-ADMV.review = () => { const r = REVIEW[0];
-  if (!r) return adH('待审核', '商品、帖子上架前在这里过一遍') + adEmpty('ALL CLEAR', '审完了');
-  return `${adH('待审核', `还剩 ${REVIEW.length} 个 · 键盘 A 通过 / R 驳回`)}
-  <div class="q-card"><img src="${cover(r.cover, 5, 400, 400)}" alt=""><div class="bd"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="tag ${r.kind === '商品' ? 'c-pink' : 'k'}">${r.kind}</span><span class="mut2" style="font-size:13px">${r.cat} · ${r.time}</span></div><h3>${esc(r.title)}</h3><a data-go="user-${r.who}" style="display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer">${uav(r.who)}${esc(uname(r.who))}</a>
-    <div class="flags">${r.flags.map(f => `<span class="flag ${/^⚠|^未|敏感/.test(f) ? 'w' : ''}">${esc(f.replace('⚠ ', ''))}</span>`).join('')}</div>
-    <div class="qact"><button class="pill lg" data-act="rv-ok" style="background:var(--green);color:var(--on)">${IC.check}通过<kbd>A</kbd></button><button class="pill lg lt" data-act="rv-no">${IC.x}驳回<kbd>R</kbd></button></div></div></div>
-  ${REVIEW.length > 1 ? `<div class="ad-next">${REVIEW.slice(1).map(x => `<div><img src="${cover(x.cover, 5, 80, 80)}" alt=""><span>${esc(x.title)}</span></div>`).join('')}</div>` : ''}`;
+/* 待审核：左边是队列，右边是选中这一项的完整详情——买家会看到的内容、来源与授权材料、发布者资质和历史、审核清单。
+   操作：通过 / 要求补充材料（留在队列里，标成「待补充」）/ 驳回 */
+const rvCur = () => REVIEW.find(x => x.id === UI.rvSel) || REVIEW[0];
+const rvWarn = x => x.warn || x.flags.some(f => /^⚠|^未|敏感/.test(f));
+function rvDetail(r){
+  const p = r.kind === '帖子' && r.ref ? (POST(r.ref) || TAKEN_P[r.ref]) : null, a = ADM.acct[r.who] || {}, d = r.decl, done = new Set(r.ck || []), ck = RV_CK[r.kind] || RV_CK['帖子'];
+  const app = ADM.apps.find(x => x.uid === r.who || x.name === uname(r.who)), sells = PRODUCTS.filter(x => x.seller === r.who).length;
+  const downs = Object.values(TAKEN_P).filter(x => x.author === r.who).length, reps = REPORTS.filter(x => repAuthor(x) === r.who).length;
+  const kv = (k, v) => v ? `<span>${k}<b>${v}</b></span>` : '';
+  const body = p ? (BODY[p.id] || [p.ex || '']) : [];
+  const imgs = p ? (p.imgs || (p.img ? [p.img] : [])) : [];
+  return `<div class="rv-hd"><img src="${cover(r.cover, 5, 360, 360)}" alt=""><div class="rv-ht">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="tag ${r.kind === '商品' ? 'c-pink' : 'k'}">${r.kind}</span><span class="mut2" style="font-size:13px">${esc(r.cat)} · ${r.time} 提交</span>${r.st === '待补充' ? stTag('等卖家补充', 'yellow') : ''}</div>
+      <h3>${esc(r.title)}</h3>${r.en ? `<span class="x" style="font-size:14px">${esc(r.en)}</span>` : ''}${r.price != null ? `<b class="num" style="font-size:20px">${r.price ? yuan2(r.price) : '免费'}</b>` : ''}
+      ${r.flags.length ? `<div class="flags">${r.flags.map(f => `<span class="flag ${/^⚠|^未|敏感/.test(f) ? 'w' : ''}">${esc(f.replace('⚠ ', ''))}</span>`).join('')}</div>` : ''}</div></div>
+    ${r.st === '待补充' ? `<p class="ad-warn y">已要求补充：${esc(r.ask || '')}</p>` : ''}
+    <section class="rv-s"><h4>内容</h4>${r.kind === '商品' ? `<div class="ad-kv col">${kv('文件', esc(r.files || ''))}${kv('试听方式', esc(r.tpl || ''))}</div>${r.desc ? `<p class="rv-p">${esc(r.desc)}</p>` : '<p class="mut2">没有填介绍</p>'}`
+      : p ? `${body.map(t => `<p class="rv-p">${esc(t)}</p>`).join('')}${imgs.length ? `<div class="rv-imgs">${imgs.map(s => `<img src="${esc(s)}" alt="">`).join('')}</div>` : ''}${p.tags?.length ? `<p class="mut2">${p.tags.map(t => '#' + esc(t)).join(' ')}</p>` : ''}<button class="pill sm lt" data-act="mod-open" data-id="${p.id}" style="align-self:flex-start">打开原帖</button>` : '<p class="mut2">原帖已经不在了</p>'}</section>
+    ${r.kind === '商品' ? `<section class="rv-s"><h4>来源与授权</h4>
+      ${r.lic ? `<div class="lic">${r.lic.map(x => `<span>${IC.check.replace('<svg', '<svg width="13" height="13"')}${esc(x)}</span>`).join('')}<span class="no">转售原文件</span></div>` : ''}
+      <div class="ad-kv col">${kv('原创 / 授权承诺', r.orig ? '已勾选 · ' + fmtDT(r.orig) : '<em style="color:var(--orange);font-style:normal">没有记录</em>')}${d ? kv('来源', esc(d.src || '')) + kv('AI', esc(d.ai || '')) + kv('人声 / 肖像', esc(d.voice || '')) : ''}</div>
+      ${d?.third?.length ? `<div class="rv-docs">${d.third.map(t => `<div><b>${esc(t.n)}</b><span>${esc(t.lic)}</span>${t.doc ? `<span class="rv-doc">${IC.dl}${esc(t.doc)}</span>` : '<span class="rv-doc no">没附授权文件</span>'}</div>`).join('')}</div>` : ''}
+      ${d ? '' : '<p class="ad-warn y">这次提交没有附来源说明和授权文件（上架表单还没收集这些）。</p>'}</section>` : ''}
+    <section class="rv-s"><h4>发布者</h4><div class="ad-u big">${uav(r.who, 'md')}<span><b>${esc(uname(r.who))}</b><i>@${esc(r.who)} · ${a.verified ? '已实名' : '未实名'}${app ? ' · 入驻申请' + esc(app.st.split(' ')[0]) : ''}</i></span></div>
+      <div class="ad-kv">${kv('在售商品', String(sells))}${kv('被警告', String((a.warns || []).length))}${kv('被下架', String(downs))}${kv('被举报', String(reps))}</div>
+      ${app ? `<p class="mut2" style="font-size:12.5px;margin:0">入驻资料：实名 ${esc(app.real)} · 作品 ${esc(app.link)}</p>` : ''}
+      ${admCan('users') ? `<button class="pill sm lt" data-act="us-open" data-id="${esc(r.who)}" style="align-self:flex-start">在用户管理里查看</button>` : ''}</section>
+    <section class="rv-s"><h4>审核清单 <span class="mut2" style="font-weight:400">${done.size} / ${ck.length}</span></h4><div class="rv-ck">${ck.map((t, i) => `<button class="${done.has(i) ? 'on' : ''}" data-act="rv-ck" data-i="${i}" role="checkbox" aria-checked="${done.has(i)}"><i>${IC.check}</i><span>${esc(t)}</span></button>`).join('')}</div></section>
+    <div class="qact"><button class="pill lg" data-act="rv-ok" style="background:var(--green);color:var(--on)">${IC.check}通过<kbd>A</kbd></button><button class="pill lg lt" data-act="rv-ask">要求补充材料</button><button class="pill lg lt" data-act="rv-no">${IC.x}驳回<kbd>R</kbd></button></div>`;
+}
+ADMV.review = () => {
+  if (!REVIEW.length) return adH('待审核', '商品、帖子上架前在这里过一遍') + adEmpty('ALL CLEAR', '审完了');
+  const r = rvCur(); UI.rvSel = r.id;
+  return `${adH('待审核', `${REVIEW.length} 个 · 点左边切换 · 键盘 A 通过 / R 驳回`)}
+  <div class="rv"><div class="rv-q">${REVIEW.map(x => `<button class="rv-qi ${x === r ? 'on' : ''}" data-act="rv-pick" data-id="${x.id}"><img src="${cover(x.cover, 5, 80, 80)}" alt=""><span><b>${esc(x.title)}</b><i>${x.kind} · ${esc(uname(x.who))} · ${x.time}</i></span>${x.st === '待补充' ? stTag('待补充', 'yellow') : rvWarn(x) ? stTag('注意', 'orange') : ''}</button>`).join('')}</div>
+  <div class="rv-d">${rvDetail(r)}</div></div>`;
 };
 ADMV.avatars = () => adH('头像审核', '用户上传的照片头像，通过后才对外显示') + (AVQ.length ? `<div class="avq">${AVQ.map(q => `<div class="avq-i"><img src="${q.img}" alt="待审核头像"><div style="min-width:0"><b>${esc(uname(q.uid))}</b><span>${esc(q.time)} · 上传的头像</span></div><div class="avq-a"><button class="pill sm" data-act="avq-ok" data-id="${q.id}" style="background:var(--green);color:var(--on)">${IC.check}通过</button><button class="pill sm lt" data-act="avq-no" data-id="${q.id}">${IC.x}驳回</button></div></div>`).join('')}</div>` : adEmpty('ALL CLEAR', '没有待审核的头像'));
 
@@ -6567,7 +6658,7 @@ ADMV.users = () => { const q = fq('users'), f = UI.adf?.us || 'all', L = ledger(
 function usPerm(uid){
   const cS = admCan('staff'), cI = admCan('invites'), cV = admCan('vouchers'); if (!cS && !cI && !cV) return '';
   const sf = ADM.staff.find(s => s.uid === uid), inv = INVITES.filter(i => i.uid === uid);
-  const staff = !cS ? '' : sf ? `<span class="tag c-${ADM_ROLES[sf.role][1] === 'ink' ? 'pink' : ADM_ROLES[sf.role][1]}">${sf.on ? '后台成员' : '已停用'} · ${ADM_ROLES[sf.role][0]}</span><button class="pill sm lt" data-act="us-staff-go">去人员与权限</button>`
+  const staff = !cS ? '' : API.on() ? '<span class="mut2" style="font-size:12.5px">后台成员是独立的后台账号（邮箱 + 动态口令），在服务器上创建，不能直接把 App 用户设成管理员</span>' : sf ? `<span class="tag c-${ADM_ROLES[sf.role][1] === 'ink' ? 'pink' : ADM_ROLES[sf.role][1]}">${sf.on ? '后台成员' : '已停用'} · ${ADM_ROLES[sf.role][0]}</span><button class="pill sm lt" data-act="us-staff-go">去人员与权限</button>`
     : `<select class="inp ad-sel" id="usRole" aria-label="后台角色">${Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}" ${k === 'mod' ? 'selected' : ''}>${n}</option>`).join('')}</select><button class="pill sm" data-act="us-staff" data-id="${esc(uid)}">设为管理员</button>`;
   return `<label class="ad-lab">后台、开店与代金券</label><div class="ad-acts">${staff}${cI ? `<button class="pill sm lt" data-act="us-inv" data-id="${esc(uid)}">${IC.plus}发开店邀请码</button>` : ''}${cV ? `<button class="pill sm lt" data-act="us-vc" data-id="${esc(uid)}">${IC.plus}发代金券<span class="mut2">（余额 ${yuan2(vcBal(uid))}）</span></button>` : ''}</div>
     ${cI && inv.length ? `<div class="ad-mini">${inv.map(i => `<span>${i.code} · ${i.st === '已入驻' ? '已开店' : '未使用'} · ${esc(i.by)} ${i.time}</span>`).join('')}</div>` : ''}`;
@@ -6697,6 +6788,7 @@ ADMV.invites = () => `${adH('邀请码', '商品售卖许可：创作者开店�
 
 /* 人员与权限 */
 ADMV.staff = () => `${adH('人员与权限', '每个后台账号一个角色；停用后不能再登录后台', `<button class="pill sm" data-act="sf-new">${IC.plus}加一个人</button>`)}
+  ${API.on() ? '<p class="ad-warn y">下面还是原型里的演示成员。真实的后台账号在服务器上：第一位超级管理员用 npm run admin:create 创建，之后的成员管理接口（/admin/staff）还没接到这个页面。</p>' : ''}
   <div class="box"><div class="tw"><table class="t"><thead><tr><th>成员</th><th>角色</th><th>状态</th><th>最近操作</th><th></th></tr></thead><tbody>${ADM.staff.map(s => { const last = ADM.audit.find(a => a.by === s.name);
     return `<tr><td>${s.uid ? `<span class="ad-u">${uav(s.uid)}<span><b>${esc(s.name)}</b><i>@${esc(s.uid)}</i></span></span>` : `<b>${esc(s.name)}</b>`}${s.id === admMe().id ? ' <span class="mut2">（当前）</span>' : ''}</td><td><select class="inp ad-sel" data-act-ch="sf-role" data-id="${s.id}" ${s.id === admMe().id ? 'disabled' : ''}>${Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}" ${s.role === k ? 'selected' : ''}>${n}</option>`).join('')}</select></td>
       <td>${s.on ? stTag('启用', 'green') : stTag('停用', '')}</td><td class="mut2 n">${last ? fmtDT(last.ts) : '—'}</td><td class="r">${s.id === admMe().id ? '' : `<button class="pill sm lt" data-act="sf-on" data-id="${s.id}">${s.on ? '停用' : '启用'}</button>`}</td></tr>`; }).join('')}</tbody></table></div></div>
@@ -6719,15 +6811,19 @@ ADMV.audit = () => { const who = UI.adf?.lg || 'all', q = fq('audit'), list = AD
 
 ROUTES.admin = arg => {
   if (arg) UI.adminTab = arg;
-  if (STATE.role !== 'admin') return gate('管理', '只有平台管理员能进入。', `<button class="pill lg" data-act="role" data-v="admin">以管理员身份查看</button>`);
+  if (STATE.role !== 'admin' || !admAllowed()) return API.on()
+    ? gate('管理', '用后台账号登录：邮箱、密码和动态口令。后台账号和 App 账号分开，由超级管理员创建。', `<button class="pill lg" data-act="adm-login">后台登录</button>`)
+    : gate('管理', '管理后台要连上后端、用后台账号登录才能进入。', protoOn() ? `<button class="pill lg" data-act="adm-login">演示：以管理员身份查看</button>` : '');
   const me = admMe(), tabs = ADM_TABS.filter(t => t[3].includes(me.role));
   let t = UI.adminTab; if (!tabs.some(x => x[0] === t)) t = UI.adminTab = tabs[0][0];
   const cnt = {review:REVIEW.length, avatars:AVQ.length, reports:REPORTS.filter(r => r.st === '待处理').length, apply:ADM.apps.filter(a => a.st === '待审核').length, refunds:REFUNDS.filter(r => r.st === '待处理').length, disputes:CO.orders.filter(o => o.st === 'dispute').length};
   if (t === 'review') onMount(() => { const kd = e => { if (e.target.closest('input,textarea,select') || !REVIEW.length || $('#layer .sheet')) return; if (e.key.toLowerCase() === 'a') ACTIONS['rv-ok'](); if (e.key.toLowerCase() === 'r') ACTIONS['rv-no'](); }; document.addEventListener('keydown', kd); onClean(() => document.removeEventListener('keydown', kd)); });
   let g0 = '';
   const nav = tabs.map(([k, l, g]) => { const head = g !== g0 ? `<span class="ad-g">${g}</span>` : ''; g0 = g; return head + `<button class="${t === k ? 'on' : ''}" data-act="atab" data-v="${k}">${l}${cnt[k] ? `<span class="n">${cnt[k]}</span>` : ''}</button>`; }).join('');
-  return `<div class="wrap"><div class="ph ad-ph"><h1 class="x">管理<span class="s">admin</span></h1><label class="ad-who"><span class="tag c-${ADM_ROLES[me.role][1] === 'ink' ? 'pink' : ADM_ROLES[me.role][1]}">${ADM_ROLES[me.role][0]}</span>
-    <select class="inp ad-sel" data-act-ch="adm-me" aria-label="切换后台账号（原型演示用）">${ADM.staff.filter(s => s.on).map(s => `<option value="${s.id}" ${s.id === me.id ? 'selected' : ''}>${esc(s.name)} · ${ADM_ROLES[s.role][0]}</option>`).join('')}</select></label></div>
+  return `<div class="wrap"><div class="ph ad-ph"><h1 class="x">管理<span class="s">admin</span></h1><div class="ad-who"><span class="tag c-${ADM_ROLES[me.role][1] === 'ink' ? 'pink' : ADM_ROLES[me.role][1]}">${ADM_ROLES[me.role][0]}</span>
+    ${API.on() ? `<b style="font-size:14px">${esc(me.name)}</b><span class="mut2" style="font-size:12px">${esc(me.email || '')}</span>`
+      : `<select class="inp ad-sel" data-act-ch="adm-me" aria-label="切换后台账号（原型演示用）">${ADM.staff.filter(s => s.on).map(s => `<option value="${s.id}" ${s.id === me.id ? 'selected' : ''}>${esc(s.name)} · ${ADM_ROLES[s.role][0]}</option>`).join('')}</select>`}
+    <button class="pill sm lt" data-act="adm-out">退出后台</button></div></div>
   <div class="dash ad-dash"><nav class="snav">${nav}</nav><div class="ad-body" style="min-width:0">${(ADMV[t] || ADMV.dash)()}</div></div></div>`;
 };
 
@@ -6759,12 +6855,26 @@ Object.assign(ACTIONS, {
   'rs-pick': b => { $$('#layer .ad-rs .pill').forEach(x => x.classList.toggle('on', x === b)); },
   'rs-go': () => { const t = rsnText(), go = RSN.go; RSN.go = null; closeSheet(); go && go(t); },
   // 待审核
-  'rv-ok': () => { if (!admGuard('review')) return; const r = REVIEW.shift(); if (!r) return; admLog('审核通过', `${r.kind}「${r.title}」`);
-    const sp = r.who === ME && SELLER_PRODUCTS.find(x => x.title === r.title); if (sp){ sp.st = '已上架'; sp.note = ''; }
+  'rv-pick': b => { UI.rvSel = b.dataset.id; rerender(); },
+  'rv-ck': b => { const r = rvCur(), i = +b.dataset.i; if (!r) return; const s = new Set(r.ck || []); s.has(i) ? s.delete(i) : s.add(i); r.ck = [...s]; admSave(); rerender(); },
+  'mod-open': b => { const id = b.dataset.id; if (POST(id)) openPost(id); else toast('内容已经不在了', 'blue'); },
+  'rv-ok': () => { if (!admGuard('review')) return; const r = rvCur(); if (!r) return; REVIEW.splice(REVIEW.indexOf(r), 1); UI.rvSel = null;
+    admLog('审核通过', `${r.kind}「${r.title}」`, `清单 ${(r.ck || []).length}/${(RV_CK[r.kind] || RV_CK['帖子']).length}`);
+    const sp = r.who === ME && SELLER_PRODUCTS.find(x => (r.sp && x.id === r.sp) || x.title === r.title); if (sp){ sp.st = '已上架'; sp.note = ''; }
     notify(r.who, '审核通过', `你提交的${r.kind}「${r.title}」已通过审核${r.kind === '商品' ? '，已经上架' : ''}。`); admSave(); toast(`已通过：${esc(r.title)}`, 'green'); rerender(); },
-  'rv-no': () => { if (!admGuard('review')) return; const r = REVIEW[0]; if (!r) return;
-    rsnSheet(`驳回「${esc(r.title)}」`, 'review', why => { REVIEW.shift(); admLog('审核驳回', `${r.kind}「${r.title}」`, why);
-      const sp = r.who === ME && SELLER_PRODUCTS.find(x => x.title === r.title); if (sp){ sp.st = '已驳回'; sp.note = '驳回原因：' + why; }
+  // 要求补充材料：不驳回，留在队列里等卖家补；卖家那边显示「待补充」和要补什么
+  'rv-ask': () => { if (!admGuard('review')) return; const r = rvCur(); if (!r) return;
+    sheet(`<h3>要求补充：${esc(r.title)}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">可以多选。会通过「CTRL Z 官方」发给发布者，补齐之前不上架。</p><div class="ad-rs" id="askR">${RV_ASK.map(x => `<button class="pill lt" data-act="ask-pick">${esc(x)}</button>`).join('')}</div><label class="ad-lab">具体说明</label><textarea class="inp" id="askX" placeholder="例如：第 3、7 段人声是谁唱的？需要本人签字的授权书"></textarea><button class="pill lg" data-act="rv-ask-go">发给发布者</button>`); },
+  'ask-pick': b => b.classList.toggle('on'),
+  'rv-ask-go': () => { const r = rvCur(); if (!r) return; const picks = $$('#askR .on').map(x => x.textContent), x = $('#askX').value.trim();
+    if (!picks.length && !x){ fxPop($('#askX'), 'fx-shake', 300); toast('选一项或写一句要补什么', 'orange', 'x'); return; }
+    const why = picks.join('；') + (x ? (picks.length ? '。' : '') + x : ''); r.st = '待补充'; r.ask = why;
+    const sp = r.who === ME && SELLER_PRODUCTS.find(s => (r.sp && s.id === r.sp) || s.title === r.title); if (sp){ sp.st = '待补充'; sp.note = '需要补充：' + why; }
+    notify(r.who, '审核需要补充材料', `你提交的${r.kind}「${r.title}」还差一些材料：${why}。补齐后会继续审核，可以直接回复这条通知发给我们。`);
+    admLog('要求补充材料', `${r.kind}「${r.title}」`, why); admSave(); closeSheet(); toast('已发给发布者', 'blue'); rerender(); },
+  'rv-no': () => { if (!admGuard('review')) return; const r = rvCur(); if (!r) return;
+    rsnSheet(`驳回「${esc(r.title)}」`, 'review', why => { REVIEW.splice(REVIEW.indexOf(r), 1); UI.rvSel = null; admLog('审核驳回', `${r.kind}「${r.title}」`, why);
+      const sp = r.who === ME && SELLER_PRODUCTS.find(x => (r.sp && x.id === r.sp) || x.title === r.title); if (sp){ sp.st = '已驳回'; sp.note = '驳回原因：' + why; }
       if (r.ref && r.kind === '帖子') takeDown('post', r.ref, '审核驳回：' + why, true);
       notify(r.who, '审核没有通过', `你提交的${r.kind}「${r.title}」没有通过审核。原因：${why}。修改后可以重新提交。`); admSave(); toast(`已驳回：${esc(r.title)}`, 'orange', 'x'); rerender(); }); },
   // 举报
@@ -8102,7 +8212,7 @@ Object.assign(ACTIONS, {
       <a href="#me-edit">${RIC.pen}编辑资料</a><a href="#me-orders">${IC.dl}订单</a><a href="#me-wallet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M16 14.5h2"/></svg>余额</a><a href="#me-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2-1.2L14.2 3h-4.4l-.4 2.6a7 7 0 00-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 000 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 002 1.2l.4 2.6h4.4l.4-2.6a7 7 0 002-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>设置</a>
       <a href="#seller"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.7 2.7 0 005.33 0 2.7 2.7 0 005.34 0A2.7 2.7 0 0020 9"/><path d="M5 11.5V20h14v-8.5"/><path d="M10 20v-5h4v5"/></svg>工作室</a>`}
       <button class="drw-sw" data-act="vislab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M4 12h3l2-5 3 10 2-6 2 3h4"/></svg>可视化实验室</button><button class="drw-sw drw-thm" data-act="theme">${isDark() ? IC.sun : IC.moon}${isDark() ? '浅色模式' : '深色模式'}</button>${g ? '' : `<button class="drw-sw" data-act="switch-acc">${IC.user}切换账号</button><button class="drw-out" data-act="logout">${IC.back}退出登录</button>`}
-      <div class="drw-f"><span class="lab">原型 · 切换身份</span><div class="roles">${Object.entries(ROLE_NAME).map(([k, l]) => `<button class="${r === k ? 'on' : ''}" data-act="role" data-v="${k}">${l}</button>`).join('')}</div>${STATE.seller ? '<button class="more" data-act="unseller">撤回卖家资格</button>' : ''}</div></nav></div>`;
+      ${protoOn() ? `<div class="drw-f"><span class="lab">原型 · 切换身份（演示模式）</span><div class="roles">${Object.entries(ROLE_NAME).map(([k, l]) => `<button class="${r === k ? 'on' : ''}" data-act="role" data-v="${k}">${l}</button>`).join('')}</div>${STATE.seller ? '<button class="more" data-act="unseller">撤回卖家资格</button>' : ''}</div>` : ''}</nav></div>`;
   }
 });
 
@@ -8324,6 +8434,7 @@ Object.assign(ACTIONS, {
   'do-logout': () => { closeSheet(); signOut(); },
   'switch-acc': () => { closeSheet(); signOut(true); rerender(); AUTH.pending = null; loginSheet('切换到另一个账号'); },
   role: b => { $('#menu')?.remove(); closeSheet(); const r = b.dataset.v; if (r === STATE.role) return;
+    if (!protoOn()){ if (r === 'admin') ACTIONS['adm-login'](); return; }   // 切换身份只在演示模式有效；其余情况进后台必须登录
     if (r === 'guest'){ signOut(true); toast('现在以「访客」身份浏览', 'blue'); rerender(); return; }
     if (r === 'user' && (STATE.role === 'guest' || ACC.out)){ signIn(ME, 'back'); rerender(); return; }
     setRole(r); }
@@ -8879,6 +8990,43 @@ const API = {
     catch(e){ this.setTok(null); return false; } finally { setTimeout(() => this._ref = null, 0); } })(); }
 };
 API.init();
+/* 后台会话：和 App 账号完全分开。令牌只放 sessionStorage（关掉标签页就没了），8 小时过期；401 就退出后台 */
+const STAFF = {
+  tok:null, me:null,
+  load(){ try { const j = JSON.parse(sessionStorage.getItem('ctrlz2.staff') || 'null'); if (j){ this.tok = j.tok; this.me = j.me; } } catch(e){} },
+  save(){ try { this.tok ? sessionStorage.setItem('ctrlz2.staff', JSON.stringify({tok:this.tok, me:this.me})) : sessionStorage.removeItem('ctrlz2.staff'); } catch(e){} },
+  set(tok, s){ this.tok = tok; this.me = {id:s.id, name:s.name, role:s.role, email:s.email, on:true}; this.save(); },
+  drop(tell){ this.tok = this.me = null; this.save(); if (STATE.role === 'admin'){ setRole(API.tok ? 'user' : 'guest', true); if (tell) toast('后台登录已过期，请重新登录', 'blue'); rerender(); } },
+  async req(method, path, body){
+    const h = {}; if (body !== undefined) h['Content-Type'] = 'application/json'; if (this.tok) h.Authorization = 'Bearer ' + this.tok;
+    let res; try { res = await fetch(API.base + path, {method, headers:h, body: body === undefined ? undefined : JSON.stringify(body)}); }
+    catch(e){ throw Object.assign(new Error('连不上服务器，检查一下网络'), {code:'network'}); }
+    const j = res.headers.get('content-type')?.includes('json') ? await res.json().catch(() => null) : null;
+    if (!res.ok){ if (res.status === 401 && path !== '/admin/auth/login') this.drop(true); throw Object.assign(new Error(j?.error?.message || '请求失败（' + res.status + '）'), {code:j?.error?.code || 'http_' + res.status, status:res.status}); }
+    return j;
+  },
+  // 还有会话就向后端确认一次（被停用 / 过期 / 改了角色都以后端为准）
+  async check(){ if (!this.tok) return false; try { const r = await this.req('GET', '/admin/me'); this.set(this.tok, r.staff); return true; } catch(e){ if (e.status !== 401) apiFail(e); return false; } }
+};
+STAFF.load();
+function admLoginSheet(){
+  sheet(`<h3>后台登录</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">后台账号和 App 账号分开，由超级管理员创建。连续输错会被限制 15 分钟。</p>
+    <label class="ad-lab" for="alE">邮箱</label><input class="inp" id="alE" type="email" autocomplete="username">
+    <label class="ad-lab" for="alP">密码</label><input class="inp" id="alP" type="password" autocomplete="current-password">
+    <label class="ad-lab" for="alT">动态口令（验证器 App 里的 6 位数字）</label><input class="inp" id="alT" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+    <button class="pill lg" data-act="adm-login-go">登录后台</button>`, d => { setTimeout(() => $('#alE', d)?.focus(), 80); $('#alT', d)?.addEventListener('keydown', e => { if (e.key === 'Enter') ACTIONS['adm-login-go']($('[data-act="adm-login-go"]', d)); }); });
+}
+Object.assign(ACTIONS, {
+  // 进后台：连着后端时，有有效会话就直接进，没有就登录；纯原型只有演示模式能进
+  'adm-login': async () => { if (!API.on()){ if (protoOn()){ setRole('admin'); go('admin'); } return; }
+    if (await STAFF.check()){ setRole('admin'); go('admin'); } else admLoginSheet(); },
+  'adm-login-go': async b => { const e = $('#alE').value.trim(), p = $('#alP').value, t = $('#alT').value.trim();
+    if (!e || !p){ fxPop(!e ? $('#alE') : $('#alP'), 'fx-shake', 300); return; } if (b.disabled) return; b.disabled = true;
+    try { const r = await STAFF.req('POST', '/admin/auth/login', {email:e, password:p, ...(t ? {totp:t} : {})}); STAFF.set(r.token, r.staff);
+      closeSheet(); setRole('admin'); toast(`已登录后台：${esc(r.staff.name)} · ${ADM_ROLES[r.staff.role]?.[0] || r.staff.role}`, 'green', 'check'); go('admin'); }
+    catch(err){ b.disabled = false; apiFail(err); if (err.code === 'totp_required') $('#alT')?.focus(); } },
+  'adm-out': async () => { try { if (STAFF.tok) await STAFF.req('POST', '/admin/auth/logout'); } catch(e){} STAFF.drop(); setRole(API.on() && API.tok ? 'user' : API.on() ? 'guest' : 'user', true); toast('已退出后台', 'blue'); go('home'); }
+});
 const LIVE = {u:new Set(), prof:{}, cmts:{}, pendingId:null};
 const apiFail = e => { toast(esc(e?.message || '出错了，请稍后再试'), 'orange', 'x'); if (e?.code === 'phone_required') setTimeout(() => ACTIONS['live-bind'](), 500); };   // 没绑手机号：直接弹出绑定
 const liveUser = () => API.on() && STATE.role === 'user';
@@ -8947,6 +9095,7 @@ async function liveBoot(){
       if (r.needsPhone) setTimeout(() => ACTIONS['live-bind'](), 600);
     }
     if (API.tok) liveMe(await API.req('GET', '/me'));
+    if (STAFF.tok && /^#admin/.test(location.hash) && await STAFF.check()) setRole('admin', true);   // 刷新后台页面：会话还有效就留在后台
     await liveFeed();
     if (liveUser()) await liveMeExtras();
   } catch(e){ apiFail(e); }
