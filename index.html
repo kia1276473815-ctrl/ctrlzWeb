@@ -8586,7 +8586,7 @@ const API = {
   base: '', tok: null, _ref: null,
   init(){
     const q = new URLSearchParams(location.search).get('api');
-    if (q !== null){ store.set('apiBase', q.trim().replace(/\/+$/, '')); store.set('apiTok', null); history.replaceState(history.state, '', location.pathname + location.hash); }
+    if (q !== null){ store.set('apiBase', q.trim() === 'self' ? location.origin : q.trim().replace(/\/+$/, '')); store.set('apiTok', null); history.replaceState(history.state, '', location.pathname + location.hash); }   // ?api=self：网页和接口在同一个地址（本机测试）
     this.base = store.get('apiBase', ''); this.tok = store.get('apiTok', null);
   },
   on(){ return !!this.base; },
