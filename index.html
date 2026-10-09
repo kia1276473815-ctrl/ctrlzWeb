@@ -878,7 +878,7 @@ footer p{font-size:13px;color:var(--ink-3);text-align:right;line-height:1.8}
 .syn{align-items:stretch}
 .xy{aspect-ratio:auto;min-height:220px;height:100%}
 @media (max-width:1020px){ .xy{aspect-ratio:1.5;height:auto;min-height:0} }
-@media (hover:hover){ .card:hover .cv > img,.slv:hover .cv > img{transform:scale(1.035)} }
+@media (hover:hover){ .card:hover .cv > img{transform:scale(1.035)} .slv:hover .cv > img{transform:scale(1.06)} }
 
 
 /* ===== 深色模式 ===== */
@@ -1992,8 +1992,11 @@ html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
 /* 商品卡：按下回弹；电脑上跟着鼠标倾斜 + 高光 */
 .slv .cv{transition:transform .3s var(--ease),box-shadow .3s}
 .slv:active .cv{transform:scale(.97)}
-.slv .cv.tilt{transition:transform .08s linear,box-shadow .3s;box-shadow:0 18px 34px -16px rgba(20,20,24,.45)}
-.slv .cv::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),rgba(255,255,255,.38),transparent 55%)}
+/* 悬停倾斜：浅色是落在纸上的投影；深色模式下黑影看不见，换成封面两种主色的氛围光（--ga / --gb 由 sleeve() 按封面配色给），影子跟着倾斜方向偏（--sx） */
+.slv .cv.tilt{transition:transform .08s linear,box-shadow .3s;box-shadow:var(--sx,0px) 28px 40px -18px rgba(20,20,24,.55),calc(var(--sx,0px)*.5) 10px 18px -10px rgba(20,20,24,.28)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .slv .cv.tilt{box-shadow:var(--sx,0px) 24px 60px -12px color-mix(in srgb,var(--ga,#FF4FA7) 72%,transparent),calc(var(--sx,0px)*-1) 12px 42px -14px color-mix(in srgb,var(--gb,#2E5BFF) 60%,transparent)} }
+:root[data-theme="dark"] .slv .cv.tilt{box-shadow:var(--sx,0px) 24px 60px -12px color-mix(in srgb,var(--ga,#FF4FA7) 72%,transparent),calc(var(--sx,0px)*-1) 12px 42px -14px color-mix(in srgb,var(--gb,#2E5BFF) 60%,transparent)}
+.slv .cv::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),rgba(255,255,255,.5),transparent 55%)}
 .slv .cv.tilt::after{opacity:1}
 .slv .price{transition:transform .25s var(--spring)} .slv:hover .price{transform:scale(1.08)}
 /* 试听按钮：轻轻「呼吸」，提示可以点 */
@@ -2196,8 +2199,8 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 /* ---- 页签选中：荧光笔色块不再倾斜，保留不规则圆角 ---- */
 .ht-t button.on::after,.mtabs button.on::after,.s-tabs button.on::after{transform:none}
 
-/* ---- 商城分类：选中的那张包一层果冻玻璃（厚边折射 + 高光），戳一下压扁回弹、滑动列表会滞后晃动 ---- */
-.cat.on,.cat.all.on{box-shadow:0 10px 22px -12px var(--lg-sh);transform:translateX(var(--jx,0px)) skewX(var(--jsk,0deg)) scale(var(--jsx,1),var(--jsy,1));transform-origin:var(--jox,50%) var(--joy,50%);transition:none}
+/* ---- 商城分类：选中的那张包一层果冻玻璃（厚边折射 + 高光），戳一下压扁回弹（滑动这一排是原生滚动，不加物理） ---- */
+.cat.on,.cat.all.on{box-shadow:0 10px 22px -12px var(--lg-sh);transform:scale(var(--jsx,1),var(--jsy,1));transform-origin:var(--jox,50%) var(--joy,50%);transition:none}
 /* 选中的分类卡 = 一块液态玻璃盖在纸上：中间几乎全透明（不加乳白、不加大块高光，避免塑料感），
    只有边缘折射（LG）+ 发丝级的镜面高光边 + 一点点粉蓝色散，外圈一道墨色描边表示选中 */
 .cjelly{position:absolute;inset:0;z-index:3;border-radius:inherit;pointer-events:none;overflow:hidden;background:none;backdrop-filter:saturate(1.15) brightness(1.03);-webkit-backdrop-filter:saturate(1.15) brightness(1.03);
@@ -4023,30 +4026,127 @@ SCENES.pack = B => {
     gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(.5, 'rgba(255,255,255,.42)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
     g.fillStyle = gr; g.fillRect(0, 0, w, h); g.restore(); g.restore();
   }
+  /* 玩得太猛会炸：揉 / 甩（光标或手指在袋子上快速移动）、连着捏，都往「压力」E 里加，E 随时间慢慢泄掉；
+     攒到一半袋子开始鼓起来、快满时发抖 + 一声上扬的嘶声预警，满了就炸开：碎片四溅，
+     蹦出一把带物理的 sample 小球（重力、弹墙、互相碰撞、落地压扁），点一下发出它的声音、被弹起来；点空地把附近的球推开。
+     翻到别的海报、或放着不管 25 秒，袋子重新封好（小球收回中心，袋子弹出来） */
+  const TH = 1.6, TAU = 1200;
+  const SB = [['kick','KICK','pink'], ['snare','SNARE','blue'], ['hat','HAT','yellow'], ['clap','CLAP','orange'], ['tom','TOM','green'], ['perc','BELL','violet'], ['sub','808','pink'], ['rim','RIM','blue'], ['shk','SHK','yellow'], ['stab','STAB','orange'], ['ohat','OPEN','green'], ['crash','CRASH','violet']];
+  const KEYS = [[60,'C'], [64,'E'], [67,'G'], [69,'A'], [72,'C²'], [62,'D']];
+  let E = 0, rise = false, lm = null, st = 'bag', balls = [], bits = [], hov = null, tS = 0, tIn = -1e9, lastP = 0;
+  const rip = [], S = () => B.m/400;   // 速度 / 重力按海报大小缩放，手机和电脑上手感一样
+  const strain = () => Math.max(0, Math.min(1, (E/TH - .55)/.45));   // 每秒捏 1 下没反应；2 下开始鼓；2.5 下以上捏几下就炸
+  const pump = v => { E += v; lastP = performance.now(); };
+  const eb = x => 1 + 2.70158*Math.pow(x - 1, 3) + 1.70158*Math.pow(x - 1, 2);   // 回弹缓动
+  function burst(){
+    st = 'burst'; lastP = performance.now(); E = 0; rise = false; pressed = false; bag?.press(false); hov = null;
+    const r = box(), cx = r.x + r.w/2, cy = r.y + r.h/2, s = S(), n = IS_MOBILE ? 14 : 18;
+    ripple(rip, cx, cy, r.w*.25, INK.pink, 1); ripple(rip, cx, cy, r.w*.1, INK.blue, .8);
+    bits = Array.from({length: IS_MOBILE ? 18 : 28}, (_, i) => { const a = Math.random()*Math.PI*2, v = (.35 + Math.random()*.7)*s;
+      return {x:cx + Math.cos(a)*r.w*.25, y:cy + Math.sin(a)*r.h*.25, vx:Math.cos(a)*v, vy:Math.sin(a)*v - .35*s, rot:Math.random()*6.3, vr:(Math.random() - .5)*.02,
+        sz:(8 + Math.random()*16)*s, c:[INK.pink, INK.pink, INK.pink, INK.blue, INK.yellow, INK.orange, '#E9EAEE'][i % 7], sh:i % 3, life:1}; });
+    let di = 0, ni = 0;
+    balls = Array.from({length:n}, (_, i) => { const a = -Math.PI/2 + (Math.random() - .5)*Math.PI*1.6, v = (.55 + Math.random()*.6)*s;
+      const k = i % 3 === 2 ? {n:KEYS[ni % KEYS.length][0], l:KEYS[ni % KEYS.length][1], c:['green', 'violet', 'blue'][ni++ % 3]} : (([d, l, c]) => ({d, l, c}))(SB[di++ % SB.length]);
+      return {...k, x:cx + (Math.random() - .5)*r.w*.4, y:cy + (Math.random() - .5)*r.h*.3, vx:Math.cos(a)*v, vy:Math.sin(a)*v, r:B.m*(.055 + Math.random()*.03), rot:0, q:0, hv:0, tone:Math.random()*.5}; });
+    if (AU.init()){ const t0 = AU.ctx.currentTime, o = AU.bus('tap', .9); AU.drum('kick', t0, 0, o, 1); AU.drum('sub', t0, .2, o, .6); AU.drum('clap', t0 + .004, .2, o, .7); AU.drum('crash', t0 + .01, .3, o, .7); }
+  }
+  const ballAt = (x, y) => { for (let i = balls.length - 1; i >= 0; i--){ const b = balls[i]; if (Math.hypot(x - b.x, y - b.y) < b.r*1.15 + 4) return b; } return null; };
+  function hit(b, x){
+    const s = S(); for (const o of balls) if (Math.hypot(o.x - b.x, o.y - b.y) < o.r + b.r + 3) o.zz = 0;   // 连同挨着它的一起叫醒，压在上面的球不会悬空
+    b.vy = -(.85 + Math.random()*.35)*s; b.vx += (b.x - x)/b.r*.18*s + (Math.random() - .5)*.12*s; b.q = .55;
+    ripple(rip, b.x, b.y, b.r, INK[b.c], .7); lastP = performance.now();
+    if (!AU.init()) return; const now = AU.ctx.currentTime, o = AU.bus('tap', .9);
+    if (b.n){ AU.send('tap', .4); AU.note(b.n, now, .25, {cut:.6, res:.35, atk:0, rel:.6, det:.18, wav:'triangle', gain:.24}, o); } else AU.drum(b.d, now, b.tone, o, .9);
+  }
+  const push = (x, y) => { const s = S(), R = B.m*.4; for (const b of balls){ const dx = b.x - x, dy = b.y - y, d = Math.hypot(dx, dy) + 1; if (d < R){ const k = (1 - d/R)*.6*s; b.vx += dx/d*k; b.vy += dy/d*k - k*.5; b.zz = 0; } }
+    ripple(rip, x, y, 8, inkA(.5), .6); lastP = performance.now(); };
+  /* 小球：半隐式欧拉，分几小步走；地面 / 两侧 / 海报顶边反弹，球与球按面积当质量做弹性碰撞（慢速接触不再反弹）。
+     「睡眠」：连续 SL 帧几乎没动的球直接冻住（堆在一起的球否则会被重力和碰撞来回推着细细地抖）；
+     被点、被推、被快速撞到才醒。醒着的球慢慢挨上睡着的球时，把睡着的当成固定的墙 */
+  const SL = 30;
+  function physics(W, H, dt){
+    const s = S(), gy = .0022*s, top = B.full.y, e = .72, steps = Math.ceil(dt/12), h = dt/steps;
+    for (const b of balls){ b.px = b.x; b.py = b.y; }
+    for (let k = 0; k < steps; k++){
+      for (const b of balls){ if (b.zz > SL){ b.vx = b.vy = 0; continue; }
+        b.vy += gy*h; b.x += b.vx*h; b.y += b.vy*h; b.rot += b.vx*h/b.r;
+        if (b.x < b.r){ b.x = b.r; b.vx = Math.abs(b.vx)*e; } else if (b.x > W - b.r){ b.x = W - b.r; b.vx = -Math.abs(b.vx)*e; }
+        if (b.y < top + b.r){ b.y = top + b.r; b.vy = Math.abs(b.vy)*e; }
+        if (b.y > H - b.r){ b.y = H - b.r; if (b.vy > 0){ b.q = Math.max(b.q, Math.min(.45, b.vy/s*.35)); b.vy = b.vy < .03*s ? 0 : -b.vy*e; } b.vx *= Math.pow(.995, h); } }
+      for (let i = 0; i < balls.length; i++) for (let j = i + 1; j < balls.length; j++){
+        const a = balls[i], c = balls[j], za = a.zz > SL, zc = c.zz > SL; if (za && zc) continue;
+        const dx = c.x - a.x, dy = c.y - a.y, d = Math.hypot(dx, dy) || .01, m = a.r + c.r; if (d >= m) continue;
+        const nx = dx/d, ny = dy/d, vn = (c.vx - a.vx)*nx + (c.vy - a.vy)*ny;
+        if (za || zc){
+          if (vn < -.08*s) a.zz = c.zz = 0;   // 撞得快：叫醒，按普通碰撞算
+          else { const w = za ? c : a, sg = za ? 1 : -1, v2 = (w.vx*nx + w.vy*ny)*sg; w.x += nx*(m - d)*sg; w.y += ny*(m - d)*sg; if (v2 < 0){ w.vx -= v2*nx*sg; w.vy -= v2*ny*sg; } continue; } }
+        const ma = a.r*a.r, mc = c.r*c.r, o = (m - d)/(ma + mc);
+        a.x -= nx*o*mc; a.y -= ny*o*mc; c.x += nx*o*ma; c.y += ny*o*ma;
+        if (vn >= 0) continue; const J = -(1 + (vn < -.05*s ? .8 : 0))*vn/(1/ma + 1/mc);
+        a.vx -= J*nx/ma; a.vy -= J*ny/ma; c.vx += J*nx/mc; c.vy += J*ny/mc; } }
+    for (const b of balls){ b.q *= Math.pow(.86, dt/16); const d = Math.abs(b.x - b.px) + Math.abs(b.y - b.py);
+      if (d < .15*s) b.vx *= .8;   // 几乎不动的球加一点滚动阻尼，停得干脆
+      b.zz = d < .35*s*dt/16 ? (b.zz || 0) + 1 : 0; }
+  }
+  function drawBits(g, dt){ const gy = .0018*S();
+    for (let i = bits.length - 1; i >= 0; i--){ const p = bits[i]; p.vy += gy*dt; p.x += p.vx*dt; p.y += p.vy*dt; p.rot += p.vr*dt; p.life -= dt/1400; if (p.life <= 0){ bits.splice(i, 1); continue; }
+      g.save(); g.globalAlpha = Math.min(1, p.life*1.6); g.translate(p.x, p.y); g.rotate(p.rot); g.fillStyle = p.c; g.beginPath();
+      if (p.sh === 0){ g.moveTo(0, -p.sz*.6); g.lineTo(p.sz*.5, p.sz*.45); g.lineTo(-p.sz*.55, p.sz*.3); } else if (p.sh === 1) g.rect(-p.sz*.5, -p.sz*.18, p.sz, p.sz*.36); else g.arc(0, 0, p.sz*.4, Math.PI, 0);
+      g.closePath(); g.fill(); g.restore(); } }
+  // k：封袋进度（0 = 原位，1 = 全部收回袋子中心）
+  function drawBalls(g, t, k){
+    const r0 = box(), cx = r0.x + r0.w/2, cy = r0.y + r0.h/2, e = k*k, P = b => [b.x + (cx - b.x)*e, b.y + (cy - b.y)*e, b.r*(1 - e)];
+    g.globalCompositeOperation = BL();
+    for (const b of balls){ const [x, y, R] = P(b); if (R < .5) continue; g.save(); g.translate(x, y + R*b.q*.3); g.scale(1 + b.q*.3, 1 - b.q*.3); g.fillStyle = INK[b.c]; g.beginPath(); g.arc(0, 0, R, 0, Math.PI*2); g.fill(); g.restore(); }
+    g.globalCompositeOperation = 'source-over'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (const b of balls){ const [x, y, R] = P(b); if (R < 4) continue; b.hv += ((b === hov ? 1 : 0) - b.hv)*.25;
+      g.save(); g.translate(x, y + R*b.q*.3); g.rotate(b.rot); g.fillStyle = '#141418'; g.font = `800 ${Math.max(9, R*.36)}px Archivo, sans-serif`; g.fillText(b.l, 0, 1); g.restore();
+      if (b.hv > .02){ g.save(); g.globalAlpha = b.hv; g.strokeStyle = INKC(); g.lineWidth = 2.5; g.setLineDash([7, 6]); g.lineDashOffset = -t/40; g.beginPath(); g.arc(x, y, R + 6, 0, Math.PI*2); g.stroke(); g.restore(); } }
+    g.textAlign = 'start'; g.textBaseline = 'alphabetic';
+  }
+  // 袋子：压力过半开始鼓、快满时发抖；重新封好时从 0 弹出来
+  function paintBag(g, W, H, t, idle){
+    const k = strain(), pin = Math.min(1, (performance.now() - tIn)/520), pop = pin < 1 ? eb(pin) : 1;
+    const r = box(), cx = r.x + r.w/2, cy = r.y + r.h/2, s = (1 + k*.09 + Math.sin(t*.05)*k*.012)*pop;
+    g.save(); g.translate(cx + (Math.random() - .5)*k*k*6, cy + (Math.random() - .5)*k*k*4); g.scale(s, s*(1 - k*.03)); g.translate(-cx, -cy);
+    if (mode !== 'gl') flat(g, t);
+    else { bag.size(W, H); bag.point(nx, ny);
+      // 手机上没人碰时 30 帧够了，省电；有人碰就满帧
+      if (!FX.lite || !idle || pressed || k > 0 || (tick++ & 1) === 0) bag.frame();
+      const a = Math.min(1, (performance.now() - t3)/320);   // 3D 好了之后淡入，盖住 2D 袋子
+      if (a < 1){ flat(g, t); g.globalAlpha = a; }
+      g.drawImage(bag.canvas, 0, 0, W, H); g.globalAlpha = 1; }
+    g.restore();
+  }
   return {
     draw(g, W, H, t, dt){
       if (pressed && !B.ptr.down && performance.now() - pt > 160){ pressed = false; bag?.press(false); }
       sq += ((pressed ? 1 : 0) - sq)*Math.min(1, dt/90);
       const idle = !B.ptr.in && !B.ptr.down;
       if (idle){ nx = Math.sin(t/1700)*.4; ny = Math.sin(t/2300)*.18; }
-      if (mode !== 'gl'){ flat(g, t); return; }
-      if (pap){
+      E *= Math.exp(-dt/TAU); if (E < TH*.3) rise = false;
+      if (st === 'bag'){ if (E > TH) burst(); else if (!rise && strain() > .5 && AU.init()){ rise = true; AU.drum('rise', AU.ctx.currentTime, .5, AU.bus('tap', .9), .3); } }
+      else if (st === 'burst' && performance.now() - lastP > 25000){ st = 'seal'; tS = performance.now(); hov = null; }
+      if (mode === 'gl' && pap){
         if (!papOn){ pap.setSpeed(.22); papOn = true; }
         if (dk !== isDark()){ dk = isDark(); pap.setUniforms(paperU(pap._P, dk)); }
         g.drawImage(pap.canvasElement, B.full.x, B.full.y, B.full.w, B.full.h);
       }
-      bag.size(W, H); bag.point(nx, ny);
-      // 手机上没人碰时 30 帧够了，省电；有人碰就满帧
-      if (!FX.lite || !idle || pressed || (tick++ & 1) === 0) bag.frame();
-      const a = Math.min(1, (performance.now() - t3)/320);   // 3D 好了之后淡入，盖住 2D 袋子
-      if (a < 1){ flat(g, t); g.globalAlpha = a; }
-      g.drawImage(bag.canvas, 0, 0, W, H); g.globalAlpha = 1;
+      if (st === 'bag') paintBag(g, W, H, t, idle);
+      else { physics(W, H, dt); const k = st === 'seal' ? Math.min(1, (performance.now() - tS)/650) : 0; drawBits(g, dt); drawBalls(g, t, k);
+        if (k >= 1){ st = 'bag'; balls = []; bits = []; tIn = performance.now(); } }
+      g.globalCompositeOperation = BL(); drawRipples(g, rip, dt); g.globalCompositeOperation = 'source-over';
     },
-    hot(x, y){ return onBag(x, y) ? 'strum' : null; },
-    claims(x, y){ return onBag(x, y); },
-    move(x, y){ nx = Math.max(-1, Math.min(1, x/B.W*2 - 1)); ny = Math.max(-1, Math.min(1, y/B.H*2 - 1)); },
-    down(x, y){ if (!onBag(x, y)) return; pressed = true; pt = performance.now(); bag?.press(true); crinkle(); },
-    leave(){ if (pap && papOn){ pap.setSpeed(0); papOn = false; } },
+    hot(x, y){ if (st === 'bag') return onBag(x, y) ? 'strum' : null; hov = st === 'burst' ? ballAt(x, y) : null; return hov ? 'sound' : null; },
+    claims(x, y){ return st === 'bag' ? onBag(x, y) : !!ballAt(x, y); },
+    move(x, y){ nx = Math.max(-1, Math.min(1, x/B.W*2 - 1)); ny = Math.max(-1, Math.min(1, y/B.H*2 - 1));
+      const now = performance.now(); if (st === 'bag' && lm && onBag(x, y)){ const d = Math.max(8, now - lm.t); if (d < 120) pump(Math.min(4, Math.hypot(x - lm.x, y - lm.y)/d/S())*d/1000*.9); } lm = {x, y, t:now}; },
+    down(x, y){ if (st === 'burst'){ const b = ballAt(x, y); if (b) hit(b, x); else push(x, y); return; }
+      if (st !== 'bag' || !onBag(x, y)) return; pressed = true; pt = performance.now(); bag?.press(true); crinkle(); pump(.5); },
+    busy(){ return st === 'seal' || (st === 'burst' && (bits.length > 0 || balls.some(b => !(b.zz > SL)))); },
+    away(){ st = 'bag'; balls = []; bits = []; E = 0; rise = false; hov = null; lm = null; tIn = -1e9; },
+    leave(){ hov = null; lm = null; if (pap && papOn){ pap.setSpeed(0); papOn = false; } },
     dispose(){ try { bag?.dispose(); pap?.dispose(); } catch(e){} papEl?.remove(); bag = pap = null; }
   };
 };
@@ -4083,7 +4183,9 @@ function mountBanner(root){
   const box = $('.bn', root), cv = $('canvas', box), g = cv.getContext('2d'), cur = $('.bcur', box), txt = $('.bn-txt', box);
   const B = {F:{x:0, y:0, w:1, h:1}, full:{x:0, y:0, w:1, h:1}, i: UI.bi || 0, prog:0, ptr:{x:0, y:0, in:false, down:false}, touched:false, trans:null, scenes:[], W:0, H:0, m:0, pal: store.get('pal', 0), fine: matchMedia('(pointer:fine)').matches, bg:PAPER};
   const scene = i => B.scenes[i] || (B.scenes[i] = SCENES[SLIDES[i].scene](B));
-  const DUR = 7000; let last = 0, sw = null;
+  const DUR = 7000, IDLE = 10000; let last = 0, sw = null;
+  // 在玩的时候不自动翻页：每次敲 / 捏 / 拖都把这一张的倒计时清零，停手 IDLE 之后才重新开始走
+  const played = () => { B.play = performance.now(); B.prog = 0; };
   const setText = dir => {
     const s = SLIDES[B.i];
     txt.innerHTML = `<span class="bt lab" style="--d:0">${s.kicker}</span><h2 class="bt x" style="--d:1">${s.title}</h2><p class="bt" style="--d:2">${s.sub}</p><div class="bt row" style="--d:3"><a class="pill lg" href="#${s.cta[1]}">${s.cta[0]}${s.price ? `<span style="opacity:.55;font-weight:500">¥${s.price}</span>` : ''}${IC.arrow}</a></div>`;
@@ -4097,7 +4199,7 @@ function mountBanner(root){
     if (B.trans) return; n = (n + SLIDES.length) % SLIDES.length; if (n === B.i) return;
     const snap = document.createElement('canvas'); snap.width = cv.width; snap.height = cv.height; snap.getContext('2d').drawImage(cv, 0, 0);
     if (SLIDES[B.i].scene === 'beat' && GEN.owner === 'home') GEN.stop();
-    scene(B.i).leave?.(); B.trans = {t0:performance.now(), dir, snap}; B.i = n; B.prog = 0; B.bg = SLIDES[n].bg || PAPER; setText(dir); sfx('click');
+    scene(B.i).leave?.(); scene(B.i).away?.(); B.trans = {t0:performance.now(), dir, snap}; B.i = n; B.prog = 0; B.play = 0; B.bg = SLIDES[n].bg || PAPER; setText(dir); sfx('click');
   };
   /* 图形区：宽屏放在右侧并限制长宽比；竖屏放在上方，文字在下方 */
   function frame(CW, CH){ const cs = getComputedStyle(box), top = parseFloat(cs.paddingTop) || 0, gut = parseFloat(cs.paddingLeft) || 16;
@@ -4118,10 +4220,10 @@ function mountBanner(root){
     const [x, y] = pos(e); B.ptr.x = x; B.ptr.y = y; B.ptr.in = e.pointerType !== 'touch' || B.ptr.down; if (e.pointerType !== 'touch') box.classList.add('in');
     cur.style.transform = `translate(${x + B.F.x}px,${y + B.F.y}px)`;
     if (sw && sw.touch && !sw.moved && Math.hypot(x - sw.x, y - sw.y) > 10){ sw.moved = true;
-      if (sw.claimed && !B.trans && Math.abs(x - sw.x) > Math.abs(y - sw.y)){ sw.live = true; B.ptr.down = true; B.touched = true; scene(B.i).down?.(sw.x, sw.y); } }
+      if (sw.claimed && !B.trans && Math.abs(x - sw.x) > Math.abs(y - sw.y)){ sw.live = true; B.ptr.down = true; B.touched = true; played(); scene(B.i).down?.(sw.x, sw.y); } }
     if (sw){ const dx = x - sw.x, dy = y - sw.y; if (!sw.drag && Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy)*1.3 && !sw.claimed) sw.drag = true; if (sw.drag){ const r = dx*.35; cv.style.transform = `translateX(${r}px)`; txt.style.transform = `translateX(${r*.6}px)`; return; } }
     if (onUI(e)) { setCur(null); return; }
-    setCur(B.trans ? null : scene(B.i).hot?.(x, y)); scene(B.i).move?.(x, y, B.ptr.down);
+    setCur(B.trans ? null : scene(B.i).hot?.(x, y)); if (B.ptr.down && !B.trans) played(); scene(B.i).move?.(x, y, B.ptr.down);
   });
   box.addEventListener('pointerenter', e => { if (e.pointerType !== 'touch') B.ptr.in = true; box.classList.add('in'); });
   box.addEventListener('pointerleave', () => { B.ptr.in = false; box.classList.remove('in'); scene(B.i).leave?.(); setCur(null); });
@@ -4133,12 +4235,12 @@ function mountBanner(root){
     if (onUI(e)) return; const [x, y] = pos(e), touch = e.pointerType === 'touch'; B.ptr.x = x; B.ptr.y = y;
     sw = {x, y, drag:false, touch, moved:false, live:false, t0:performance.now(), claimed: touch ? !!scene(B.i).claims?.(x, y) : true};
     if (touch) return;
-    B.ptr.down = true; if (!B.trans){ B.touched = true; scene(B.i).down?.(x, y); setCur(scene(B.i).hot?.(x, y)); }
+    B.ptr.down = true; if (!B.trans){ B.touched = true; played(); scene(B.i).down?.(x, y); setCur(scene(B.i).hot?.(x, y)); }
   });
-  const end = e => { if (e.type === 'pointerup' && sw && sw.touch && !sw.moved && !B.trans && performance.now() - sw.t0 < 600){ const [x, y] = pos(e); B.touched = true; scene(B.i).down?.(x, y); }   // 轻点 = 触发一次
+  const end = e => { if (e.type === 'pointerup' && sw && sw.touch && !sw.moved && !B.trans && performance.now() - sw.t0 < 600){ const [x, y] = pos(e); B.touched = true; played(); scene(B.i).down?.(x, y); }   // 轻点 = 触发一次
     B.ptr.down = false; if (e.pointerType === 'touch') B.ptr.in = false; if (sw && sw.drag){ const dx = pos(e)[0] - sw.x; cv.style.transition = txt.style.transition = 'transform .3s var(--ease)'; cv.style.transform = txt.style.transform = ''; setTimeout(() => { cv.style.transition = txt.style.transition = ''; }, 320); if (Math.abs(dx) > 60) goTo(B.i + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1); } sw = null; };
   box.addEventListener('pointerup', end); box.addEventListener('pointercancel', end);
-  box.addEventListener('keydown', e => { if (e.key === 'ArrowRight') { goTo(B.i + 1, 1); e.preventDefault(); } else if (e.key === 'ArrowLeft') { goTo(B.i - 1, -1); e.preventDefault(); } else if (scene(B.i).key?.(e.key)) { B.touched = true; e.preventDefault(); } });
+  box.addEventListener('keydown', e => { if (e.key === 'ArrowRight') { goTo(B.i + 1, 1); e.preventDefault(); } else if (e.key === 'ArrowLeft') { goTo(B.i - 1, -1); e.preventDefault(); } else if (scene(B.i).key?.(e.key)) { B.touched = true; played(); e.preventDefault(); } });
   ACTIONS['bn-next'] = () => goTo(B.i + 1, 1);
   ACTIONS['bn-prev'] = () => goTo(B.i - 1, -1);
   ACTIONS['bn-to'] = b => { const k = +b.dataset.i; goTo(k, k > B.i ? 1 : -1); };
@@ -4149,7 +4251,8 @@ function mountBanner(root){
     if (CW !== B.CW || CH !== B.CH){ B.CW = CW; B.CH = CH; B.F = frame(CW, CH); B.resized = true; } else B.resized = false;
     const F = B.F; B.W = F.w; B.H = F.h; B.m = Math.min(F.w, F.h); B.full = {x:-F.x, y:-F.y, w:CW, h:CH};
     readAudio(t); B.bg = isDark() ? (SLIDES[B.i].bgd || '#151518') : (SLIDES[B.i].bg || PAPER);
-    const paused = B.ptr.in || B.ptr.down || (GEN.on && GEN.owner === 'home') || B.trans || STATE.settings.rm || MQ.rm.matches;
+    const paused = B.ptr.in || B.ptr.down || (GEN.on && GEN.owner === 'home') || B.trans || STATE.settings.rm || MQ.rm.matches
+      || performance.now() - (B.play || -1e9) < IDLE || scene(B.i).busy?.();   // 刚玩过 / 场景里还有东西在动（样品包炸出的小球）
     box.classList.toggle('paused', !!paused);
     if (!paused){ B.prog += dt/DUR; if (B.prog >= 1) goTo(B.i + 1, 1); }
     const segs = B.segs || (B.segs = $$('.bn-seg button', box)), seg = segs[B.i]; if (seg) seg.style.setProperty('--p', B.prog);
@@ -5072,8 +5175,9 @@ function postCard(p){
 }
 function sleeve(pr){
   const u = USERS[pr.seller], c = CATS[pr.cat], own = STATE.owned.has(pr.id);
+  const cp = COVER_PALS[pr.cover?.pal], gl = k => k === 'ink' ? INK.yellow : INK[k] || INK[c.c];   // 深色模式悬停的氛围光 = 封面两种主色
   return `<article class="slv c-${c.c}" data-go="item-${pr.id}" data-flip="i-${pr.id}">
-    <div class="cv" data-qbox="${pr.id}"><img src="${cover(pr.cover, hash(pr.id) % 50)}" alt="" width="480" height="480">${own ? '<span class="own tag k">已拥有</span>' : pr.price === 0 ? '<span class="own tag" style="background:var(--paper)">免费</span>' : ''}<span class="pv"><button class="pbtn" data-act="qplay" data-id="${pr.id}" aria-label="试听 ${esc(pr.title)}">${IC.play}</button></span></div>
+    <div class="cv" data-qbox="${pr.id}" style="--ga:${gl(cp ? cp.a : c.c)};--gb:${gl(cp ? cp.b : c.c)}"><img src="${cover(pr.cover, hash(pr.id) % 50)}" alt="" width="480" height="480">${own ? '<span class="own tag k">已拥有</span>' : pr.price === 0 ? '<span class="own tag" style="background:var(--paper)">免费</span>' : ''}<span class="pv"><button class="pbtn" data-act="qplay" data-id="${pr.id}" aria-label="试听 ${esc(pr.title)}">${IC.play}</button></span></div>
     <div class="bd"><div class="en"><span class="dot"></span>${esc(pr.en)}</div><h3>${esc(pr.title)}</h3><div class="ft"><span class="price">${pr.price ? '¥' + pr.price : '免费'}${pr.orig ? `<s>¥${pr.orig}</s>` : ''}</span><a class="by" data-go="user-${u.id}">${av(u.id,'sm')}<span>${esc(u.name)}</span></a></div></div></article>`;
 }
 
@@ -5436,8 +5540,9 @@ document.addEventListener('rendered', () => {
   }).catch(() => el.remove());
 });
 
-/* 商城分类卡的果冻物理：一个弹簧，只在有动静时跑 rAF。
-   滑动列表 → 卡片按速度往后拖、停下晃几下；按住 → 以手指位置为中心压扁，松手回弹 */
+/* 商城分类卡的点按反馈：按住 → 以手指位置为中心压扁，松手回弹（一个弹簧，只在有动静时跑 rAF）。
+   滑动这一排完全交给浏览器原生滚动：不要再加滑动时的拖后晃动 / 自制回弹——选中卡带液态玻璃折射，
+   滑动中每帧变形会掉帧，自己接管滚动手感也不如原生 */
 let CAT_LAST = null;
 /* 换了选中的分类：播放「纸 → 液态玻璃」，折射强度也从 0 长到目标值 */
 function catGlassIn(card){
@@ -5451,20 +5556,17 @@ function catGlassIn(card){
 }
 function catJelly(){
   const row = $('.cats'), card = row && $('.cat.on', row); if (card) catGlassIn(card); if (!card || reduced() || row._jl === card) return; row._jl = card;
-  const st = {x:0, vx:0, tx:0, q:0, vq:0, tq:0, raf:0, sx:row.scrollLeft, t:performance.now()};
-  const set = () => { card.style.setProperty('--jx', st.x.toFixed(2) + 'px'); card.style.setProperty('--jsk', (st.x * -.35).toFixed(2) + 'deg');
-    card.style.setProperty('--jsx', (1 + st.q * .05).toFixed(4)); card.style.setProperty('--jsy', (1 - st.q * .08).toFixed(4)); };
-  const tick = () => { st.raf = 0; st.tx *= .82;
-    st.vx = st.vx * .8 + (st.tx - st.x) * .16; st.x += st.vx; st.vq = st.vq * .74 + (st.tq - st.q) * .22; st.q += st.vq; set();
-    if (Math.abs(st.x) + Math.abs(st.vx) + Math.abs(st.tx) + Math.abs(st.tq - st.q) + Math.abs(st.vq) > .01) st.raf = requestAnimationFrame(tick); else { st.x = st.q = 0; set(); } };
+  const st = {q:0, vq:0, tq:0, raf:0};
+  const set = () => { card.style.setProperty('--jsx', (1 + st.q * .05).toFixed(4)); card.style.setProperty('--jsy', (1 - st.q * .08).toFixed(4)); };
+  const tick = () => { st.raf = 0; st.vq = st.vq * .74 + (st.tq - st.q) * .22; st.q += st.vq; set();
+    if (Math.abs(st.tq - st.q) + Math.abs(st.vq) > .01) st.raf = requestAnimationFrame(tick); else { st.q = st.tq; set(); } };
   const kick = () => { if (!st.raf) st.raf = requestAnimationFrame(tick); };
-  row.addEventListener('scroll', () => { const t = performance.now(), dx = row.scrollLeft - st.sx, dt = Math.max(8, t - st.t); st.sx = row.scrollLeft; st.t = t;
-    if (!card.isConnected) return; st.tx = Math.max(-14, Math.min(14, st.tx + dx / dt * 9)); kick(); }, {passive: true});
   card.addEventListener('pointerdown', e => { const r = card.getBoundingClientRect(); card.style.setProperty('--jox', (e.clientX - r.left) + 'px'); card.style.setProperty('--joy', (e.clientY - r.top) + 'px'); st.tq = 1; kick(); }, {passive: true});
   const up = () => { if (st.tq){ st.tq = 0; kick(); } };
   card.addEventListener('pointerup', up); card.addEventListener('pointerleave', up); card.addEventListener('pointercancel', up);
 }
 document.addEventListener('rendered', catJelly);
+
 /* 选中分类卡的插画 = 软胶小物件：SVG 光照滤镜把图形「鼓起来」（轮廓模糊后当高度图），
    点光源跟着光标 / 手指 / 陀螺仪走，高光在胶面上滑动，整个物件跟着往光的方向微微倾斜。
    纯 SVG 滤镜 + CSS，不开 WebGL；原来的敲鼓 / 拧旋钮动画照常播放 */
@@ -6056,7 +6158,7 @@ document.addEventListener('rendered', () => { if (!RV || reduced()) return; if (
 (() => { if (!matchMedia('(hover:hover) and (pointer:fine)').matches) return; let cur = null;
   document.addEventListener('pointermove', e => { const cv = e.target.closest?.('.slv .cv'); if (cur && cur !== cv){ cur.style.transform = ''; cur.classList.remove('tilt'); cur = null; }
     if (!cv || reduced()) return; cur = cv; const r = cv.getBoundingClientRect(), px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
-    cv.classList.add('tilt'); cv.style.transform = `perspective(700px) rotateX(${(.5 - py) * 9}deg) rotateY(${(px - .5) * 11}deg) translateY(-4px)`; cv.style.setProperty('--gx', px * 100 + '%'); cv.style.setProperty('--gy', py * 100 + '%'); }, {passive:true});
+    cv.classList.add('tilt'); cv.style.transform = `perspective(700px) rotateX(${(.5 - py) * 14}deg) rotateY(${(px - .5) * 17}deg) translateY(-8px) scale(1.02)`; cv.style.setProperty('--gx', px * 100 + '%'); cv.style.setProperty('--gy', py * 100 + '%'); cv.style.setProperty('--sx', ((.5 - px) * 18).toFixed(1) + 'px'); }, {passive:true});
 })();
 /* 切换底部页签 / 侧边栏导航时，图标跳一下 */
 document.addEventListener('rendered', () => { const k = routeOf(CUR.hash); if (k === UI._tabFx) return; UI._tabFx = k; $$('.tb a.on svg, #hd .nav a.on svg').forEach(x => fxPop(x, 'fx-up')); });
@@ -6217,7 +6319,11 @@ function inviteSheet(next){ sheet(`<h3>上架作品需要邀请码</h3><p class=
 ACTIONS.sell = () => { if (needLogin() || !canSpeak()) return; if (STATE.role === 'admin'){ toast('管理员身份不能开店', 'orange', 'x'); return; } closeSheet(); if (STATE.seller){ UI.sellerTab = 'upload'; go('seller-upload'); } else inviteSheet('seller-upload'); };
 ACTIONS['inv-check'] = b => {
   const i = $('#inv'), v = i.value.trim().toUpperCase();
-  if (!v.startsWith('CTRLZ-') || v.length < 10){ i.animate([{transform:'translateX(-8px)'},{transform:'translateX(8px)'},{transform:'translateX(-4px)'},{transform:'none'}], {duration:280}); i.style.boxShadow = 'inset 0 0 0 2px var(--orange)'; setTimeout(() => i.style.boxShadow = '', 900); return; }
+  // 只认后台发出的码：不存在 / 绑定给别人 / 被别人用过都不行（自己用过的可以再用，方便撤回资格后重新体验）
+  const rec = INVITES.find(x => x.code === v);
+  const bad = !v.startsWith('CTRLZ-') || v.length < 10 ? '' : !rec ? '没有这个邀请码，检查一下有没有输错' : rec.uid && rec.uid !== ME ? '这个邀请码是发给别人的' : rec.st !== '未使用' && rec.usedBy !== ME ? '这个邀请码已经被用过了' : null;
+  if (bad !== null){ i.animate([{transform:'translateX(-8px)'},{transform:'translateX(8px)'},{transform:'translateX(-4px)'},{transform:'none'}], {duration:280}); i.style.boxShadow = 'inset 0 0 0 2px var(--orange)'; setTimeout(() => i.style.boxShadow = '', 900); if (bad) toast(bad, 'orange', 'x'); return; }
+  if (rec.st === '未使用'){ rec.st = '已入驻'; rec.to = uname(ME); rec.usedBy = ME; admSave(); }
   const r = b.getBoundingClientRect(); burst(r.left + r.width/2, r.top + r.height/2, ['pink','yellow','blue']);
   STATE.seller = true; store.set('seller', true); const next = b.closest('form').dataset.next || 'seller-upload';
   if (next === 'cp'){ toast('开通了，选一下要卖什么', 'pink'); UI.dirty = true; drawCompose(); return; }
@@ -6251,6 +6357,18 @@ const ADM_TABS = [
 const admMe = () => ADM.staff.find(s => s.id === ADM.me && s.on) || ADM.staff.find(s => s.on) || ADM.staff[0];
 const admCan = tab => (ADM_TABS.find(t => t[0] === tab) || [, , , []])[3].includes(admMe().role);
 const admGuard = tab => { if (STATE.role === 'admin' && admCan(tab)) return true; toast('当前角色没有这个权限', 'orange', 'x'); return false; };
+// 后台页签之间切换 = 页内页签：原地换网址、不新增返回记录、不播翻页动画（同 stab / doc-tab）
+const admTab = k => { const h = '#admin-' + k; if (curH() === h) return; UI.adminTab = k; NAVX.inpage = true; navReplace(h); };
+// 按 ID 或昵称找用户（「@」可带可不带）；空串 → ''，找不到 → null
+const findUid = v => { v = String(v || '').trim().replace(/^@/, ''); if (!v) return ''; const all = allUids(), lv = v.toLowerCase(); return all.find(u => u === v) || all.find(u => uname(u).toLowerCase() === lv) || null; };
+const uidList = id => `<datalist id="${id}">${allUids().map(u => `<option value="${esc(u)}">${esc(uname(u))}</option>`).join('')}</datalist>`;
+/* 开店邀请码（商品售卖许可）：可以绑定给某个用户——只有本人能用，并通过「CTRL Z 官方」通知把码发给他 */
+const invCode = () => 'CTRLZ-' + Math.random().toString(36).slice(2, 5).toUpperCase() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase();
+function invIssue(uid){
+  const code = invCode(); INVITES.push({code, by:admMe().name, to:uid ? uname(uid) : '—', uid:uid || null, st:'未使用', time:fmtDT(Date.now()).slice(0, 5)});
+  if (uid) notify(uid, '你收到了开店邀请码', `CTRL Z 邀请你开店，邀请码是 ${code}。在「上架作品」里填入就能开通商品售卖，平台只收 ${+(PLAT*100).toFixed(1)}%。这个邀请码绑定了你的账号，只有你自己能用。`);
+  admLog('生成邀请码', code, uid ? '发给 @' + uname(uid) : '通用'); return code;
+}
 function admLog(act, target, detail = ''){ const me = admMe(); ADM.audit.unshift({ts:Date.now(), by:me.name, role:me.role, act, target, detail}); ADM.audit.length = Math.min(ADM.audit.length, 600); admSave(); }
 const uname = uid => USERS[uid]?.name || uid;
 const uav = (uid, cls = 'sm') => USERS[uid] ? av(uid, cls) : `<span class="av c-${['pink','blue','yellow','orange','green','violet'][hash(uid) % 6]} ${cls}">${esc(String(uid).slice(0, 2).toUpperCase())}</span>`;
@@ -6360,6 +6478,15 @@ ADMV.users = () => { const q = fq('users'), f = UI.adf?.us || 'all', L = ledger(
     return `<tr><td><span class="ad-u">${uav(uid)}<span><b>${esc(uname(uid))}</b><i>@${esc(uid)}${a.verified ? ' · 已实名' : ''}</i></span></span></td><td class="mut2">${USERS[uid] ? esc(USERS[uid].role) : '普通用户'}</td><td>${stTag(st, c)}</td>
       <td class="r n">${L.filter(x => x.buyer === uid || x.seller === uid).length}</td><td class="r n">${(a.warns || []).length}</td><td class="r"><button class="pill sm lt" data-act="us-open" data-id="${esc(uid)}">管理</button></td></tr>`; }).join('') || '<tr><td colspan="6" class="mut">没找到</td></tr>'}</tbody></table></div></div>`;
 };
+/* 用户管理里的「后台与开店」：设为后台成员（超级管理员）、发绑定本人的开店邀请码（运营）；没有权限的部分不显示 */
+function usPerm(uid){
+  const cS = admCan('staff'), cI = admCan('invites'); if (!cS && !cI) return '';
+  const sf = ADM.staff.find(s => s.uid === uid), inv = INVITES.filter(i => i.uid === uid);
+  const staff = !cS ? '' : sf ? `<span class="tag c-${ADM_ROLES[sf.role][1] === 'ink' ? 'pink' : ADM_ROLES[sf.role][1]}">${sf.on ? '后台成员' : '已停用'} · ${ADM_ROLES[sf.role][0]}</span><button class="pill sm lt" data-act="us-staff-go">去人员与权限</button>`
+    : `<select class="inp ad-sel" id="usRole" aria-label="后台角色">${Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}" ${k === 'mod' ? 'selected' : ''}>${n}</option>`).join('')}</select><button class="pill sm" data-act="us-staff" data-id="${esc(uid)}">设为管理员</button>`;
+  return `<label class="ad-lab">后台与开店</label><div class="ad-acts">${staff}${cI ? `<button class="pill sm lt" data-act="us-inv" data-id="${esc(uid)}">${IC.plus}发开店邀请码</button>` : ''}</div>
+    ${cI && inv.length ? `<div class="ad-mini">${inv.map(i => `<span>${i.code} · ${i.st === '已入驻' ? '已开店' : '未使用'} · ${esc(i.by)} ${i.time}</span>`).join('')}</div>` : ''}`;
+}
 function userSheet(uid){
   const a = acctOf(uid), L = ledger().filter(x => x.buyer === uid || x.seller === uid), [st, c] = uState(uid), b = banOf(uid), m = muteOf(uid);
   const posts = POSTS.filter(p => p.author === uid).length + Object.values(TAKEN_P).filter(p => p.author === uid).length, prods = PRODUCTS.filter(p => p.seller === uid).length;
@@ -6372,6 +6499,7 @@ function userSheet(uid){
       <button class="pill sm pk" data-act="us-do" data-v="ban7" data-id="${esc(uid)}">封禁 7 天</button><button class="pill sm pk" data-act="us-do" data-v="ban0" data-id="${esc(uid)}">永久封禁</button>
       ${b || m ? `<button class="pill sm" data-act="us-do" data-v="lift" data-id="${esc(uid)}">解除限制</button>` : ''}<button class="pill sm lt" data-act="us-do" data-v="verify" data-id="${esc(uid)}">${a.verified ? '取消实名标记' : '标记已实名'}</button>
       <button class="pill sm lt" data-act="us-msg" data-id="${esc(uid)}">发站内信</button></div>
+    ${usPerm(uid)}
     ${a.warns.length ? `<label class="ad-lab">警告记录</label><div class="ad-mini">${a.warns.map(w => `<span>${fmtDT(w.ts)} · ${esc(w.reason)}</span>`).join('')}</div>` : ''}
     <label class="ad-lab">最近订单</label><div class="ad-mini">${L.slice(0, 6).map(x => `<span>${fmtDT(x.ts)} · ${x.buyer === uid ? '买' : '卖'} · ${esc(x.title)} · ${yuan2(x.amt)} · ${LST[x.st][0]}</span>`).join('') || '<span>没有订单</span>'}</div></div>`);
 }
@@ -6460,13 +6588,15 @@ ADMV.words = () => `${adH('敏感词', '「拦截」：发帖 / 评论 / 私信�
   <div class="box ad-form"><h3 style="font-size:18px;font-weight:900">试一下</h3><div class="ad-inl"><input class="inp" id="wdT" placeholder="输入一段话看看会不会被拦"><button class="pill sm lt" data-act="wd-test">检测</button></div><span id="wdR" class="mut" style="font-size:13.5px"></span></div>`;
 
 /* 邀请码 */
-ADMV.invites = () => `${adH('邀请码', '创作者开店要用；入驻申请通过时会自动生成一个', `<button class="pill sm pk" data-act="inv-new">${IC.plus}生成一个</button>`)}
-  <div class="box"><div class="tw"><table class="t"><tbody>${INVITES.slice().reverse().map(i => `<tr><td class="n" style="font-weight:800;letter-spacing:.03em">${i.code}</td><td>${i.st === '已入驻' ? `<span style="font-weight:600">${esc(i.to)}</span>` : stTag('未使用', 'yellow')}${i.st !== '已入驻' && i.to !== '—' ? ` <span class="mut2">给 ${esc(i.to)}</span>` : ''}</td><td class="mut2">${esc(i.by)}</td><td class="mut2 n">${i.time}</td><td class="r">${i.st === '未使用' ? `<button class="pill sm lt" data-act="copy" data-v="${i.code}">复制</button>` : ''}</td></tr>`).join('')}</tbody></table></div></div>`;
+ADMV.invites = () => `${adH('邀请码', '商品售卖许可：创作者开店要用。可以发给指定用户（只有本人能用，会通过官方通知发给他），也可以生成通用码；入驻申请通过时会自动生成一个')}
+  <div class="box ad-form"><label class="ad-lab" for="invTo">发给谁（填用户 ID 或昵称；不填 = 通用码，谁拿到都能用）</label>
+    <div class="ad-inl"><input class="inp" id="invTo" list="invUs" placeholder="例如：yuu.td" autocomplete="off"><button class="pill sm pk" data-act="inv-new">${IC.plus}生成</button></div>${uidList('invUs')}</div>
+  <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>邀请码</th><th>状态</th><th>生成人</th><th>时间</th><th></th></tr></thead><tbody>${INVITES.slice().reverse().map(i => `<tr><td class="n" style="font-weight:800;letter-spacing:.03em">${i.code}</td><td>${i.st === '已入驻' ? `<span style="font-weight:600">${esc(i.to)}</span> <span class="mut2">已开店</span>` : stTag('未使用', 'yellow')}${i.st !== '已入驻' ? (i.uid ? ` <span class="mut2">只限 @${esc(uname(i.uid))}</span>` : i.to !== '—' ? ` <span class="mut2">给 ${esc(i.to)}</span>` : ' <span class="mut2">通用</span>') : ''}</td><td class="mut2">${esc(i.by)}</td><td class="mut2 n">${i.time}</td><td class="r">${i.st === '未使用' ? `<button class="pill sm lt" data-act="copy" data-v="${i.code}">复制</button>` : ''}</td></tr>`).join('')}</tbody></table></div></div>`;
 
 /* 人员与权限 */
 ADMV.staff = () => `${adH('人员与权限', '每个后台账号一个角色；停用后不能再登录后台', `<button class="pill sm" data-act="sf-new">${IC.plus}加一个人</button>`)}
   <div class="box"><div class="tw"><table class="t"><thead><tr><th>成员</th><th>角色</th><th>状态</th><th>最近操作</th><th></th></tr></thead><tbody>${ADM.staff.map(s => { const last = ADM.audit.find(a => a.by === s.name);
-    return `<tr><td><b>${esc(s.name)}</b>${s.id === admMe().id ? ' <span class="mut2">（当前）</span>' : ''}</td><td><select class="inp ad-sel" data-act-ch="sf-role" data-id="${s.id}" ${s.id === admMe().id ? 'disabled' : ''}>${Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}" ${s.role === k ? 'selected' : ''}>${n}</option>`).join('')}</select></td>
+    return `<tr><td>${s.uid ? `<span class="ad-u">${uav(s.uid)}<span><b>${esc(s.name)}</b><i>@${esc(s.uid)}</i></span></span>` : `<b>${esc(s.name)}</b>`}${s.id === admMe().id ? ' <span class="mut2">（当前）</span>' : ''}</td><td><select class="inp ad-sel" data-act-ch="sf-role" data-id="${s.id}" ${s.id === admMe().id ? 'disabled' : ''}>${Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}" ${s.role === k ? 'selected' : ''}>${n}</option>`).join('')}</select></td>
       <td>${s.on ? stTag('启用', 'green') : stTag('停用', '')}</td><td class="mut2 n">${last ? fmtDT(last.ts) : '—'}</td><td class="r">${s.id === admMe().id ? '' : `<button class="pill sm lt" data-act="sf-on" data-id="${s.id}">${s.on ? '停用' : '启用'}</button>`}</td></tr>`; }).join('')}</tbody></table></div></div>
   ${adH('角色能看到的页签', '')}
   <div class="box"><div class="tw"><table class="t ad-perm"><thead><tr><th></th>${Object.values(ADM_ROLES).map(([n]) => `<th>${n}</th>`).join('')}</tr></thead><tbody>${ADM_TABS.map(([, l, , roles]) => `<tr><td>${l}</td>${Object.keys(ADM_ROLES).map(r => `<td>${roles.includes(r) ? '●' : '<span class="mut2">—</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
@@ -6522,7 +6652,7 @@ const RSN = {go:null};
 const PM_MAX = {plat:30, coFee:30, coRev:10, coAuto:30};   // 按输入框里的单位（% / 次 / 天）
 const rsnText = () => { const p = $('#layer .ad-rs .on')?.textContent || '', x = $('#rsX')?.value.trim(); return p + (x ? '：' + x : ''); };
 Object.assign(ACTIONS, {
-  atab: b => go('admin-' + b.dataset.v),
+  atab: b => admTab(b.dataset.v),
   adf: b => { (UI.adf ||= {})[b.dataset.k] = b.dataset.v; if (b.dataset.k !== 'pm') UI.adn = 30; rerender(); },
   'rs-pick': b => { $$('#layer .ad-rs .pill').forEach(x => x.classList.toggle('on', x === b)); },
   'rs-go': () => { const t = rsnText(), go = RSN.go; RSN.go = null; closeSheet(); go && go(t); },
@@ -6546,8 +6676,8 @@ Object.assign(ACTIONS, {
     if (v === 'keep') return done('维持下架', '经复核维持下架');
     if (v === 'ban' && au){ acctOf(au).ban = {until:Date.now() + 7*864e5, reason:r.reason, ts:Date.now()}; notify(au, '账号已被封禁 7 天', `原因：${r.reason}。如有异议可以回复这条通知申诉。`); return done('封禁作者 7 天', '已对作者做出封禁处理'); } },
   // 入驻
-  'ap-ok': b => { if (!admGuard('apply')) return; const a = ADM.apps.find(x => x.id === b.dataset.id); if (!a) return; const code = 'CTRLZ-' + Math.random().toString(36).slice(2, 5).toUpperCase() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase();
-    a.st = '已通过 · ' + code; INVITES.push({code, by:admMe().name, to:a.name, st:'未使用', time:fmtDT(Date.now()).slice(0, 5)}); admLog('入驻通过', a.name, code);
+  'ap-ok': b => { if (!admGuard('apply')) return; const a = ADM.apps.find(x => x.id === b.dataset.id); if (!a) return; const code = invCode();
+    a.st = '已通过 · ' + code; INVITES.push({code, by:admMe().name, to:a.name, uid:a.uid || null, st:'未使用', time:fmtDT(Date.now()).slice(0, 5)}); admLog('入驻通过', a.name, code);
     if (a.uid) notify(a.uid, '入驻申请通过了', `欢迎加入 CTRL Z！你的邀请码是 ${code}，在「上架作品」里填入就能开店。`); admSave(); toast('已通过，邀请码 ' + code, 'green'); rerender(); },
   'ap-no': b => { if (!admGuard('apply')) return; const a = ADM.apps.find(x => x.id === b.dataset.id); if (!a) return;
     rsnSheet(`驳回「${esc(a.name)}」的入驻申请`, 'apply', why => { a.st = '已驳回 · ' + why; admLog('入驻驳回', a.name, why); if (a.uid) notify(a.uid, '入驻申请没有通过', `原因：${why}。补充作品后可以再次申请。`); admSave(); toast('已驳回', 'orange', 'x'); rerender(); }); },
@@ -6561,7 +6691,7 @@ Object.assign(ACTIONS, {
     if (v === 'lift'){ a.ban = null; a.mute = null; notify(uid, '限制已解除', '你的账号已恢复正常使用。'); }
     if (v === 'verify') a.verified = !a.verified;
     admLog(M, '@' + uname(uid), v === 'verify' || v === 'lift' ? '' : why); admSave(); toast(`${M}：${esc(uname(uid))}`, v.startsWith('ban') ? 'orange' : 'green'); rerender(); userSheet(uid); },
-  'us-msg': b => { const uid = b.dataset.id; closeSheet(); UI.adminTab = 'notice'; UI.smTo = uid; go('admin-notice'); setTimeout(() => { const t = $('[data-act="sm-to"][data-v="one"]'); t && ACTIONS['sm-to'](t); const s = $('#smU'); if (s) s.value = uid; $('#smT')?.focus(); }, 60); },
+  'us-msg': b => { const uid = b.dataset.id; closeSheet(); UI.smTo = uid; admTab('notice'); setTimeout(() => { const t = $('[data-act="sm-to"][data-v="one"]'); t && ACTIONS['sm-to'](t); const s = $('#smU'); if (s) s.value = uid; $('#smT')?.focus(); }, 60); },
   // 内容
   'ct-off': b => { if (!admGuard('content')) return; const k = b.dataset.k, id = b.dataset.id;
     sheet(`<h3>下架原因</h3><div class="ad-rs">${['违反社区规范', '侵权 / 盗版', '广告引流', '低质内容', '作者申请删除'].map((x, i) => `<button class="pill lt ${i ? '' : 'on'}" data-act="rs-pick">${x}</button>`).join('')}</div><label class="ad-lab">补充说明（可选）</label><textarea class="inp" id="rsX"></textarea><button class="pill lg" data-act="rs-go">确认下架</button>`);
@@ -6624,8 +6754,14 @@ Object.assign(ACTIONS, {
   'wd-del': b => { if (!admGuard('words')) return; const w = ADM.words[b.dataset.lv].splice(+b.dataset.i, 1)[0]; admLog('删除敏感词', w); admSave(); rerender(); },
   'wd-test': () => { const c = censor($('#wdT').value), r = $('#wdR'); r.innerHTML = !c ? '没有命中，可以正常发出' : c.lv === 'block' ? `会被<b style="color:var(--orange)">拦截</b>：命中「${esc(c.w)}」` : `能发出，但会<b>送审</b>：命中「${esc(c.w)}」`; },
   // 人员
-  'sf-new': () => sheet(`<h3>加一个后台成员</h3><label class="ad-lab">名字</label><input class="inp" id="sfN" placeholder="例如：小雨"><label class="ad-lab">角色</label><select class="inp" id="sfR">${Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}">${n}</option>`).join('')}</select><button class="pill lg" data-act="sf-add">添加</button>`),
-  'sf-add': () => { if (!admGuard('staff')) return; const n = $('#sfN').value.trim(); if (!n){ fxPop($('#sfN'), 'fx-shake', 300); return; } const s = {id:'s' + Date.now().toString(36), name:n, role:$('#sfR').value, on:true}; ADM.staff.push(s); admLog('添加成员', n, ADM_ROLES[s.role][0]); admSave(); closeSheet(); rerender(); },
+  'sf-new': () => sheet(`<h3>加一个后台成员</h3><label class="ad-lab">从用户里选（可选，填 ID 或昵称）</label><input class="inp" id="sfU" list="sfUs" placeholder="例如：yuu.td" autocomplete="off">${uidList('sfUs')}<label class="ad-lab">名字（选了用户可以不填）</label><input class="inp" id="sfN" placeholder="例如：小雨"><label class="ad-lab">角色</label><select class="inp" id="sfR">${Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}">${n}</option>`).join('')}</select><button class="pill lg" data-act="sf-add">添加</button>`),
+  'sf-add': () => { if (!admGuard('staff')) return; const uid = findUid($('#sfU').value);
+    if (uid === null){ fxPop($('#sfU'), 'fx-shake', 300); toast('没找到这个用户', 'orange', 'x'); return; }
+    if (uid && ADM.staff.some(s => s.uid === uid)){ toast('这个用户已经是后台成员了', 'orange', 'x'); return; }
+    const n = $('#sfN').value.trim() || (uid ? uname(uid) : ''); if (!n){ fxPop($('#sfN'), 'fx-shake', 300); return; }
+    const s = {id:'s' + Date.now().toString(36), name:n, role:$('#sfR').value, on:true, uid:uid || undefined}; ADM.staff.push(s); admLog('添加成员', n + (uid ? ' @' + uid : ''), ADM_ROLES[s.role][0]);
+    if (uid) notify(uid, '你成为了 CTRL Z 后台成员', `角色：${ADM_ROLES[s.role][0]}。你可以在「管理」里处理对应的工作，所有后台操作都会记进操作日志。`);
+    admSave(); closeSheet(); rerender(); },
   'sf-on': b => { if (!admGuard('staff')) return; const s = ADM.staff.find(x => x.id === b.dataset.id); if (s.on && s.role === 'super' && ADM.staff.filter(x => x.on && x.role === 'super').length < 2){ toast('至少要留一位超级管理员', 'orange', 'x'); return; } s.on = !s.on; admLog(s.on ? '启用成员' : '停用成员', s.name); admSave(); rerender(); },
   // 参数
   /* 参数上限：抽成 / 服务费不超过 30%，修改次数 ≤ 10，自动验收 1–30 天 */
@@ -6634,7 +6770,16 @@ Object.assign(ACTIONS, {
     $$('[data-site]').forEach(i => { const k = i.dataset.site, v = i.value.trim(); if (v !== (ADM.site[k] || '')){ ch.push(`${k}: ${v || '（清空）'}`); ADM.site[k] = v; } }); footLegal();
     if (!ch.length){ toast('没有改动', 'blue'); return; } applyParams(); admLog('修改平台参数', ch.join('；')); admSave(); toast('已保存'); rerender(); },
   'lg-csv': () => { csvDownload(`ctrlz-audit-${fmtDay(Date.now())}.csv`, [['时间', '成员', '角色', '操作', '对象', '说明'], ...ADM.audit.map(a => [fmtDay(a.ts) + ' ' + fmtDT(a.ts).slice(6), a.by, ADM_ROLES[a.role]?.[0], a.act, a.target, a.detail])]); },
-  'inv-new': () => { if (!admGuard('invites')) return; const code = 'CTRLZ-' + Math.random().toString(36).slice(2, 5).toUpperCase() + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(); INVITES.push({code, by:admMe().name, to:'—', st:'未使用', time:fmtDT(Date.now()).slice(0, 5)}); admLog('生成邀请码', code); admSave(); rerender(); toast('新邀请码 ' + code, 'pink'); }
+  'inv-new': () => { if (!admGuard('invites')) return; const i = $('#invTo'), uid = findUid(i?.value);
+    if (uid === null){ fxPop(i, 'fx-shake', 300); toast('没找到这个用户', 'orange', 'x'); return; }
+    const code = invIssue(uid); admSave(); rerender(); toast(uid ? `已发给 ${esc(uname(uid))}：${code}` : '新邀请码 ' + code, 'pink'); },
+  // 用户管理里：设为后台成员 / 发开店邀请码
+  'us-staff': b => { if (!admGuard('staff')) return; const uid = b.dataset.id, role = $('#usRole')?.value || 'mod'; if (ADM.staff.some(s => s.uid === uid)) return;
+    ADM.staff.push({id:'s' + Date.now().toString(36), name:uname(uid), role, on:true, uid}); admLog('设为管理员', '@' + uname(uid), ADM_ROLES[role][0]);
+    notify(uid, '你成为了 CTRL Z 后台成员', `角色：${ADM_ROLES[role][0]}。你可以在「管理」里处理对应的工作，所有后台操作都会记进操作日志。`);
+    admSave(); toast(`已设为管理员：${esc(uname(uid))} · ${ADM_ROLES[role][0]}`, 'green'); rerender(); userSheet(uid); },
+  'us-staff-go': () => { closeSheet(); admTab('staff'); },
+  'us-inv': b => { if (!admGuard('invites')) return; const uid = b.dataset.id, code = invIssue(uid); admSave(); toast(`已发给 ${esc(uname(uid))}：${code}`, 'pink'); rerender(); userSheet(uid); }
 });
 /* 头像审核：沿用原来的通过 / 驳回，补上原因、通知和日志 */
 { const ok0 = ACTIONS['avq-ok'];
