@@ -1785,6 +1785,7 @@ a,button,[data-act],[data-go],label,summary{touch-action:manipulation}
 /* ===== 页面切换（View Transitions） ===== */
 @media (max-width:760px){
   .hd{view-transition-name:hd} .tb{view-transition-name:tb} .player{view-transition-name:player}
+  .tb .plus span{view-transition-name:tbplus}   /* 发布按钮单独一层：翻页时不跟着底栏的快照一起被拉扁 */
   html[data-vt] .page.in{animation:none}
 }
 ::view-transition-old(root),::view-transition-new(root){mix-blend-mode:normal;animation-duration:.34s;animation-timing-function:cubic-bezier(.22,.8,.2,1)}
@@ -1795,9 +1796,11 @@ html[data-vt=pop]::view-transition-new(root){animation-name:vtInL}
 html[data-vt=tab]::view-transition-old(root){animation:vtFade .14s ease both reverse}
 html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
 ::view-transition-group(hd),::view-transition-group(tb){animation-duration:.2s}
+::view-transition-group(tbplus),::view-transition-new(tbplus){animation:none}
+::view-transition-old(tbplus){display:none}
 /* 深浅色切换的过场（themeFx）：新外观整张盖在上面，露出的形状由 --thc（clip-path）或 --thm…（mask）每帧决定；
    顶栏 / 底栏这时不单独成组，跟着整页一起被遮；特效画布 thfx 盖在最上面 */
-html.thvt .hd,html.thvt .tb,html.thvt .player{view-transition-name:none!important}
+html.thvt .hd,html.thvt .tb,html.thvt .player,html.thvt .tb .plus span{view-transition-name:none!important}
 html.thvt::view-transition-old(root),html.thvt::view-transition-new(root){animation:none;mix-blend-mode:normal;filter:var(--thf,none)}
 html.thvt::view-transition-new(root){clip-path:var(--thc,none);-webkit-mask-image:var(--thm,none);mask-image:var(--thm,none);mask-composite:var(--thmc,add);mask-size:var(--thms,auto);mask-repeat:var(--thmr,repeat);mask-position:var(--thmp,0 0);-webkit-mask-size:var(--thms,auto);-webkit-mask-repeat:var(--thmr,repeat);-webkit-mask-position:var(--thmp,0 0)}
 html.thvt::view-transition-group(thfx),html.thvt::view-transition-old(thfx),html.thvt::view-transition-new(thfx){animation:none}
@@ -5502,7 +5505,11 @@ function tbBlob(){
   if (!a || !tb.offsetWidth){ b.style.opacity = 0; return; }
   const w = Math.min(a.offsetWidth - 8, 76), x = a.offsetLeft + (a.offsetWidth - w) / 2, moved = b.style.opacity === '1' && parseFloat(b.style.left) !== x;
   Object.assign(b.style, {left: x + 'px', width: w + 'px', opacity: 1});
-  if (moved && !reduced()){ b.classList.add('fx-mv'); clearTimeout(b._t); b._t = setTimeout(() => b.classList.remove('fx-mv'), 180); }
+  if (moved && !reduced()){ b.classList.add('fx-mv'); clearTimeout(b._t); b._t = setTimeout(() => b.classList.remove('fx-mv'), 180);
+    // 发布按钮像一颗软胶：选中块从旁边滑过，它朝滑动的方向歪一下再弹正（只转、只挪，不压扁）
+    const pl = $('.tb .plus span'), d = x > b._x ? 1 : -1;
+    if (pl){ pl._ta?.cancel(); pl._ta = pl.animate([{transform:'none'}, {transform:`translateX(${d*2.5}px) rotate(${d*11}deg)`, offset:.3}, {transform:`translateX(${-d*1}px) rotate(${-d*4}deg)`, offset:.62}, {transform:'none'}], {duration:520, easing:'cubic-bezier(.3,.7,.4,1)', delay:60}); } }
+  b._x = x;
 }
 (() => {
   const tb = $('.tb'); if (!tb) return;
@@ -8811,25 +8818,25 @@ const THX_FX = {
     { n:'黑色金属粘液', dur:1750,
       /* 像往水面丢了一颗石子：黑夜从按钮处扩散出去（约 1 秒），一圈圈水波接着往外荡，慢慢平息（1.75 秒完全静止，加上浏览器拍快照，点下去到结束不到 2 秒；结束时不跳）。
          水波是折射：每圈波把底下的画面推一下（和 CONCRETE 鼓面同一种「经过就鼓一下」），深色背景上没东西可折射，所以再叠一层很淡的波光 */
-      init(F){ F.lam = Math.max(56, Math.min(F.W, F.H)*.11); F.A0 = Math.min(18, Math.max(10, Math.min(F.W, F.H)*.025)); F.N = 160; F.lens(true); },
+      init(F){ F.lam = Math.max(56, Math.min(F.W, F.H)*.11); F.A0 = Math.min(18, Math.max(10, Math.min(F.W, F.H)*.025)); F.N = F.lite ? 72 : 160; if (!F.lite) F.lens(true); },   // 手机（lite）不开折射
       frame(F, k, g, t){ const D = this.dur, o = F.o, N = F.N, ks = Math.min(1, t/(D*.53)), es = thE.o3(ks);   // 前 53%（约 1 秒）扩散
         const Rf = F.Rm*1.12*es + 4;                       // 黑夜的边：一开始冲得快，后面慢下来
         const calm = Math.pow(Math.max(0, 1 - t/D), 2), A = F.A0*calm, ct = F.Rm*1.15/(D*.47)*t, kw = Math.PI*2/F.lam;
         const rad = new Float32Array(N), out = [];
         for (let i = 0; i < N; i++){ const a = i/N*Math.PI*2, r = Rf + Math.sin(a*6 + t/70)*3*(1 - es) + Math.sin(kw*(Rf - ct))*A*.35; rad[i] = r; out.push([o.x + Math.cos(a)*r, o.y + Math.sin(a)*r]); }
         F.clip(ks >= 1 && Rf > F.Rm*1.1 ? 'none' : thPoly(out));
-        F.lensBox(o.x, o.y, Math.max(Rf, ct) + 160);
+        if (!F.lite) F.lensBox(o.x, o.y, Math.max(Rf, ct) + 160);
         // 径向偏移 = 水波（从中心不断往外推的同心波，离波前越远越弱，整体随时间平息）+ 黑夜边缘的一道透镜脊
         const lam = F.lam, front = (1 - es)*.7, wid = 40;
-        F.disp(r => { let off = 0;
+        if (!F.lite) F.disp(r => { let off = 0;
           if (r < ct){ const behind = ct - r, env = Math.exp(-behind/(lam*4.5))*Math.min(1, behind/(lam*.5)); off += Math.cos(kw*(r - ct))*A*env; }
           if (front > .01){ const d = r - Rf; if (d > -120 && d < 120) off -= d*Math.exp(-(d/wid)*(d/wid))*front; }
           return off; }, 30);
         // 波光：波峰一圈很淡的亮线、波谷一圈暗线
-        const lv = calm*.9; if (lv > .02){ g.lineWidth = 2;
-          for (let n = 0; ; n++){ const r = ct - n*lam; if (r <= 4) break; const env = Math.exp(-(n*lam)/(lam*4.5))*Math.min(1, (n*lam + 1)/(lam*.5)); if (env < .05) break;
-            g.strokeStyle = `rgba(255,255,255,${.13*lv*env})`; g.beginPath(); g.arc(o.x, o.y, r, 0, Math.PI*2); g.stroke();
-            if (r > lam*.5){ g.strokeStyle = `rgba(0,0,0,${.18*lv*env})`; g.beginPath(); g.arc(o.x, o.y, r - lam*.5, 0, Math.PI*2); g.stroke(); } } }
+        const lv = Math.pow(calm, F.lite ? .6 : 1)*.9, L = F.lite ? 3 : 1; if (lv > .02){   // 手机上没有折射，波光加重一点，看起来仍是水波
+          for (let n = 0; ; n++){ const r = ct - n*lam; if (r <= 4) break; const dec = Math.exp(-n/4.5); if (dec < .05) break; const env = dec*Math.min(1, n + .5);   // 最前面那圈淡一半，越往里越弱
+            g.lineWidth = F.lite ? 3 : 2; g.strokeStyle = `rgba(255,255,255,${.13*lv*env*L})`; g.beginPath(); g.arc(o.x, o.y, r, 0, Math.PI*2); g.stroke();
+            if (r > lam*.5){ g.lineWidth = F.lite ? 7 : 2; g.strokeStyle = `rgba(0,0,0,${.18*lv*env*L})`; g.beginPath(); g.arc(o.x, o.y, r - lam*.5, 0, Math.PI*2); g.stroke(); } } }
         // 黑夜边缘：一道细高光（像液面的反光），扩散完就淡掉
         if (es < 1){ g.globalAlpha = 1 - es; g.lineJoin = 'round'; g.beginPath(); out.forEach((p, i) => { const s = (rad[i] - 4)/rad[i], x = o.x + (p[0] - o.x)*s, y = o.y + (p[1] - o.y)*s; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath();
           g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 1.5; g.stroke(); g.globalAlpha = 1; } } },
@@ -8935,7 +8942,7 @@ function themeFx(apply, el){
     const dark = isDark(); if (dark === before) return;
     const L = (mob ? THX_FX_M : THX_FX)[dark ? 'dark' : 'light'], key = (mob ? 'm' : 'd') + dark; let i; do i = Math.random()*L.length | 0; while (L.length > 1 && i === THX.last[key]); THX.last[key] = i; fx = L[i];
     set('--thc', 'circle(0px at 0 0)');   // 新外观先完全藏起来，等第一帧再露
-    const dpr = Math.min(2, devicePixelRatio || 1); cv = document.createElement('canvas'); cv.width = W*dpr; cv.height = H*dpr;
+    const dpr = Math.min(mob ? 1.5 : 2, devicePixelRatio || 1); cv = document.createElement('canvas');   // 手机上特效层用 1.5 倍，省一半像素 cv.width = W*dpr; cv.height = H*dpr;
     cv.style.cssText = `position:fixed;left:0;top:0;width:${W}px;height:${H}px;pointer-events:none;z-index:2147483000;view-transition-name:thfx`;
     document.body.appendChild(cv);
   });
@@ -8943,7 +8950,7 @@ function themeFx(apply, el){
   t.ready.then(() => {
     if (!fx){ t.skipTransition(); return; }
     const g = cv.getContext('2d'), dpr = cv.width/W;
-    const F = {o, W, H, Rm:thFar(o, W, H), clip:v => set('--thc', v),
+    const F = {o, W, H, lite:mob, Rm:thFar(o, W, H), clip:v => set('--thc', v),
       lens:on => set('--thf', on ? 'url(#thxLens)' : null), disp:(fn, max) => thDisp(F, fn, max),
       lensBox:(cx, cy, r) => { const f = THX.svg.querySelector('filter'), x = Math.max(0, cx - r), y = Math.max(0, cy - r);   // 滤镜只算粘液周围这一块，越小越快
         f.setAttribute('x', x | 0); f.setAttribute('y', y | 0); f.setAttribute('width', Math.ceil(Math.min(W, cx + r) - x)); f.setAttribute('height', Math.ceil(Math.min(H, cy + r) - y)); },
