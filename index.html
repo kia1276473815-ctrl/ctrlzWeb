@@ -8808,35 +8808,31 @@ const THX_FX = {
   ],
   /* —— 变暗 —— */
   dark:[
-    { n:'黑色金属粘液', dur:900,
-      init(F){ F.N = 180; F.pk = []; F.nx = 0; F.amp = Math.min(F.W, F.H)*.05; F.wid = Math.min(F.W, F.H)*.07;
-        F.drips = Array.from({length:7}, () => ({a:Math.PI*(.12 + Math.random()*.76), w:.04 + Math.random()*.06, L:F.H*(.12 + Math.random()*.3), d:Math.random()*.3}));
-        F.lens(true); },
-      frame(F, k, g, t){ const o = F.o, N = F.N;
-        const Rb = F.Rm*1.12*(k < .08 ? (k/.08)*(k/.08)*.05 : .05 + .95*thE.io((k - .08)/.92));   // 先冒一下，马上涌出去
-        // 和 CONCRETE 鼓面一样：每 90ms 从按钮发出一道波包，跑得比边界快，经过边界时把它往外鼓一下
-        while (t >= F.nx){ F.pk.push(F.nx); F.nx += 90; }
-        const pk = F.pk.map(t0 => ({r:(t - t0)*F.Rm/380, life:Math.max(0, 1 - (t - t0)/700)})).filter(p => p.life > 0);
+    { n:'黑色金属粘液', dur:1750,
+      /* 像往水面丢了一颗石子：黑夜从按钮处扩散出去（约 1 秒），一圈圈水波接着往外荡，慢慢平息（1.75 秒完全静止，加上浏览器拍快照，点下去到结束不到 2 秒；结束时不跳）。
+         水波是折射：每圈波把底下的画面推一下（和 CONCRETE 鼓面同一种「经过就鼓一下」），深色背景上没东西可折射，所以再叠一层很淡的波光 */
+      init(F){ F.lam = Math.max(56, Math.min(F.W, F.H)*.11); F.A0 = Math.min(18, Math.max(10, Math.min(F.W, F.H)*.025)); F.N = 160; F.lens(true); },
+      frame(F, k, g, t){ const D = this.dur, o = F.o, N = F.N, ks = Math.min(1, t/(D*.53)), es = thE.o3(ks);   // 前 53%（约 1 秒）扩散
+        const Rf = F.Rm*1.12*es + 4;                       // 黑夜的边：一开始冲得快，后面慢下来
+        const calm = Math.pow(Math.max(0, 1 - t/D), 2), A = F.A0*calm, ct = F.Rm*1.15/(D*.47)*t, kw = Math.PI*2/F.lam;
         const rad = new Float32Array(N), out = [];
-        for (let i = 0; i < N; i++){ const a = i/N*Math.PI*2; let r = Rb;
-          for (const p of pk){ const q = (Rb - p.r)/F.wid; r += Math.exp(-q*q)*F.amp*p.life; }
-          r += (Math.sin(a*5 + t/120)*.5 + Math.sin(a*11 - t/90)*.3)*F.amp*.4*(1 - k);   // 黏稠、不规则
-          for (const d of F.drips){ const da = thAng(a, d.a); r += Math.exp(-(da/d.w)*(da/d.w))*d.L*thE.io(clamp((k - d.d)/(1 - d.d), 0, 1)); }   // 往下淌
-          rad[i] = r; out.push([o.x + Math.cos(a)*r, o.y + Math.sin(a)*r]); }
-        F.clip(thPoly(out));
-        // 透镜：边缘是一道鼓起来的液体脊，两边的画面都被往脊上拉（像透过一滴液体看）；里面每道波纹也把黑夜里的画面推一下
-        const fade = 1 - Math.pow(k, 4);
-        if (k > .88) F.lens(false); else { let mr = 0; for (let i = 0; i < N; i++) if (rad[i] > mr) mr = rad[i]; F.lensBox(o.x, o.y, mr + 150); }   // 快结束时透镜已经淡掉，直接关
-        const w = 46, K = .9*fade, TA = N/(Math.PI*2);
-        if (k <= .88) F.disp((r, a) => { const i = (a*TA | 0) % N, d = r - rad[i]; let off = d > -140 && d < 140 ? -d*Math.exp(-(d/w)*(d/w))*K : 0;
-          if (d < 0) for (const p of pk){ const q = r - p.r; if (q > -70 && q < 70 && p.r < rad[i]) off -= q*Math.exp(-(q/26)*(q/26))*.55*p.life; }
-          return off; }, 46);
-        // 边上只留一道很细的高光和一圈暗影，主要靠折射
-        g.lineJoin = 'round'; g.globalAlpha = fade;
-        g.beginPath(); out.forEach((p, i) => { const s = (rad[i] - 5)/rad[i], x = o.x + (p[0] - o.x)*s, y = o.y + (p[1] - o.y)*s; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath();
-        g.strokeStyle = 'rgba(255,255,255,.5)'; g.lineWidth = 1.5; g.stroke();
-        g.beginPath(); out.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath(); g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 3; g.stroke();
-        g.globalAlpha = 1; } },
+        for (let i = 0; i < N; i++){ const a = i/N*Math.PI*2, r = Rf + Math.sin(a*6 + t/70)*3*(1 - es) + Math.sin(kw*(Rf - ct))*A*.35; rad[i] = r; out.push([o.x + Math.cos(a)*r, o.y + Math.sin(a)*r]); }
+        F.clip(ks >= 1 && Rf > F.Rm*1.1 ? 'none' : thPoly(out));
+        F.lensBox(o.x, o.y, Math.max(Rf, ct) + 160);
+        // 径向偏移 = 水波（从中心不断往外推的同心波，离波前越远越弱，整体随时间平息）+ 黑夜边缘的一道透镜脊
+        const lam = F.lam, front = (1 - es)*.7, wid = 40;
+        F.disp(r => { let off = 0;
+          if (r < ct){ const behind = ct - r, env = Math.exp(-behind/(lam*4.5))*Math.min(1, behind/(lam*.5)); off += Math.cos(kw*(r - ct))*A*env; }
+          if (front > .01){ const d = r - Rf; if (d > -120 && d < 120) off -= d*Math.exp(-(d/wid)*(d/wid))*front; }
+          return off; }, 30);
+        // 波光：波峰一圈很淡的亮线、波谷一圈暗线
+        const lv = calm*.9; if (lv > .02){ g.lineWidth = 2;
+          for (let n = 0; ; n++){ const r = ct - n*lam; if (r <= 4) break; const env = Math.exp(-(n*lam)/(lam*4.5))*Math.min(1, (n*lam + 1)/(lam*.5)); if (env < .05) break;
+            g.strokeStyle = `rgba(255,255,255,${.13*lv*env})`; g.beginPath(); g.arc(o.x, o.y, r, 0, Math.PI*2); g.stroke();
+            if (r > lam*.5){ g.strokeStyle = `rgba(0,0,0,${.18*lv*env})`; g.beginPath(); g.arc(o.x, o.y, r - lam*.5, 0, Math.PI*2); g.stroke(); } } }
+        // 黑夜边缘：一道细高光（像液面的反光），扩散完就淡掉
+        if (es < 1){ g.globalAlpha = 1 - es; g.lineJoin = 'round'; g.beginPath(); out.forEach((p, i) => { const s = (rad[i] - 4)/rad[i], x = o.x + (p[0] - o.x)*s, y = o.y + (p[1] - o.y)*s; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath();
+          g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 1.5; g.stroke(); g.globalAlpha = 1; } } },
     { n:'日食', dur:1550,
       frame(F, k, g){ const o = F.o, s = 26, A = .34;
         if (k < A){ const q = k/A, e = thE.o3(q); F.clip(`circle(0px at ${o.x}px ${o.y}px)`);
@@ -8903,7 +8899,7 @@ THX_FX_M.dark[0] = THX_FX.dark.find(f => f.n === '黑色金属粘液'); THX_FX_M
 /* 透镜：一张 SVG 位移贴图滤镜，挂在新旧两张快照上（--thf）。贴图每帧按效果给的「每个点往哪偏多少」画在 1/4 分辨率的画布上 */
 function thLensSvg(W, H){
   if (!THX.svg){ const n = 'http://www.w3.org/2000/svg', v = document.createElementNS(n, 'svg'); v.setAttribute('aria-hidden', 'true'); v.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
-    v.innerHTML = '<filter id="thxLens" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB" x="0" y="0"><feImage preserveAspectRatio="none" x="0" y="0" result="m"/><feDisplacementMap in="SourceGraphic" in2="m" xChannelSelector="R" yChannelSelector="G" scale="0"/></filter>';
+    v.innerHTML = '<filter id="thxLens" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB" x="0" y="0"><feFlood flood-color="rgb(128,128,128)" result="f"/><feImage preserveAspectRatio="none" x="0" y="0" result="i"/><feComposite in="i" in2="f" operator="over" result="m"/><feDisplacementMap in="SourceGraphic" in2="m" xChannelSelector="R" yChannelSelector="G" scale="0"/></filter>';
     document.body.appendChild(v); THX.svg = v; THX.map = v.querySelector('feImage'); THX.dm = v.querySelector('feDisplacementMap');
     const c = Object.assign(document.createElement('canvas'), {width:1, height:1}), x = c.getContext('2d'); x.fillStyle = 'rgb(128,128,128)'; x.fillRect(0, 0, 1, 1); THX.flat = c.toDataURL(); }
   const f = THX.svg.querySelector('filter'); f.setAttribute('x', 0); f.setAttribute('y', 0); f.setAttribute('width', W); f.setAttribute('height', H);
