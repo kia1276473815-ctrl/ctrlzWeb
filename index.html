@@ -7060,7 +7060,7 @@ ROUTES.admin = arg => {
     : gate('管理', '管理后台要连上后端、用后台账号登录才能进入。', protoOn() ? `<button class="pill lg" data-act="adm-login">演示：以管理员身份查看</button>` : '');
   const me = admMe(), tabs = ADM_TABS.filter(t => t[3].includes(me.role));
   let t = UI.adminTab; if (!tabs.some(x => x[0] === t)) t = UI.adminTab = tabs[0][0];
-  const cnt = {review:REVIEW.length, avatars:AVQ.length, reports:REPORTS.filter(r => r.st === '待处理').length, apply:ADM.apps.filter(a => a.st === '待审核').length, refunds:REFUNDS.filter(r => r.st === '待处理').length, disputes:CO.orders.filter(o => o.st === 'dispute').length};
+  const cnt = API.on() ? admCnt() : {review:REVIEW.length, avatars:AVQ.length, reports:REPORTS.filter(r => r.st === '待处理').length, apply:ADM.apps.filter(a => a.st === '待审核').length, refunds:REFUNDS.filter(r => r.st === '待处理').length, disputes:CO.orders.filter(o => o.st === 'dispute').length};
   if (t === 'review') onMount(() => { const kd = e => { if (e.target.closest('input,textarea,select') || !REVIEW.length || $('#layer .sheet')) return; if (e.key.toLowerCase() === 'a') ACTIONS['rv-ok'](); if (e.key.toLowerCase() === 'r') ACTIONS['rv-no'](); }; document.addEventListener('keydown', kd); onClean(() => document.removeEventListener('keydown', kd)); });
   let g0 = '';
   const nav = tabs.map(([k, l, g]) => { const head = g !== g0 ? `<span class="ad-g">${g}</span>` : ''; g0 = g; return head + `<button class="${t === k ? 'on' : ''}" data-act="atab" data-v="${k}">${l}${cnt[k] ? `<span class="n">${cnt[k]}</span>` : ''}</button>`; }).join('');
@@ -8392,7 +8392,8 @@ const CO = {orders: store.get('coOrders', null) || [
   {id:'c3', from:'nova', to:'rin', svc:'arr', title:'采样包 demo 曲编曲', note:'用 CONCRETE KIT 做一首 1 分钟的 demo。', budget:1200, price:1200, due:'已交付', fields:{style:'工业 / 打击乐', len:'1 分钟内'}, st:'done', v:1, rev:0, ts:NOW0 - 34*24*H, paidAt:NOW0 - 33*24*H, delivAt:NOW0 - 31*24*H, doneAt:NOW0 - 30*24*H, rated:{nova:true}, log:[{k:'card', v:1, by:'nova', ts:NOW0 - 34*24*H}, {k:'sys', text:'已完成 · ¥1,140 已打到 rin.wav 的待结算', ts:NOW0 - 30*24*H}]},
   {id:'c4', from:'rin', to:'merc', svc:'vj', title:'下个月 livehouse 的现场视觉', note:'11 月 8 日在育音堂，一块横屏 16:9，跟着我的 live set 走，偏粗颗粒的几何风格。', budget:2000, price:2400, due:'11 月 5 日前', fields:{date:'11 月 8 日', venue:'育音堂 · 一块 16:9 横屏', len:'1 小时'}, st:'counter', v:2, rev:0, offers:[{by:'merc', price:2400, note:'要做 1 小时的实时素材，含一次彩排，2400 比较合适。', ts:NOW0 - 5*H}], ts:NOW0 - 8*H, log:[{k:'card', v:1, by:'rin', ts:NOW0 - 8*H}, {k:'card', v:2, by:'merc', ts:NOW0 - 5*H}]}
 ]};
-const coSave = () => { store.set('coOrders', CO.orders); store.set('coRep', REP); };
+let CO_LIVE = false;   // 连着后端时合作订单在服务器上，不存本地（免得覆盖原型的示例数据）
+const coSave = () => { if (CO_LIVE) return; store.set('coOrders', CO.orders); store.set('coRep', REP); };
 const CO_BY = id => CO.orders.find(o => o.id === id);
 const coOther = o => o.from === ME ? o.to : o.from;
 /* 把订单里的卡片 / 系统消息放进对应的私信会话（刷新页面后也在） */
@@ -8433,7 +8434,7 @@ function coCard(o, v = o.v, mode = 'chat'){
   const D = SVC_DEF[o.svc] || SVC_DEF.co, old = v < o.v, st = CO_ST[o.st] || ['k', o.st], other = coOther(o), r = repOf(other);
   const offer = v > 1 ? o.offers?.[v - 2] : null, prev = v > 2 ? o.offers[v - 3].price : o.budget, live = !old;
   const money = offer ? `<div class="co-px"><s>${cny(prev)}</s><b>${cny(offer.price)}</b><span>${esc(USERS[offer.by].name)} 的新报价</span></div>`
-    : live && o.price != null && ['accepted','paid','delivered','revising','done'].includes(o.st) ? `<div class="co-px"><b>${cny(o.price)}</b><span>${o.to === ME ? `到手 ${cny(coNet(o.price))}（扣 ${CO_FEE*100}% 服务费）` : o.st === 'accepted' ? '待托管' : o.st === 'done' ? '已结算' : '平台托管中'}</span></div>` : '';
+    : live && o.price != null && ['accepted','paid','delivered','revising','done'].includes(o.st) ? `<div class="co-px"><b>${cny(o.price)}</b><span>${o.to === ME ? `到手 ${cny(coNet(o.price))}（扣 ${CO_FEE*100}% 服务费）` : o.st === 'accepted' ? '待托管' : o.st === 'done' ? (o.ruling?.refund ? `平台裁决 · 退回 ${cny(o.ruling.refund)}` : '已结算') : '平台托管中'}</span></div>` : '';
   const facts = [[o.svc === 'co' ? '方式' : '预算', o.svc === 'co' ? '分成合作' : cny(o.budget)], ['截止', o.due], ...D.f.slice(0, 2).map(([k, l]) => coFv(o, k) && [l, coFv(o, k)])].filter(Boolean);
   return `<div class="co-card c-${D.c} ${old ? 'old' : ''} st-${o.st} ${mode}" data-co="${o.id}" data-v="${v}">
     <div class="co-ch"><span class="co-g">${svcIcon(o.svc)}</span><span class="co-k">${D.n} · ${offer ? '改价' : '合作邀约'}</span><span class="tag ${old ? 'k' : st[0]} co-st">${old ? '已作废' : st[1]}</span></div>
@@ -9750,6 +9751,12 @@ Object.assign(ACTIONS, {
    「人员与权限」「用户」两个页签读写后端（/admin/staff、/admin/users）；超管可以新建账号（App 账号，可同时开关联的后台账号）。
    用户弹窗里的警告 / 禁言 / 封禁也走后端（/admin/users/{id}/actions）。其余页签还是原型数据 */
 const LADM = {staff:null, users:null, uq:null, busy:{}};
+/* 后台页签上的待办数（连着后端时）：每次画后台最多 3 秒问一次服务器，数字变了才重画 */
+const ADMCNT = {v:{}, at:0, busy:false};
+function admCnt(){
+  if (!ADMCNT.busy && Date.now() - ADMCNT.at > 3000 && STAFF.tok){ ADMCNT.busy = true; ADMCNT.at = Date.now();
+    STAFF.req('GET', '/admin/counts').then(r => { const ch = JSON.stringify(r) !== JSON.stringify(ADMCNT.v); ADMCNT.v = r; if (ch && CUR.key?.startsWith('admin')) rerender(); }).catch(() => {}).finally(() => { ADMCNT.busy = false; }); }
+  return ADMCNT.v; }
 async function ladmLoad(k){ if (LADM.busy[k]) return; LADM.busy[k] = true;
   try {
     if (k === 'staff') LADM.staff = (await STAFF.req('GET', '/admin/staff')).items;
@@ -10308,7 +10315,7 @@ Object.assign(ACTIONS, {
 
 /* —— 私信 —— */
 const LDM = {timer:0, full:new Set(), loading:new Set(), look:new Set(), miss:new Set(), last:{}, sig:{}, side:'', busy:false, listed:false, blk:{}};
-const dmMap = m => ({id:m.id, me:m.from === ME, t:m.kind === 'image' ? 'img' : m.kind, text:m.body, url:m.url || undefined, ref:m.ref || undefined, ts:+new Date(m.createdAt), rc:m.recalled, read:m.read});
+const dmMap = m => ({id:m.id, me:m.from === ME, t:m.kind === 'image' ? 'img' : m.kind, text:m.kind === 'cosys' ? coTxt(m.body, m.from, m.to) : m.body, v:m.kind === 'co' ? +m.body : undefined, url:m.url || undefined, ref:m.ref || undefined, ts:+new Date(m.createdAt), rc:m.recalled, read:m.read});
 const dmLive = uid => API.on() && STATE.role === 'user' && LIVE.u.has(uid);
 const dmCut = (uid, ts) => DELC[uid] && ts <= DELC[uid];   // 自己删过聊天记录：删之前的不再显示
 /* 分享来的帖子 / 商品本地没有：去后端取一次 */
@@ -10494,7 +10501,7 @@ function dmViewSheet(a, b, preset = ''){
     <label class="ad-lab">为什么要看</label><div class="ad-rs" id="dvR">${['处理合作纠纷', '处理举报', '用户申诉', '核实交易'].map((x, i) => `<button class="pill lt ${(preset ? x === preset.split('：')[0] : !i) ? 'on' : ''}" data-act="rs-pick">${x}</button>`).join('')}</div>
     <input class="inp" id="dvX" placeholder="补充（可选），例如订单号 / 举报编号" value="${esc(preset.split('：')[1] || '')}">
     <button class="pill lg" data-act="dv-go" data-a="${esc(a)}" data-b="${esc(b)}">查看记录</button><div id="dvLog"></div>`); }
-const dvBody = m => m.kind === 'image' ? (m.url ? `<a href="${esc(m.url)}" target="_blank" rel="noopener"><img src="${esc(m.url)}" alt="图片" class="dv-img"></a>` : '[图片]')
+const dvBody = (m, other) => m.kind === 'co' ? `[合作邀约 · 第 ${esc(m.body)} 版] ${esc(CO_BY(m.ref)?.title || '')}` : m.kind === 'cosys' ? `<em>${esc(coTxt(m.body, m.from, other))}</em>` : m.kind === 'image' ? (m.url ? `<a href="${esc(m.url)}" target="_blank" rel="noopener"><img src="${esc(m.url)}" alt="图片" class="dv-img"></a>` : '[图片]')
   : m.kind === 'post' ? `[分享的帖子] <a data-go="post-${esc(m.ref)}">${esc(POST(m.ref)?.title || m.ref)}</a>` : m.kind === 'prod' ? `[分享的商品] <a data-go="item-${esc(m.ref)}">${esc(P(m.ref)?.title || m.ref)}</a>` : esc(m.body);
 ACTIONS['dv-go'] = async b => { const a = b.dataset.a, c = b.dataset.b, why = ($('#dvR .on')?.textContent || '处理举报') + ($('#dvX').value.trim() ? '：' + $('#dvX').value.trim() : '');
   if (!API.on()){   // 原型：只有自己参与的会话有数据
@@ -10503,7 +10510,7 @@ ACTIONS['dv-go'] = async b => { const a = b.dataset.a, c = b.dataset.b, why = ($
   b.disabled = true;
   const ref = ($('#dvX').value.match(/rp_[a-z0-9]+/i) || [])[0];   // 补充里写了举报编号就带上，后端会核对它和这两个人有关
   try { const r = await STAFF.req('POST', '/admin/dm', {a, b:c, reason:why, ...(ref ? {ref} : {})}); apiUser(r.a); apiUser(r.b);
-    b.hidden = true; $('#dvLog').innerHTML = `<p class="mut2" style="margin:10px 0 6px">共 ${r.items.length} 条 · 理由「${esc(why)}」已记进操作日志</p><div class="dv-log">${r.items.map(m => `<div class="dv-m ${m.from === a ? 'a' : 'b'}"><span class="dv-w">${esc(m.from === a ? r.a.name : r.b.name)} · ${fmtDT(+new Date(m.createdAt))}${m.read ? ' · 已读' : ''}</span><span>${m.recalled ? '<em>（已撤回，原文）</em>' : ''}${dvBody(m)}</span></div>`).join('') || '<p class="mut2">这两个人之间没有私信</p>'}</div>`; }
+    b.hidden = true; $('#dvLog').innerHTML = `<p class="mut2" style="margin:10px 0 6px">共 ${r.items.length} 条 · 理由「${esc(why)}」已记进操作日志</p><div class="dv-log">${r.items.map(m => `<div class="dv-m ${m.from === a ? 'a' : 'b'}"><span class="dv-w">${esc(m.from === a ? r.a.name : r.b.name)} · ${fmtDT(+new Date(m.createdAt))}${m.read ? ' · 已读' : ''}</span><span>${m.recalled ? '<em>（已撤回，原文）</em>' : ''}${dvBody(m, m.from === a ? c : a)}</span></div>`).join('') || '<p class="mut2">这两个人之间没有私信</p>'}</div>`; }
   catch(e){ b.disabled = false; apiFail(e); } };
 ACTIONS['dv-open'] = b => dmViewSheet(b.dataset.a, b.dataset.b, b.dataset.why || '');
 
@@ -10638,7 +10645,8 @@ function avShapesImg(sp){ const k = JSON.stringify(sp); if (AVSH[k]) return AVSH
 const avAbs = u => u && u.startsWith('/') ? (API.base || '') + u : u;
 { const au0 = apiUser;
   apiUser = function(u, extra){ const r = au0(u, extra);   // 头像以服务器为准：拼的头像现画，照片用稳定地址，都没有就用首字母
-    if ('avatarShapes' in u || 'avatarUrl' in u){ if (u.avatarShapes) AVIMG[u.id] = avShapesImg(u.avatarShapes); else if (u.avatarUrl) AVIMG[u.id] = avAbs(u.avatarUrl); else delete AVIMG[u.id]; }
+    if ('avatarShapes' in u || 'avatarUrl' in u){ const was = AVIMG[u.id]; if (u.avatarShapes) AVIMG[u.id] = avShapesImg(u.avatarShapes); else if (u.avatarUrl) AVIMG[u.id] = avAbs(u.avatarUrl); else delete AVIMG[u.id];
+      if (u.id === ME && was !== AVIMG[u.id]) store.set('avImgs', {[ME]: AVIMG[ME]}); }   // 只记自己的（拼的头像是 data 地址，别人的太多会撑大本地存储）
     return r; }; }
 const avMeRefresh = () => { if (STATE.role === 'user') setRole('user', true); };
 wrapAct('ave-save', async (orig, b, e) => { if (!liveUser()) return orig(b, e);
@@ -10896,6 +10904,144 @@ wrapAct('mod-do', async (orig, b) => { const p = POST(b.dataset.id); if (!p?.liv
   try { if (v !== 'warn') await STAFF.req('POST', `/admin/posts/${p.id}/takedown`, {reason:why}); if (v !== 'take') await STAFF.req('POST', `/admin/users/${p.author}/actions`, {action:'warn', reason:why}); }
   catch(e){ apiFail(e); return; }
   orig(b); });
+
+/* ================= 合作接后端（连着后端时） =================
+   · 订单存在服务器（/collabs），CO.orders 里放的是服务器的订单（coMap 换成原型的样子，o.live = true），页面代码不用改
+   · 每一步在两人私信里有一条：co = 邀约卡片（body = 卡片版本），cosys = 状态说明（{a} 做事的人，{b} 另一方，coTxt 按看的人换成「你」或名字）
+   · 按钮的做法：先调接口，成功了再跑原来的操作（动效、关面板），最后用服务器的订单覆盖本地、重读私信；对方的回应不再模拟（coSim 对真实订单不动）
+   · 主页「合作」：业务和好评度读 /users/{id}/collab（USVC / LCO.rep）；自己的业务设置 PUT /me/collab/svcs
+   · 后台「合作纠纷」读 /admin/collabs，裁决 /admin/collabs/{id}/rule */
+const LCO = {rep:{}, busy:{}, seen:{}, at:0};
+function coTxt(t, a, b){ return String(t || '').replace(/( ?)\{([ab])\}( ?)/g, (m, s1, k, s2) => { const x = k === 'a' ? a : b; return x === ME ? '你' : s1 + uname(x) + s2; }); }
+const coT = v => v ? +new Date(v) : undefined;
+function coMap(s){
+  apiUser(s.from); apiUser(s.to); const y = v => v == null ? null : f2y(v), other = by => by === s.from.id ? s.to.id : s.from.id;
+  const o = CO_BY(s.id) || {};
+  Object.assign(o, {id:s.id, no:s.no, live:true, from:s.from.id, to:s.to.id, svc:s.svc, title:s.title, note:s.note, budget:y(s.budget), price:y(s.price), due:s.due, fields:s.fields || {},
+    st:{paying:'accepted', ruling:'dispute'}[s.status] || s.status, v:s.v, rev:s.rev, offers:s.offers.map(x => ({by:x.by, price:f2y(x.price), note:x.note, ts:+new Date(x.at)})),
+    ts:+new Date(s.createdAt), paidAt:coT(s.paidAt), delivAt:coT(s.delivAt), doneAt:coT(s.doneAt), why:s.why, fee:y(s.fee),
+    ruling:s.ruling ? {kind:s.ruling.kind, refund:f2y(s.ruling.refund), text:s.ruling.text} : null,
+    deliv:s.deliv ? {ver:s.deliv.ver, by:s.to.id, links:s.deliv.links, texts:s.deliv.texts, files:s.deliv.files.map(f => f.name), fi:s.deliv.files} : null,
+    rated:Object.fromEntries(s.rated.map(u => [u, true])),
+    log:s.log.map(e => ({k:'sys', by:e.by, text:coTxt(e.text, e.by, other(e.by)), ts:+new Date(e.at)}))});
+  if (!CO.orders.includes(o)) CO.orders.unshift(o);
+  return o; }
+async function coLoad(){ try { const r = await API.req('GET', '/me/collabs'); const ids = new Set(r.items.map(s => s.id));
+  for (let i = CO.orders.length - 1; i >= 0; i--){ const o = CO.orders[i]; if ((o.from === ME || o.to === ME) && !ids.has(o.id)) CO.orders.splice(i, 1); }   // 后台读来的别人的订单不动
+  r.items.slice().reverse().forEach(coMap); LCO.at = Date.now(); } catch(e){} }
+async function coFetch(id){ try { coMap(await API.req('GET', `/collabs/${encodeURIComponent(id)}`)); } catch(e){} }
+/* 某人接的业务和好评度 */
+async function coPeer(uid){ if (LCO.busy[uid]) return; LCO.busy[uid] = true;
+  try { const r = await API.req('GET', `/users/${encodeURIComponent(uid)}/collab`); r.rep.reviews.forEach(v => apiUser(v.user));
+    LCO.rep[uid] = {avg:r.rep.avg, n:r.rep.n, done:r.rep.done, ontime:r.rep.ontime, reply:r.rep.reply, tags:r.rep.tags.map(t => [t.t, t.n]),
+      reviews:r.rep.reviews.map(v => ({u:v.user.id, s:v.stars, svc:v.svc, t:v.body || ['', '不太满意', '一般', '还不错', '很满意', '超出预期'][v.stars], tags:v.tags, ts:+new Date(v.createdAt)}))};
+    const sv = r.svcs.map(s => ({k:s.k, on:s.on, from:s.from == null ? null : f2y(s.from)}));
+    if (uid === ME){ if (!LCO.svcDirty) COLLAB.svcs.forEach(x => { const s = sv.find(v => v.k === x.k); if (s){ x.on = s.on; x.from = s.from; } else x.on = false; }); }   // 自己刚改、还没存上的不覆盖
+    else USVC[uid] = sv.filter(s => s.on); }
+  catch(e){} finally { LCO.busy[uid] = false; } }
+/* 私信里出现的合作：最新一条变了就重读那一单（卡片显示的是最新状态） */
+async function coSync(msgs){ const last = {};
+  (msgs || []).forEach(m => { if ((m.t === 'co' || m.t === 'cosys') && m.ref) last[m.ref] = m.id; });
+  for (const [ref, id] of Object.entries(last)) if (LCO.seen[ref] !== id || !CO_BY(ref)){ LCO.seen[ref] = id; await coFetch(ref); } }
+
+/* 启动 / 登录：清掉示例合作，读自己的 */
+{ const lr0 = liveReset; liveReset = function(){ lr0(); if (!API.on()) return; CO_LIVE = true;
+    CO.orders.splice(0); for (const k in REP) delete REP[k]; for (const k in USVC) delete USVC[k]; COLLAB.svcs.forEach(x => { x.on = false; });
+    for (const u in CHATS) CHATS[u] = (CHATS[u] || []).filter(m => m.t !== 'co' && m.t !== 'cosys'); }; }
+async function coBoot(){ LCO.rep = {}; LCO.seen = {}; await Promise.all([coLoad(), coPeer(ME)]); }
+{ const after4 = liveAfterLogin; liveAfterLogin = async function(){ await after4(); await coBoot(); rerender(); }; }
+{ const boot3 = liveBoot; liveBoot = async function(){ await boot3();
+    const k = LIVE.cfg?.collab; if (k){ CO_FEE = k.fee; CO_FREE_REV = k.freeRev; CO_AUTO_DAYS = k.autoDays; }   // 服务费、免费修改次数、自动验收天数以服务器为准
+    if (liveUser()){ await coBoot(); rerender(); } }; }
+{ const rp0 = repOf; repOf = function(uid){ if (!API.on()) return rp0(uid);
+    if (!LCO.rep[uid] && !LCO.busy[uid]) coPeer(uid).then(() => { if (LCO.rep[uid]) rerender(); });
+    return LCO.rep[uid] || {avg:0, n:0, done:0, ontime:1, reply:'—', tags:[], reviews:[]}; }; }
+{ const ur0 = ROUTES.user; ROUTES.user = id => { if (API.on() && id && !LCO.rep[id] && !LCO.busy[id]) coPeer(id).then(() => { if (CUR.key === 'user|' + id) rerender(); }); return ur0(id); }; }
+{ const sr0 = ROUTES.seller; ROUTES.seller = arg => { if (liveUser() && Date.now() - LCO.at > 8000){ LCO.at = Date.now(); Promise.all([coLoad(), coPeer(ME)]).then(() => { if (CUR.key?.startsWith('seller')) rerender(); }); } return sr0(arg); }; }
+{ const dc0 = dmConv; dmConv = async function(uid){ await dc0(uid); await coSync(CHATS[uid]); }; }
+{ const dt0 = dmThreads; dmThreads = async function(){ const r = await dt0(); await coSync(Object.values(CHATS).map(l => l?.[l.length - 1]).filter(Boolean)); return r; }; }
+{ const sim0 = coSim; coSim = function(o, ev){ if (!o?.live) sim0(o, ev); }; }   // 真实订单：对方的回应来自对方本人
+
+/* 做完一步：用服务器的订单覆盖本地，重读私信 */
+async function coAfter(r, fx){ const o = coMap(r), u = coOther(o);
+  if (dmLive(u)){ try { await dmConv(u); } catch(e){} LDM.sig[u] = null; dmPaint(u); }
+  coRefresh(o, fx); msgBadge(); return o; }
+const coAct = (o, body) => API.req('POST', `/collabs/${encodeURIComponent(o.id)}/act`, body);
+
+/* 发邀约 */
+{ const send0 = coSend; coSend = async function(){ if (!liveUser()) return send0();
+    const d = $('#layer .sheet'), D = SVC_DEF[CF.k], b = $('#cfB'), fields = {...CF.f}, uid = CF.uid;
+    $$('[data-cf]', d).forEach(i => { if (i.value.trim()) fields[i.dataset.cf] = i.value.trim(); });
+    const ref = $('#cfR').value.trim(), note = $('#cfN').value.trim() + (ref ? `\n参考：${ref}` : '');
+    let r; try { r = await API.req('POST', '/collabs', {to:uid, svc:CF.k, title:$('#cfT').value.trim(), note, budget:CF.k === 'co' || !b?.value ? null : y2f(+b.value), due:CF.due, fields}); }
+    catch(e){ apiFail(e); return; }
+    coMap(r); sfx('ok'); haptic(14);
+    const st = document.createElement('div'); st.className = 'cf-sent'; st.innerHTML = `<span class="stamp big pop" style="--sc:var(--pink)">SENT<small>已发出</small></span>`; d.appendChild(st);
+    const sr = st.firstChild.getBoundingClientRect(); fxShapes(sr.left + sr.width/2, sr.top + sr.height/2, 24, 160, ['pink','blue','yellow','orange'], 70);
+    setTimeout(() => { const rc = d.getBoundingClientRect(); closeSheet(); coFlyToMsg(rc, D.c); toast(`邀约已发给 ${esc(uname(uid))}，回复会出现在私信里`, 'pink', 'chat'); rerender(); dmThreads().then(() => { msgBadge(); if (CUR.key?.startsWith('msg')) dmPaint(''); }).catch(() => {}); }, reduced() ? 300 : 900); }; }
+
+/* 卡片上直接生效的：同意新报价 / 不接受 */
+wrapAct('co-a', async (orig, b, e) => { const o = CO_BY(b.dataset.id), a = b.dataset.a; if (!o?.live || (a !== 'agree' && a !== 'reject')) return orig(b, e);
+  b.disabled = true; try { const r = await coAct(o, {a}); if (a === 'agree') burst(e?.clientX || 0, e?.clientY || 0, ['pink','yellow']); await coAfter(r, a === 'reject' ? 'fx-dn' : null); }
+  catch(err){ b.disabled = false; apiFail(err); } });
+/* 面板里确认的：接下 / 婉拒 / 改价 / 撤回 / 验收 / 申请修改 / 申请平台介入 */
+wrapAct('co-do', async (orig, b, e) => { const o = CO_BY(b.dataset.id); if (!o?.live) return orig(b, e);
+  const a = b.dataset.a, chip = $('[data-act="co-why"].on')?.dataset.v || '', body = {a};
+  if (a === 'decline') body.why = chip;
+  if (a === 'counter'){ const p = +$('#coCp').value; if (!p){ fxPop($('#coCp'), 'fx-shake', 300); return; } body.price = y2f(p); body.note = $('#coCn').value.trim(); }
+  if (a === 'revise') body.text = $('#coRv').value.trim();
+  if (a === 'dispute'){ const x = $('#coDp')?.value.trim(); body.why = (chip + (x ? '：' + x : '')) || '其他'; }
+  b.disabled = true; let r;
+  try { r = await coAct(o, body); } catch(err){ b.disabled = false; apiFail(err); return; }
+  orig(b, e); coAfter(r); });
+/* 担保付款：先扣款，成功了再播原来的托管动画 */
+wrapAct('co-paygo', async (orig, b, e) => { const o = CO_BY(b.dataset.id); if (!o?.live) return orig(b, e);
+  b.disabled = true; let r;
+  try { r = await coAct(o, {a:'pay', method:{'微信支付':'wechat', '支付宝':'alipay'}[UI.pay] || 'card'}); } catch(err){ b.disabled = false; apiFail(err); return; }
+  orig(b, e); coMap(r); setTimeout(() => coAfter(r), 1400); });
+/* 提交交付：文件先传上去 */
+wrapAct('co-dsend', async (orig, b, e) => { const o = CO_BY(b.dataset.id); if (!o?.live) return orig(b, e);
+  const url = $('#cdU').value.trim(), code = $('#cdC').value.trim(), text = $('#cdT').value.trim(), f = $('#cdF').files?.[0];
+  if (!url && !text && !f){ fxPop($('#cdU'), 'fx-shake', 300); toast('至少放一个链接、文件或文字说明', 'orange', 'link'); return; }
+  if (url && !/^https?:\/\/\S+$/i.test(url)){ fxPop($('#cdU'), 'fx-shake', 300); toast('链接要以 http:// 或 https:// 开头', 'orange', 'link'); return; }
+  b.disabled = true; b.textContent = f ? '正在上传…' : '提交中…'; let r;
+  try { const files = f ? [{id:(await liveUpload(f, 'collab_file')).id, name:f.name.slice(0, 120)}] : [];
+    r = await coAct(o, {a:'deliver', url, code, text, files}); }
+  catch(err){ b.disabled = false; b.textContent = '提交交付'; apiFail(err); return; }
+  orig(b, e); coAfter(r, 'fx-jelly'); });
+/* 互评 */
+wrapAct('co-rsend', async (orig, b, e) => { const o = CO_BY(b.dataset.id); if (!o?.live) return orig(b, e);
+  const box = $('.co-rate'), s = +box.dataset.s; if (!s){ fxPop(box.querySelector('.co-sts'), 'fx-shake', 300); toast('先点星星打分', 'orange', 'star'); return; }
+  b.disabled = true; let r;
+  try { r = await API.req('POST', `/collabs/${encodeURIComponent(o.id)}/rate`, {stars:s, body:$('#coRt').value.trim(), tags:$$('.co-rate [data-act="co-tag"].on').map(t => t.textContent)}); }
+  catch(err){ b.disabled = false; apiFail(err); return; }
+  const u = coOther(o); REP[u] ||= {done:0, ontime:1, reply:'—', base:[0, 0], reviews:[]};   // 原来的操作会往 REP 里记一条（真实数据以服务器为准）
+  orig(b, e); delete LCO.rep[u]; coAfter(r); });
+/* 查看交付：真实文件给 15 分钟的下载地址 */
+{ const dv0 = coDelivView; coDelivView = function(o){ dv0(o); if (!o?.live || !o.deliv?.fi?.length) return;
+    $$('#layer .sheet [data-act="fake-dl"]').forEach((x, i) => { x.dataset.act = 'co-file'; x.dataset.id = o.id; x.dataset.i = o.deliv.fi[i]?.i ?? i; }); }; }
+ACTIONS['co-file'] = async b => { try { const r = await API.req('GET', `/collabs/${encodeURIComponent(b.dataset.id)}/files/${+b.dataset.i}`);
+  const a = Object.assign(document.createElement('a'), {href:r.url, download:r.name}); document.body.appendChild(a); a.click(); a.remove(); toast('开始下载：' + esc(r.name), 'blue', 'dl'); } catch(e){ apiFail(e); } };
+
+/* 工作室「我接的业务」：开关、起价存服务器 */
+let coSvcT = 0;
+function coSvcSave(){ clearTimeout(coSvcT); LCO.svcDirty = true; coSvcT = setTimeout(async () => {
+  try { await API.req('PUT', '/me/collab/svcs', {svcs:COLLAB.svcs.map(x => ({k:x.k, on:x.on, from:x.k === 'co' || x.from == null ? null : y2f(x.from)}))}); LCO.svcDirty = false; delete LCO.rep[ME]; }
+  catch(e){ LCO.svcDirty = false; apiFail(e); await coPeer(ME); rerender(); } }, 400); }
+wrapAct('co-svc', (orig, b, e) => { orig(b, e); if (liveUser()) coSvcSave(); });
+wrapAct('co-psave', (orig, b, e) => { orig(b, e); if (liveUser()) coSvcSave(); });
+
+/* 后台「合作纠纷」 */
+{ const dp0 = ADMV.disputes;
+  ADMV.disputes = () => { if (!API.on()) return dp0();
+    if (!LADM.disputes){ ladmGet('disputes', '/admin/collabs?view=all', r => r.items.map(s => coMap(s).id)); return ladmWait('合作纠纷', '读取中'); }
+    return dp0(); }; }
+wrapAct('dp-go', async (orig, b) => { const o = CO_BY(b.dataset.id); if (!o?.live) return orig(b); if (!admGuard('disputes')) return;
+  const k = $('#dpK .on')?.dataset.v || 'release', note = $('#dpWhy').value.trim(); if (!note){ fxPop($('#dpWhy'), 'fx-shake', 300); $('#dpWhy').focus(); return; }
+  b.disabled = true;
+  try { await STAFF.req('POST', `/admin/collabs/${encodeURIComponent(o.id)}/rule`, {kind:k === 'part' ? 'partial' : k, refund:k === 'part' ? y2f(+$('#dpAmt').value) : 0, note});
+    closeSheet(); toast('已裁决，已通知双方', 'green', 'check'); LADM.disputes = null; rerender(); }
+  catch(e){ b.disabled = false; apiFail(e); } });
 
 (function boot(){
   STATE.hist = store.get('hist', null) || [{k:'post', id:'s3', ts:Date.now() - 2*3600e3}, {k:'item', id:'p3', ts:Date.now() - 5*3600e3}, {k:'video', id:'s2', ts:Date.now() - 26*3600e3}, {k:'post', id:'s8', ts:Date.now() - 30*3600e3}];
