@@ -1798,7 +1798,7 @@ html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
 /* 深浅色切换的过场（themeFx）：新外观整张盖在上面，露出的形状由 --thc（clip-path）或 --thm…（mask）每帧决定；
    顶栏 / 底栏这时不单独成组，跟着整页一起被遮；特效画布 thfx 盖在最上面 */
 html.thvt .hd,html.thvt .tb,html.thvt .player{view-transition-name:none!important}
-html.thvt::view-transition-old(root),html.thvt::view-transition-new(root){animation:none;mix-blend-mode:normal}
+html.thvt::view-transition-old(root),html.thvt::view-transition-new(root){animation:none;mix-blend-mode:normal;filter:var(--thf,none)}
 html.thvt::view-transition-new(root){clip-path:var(--thc,none);-webkit-mask-image:var(--thm,none);mask-image:var(--thm,none);mask-composite:var(--thmc,add);mask-size:var(--thms,auto);mask-repeat:var(--thmr,repeat);mask-position:var(--thmp,0 0);-webkit-mask-size:var(--thms,auto);-webkit-mask-repeat:var(--thmr,repeat);-webkit-mask-position:var(--thmp,0 0)}
 html.thvt::view-transition-group(thfx),html.thvt::view-transition-old(thfx),html.thvt::view-transition-new(thfx){animation:none}
 @keyframes vtInR{from{transform:translateX(100%)}}
@@ -8808,30 +8808,34 @@ const THX_FX = {
   ],
   /* —— 变暗 —— */
   dark:[
-    { n:'黑色金属粘液', dur:1700,
-      init(F){ F.N = 180; F.pk = []; F.nx = 0; F.amp = Math.min(F.W, F.H)*.055; F.wid = Math.min(F.W, F.H)*.08;
-        F.drips = Array.from({length:7}, () => ({a:Math.PI*(.12 + Math.random()*.76), w:.04 + Math.random()*.06, L:F.H*(.12 + Math.random()*.35), d:Math.random()*.35})); },
+    { n:'黑色金属粘液', dur:900,
+      init(F){ F.N = 180; F.pk = []; F.nx = 0; F.amp = Math.min(F.W, F.H)*.05; F.wid = Math.min(F.W, F.H)*.07;
+        F.drips = Array.from({length:7}, () => ({a:Math.PI*(.12 + Math.random()*.76), w:.04 + Math.random()*.06, L:F.H*(.12 + Math.random()*.3), d:Math.random()*.3}));
+        F.lens(true); },
       frame(F, k, g, t){ const o = F.o, N = F.N;
-        const Rb = F.Rm*1.15*(k < .15 ? (k/.15)*(k/.15)*.07 : .07 + .93*thE.io((k - .15)/.85));   // 先慢慢冒出来，再涌出去
-        // 和 CONCRETE 鼓面一样：每 140ms 从按钮发出一道波包，跑得比边界快，经过边界时把它往外鼓一下
-        while (t >= F.nx){ F.pk.push(F.nx); F.nx += 140; }
-        const pk = F.pk.map(t0 => ({r:(t - t0)*F.Rm/650, life:Math.max(0, 1 - (t - t0)/1200)}));
-        const R = a => { let r = Rb; for (const p of pk){ const q = (Rb - p.r)/F.wid; r += Math.exp(-q*q)*F.amp*p.life; }
-          r += (Math.sin(a*5 + t/180)*.5 + Math.sin(a*11 - t/130)*.3)*F.amp*.4*(1 - k);   // 黏稠、不规则
+        const Rb = F.Rm*1.12*(k < .08 ? (k/.08)*(k/.08)*.05 : .05 + .95*thE.io((k - .08)/.92));   // 先冒一下，马上涌出去
+        // 和 CONCRETE 鼓面一样：每 90ms 从按钮发出一道波包，跑得比边界快，经过边界时把它往外鼓一下
+        while (t >= F.nx){ F.pk.push(F.nx); F.nx += 90; }
+        const pk = F.pk.map(t0 => ({r:(t - t0)*F.Rm/380, life:Math.max(0, 1 - (t - t0)/700)})).filter(p => p.life > 0);
+        const rad = new Float32Array(N), out = [];
+        for (let i = 0; i < N; i++){ const a = i/N*Math.PI*2; let r = Rb;
+          for (const p of pk){ const q = (Rb - p.r)/F.wid; r += Math.exp(-q*q)*F.amp*p.life; }
+          r += (Math.sin(a*5 + t/120)*.5 + Math.sin(a*11 - t/90)*.3)*F.amp*.4*(1 - k);   // 黏稠、不规则
           for (const d of F.drips){ const da = thAng(a, d.a); r += Math.exp(-(da/d.w)*(da/d.w))*d.L*thE.io(clamp((k - d.d)/(1 - d.d), 0, 1)); }   // 往下淌
-          return r; };
-        const out = [], inn = [];
-        for (let i = 0; i < N; i++){ const a = i/N*Math.PI*2, r = R(a), c = Math.cos(a), s = Math.sin(a); out.push([o.x + c*r, o.y + s*r]); inn.push([o.x + c*(r - 8), o.y + s*(r - 8)]); }
+          rad[i] = r; out.push([o.x + Math.cos(a)*r, o.y + Math.sin(a)*r]); }
         F.clip(thPoly(out));
-        const fade = 1 - Math.pow(k, 5), path = pts => { g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath(); };
-        // 液态金属的边：黑底 + 一条拉丝的铬色反光 + 一道高光
+        // 透镜：边缘是一道鼓起来的液体脊，两边的画面都被往脊上拉（像透过一滴液体看）；里面每道波纹也把黑夜里的画面推一下
+        const fade = 1 - Math.pow(k, 4);
+        if (k > .88) F.lens(false); else { let mr = 0; for (let i = 0; i < N; i++) if (rad[i] > mr) mr = rad[i]; F.lensBox(o.x, o.y, mr + 150); }   // 快结束时透镜已经淡掉，直接关
+        const w = 46, K = .9*fade, TA = N/(Math.PI*2);
+        if (k <= .88) F.disp((r, a) => { const i = (a*TA | 0) % N, d = r - rad[i]; let off = d > -140 && d < 140 ? -d*Math.exp(-(d/w)*(d/w))*K : 0;
+          if (d < 0) for (const p of pk){ const q = r - p.r; if (q > -70 && q < 70 && p.r < rad[i]) off -= q*Math.exp(-(q/26)*(q/26))*.55*p.life; }
+          return off; }, 46);
+        // 边上只留一道很细的高光和一圈暗影，主要靠折射
         g.lineJoin = 'round'; g.globalAlpha = fade;
-        path(out); g.strokeStyle = '#08080a'; g.lineWidth = 24; g.stroke();
-        const ch = g.createLinearGradient(o.x - Rb, o.y - Rb, o.x + Rb, o.y + Rb); [['#060608', 0], ['#3b3e46', .28], ['#d4d8e0', .48], ['#5b5f69', .6], ['#17181c', .78], ['#060608', 1]].forEach(([c, s]) => ch.addColorStop(s, c));
-        g.strokeStyle = ch; g.lineWidth = 12; g.stroke();
-        path(inn); g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 2; g.stroke();
-        // 粘液里一圈圈的波纹（鼓面刻纹）
-        for (const p of pk) if (p.r < Rb - 10 && p.life > 0){ g.strokeStyle = `rgba(205,210,220,${.16*p.life})`; g.lineWidth = 2; g.beginPath(); g.arc(o.x, o.y, p.r, 0, Math.PI*2); g.stroke(); }
+        g.beginPath(); out.forEach((p, i) => { const s = (rad[i] - 5)/rad[i], x = o.x + (p[0] - o.x)*s, y = o.y + (p[1] - o.y)*s; i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath();
+        g.strokeStyle = 'rgba(255,255,255,.5)'; g.lineWidth = 1.5; g.stroke();
+        g.beginPath(); out.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath(); g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 3; g.stroke();
         g.globalAlpha = 1; } },
     { n:'日食', dur:1550,
       frame(F, k, g){ const o = F.o, s = 26, A = .34;
@@ -8865,21 +8869,75 @@ const THX_FX = {
         if (my > 30){ g.save(); g.globalAlpha = end; g.fillStyle = '#F2EFD8'; g.beginPath(); g.arc(mx, my, 20, 0, Math.PI*2); g.fill(); g.globalCompositeOperation = 'destination-out'; g.beginPath(); g.arc(mx + 9, my - 6, 18, 0, Math.PI*2); g.fill(); g.restore(); } } }
   ]
 };
+/* 手机上切换按钮是侧边菜单里的一行字，不是圆按钮：从按钮「长出来」的手电筒、日食、冲击波不合适，换成整屏的效果 */
+const thBlinds = dark => ({ n:dark ? '百叶窗合上' : '百叶窗拉开', dur:1000,
+  frame(F, k, g){ const W = F.W, H = F.H, n = 9, bh = H/n, pts = [], edges = [];
+    for (let i = 0; i < n; i++){ const q = thE.io(clamp((k - i*.055)/.5, 0, 1)), h = bh*q + (q > 0 ? .6 : 0), y0 = i*bh + (bh - h)/2;   // 从上往下一片一片翻开
+      pts.push([0, y0], [W, y0], [W, y0 + h], [0, y0 + h]); if (q > 0 && q < 1) edges.push(y0, y0 + h); }
+    F.clip(thPoly(pts));
+    g.lineWidth = 1.5; g.strokeStyle = dark ? 'rgba(150,160,255,.55)' : 'rgba(255,214,140,.8)';   // 叶片边上一道反光
+    for (const y of edges){ g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); } } });
+const THX_FX_M = {
+  light:[
+    { n:'日出', dur:1150,
+      frame(F, k, g, t){ const W = F.W, H = F.H, n = 48, e = thE.io(k);
+        const edge = x => { const u = (x - W/2)/(W/2); return H + 30 - (H*1.35 + 60)*e - 70*(1 - u*u)*(1 - k*.5); };   // 中间拱起的地平线往上升
+        const pts = [[0, H + 20], [W, H + 20]]; for (let i = n; i >= 0; i--){ const x = W*i/n; pts.push([x, edge(x)]); }
+        F.clip(thPoly(pts));
+        const fade = Math.max(0, 1 - k*1.15), sy = edge(W/2);
+        if (fade <= 0) return;
+        const gl = g.createLinearGradient(0, sy - 110, 0, sy + 40); gl.addColorStop(0, 'rgba(255,150,80,0)'); gl.addColorStop(.65, `rgba(255,160,90,${.7*fade})`); gl.addColorStop(1, `rgba(255,224,160,${.95*fade})`);
+        g.fillStyle = gl; g.beginPath(); for (let i = 0; i <= n; i++){ const x = W*i/n; i ? g.lineTo(x, edge(x) - 110) : g.moveTo(x, edge(x) - 110); } for (let i = n; i >= 0; i--){ const x = W*i/n; g.lineTo(x, edge(x) + 2); } g.closePath(); g.fill();   // 地平线上的霞光
+        const r = Math.min(W, H)*.11; g.save(); g.beginPath(); for (let i = 0; i <= n; i++){ const x = W*i/n; i ? g.lineTo(x, edge(x)) : g.moveTo(x, edge(x)); } g.lineTo(W, -10); g.lineTo(0, -10); g.closePath(); g.clip();   // 太阳只露出地平线上面那半
+        g.fillStyle = `rgba(255,210,90,${fade})`; g.beginPath(); g.arc(W/2, sy + r*.35, r, 0, Math.PI*2); g.fill();
+        g.strokeStyle = `rgba(255,214,120,${.7*fade})`; g.lineWidth = 3;
+        for (let i = 0; i < 9; i++){ const a = Math.PI*(1.08 + i*.105) + Math.sin(t/300)*.03, r1 = r*1.35, r2 = r*(1.75 + .25*Math.sin(t/160 + i)); g.beginPath(); g.moveTo(W/2 + Math.cos(a)*r1, sy + r*.35 + Math.sin(a)*r1); g.lineTo(W/2 + Math.cos(a)*r2, sy + r*.35 + Math.sin(a)*r2); g.stroke(); }
+        g.restore(); } },
+    thBlinds(false),
+    null   // 半调印刷（和电脑版同一个，下面填进来）
+  ],
+  dark:[null, null, thBlinds(true)]   // 粘液、夜幕和电脑版同一个
+};
+THX_FX_M.light[2] = THX_FX.light.find(f => f.n === '半调印刷');
+THX_FX_M.dark[0] = THX_FX.dark.find(f => f.n === '黑色金属粘液'); THX_FX_M.dark[1] = THX_FX.dark.find(f => f.n === '夜幕');
+/* 透镜：一张 SVG 位移贴图滤镜，挂在新旧两张快照上（--thf）。贴图每帧按效果给的「每个点往哪偏多少」画在 1/4 分辨率的画布上 */
+function thLensSvg(W, H){
+  if (!THX.svg){ const n = 'http://www.w3.org/2000/svg', v = document.createElementNS(n, 'svg'); v.setAttribute('aria-hidden', 'true'); v.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
+    v.innerHTML = '<filter id="thxLens" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB" x="0" y="0"><feImage preserveAspectRatio="none" x="0" y="0" result="m"/><feDisplacementMap in="SourceGraphic" in2="m" xChannelSelector="R" yChannelSelector="G" scale="0"/></filter>';
+    document.body.appendChild(v); THX.svg = v; THX.map = v.querySelector('feImage'); THX.dm = v.querySelector('feDisplacementMap');
+    const c = Object.assign(document.createElement('canvas'), {width:1, height:1}), x = c.getContext('2d'); x.fillStyle = 'rgb(128,128,128)'; x.fillRect(0, 0, 1, 1); THX.flat = c.toDataURL(); }
+  const f = THX.svg.querySelector('filter'); f.setAttribute('x', 0); f.setAttribute('y', 0); f.setAttribute('width', W); f.setAttribute('height', H);
+  THX.map.setAttribute('width', W); THX.map.setAttribute('height', H); THX.map.setAttribute('href', THX.flat); THX.dm.setAttribute('scale', 0);
+}
+/* 位移都是沿着离开起点的方向（径向）：每个贴图像素到起点的距离、角度、方向开始时算一次；fn(r, a) 只返回径向偏移（像素）。
+   贴图用 toBlob 在后台编码（不卡主线程），上一张还没编好就跳过这一帧 */
+function thDisp(F, fn, max){
+  const sc = Math.max(4, Math.round(Math.max(F.W, F.H)/320)), sw = Math.ceil(F.W/sc), sh = Math.ceil(F.H/sc), n = sw*sh;
+  if (!F._dc){ F._dc = Object.assign(document.createElement('canvas'), {width:sw, height:sh}); F._dx = F._dc.getContext('2d'); F._di = F._dx.createImageData(sw, sh);
+    F._r = new Float32Array(n); F._a = new Float32Array(n); F._nx = new Float32Array(n); F._ny = new Float32Array(n);
+    for (let j = 0, q = 0; j < sh; j++) for (let i = 0; i < sw; i++, q++){ const dx = (i + .5)*sc - F.o.x, dy = (j + .5)*sc - F.o.y, r = Math.hypot(dx, dy) || 1, a = Math.atan2(dy, dx);
+      F._r[q] = r; F._a[q] = a < 0 ? a + Math.PI*2 : a; F._nx[q] = dx/r; F._ny[q] = dy/r; } }
+  if (F._busy) return; const D = F._di.data, k = 255/(max*2);
+  for (let q = 0, p = 0; q < n; q++, p += 4){ const off = fn(F._r[q], F._a[q]); D[p] = 128 + F._nx[q]*off*k; D[p + 1] = 128 + F._ny[q]*off*k; D[p + 2] = 128; D[p + 3] = 255; }
+  F._dx.putImageData(F._di, 0, 0); F._busy = true;
+  F._dc.toBlob(bl => { F._busy = false; if (!bl || THX.map.getAttribute('data-gen') !== String(THX.gen)) return; const u = URL.createObjectURL(bl), old = F._url; F._url = u;
+    THX.map.setAttribute('href', u); THX.dm.setAttribute('scale', max*2); if (old) setTimeout(() => URL.revokeObjectURL(old), 200); });
+}
 /* apply：真正切换外观（不带淡入淡出）；el：从哪个按钮开始 */
 function themeFx(apply, el){
   const R = document.documentElement;
   if (!document.startViewTransition || reduced()){ if (!STATE.settings.rm){ R.classList.add('theming'); setTimeout(() => R.classList.remove('theming'), 450); } apply(); return; }
-  const b = el?.getBoundingClientRect?.(), W = innerWidth, H = innerHeight, before = isDark();
+  const b = (el?.querySelector?.('svg') || el)?.getBoundingClientRect?.(), W = innerWidth, H = innerHeight, before = isDark(), mob = isMob();
   const o = b && b.width ? {x:Math.round(b.left + b.width/2), y:Math.round(b.top + b.height/2)} : {x:W - 40, y:40};
   if (VT.t){ try { VT.t.skipTransition(); } catch(e){} }
   const gen = ++THX.gen, set = (k, v) => v == null ? R.style.removeProperty(k) : R.style.setProperty(k, v);
-  const clear = () => ['--thc', '--thm', '--thmc', '--thms', '--thmr', '--thmp'].forEach(k => set(k, null));
-  clear(); R.classList.add('thvt');
+  const clear = () => ['--thc', '--thm', '--thmc', '--thms', '--thmr', '--thmp', '--thf'].forEach(k => set(k, null));
+  clear(); thLensSvg(W, H); THX.map.setAttribute('data-gen', String(gen)); R.classList.add('thvt');
   let cv = null, fx = null;
   const t = document.startViewTransition(() => {
     apply();
     const dark = isDark(); if (dark === before) return;
-    const L = THX_FX[dark ? 'dark' : 'light']; let i; do i = Math.random()*L.length | 0; while (L.length > 1 && i === THX.last[dark]); THX.last[dark] = i; fx = L[i];
+    const L = (mob ? THX_FX_M : THX_FX)[dark ? 'dark' : 'light'], key = (mob ? 'm' : 'd') + dark; let i; do i = Math.random()*L.length | 0; while (L.length > 1 && i === THX.last[key]); THX.last[key] = i; fx = L[i];
     set('--thc', 'circle(0px at 0 0)');   // 新外观先完全藏起来，等第一帧再露
     const dpr = Math.min(2, devicePixelRatio || 1); cv = document.createElement('canvas'); cv.width = W*dpr; cv.height = H*dpr;
     cv.style.cssText = `position:fixed;left:0;top:0;width:${W}px;height:${H}px;pointer-events:none;z-index:2147483000;view-transition-name:thfx`;
@@ -8890,6 +8948,9 @@ function themeFx(apply, el){
     if (!fx){ t.skipTransition(); return; }
     const g = cv.getContext('2d'), dpr = cv.width/W;
     const F = {o, W, H, Rm:thFar(o, W, H), clip:v => set('--thc', v),
+      lens:on => set('--thf', on ? 'url(#thxLens)' : null), disp:(fn, max) => thDisp(F, fn, max),
+      lensBox:(cx, cy, r) => { const f = THX.svg.querySelector('filter'), x = Math.max(0, cx - r), y = Math.max(0, cy - r);   // 滤镜只算粘液周围这一块，越小越快
+        f.setAttribute('x', x | 0); f.setAttribute('y', y | 0); f.setAttribute('width', Math.ceil(Math.min(W, cx + r) - x)); f.setAttribute('height', Math.ceil(Math.min(H, cy + r) - y)); },
       mask:(img, comp, size, rep, pos) => { set('--thc', 'none'); set('--thm', img); set('--thmc', comp || null); set('--thms', size || null); set('--thmr', rep || null); set('--thmp', pos || null); }};
     fx.init?.(F);
     // 用一段什么都不做的动画让过场持续 fx.dur（View Transition 等伪元素上的动画都结束才收尾）
