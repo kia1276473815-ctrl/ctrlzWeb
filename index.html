@@ -1795,6 +1795,12 @@ html[data-vt=pop]::view-transition-new(root){animation-name:vtInL}
 html[data-vt=tab]::view-transition-old(root){animation:vtFade .14s ease both reverse}
 html[data-vt=tab]::view-transition-new(root){animation:vtFade .2s ease both}
 ::view-transition-group(hd),::view-transition-group(tb){animation-duration:.2s}
+/* 深浅色切换的过场（themeFx）：新外观整张盖在上面，露出的形状由 --thc（clip-path）或 --thm…（mask）每帧决定；
+   顶栏 / 底栏这时不单独成组，跟着整页一起被遮；特效画布 thfx 盖在最上面 */
+html.thvt .hd,html.thvt .tb,html.thvt .player{view-transition-name:none!important}
+html.thvt::view-transition-old(root),html.thvt::view-transition-new(root){animation:none;mix-blend-mode:normal}
+html.thvt::view-transition-new(root){clip-path:var(--thc,none);-webkit-mask-image:var(--thm,none);mask-image:var(--thm,none);mask-composite:var(--thmc,add);mask-size:var(--thms,auto);mask-repeat:var(--thmr,repeat);mask-position:var(--thmp,0 0);-webkit-mask-size:var(--thms,auto);-webkit-mask-repeat:var(--thmr,repeat);-webkit-mask-position:var(--thmp,0 0)}
+html.thvt::view-transition-group(thfx),html.thvt::view-transition-old(thfx),html.thvt::view-transition-new(thfx){animation:none}
 @keyframes vtInR{from{transform:translateX(100%)}}
 @keyframes vtOutL{to{transform:translateX(-26%);filter:brightness(.94)}}
 @keyframes vtInL{from{transform:translateX(-26%);filter:brightness(.94)}}
@@ -8754,6 +8760,149 @@ function pageSwap(dir, fn){
   catch(e){ delete r.dataset.vt; fn(); }
 }
 
+/* ================= 深浅色切换的过场 =================
+   用 View Transitions：浏览器先拍一张旧外观的快照，我们在回调里换好新外观，然后每帧决定「新外观从哪里露出来」
+   （::view-transition-new(root) 的 clip-path / mask 由 CSS 变量 --thc / --thm… 控制），上面再盖一层画布画特效（view-transition-name: thfx，是活的）。
+   变亮、变暗各三种，每次随机、不和上一次重复。减少动效 / 浏览器不支持时退回原来的淡入淡出。点一下屏幕直接跳到结尾 */
+const THX = {last:{}, t:null, gen:0};
+const thE = {o3:k => 1 - Math.pow(1 - k, 3), i3:k => k*k*k, io:k => k < .5 ? 4*k*k*k : 1 - Math.pow(-2*k + 2, 3)/2};
+const thFar = (o, W, H) => Math.max(Math.hypot(o.x, o.y), Math.hypot(W - o.x, o.y), Math.hypot(o.x, H - o.y), Math.hypot(W - o.x, H - o.y));
+const thAng = (a, b) => { let d = (a - b) % (Math.PI*2); if (d > Math.PI) d -= Math.PI*2; if (d < -Math.PI) d += Math.PI*2; return d; };
+const thPoly = pts => `polygon(${pts.map(p => p[0].toFixed(1) + 'px ' + p[1].toFixed(1) + 'px').join(',')})`;
+const THX_FX = {
+  /* —— 变亮 —— */
+  light:[
+    { n:'冲击波', dur:950,
+      init(F){ F.sh = Array.from({length:16}, (_, i) => ({a:Math.random()*Math.PI*2, v:.45 + Math.random()*.8, s:8 + Math.random()*16, k:i % 4, c:['pink','blue','yellow','orange'][i % 4], r0:Math.random()*6, vr:(Math.random() - .5)*8})); },
+      frame(F, k, g){ const o = F.o, R = F.Rm*1.04*thE.o3(k);
+        F.clip(`circle(${R.toFixed(1)}px at ${o.x}px ${o.y}px)`);
+        // 套色没对准的三道波纹（孔版印刷）
+        ['yellow', 'pink', 'blue'].forEach((c, i) => { g.globalAlpha = Math.max(0, 1 - k)*.9; g.strokeStyle = INK[c]; g.lineWidth = 8*(1 - k) + 1; g.beginPath(); g.arc(o.x + i*2, o.y - i*2, R + 4 + i*10*(1 - k), 0, Math.PI*2); g.stroke(); });
+        // 品牌几何（圆 / 方 / 三角 / 半圆）飞出去
+        for (const s of F.sh){ const d = F.Rm*.6*thE.o3(k)*s.v, x = o.x + Math.cos(s.a)*d, y = o.y + Math.sin(s.a)*d, z = s.s*(1 - k*.4);
+          g.save(); g.globalAlpha = Math.max(0, 1 - k*k); g.translate(x, y); g.rotate(s.r0 + s.vr*k); g.fillStyle = INK[s.c]; g.beginPath();
+          if (s.k === 0) g.arc(0, 0, z, 0, Math.PI*2); else if (s.k === 1) g.rect(-z, -z, z*2, z*2); else if (s.k === 2){ g.moveTo(0, -z); g.lineTo(z, z*.8); g.lineTo(-z, z*.8); g.closePath(); } else { g.arc(0, z*.3, z, Math.PI, 0); g.closePath(); }
+          g.fill(); g.restore(); }
+        g.globalAlpha = 1; } },
+    { n:'手电筒', dur:1750,
+      init(F){ F.T = {x:F.W*.8, y:F.H*.2}; F.r0 = Math.min(F.W, F.H)*.2 + 26; F.Rt = thFar(F.T, F.W, F.H)*1.1; F.dust = Array.from({length:44}, () => ({u:Math.random(), v:Math.random()*2 - 1, p:Math.random()*6})); },
+      frame(F, k, g, t){ const A = .58, o = F.o, T = F.T; let cx, cy, r;
+        if (k < A){ const q = k/A, e = thE.io(q);   // 先往右上照过去，左右找一找
+          cx = o.x + (T.x - o.x)*e + Math.sin(q*Math.PI*2)*F.W*.05*(1 - q); cy = o.y + (T.y - o.y)*e + Math.sin(q*Math.PI*3)*F.H*.04*(1 - q);
+          r = 26 + (F.r0 - 26)*e; if (q < .14 && Math.sin(q*150) < 0) r *= .3;   // 刚打开时闪两下
+        } else { const q = (k - A)/(1 - A); cx = T.x; cy = T.y; r = F.r0 + (F.Rt - F.r0)*thE.io(q); }
+        F.mask(`radial-gradient(circle at ${cx.toFixed(1)}px ${cy.toFixed(1)}px, #000 ${(r*.78).toFixed(1)}px, transparent ${r.toFixed(1)}px)`);
+        const beam = k < A ? 1 : Math.max(0, 1 - (k - A)/(1 - A)*1.7); if (beam <= 0) return;
+        const dx = cx - o.x, dy = cy - o.y, d = Math.hypot(dx, dy) || 1, nx = -dy/d, ny = dx/d;
+        const gr = g.createLinearGradient(o.x, o.y, cx, cy); gr.addColorStop(0, `rgba(255,246,214,${.6*beam})`); gr.addColorStop(1, `rgba(255,246,214,${.07*beam})`);
+        g.fillStyle = gr; g.beginPath(); g.moveTo(o.x + nx*5, o.y + ny*5); g.lineTo(cx + nx*r*.9, cy + ny*r*.9); g.lineTo(cx - nx*r*.9, cy - ny*r*.9); g.lineTo(o.x - nx*5, o.y - ny*5); g.closePath(); g.fill();
+        for (const m of F.dust){ const u = (m.u + t/2600) % 1, w = 5 + r*.9*u, x = o.x + dx*u + nx*w*m.v, y = o.y + dy*u + ny*w*m.v;   // 光柱里的灰尘
+          g.fillStyle = `rgba(255,250,232,${(.35 + .45*Math.abs(Math.sin(t/180 + m.p)))*beam})`; g.beginPath(); g.arc(x, y, 1.2, 0, Math.PI*2); g.fill(); }
+        const gl = g.createRadialGradient(o.x, o.y, 0, o.x, o.y, 22); gl.addColorStop(0, `rgba(255,252,236,${beam})`); gl.addColorStop(1, 'rgba(255,252,236,0)'); g.fillStyle = gl; g.beginPath(); g.arc(o.x, o.y, 22, 0, Math.PI*2); g.fill(); } },
+    { n:'半调印刷', dur:1350,
+      frame(F, k, g){ const o = F.o, P = 22, e = thE.io(k), R2 = F.Rm*1.2*e + 12, R1 = Math.max(0, R2 - F.Rm*.5*(1 - k*.7)), d = 2 + 14*e;
+        // 波前是一圈半调网点（点越来越大），后面是实心
+        F.mask(`radial-gradient(circle at ${o.x}px ${o.y}px, #000 ${R1.toFixed(1)}px, transparent ${(R1 + 1).toFixed(1)}px), radial-gradient(circle, #000 ${d.toFixed(2)}px, transparent ${(d + .8).toFixed(2)}px), radial-gradient(circle at ${o.x}px ${o.y}px, #000 ${R2.toFixed(1)}px, transparent ${(R2 + 1).toFixed(1)}px)`,
+          'add, intersect', `100% 100%, ${P}px ${P}px, 100% 100%`, 'no-repeat, repeat, no-repeat', `0 0, ${((o.x % P) - P/2).toFixed(1)}px ${((o.y % P) - P/2).toFixed(1)}px, 0 0`);
+        g.globalAlpha = (1 - k)*.7; g.strokeStyle = INK.pink; g.lineWidth = 3; g.beginPath(); g.arc(o.x + 3, o.y + 2, R2, 0, Math.PI*2); g.stroke(); g.globalAlpha = 1; } }
+  ],
+  /* —— 变暗 —— */
+  dark:[
+    { n:'黑色金属粘液', dur:1700,
+      init(F){ F.N = 180; F.pk = []; F.nx = 0; F.amp = Math.min(F.W, F.H)*.055; F.wid = Math.min(F.W, F.H)*.08;
+        F.drips = Array.from({length:7}, () => ({a:Math.PI*(.12 + Math.random()*.76), w:.04 + Math.random()*.06, L:F.H*(.12 + Math.random()*.35), d:Math.random()*.35})); },
+      frame(F, k, g, t){ const o = F.o, N = F.N;
+        const Rb = F.Rm*1.15*(k < .15 ? (k/.15)*(k/.15)*.07 : .07 + .93*thE.io((k - .15)/.85));   // 先慢慢冒出来，再涌出去
+        // 和 CONCRETE 鼓面一样：每 140ms 从按钮发出一道波包，跑得比边界快，经过边界时把它往外鼓一下
+        while (t >= F.nx){ F.pk.push(F.nx); F.nx += 140; }
+        const pk = F.pk.map(t0 => ({r:(t - t0)*F.Rm/650, life:Math.max(0, 1 - (t - t0)/1200)}));
+        const R = a => { let r = Rb; for (const p of pk){ const q = (Rb - p.r)/F.wid; r += Math.exp(-q*q)*F.amp*p.life; }
+          r += (Math.sin(a*5 + t/180)*.5 + Math.sin(a*11 - t/130)*.3)*F.amp*.4*(1 - k);   // 黏稠、不规则
+          for (const d of F.drips){ const da = thAng(a, d.a); r += Math.exp(-(da/d.w)*(da/d.w))*d.L*thE.io(clamp((k - d.d)/(1 - d.d), 0, 1)); }   // 往下淌
+          return r; };
+        const out = [], inn = [];
+        for (let i = 0; i < N; i++){ const a = i/N*Math.PI*2, r = R(a), c = Math.cos(a), s = Math.sin(a); out.push([o.x + c*r, o.y + s*r]); inn.push([o.x + c*(r - 8), o.y + s*(r - 8)]); }
+        F.clip(thPoly(out));
+        const fade = 1 - Math.pow(k, 5), path = pts => { g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.closePath(); };
+        // 液态金属的边：黑底 + 一条拉丝的铬色反光 + 一道高光
+        g.lineJoin = 'round'; g.globalAlpha = fade;
+        path(out); g.strokeStyle = '#08080a'; g.lineWidth = 24; g.stroke();
+        const ch = g.createLinearGradient(o.x - Rb, o.y - Rb, o.x + Rb, o.y + Rb); [['#060608', 0], ['#3b3e46', .28], ['#d4d8e0', .48], ['#5b5f69', .6], ['#17181c', .78], ['#060608', 1]].forEach(([c, s]) => ch.addColorStop(s, c));
+        g.strokeStyle = ch; g.lineWidth = 12; g.stroke();
+        path(inn); g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 2; g.stroke();
+        // 粘液里一圈圈的波纹（鼓面刻纹）
+        for (const p of pk) if (p.r < Rb - 10 && p.life > 0){ g.strokeStyle = `rgba(205,210,220,${.16*p.life})`; g.lineWidth = 2; g.beginPath(); g.arc(o.x, o.y, p.r, 0, Math.PI*2); g.stroke(); }
+        g.globalAlpha = 1; } },
+    { n:'日食', dur:1550,
+      frame(F, k, g){ const o = F.o, s = 26, A = .34;
+        if (k < A){ const q = k/A, e = thE.o3(q); F.clip(`circle(0px at ${o.x}px ${o.y}px)`);
+          const gl = g.createRadialGradient(o.x, o.y, s*.6, o.x, o.y, s*3.4); gl.addColorStop(0, 'rgba(255,214,120,.65)'); gl.addColorStop(1, 'rgba(255,214,120,0)'); g.fillStyle = gl; g.beginPath(); g.arc(o.x, o.y, s*3.4, 0, Math.PI*2); g.fill();
+          g.fillStyle = '#FFD25A'; g.beginPath(); g.arc(o.x, o.y, s, 0, Math.PI*2); g.fill();   // 太阳
+          g.fillStyle = '#0d0d10'; g.beginPath(); g.arc(o.x - s*2.3*(1 - e), o.y - s*.9*(1 - e), s*1.03, 0, Math.PI*2); g.fill();   // 月亮滑过来
+          if (q > .72){ const a = (q - .72)/.28, x = o.x + s*Math.cos(-2.3), y = o.y + s*Math.sin(-2.3), z = 6 + 26*a;   // 钻石环
+            g.fillStyle = `rgba(255,250,235,${a})`; g.beginPath(); g.moveTo(x - z, y); g.lineTo(x, y - z*.12); g.lineTo(x + z, y); g.lineTo(x, y + z*.12); g.closePath(); g.fill();
+            g.beginPath(); g.moveTo(x, y - z); g.lineTo(x + z*.12, y); g.lineTo(x, y + z); g.lineTo(x - z*.12, y); g.closePath(); g.fill(); }
+          return; }
+        const q = (k - A)/(1 - A), R = s + (F.Rm*1.06 - s)*thE.io(q);
+        F.clip(`circle(${R.toFixed(1)}px at ${o.x}px ${o.y}px)`);
+        // 日冕：黑暗的边缘一圈光，外面几道光芒
+        g.save(); g.shadowColor = 'rgba(255,190,90,.9)'; g.shadowBlur = 28*(1 - q); g.strokeStyle = `rgba(255,226,160,${.85*(1 - q)})`; g.lineWidth = 3 + 6*(1 - q); g.beginPath(); g.arc(o.x, o.y, R, 0, Math.PI*2); g.stroke(); g.restore();
+        g.strokeStyle = `rgba(255,214,140,${.55*(1 - q)})`; g.lineWidth = 2;
+        for (let i = 0; i < 28; i++){ const a = i/28*Math.PI*2 + q*.4, L = 34*(1 - q)*(.4 + .6*Math.abs(Math.sin(i*7.3))); g.beginPath(); g.moveTo(o.x + Math.cos(a)*(R + 4), o.y + Math.sin(a)*(R + 4)); g.lineTo(o.x + Math.cos(a)*(R + 4 + L), o.y + Math.sin(a)*(R + 4 + L)); g.stroke(); } } },
+    { n:'夜幕', dur:1450,
+      init(F){ F.st = Array.from({length:80}, () => ({x:Math.random()*F.W, y:Math.random()*F.H, r:.6 + Math.random()*1.6, p:Math.random()*6})); },
+      frame(F, k, g, t){ const o = F.o, W = F.W, H = F.H, n = 72, e = thE.io(k);
+        const edge = x => H*1.45*e*(.72 + .28*Math.exp(-Math.pow((x - o.x)/(W*.32), 2))) + (Math.sin(x*.016 + t/160)*18 + Math.sin(x*.041 - t/110)*8)*(1 - k);   // 按钮那边落得快，下沿是波浪
+        const pts = [[0, -20], [W, -20]]; for (let i = n; i >= 0; i--){ const x = W*i/n; pts.push([x, edge(x)]); }
+        F.clip(thPoly(pts));
+        const line = dy => { g.beginPath(); for (let i = 0; i <= n; i++){ const x = W*i/n, y = edge(x) + dy; i ? g.lineTo(x, y) : g.moveTo(x, y); } };
+        g.strokeStyle = `rgba(0,0,0,${.16*(1 - k)})`; g.lineWidth = 26; line(14); g.stroke();   // 幕布下沿的影子
+        g.strokeStyle = `rgba(150,160,255,${.55*(1 - k)})`; g.lineWidth = 2; line(0); g.stroke();   // 月光照在边上
+        const end = k < .82 ? 1 : (1 - k)/.18;
+        for (const s of F.st){ const ey = edge(s.x); if (s.y > ey - 10) continue;   // 夜幕后面亮起星星
+          g.fillStyle = `rgba(255,255,255,${(.35 + .65*Math.abs(Math.sin(t/210 + s.p)))*Math.min(1, (ey - s.y)/90)*end})`; g.beginPath(); g.arc(s.x, s.y, s.r, 0, Math.PI*2); g.fill(); }
+        const mx = W*.78, my = Math.min(edge(mx) - 70, H*.22);
+        if (my > 30){ g.save(); g.globalAlpha = end; g.fillStyle = '#F2EFD8'; g.beginPath(); g.arc(mx, my, 20, 0, Math.PI*2); g.fill(); g.globalCompositeOperation = 'destination-out'; g.beginPath(); g.arc(mx + 9, my - 6, 18, 0, Math.PI*2); g.fill(); g.restore(); } } }
+  ]
+};
+/* apply：真正切换外观（不带淡入淡出）；el：从哪个按钮开始 */
+function themeFx(apply, el){
+  const R = document.documentElement;
+  if (!document.startViewTransition || reduced()){ if (!STATE.settings.rm){ R.classList.add('theming'); setTimeout(() => R.classList.remove('theming'), 450); } apply(); return; }
+  const b = el?.getBoundingClientRect?.(), W = innerWidth, H = innerHeight, before = isDark();
+  const o = b && b.width ? {x:Math.round(b.left + b.width/2), y:Math.round(b.top + b.height/2)} : {x:W - 40, y:40};
+  if (VT.t){ try { VT.t.skipTransition(); } catch(e){} }
+  const gen = ++THX.gen, set = (k, v) => v == null ? R.style.removeProperty(k) : R.style.setProperty(k, v);
+  const clear = () => ['--thc', '--thm', '--thmc', '--thms', '--thmr', '--thmp'].forEach(k => set(k, null));
+  clear(); R.classList.add('thvt');
+  let cv = null, fx = null;
+  const t = document.startViewTransition(() => {
+    apply();
+    const dark = isDark(); if (dark === before) return;
+    const L = THX_FX[dark ? 'dark' : 'light']; let i; do i = Math.random()*L.length | 0; while (L.length > 1 && i === THX.last[dark]); THX.last[dark] = i; fx = L[i];
+    set('--thc', 'circle(0px at 0 0)');   // 新外观先完全藏起来，等第一帧再露
+    const dpr = Math.min(2, devicePixelRatio || 1); cv = document.createElement('canvas'); cv.width = W*dpr; cv.height = H*dpr;
+    cv.style.cssText = `position:fixed;left:0;top:0;width:${W}px;height:${H}px;pointer-events:none;z-index:2147483000;view-transition-name:thfx`;
+    document.body.appendChild(cv);
+  });
+  THX.t = t;
+  t.ready.then(() => {
+    if (!fx){ t.skipTransition(); return; }
+    const g = cv.getContext('2d'), dpr = cv.width/W;
+    const F = {o, W, H, Rm:thFar(o, W, H), clip:v => set('--thc', v),
+      mask:(img, comp, size, rep, pos) => { set('--thc', 'none'); set('--thm', img); set('--thmc', comp || null); set('--thms', size || null); set('--thmr', rep || null); set('--thmp', pos || null); }};
+    fx.init?.(F);
+    // 用一段什么都不做的动画让过场持续 fx.dur（View Transition 等伪元素上的动画都结束才收尾）
+    R.animate([{opacity:1}, {opacity:1}], {duration:fx.dur, pseudoElement:'::view-transition-new(root)'});
+    const t0 = performance.now();
+    const step = now => { if (gen !== THX.gen || !cv.isConnected) return; const ms = now - t0, k = Math.min(1, ms/fx.dur);
+      g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H); fx.frame(F, k, g, ms); if (k < 1) requestAnimationFrame(step); };
+    step(t0);
+  }).catch(() => {});
+  t.finished.finally(() => { cv?.remove(); if (gen === THX.gen){ R.classList.remove('thvt'); clear(); THX.t = null; } });
+}
+addEventListener('pointerdown', () => { if (THX.t){ try { THX.t.skipTransition(); } catch(e){} } }, {capture:true, passive:true});   // 点一下直接看结果，不让过场挡操作
+
 /* ---------- 手机顶栏：一级页只留 Logo + 搜索；二级页 = 返回 + 页面名 ---------- */
 const ME_SUB_T = {lib:'已购资源', orders:'订单', settings:'设置', edit:'编辑资料', blocks:'黑名单', close:'注销账号', wallet:'余额'};
 function pageTitle(){
@@ -8924,9 +9073,10 @@ Object.assign(ACTIONS, {
       const from = bottom ? 'translateY(28px) scale(.5)' : `translate(${bx - (s.left + s.width/2)}px, ${by - (s.top + s.height/2)}px) scale(.1)`;
       sh.animate([{transform:from, opacity:0}, {opacity:1, offset:.3}, {transform:'none', opacity:1}], {duration:400, easing:'cubic-bezier(.3,1.2,.5,1)'}).finished.then(() => { sh.style.transformOrigin = tO; }, () => { sh.style.transformOrigin = tO; });
       [...sh.children].forEach(k => k.animate([{opacity:0}, {opacity:0, offset:.25}, {opacity:1}], {duration:400, easing:'ease-out'})); } },
-  theme: () => { STATE.settings.theme = isDark() ? 'light' : 'dark'; applySettings(); applyTheme(true); setTimeout(() => $$('#thmBtn svg, .drw-thm svg').forEach(x => fxPop(x, 'fx-spin', 600)));
-    const t = $('.drw-thm'); if (t) t.innerHTML = (isDark() ? IC.sun : IC.moon) + (isDark() ? '浅色模式' : '深色模式'); },   // 侧边菜单里的按钮文字跟着变
-  'set-theme': b => { STATE.settings.theme = b.dataset.v; applySettings(); applyTheme(true); rerender(); },
+  theme: b => { themeFx(() => { STATE.settings.theme = isDark() ? 'light' : 'dark'; applySettings(); applyTheme();
+      const t = $('.drw-thm'); if (t) t.innerHTML = (isDark() ? IC.sun : IC.moon) + (isDark() ? '浅色模式' : '深色模式'); }, b);   // 侧边菜单里的按钮文字跟着变
+    setTimeout(() => $$('#thmBtn svg, .drw-thm svg').forEach(x => fxPop(x, 'fx-spin', 600))); },
+  'set-theme': b => themeFx(() => { STATE.settings.theme = b.dataset.v; applySettings(); applyTheme(); rerender(); }, b),
   search: b => openSearch(b && b.dataset.v ? b.dataset.v : undefined),
 });
 function detectPlat(v){ v = v.toLowerCase(); if (/bilibili\.com|b23\.tv|bv[0-9a-z]{6,}/.test(v)) return 'BILIBILI'; if (/youtu\.?be/.test(v)) return 'YOUTUBE'; if (/vimeo/.test(v)) return 'VIMEO'; return ''; }
