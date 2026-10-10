@@ -10143,7 +10143,7 @@ function apiProduct(p){
   const o = Object.assign(old || {}, {id:p.id, kind:p.kind || CATS[p.cat]?.cn || '', cat:CATS[p.cat] ? p.cat : 'sample', title:p.title, en:p.en || p.title, seller:p.seller.id,
     price:f2y(p.price), ext:p.extPrice == null ? null : f2y(p.extPrice), count:p.fileName || '—', format:ext || '—', compat:'见商品介绍', size:fmtSize(p.fileSize), sales:p.salesCount, rating:5,
     cover:{tpl:'orbit', pal:'pb', ...(p.cover || {}), txt:p.en || p.title}, desc:p.desc, files:p.fileName, tpl:['sample', 'preset', 'video'].includes(p.tpl) ? p.tpl : undefined,
-    live:true, status:p.status, selfOff:p.status !== 'on_sale', hasAi:p.hasAi, aiTrain:p.aiTrain, ver:old?.ver || 'v1.0', vlog:old?.vlog || []});
+    live:true, status:p.status, selfOff:p.status !== 'on_sale', hasAi:p.hasAi, aiTrain:p.aiTrain, ver:p.ver || old?.ver || 'v1.0', vlog:(p.versions || []).map(x => ({v:x.v, note:x.note, ts:+new Date(x.at)})), pendingVer:p.pendingVer || null});
   const T = tplOf(o); if (T === 'sample'){ o.pads ||= PADS_CONCRETE; o.bpm ||= 92; } if (T === 'preset') o.presets ||= PRESETS_TERMINAL; if (T === 'video') o.vis ||= 'grid';   // 试听先用通用的演示内容
   if (!old) PRODUCTS.push(o); return o;
 }
@@ -10562,7 +10562,7 @@ wrapAct('do-report', async (orig, b, e) => { if (!liveUser()) return orig(b, e);
   b.disabled = true;
   try { await API.req('POST', '/reports', {kind, targetId, reason:why, detail:x}); closeSheet(); toast('收到，处理结果会通过「CTRL Z 官方」通知你'); } catch(err){ b.disabled = false; apiFail(err); } });
 async function ladmGet(k, url, pick){ if (LADM.busy[k]) return; LADM.busy[k] = true; try { LADM[k] = pick(await STAFF.req('GET', url)); } catch(e){ apiFail(e); LADM[k] ||= []; } finally { LADM.busy[k] = false; } rerender(); }
-const RP_K = {post:'帖子', comment:'评论', user:'用户', product:'商品', message:'私信'};
+const RP_K = {post:'帖子', comment:'评论', user:'用户', product:'商品', message:'私信', appeal:'申诉'};
 { const rp0 = ADMV.reports;
   ADMV.reports = () => { if (!API.on()) return rp0(); const v = UI.adf?.lrp || 'open';
     if (!LADM.reports || LADM.rpv !== v){ LADM.rpv = v; LADM.reports = null; ladmGet('reports', '/admin/reports?view=' + v, r => r.items); return ladmWait('举报', '读取中'); }
@@ -10572,9 +10572,12 @@ const RP_K = {post:'帖子', comment:'评论', user:'用户', product:'商品', 
       return `<div class="ad-row rp-live ${open ? '' : 'dim'}"><div class="ad-rm"><b><span class="tag ${/版权/.test(r.reason) ? 'c-orange' : 'k'}">${RP_K[r.kind] || r.kind}</span> ${esc(r.reason)}</b>
         <span class="mut">${esc(r.reporter.name)} 举报 ${r.targetUser ? esc(r.targetUser.name) + (r.againstCount > 1 ? `（共被举报 ${r.againstCount} 次）` : '') : '—'} · ${fmtDT(+new Date(r.createdAt))}</span>
         ${t ? `<div class="rp-tgt"><b>${esc(t.title)}</b>${t.body ? `<span>${esc(t.body.slice(0, 160))}</span>` : ''}${t.url ? `<img src="${esc(t.url)}" alt="">` : ''}${t.status && t.status !== 'published' && t.status !== 'sent' ? `<i>${esc({review:'审核中', taken_down:'已下架', deleted:'已删除', recalled:'已撤回'}[t.status] || t.status)}</i>` : ''}</div>` : ''}
-        ${r.detail ? `<span class="mut2">补充：${esc(r.detail)}</span>` : ''}${open ? '' : `<span class="mut2">${r.status === 'resolved' ? '属实' : '不成立'} · ${esc(r.handledBy || '')}${r.note ? ' · ' + esc(r.note) : ''}</span>`}</div>
+        ${r.detail ? `<span class="mut2">${r.kind === 'appeal' ? '申诉内容' : '补充'}：${esc(r.detail)}</span>` : ''}
+        ${r.counter ? `<div class="rp-tgt"><b>作者的反通知 · ${fmtDT(+new Date(r.counter.at))}</b><span>${esc(r.counter.text)}</span><span>权属证明：${/^https?:\/\//i.test(r.counter.link) ? `<a href="${esc(r.counter.link)}" target="_blank" rel="noopener noreferrer">${esc(r.counter.link)}</a>` : esc(r.counter.link)}</span></div>` : ''}
+        ${open || r.status === 'counter' ? '' : `<span class="mut2">${{resolved:'属实', dismissed:'不成立', counter_restored:'反通知成立 · 已恢复', counter_kept:'反通知不成立 · 维持下架'}[r.status] || r.status} · ${esc(r.handledBy || '')}${r.note ? ' · ' + esc(r.note) : ''}</span>`}</div>
         <div class="ad-ra">${link ? `<a class="pill sm lt" data-go="${esc(link)}">查看</a>` : ''}${r.targetUser ? `<button class="pill sm lt" data-act="dv-open" data-a="${esc(r.reporter.id)}" data-b="${esc(r.targetUser.id)}" data-why="处理举报：${esc(r.id)}">双方私信</button><button class="pill sm lt" data-act="us-open" data-id="${esc(r.targetUser.id)}">处置用户</button>` : ''}
-          ${open ? `<button class="pill sm lt" data-act="lrp-do" data-v="dismissed" data-id="${esc(r.id)}">不成立</button><button class="pill sm" data-act="lrp-do" data-v="resolved" data-id="${esc(r.id)}">属实</button>` : ''}</div></div>`; }).join('') || adEmpty('ALL CLEAR', '没有待处理的举报')}</div>`; };
+          ${open ? `<button class="pill sm lt" data-act="lrp-do" data-v="dismissed" data-id="${esc(r.id)}">${r.kind === 'appeal' ? '维持原处理' : '不成立'}</button><button class="pill sm" data-act="lrp-do" data-v="resolved" data-id="${esc(r.id)}">${r.kind === 'appeal' ? '申诉成立' : '属实'}</button>` : ''}
+          ${r.status === 'counter' ? `<button class="pill sm lt" data-act="lrp-ct" data-v="0" data-id="${esc(r.id)}">维持下架</button><button class="pill sm" data-act="lrp-ct" data-v="1" data-id="${esc(r.id)}">恢复内容</button>` : ''}</div></div>`; }).join('') || adEmpty('ALL CLEAR', '没有待处理的举报')}</div>`; };
 }
 ACTIONS['lrp-do'] = b => { if (!admGuard('reports')) return; const ok = b.dataset.v === 'resolved';
   sheet(`<h3>${ok ? '举报属实' : '举报不成立'}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">${ok ? '记得先用「处置用户」或下架内容处理被举报的人。' : ''}说明会一起发给举报人。</p><textarea class="inp" id="lrpX" placeholder="${ok ? '例如：已下架该帖子并警告作者' : '例如：内容为原创，未发现侵权'}"></textarea><button class="pill lg" data-act="lrp-go" data-v="${b.dataset.v}" data-id="${esc(b.dataset.id)}">确认</button>`); };
@@ -11258,6 +11261,64 @@ ACTIONS['rc-new'] = () => { const has = LIVE.me?.hasPassword;
 ACTIONS['rc-ngo'] = async b => { b.disabled = true;
   try { const r = await API.req('POST', '/me/recovery-code', {password:$('#rcOld')?.value || undefined}); if (LIVE.me) LIVE.me.hasRecovery = true; rcSheet(r.code); rerender(); }
   catch(e){ b.disabled = false; if (e.code === 'wrong_password'){ fxPop($('#rcOld'), 'fx-shake', 300); toast('密码不对', 'orange', 'x'); } else apiFail(e); } };
+
+/* ================= 申诉、版权反通知、商品新版本、通知开关、涉税报送（连着后端时） ================= */
+/* 回复「CTRL Z 官方」= 申诉，进后台「举报」队列 */
+wrapAct('sys-reply', async (orig, b) => { if (!liveUser()) return orig(b); const v = $('#sysR').value.trim(); if (v.length < 4){ fxPop($('#sysR'), 'fx-shake', 300); toast('多写几个字说明情况', 'orange', 'x'); return; }
+  b && (b.disabled = true);
+  try { await API.req('POST', '/me/appeals', {text:v}); closeSheet(); toast('已发送，客服会尽快处理，结果会在这里通知你'); } catch(e){ b && (b.disabled = false); apiFail(e); } });
+/* 版权反通知：通知里带着投诉编号（m.rp） */
+wrapAct('counter', (orig, b, e) => { if (!liveUser()) return orig(b, e); const id = b.dataset.id;
+  REPORTS.push({id, live:true}); try { orig(b, e); } finally { const i = REPORTS.findIndex(r => r.id === id && r.live); if (i >= 0) REPORTS.splice(i, 1); } });
+wrapAct('counter-go', async (orig, b) => { if (!liveUser()) return orig(b); const x = $('#ctX').value.trim(), l = $('#ctL').value.trim();
+  const bad = x.length < 4 ? '#ctX' : l.length < 4 ? '#ctL' : !$('#ctC').checked ? '.py-ok' : null; if (bad){ fxPop($(bad), 'fx-shake', 300); return; }
+  b.disabled = true;
+  try { await API.req('POST', `/reports/${encodeURIComponent(b.dataset.id)}/counter`, {text:x, link:l, confirm:true});
+    (ADM.inbox[ME] || []).forEach(m => { if (m.act === 'counter' && m.rp === b.dataset.id) m.done = true; }); closeSheet(); toast('已提交，平台会转告投诉人并尽快处理'); rerender(); }
+  catch(e){ b.disabled = false; apiFail(e); } });
+ACTIONS['lrp-ct'] = b => { if (!admGuard('reports')) return; const ok = b.dataset.v === '1';
+  sheet(`<h3>${ok ? '恢复内容' : '维持下架'}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">结果会同时通知作者和投诉人。${ok ? '投诉人在合理期限内没有进一步证据的，一般应恢复。' : ''}</p><textarea class="inp" id="lctX" placeholder="说明（可选）"></textarea><button class="pill lg" data-act="lrp-cgo" data-v="${b.dataset.v}" data-id="${esc(b.dataset.id)}">确认</button>`); };
+ACTIONS['lrp-cgo'] = async b => { b.disabled = true;
+  try { await STAFF.req('POST', `/admin/reports/${encodeURIComponent(b.dataset.id)}/counter`, {restore:b.dataset.v === '1', note:$('#lctX').value.trim()}); closeSheet(); toast('已处理，已通知双方', 'green', 'check'); LADM.reports = null; rerender(); }
+  catch(e){ b.disabled = false; apiFail(e); } };
+
+/* 商品上传新版本：真的传文件，先进审核，通过后服务器通知买过的人 */
+const SVF = {file:null};
+wrapAct('sp-ver', (orig, b, e) => { orig(b, e); const p = P(b.dataset.id); if (!p?.live) return; SVF.file = null;
+  const d = $('#layer .sp-drop'); if (d){ d.querySelector('span').textContent = 'ZIP / WAV / 工程文件，最大 500MB'; d.insertAdjacentHTML('afterend', '<input type="file" id="svF" hidden>');
+    $('#svF').addEventListener('change', ev => { const f = ev.target.files?.[0]; if (!f) return; SVF.file = f; d.classList.add('on'); d.innerHTML = `<b>${IC.check} 已选好 ${esc(f.name)}</b><span>${fmtSize(f.size)}</span>`; }); }
+  $('#layer .sheet p.mut').insertAdjacentHTML('beforeend', '新版本要先通过平台审核，审核期间买家下载的还是现在的版本。'); });
+wrapAct('sp-file', (orig, b, e) => { const f = $('#svF'); if (!f) return orig(b, e); f.click(); });
+wrapAct('sp-vgo', async (orig, b) => { const p = P(b.dataset.id); if (!p?.live) return orig(b);
+  const v = $('#svV').value.trim(), n = $('#svN').value.trim();
+  if (!SVF.file){ fxPop($('.sp-drop'), 'fx-shake', 300); toast('先选新的文件包', 'orange', 'x'); return; }
+  if (!v || v === p.ver){ fxPop($('#svV'), 'fx-shake', 300); toast('版本号要和现在的不一样', 'orange', 'x'); return; }
+  if (n.length < 2){ fxPop($('#svN'), 'fx-shake', 300); return; }
+  b.disabled = true; b.textContent = '正在上传…';
+  try { const up = await liveUpload(SVF.file, 'product_file');
+    const r = await API.req('POST', `/products/${encodeURIComponent(p.id)}/version`, {uploadId:up.id, fileName:SVF.file.name.slice(0, 120), ver:v, note:n});
+    p.pendingVer = r.pendingVer; p.status = r.status; SVF.file = null; closeSheet(); toast(`${v} 已提交审核，通过后会通知买过的人`, 'green', 'check'); await liveMine(); rerender(); }
+  catch(e){ b.disabled = false; b.textContent = '发布新版本'; apiFail(e); } });
+
+/* 通知开关存服务器（换设备也在） */
+{ const lm2 = liveMe; liveMe = function(me){ lm2(me); if (me.notifyPrefs && Object.keys(me.notifyPrefs).length) Object.assign(STATE.settings.nt, me.notifyPrefs); }; }
+wrapAct('nt', (orig, b, e) => { orig(b, e); if (liveUser()) API.req('PATCH', '/me', {notifyPrefs:{likes:ntOn('likes'), fans:ntOn('fans'), at:ntOn('at'), dm:ntOn('dm')}}).catch(apiFail); });
+
+/* 涉税信息报送（季度）：结算打款页上导出 */
+const taxQs = () => { const d = new Date(), out = []; let y = d.getFullYear(), q = Math.floor(d.getMonth() / 3) + 1; for (let i = 0; i < 6; i++){ out.push(`${y}-Q${q}`); if (--q < 1){ q = 4; y--; } } return out; };
+ACTIONS['tax-open'] = () => { if (!admGuard('payout')) return;
+  sheet(`<h3>导出涉税信息（季度）</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">按《互联网平台企业涉税信息报送规定》（国务院令第 810 号），平台要按季度报送经营者的身份和收入信息。这里按经营者汇总商品收入、退款、合作收入、平台抽成和服务费，导出给财务报送。导出会记进操作日志。</p>
+    <div class="seg ad-seg" id="taxQ">${taxQs().map((q, i) => `<button class="${i ? '' : 'on'}" data-act="tax-q" data-v="${q}">${q.replace('-', ' ')}</button>`).join('')}</div>
+    <div id="taxR" class="mut2" style="font-size:13px"></div><button class="pill lg" data-act="tax-go">生成</button>`); };
+ACTIONS['tax-q'] = b => { $$('#taxQ button').forEach(x => x.classList.toggle('on', x === b)); $('#taxR').textContent = ''; const g = $('[data-act="tax-dl"]'); if (g){ g.dataset.act = 'tax-go'; g.textContent = '生成'; } };
+ACTIONS['tax-go'] = async b => { const q = $('#taxQ .on').dataset.v; b.disabled = true;
+  try { const r = await STAFF.req('GET', '/admin/tax?quarter=' + q), Y = f => (f/100).toFixed(2);
+    LADM.tax = [['季度', '经营者', 'ID', '用户名', '实名（打码）', '证件（打码）', '订单数', '商品收入', '退款', '合作收入', '平台抽成', '合作服务费', '支付手续费', '应结净收入'],
+      ...r.rows.map(x => [q, x.seller.name, x.seller.id, x.username || '', x.real || '未入驻实名', x.idno || '', x.n, Y(x.gross), Y(x.refund), Y(x.co), Y(x.plat), Y(x.coFee), Y(x.fee), Y(x.net)])];
+    $('#taxR').textContent = `${q}：${r.rows.length} 位经营者`; b.disabled = false; b.dataset.act = 'tax-dl'; b.textContent = '下载 CSV'; }
+  catch(e){ b.disabled = false; apiFail(e); } };
+ACTIONS['tax-dl'] = () => { if (LADM.tax) csvDownload(`ctrlz-tax-${$('#taxQ .on').dataset.v}.csv`, LADM.tax); };
+{ const po1 = ADMV.payout; ADMV.payout = () => { const h = po1(); return API.on() ? h.replace('<div class="kpis">', `<div class="ad-inl" style="justify-content:flex-end;margin:-6px 0 10px"><button class="pill sm lt" data-act="tax-open">${IC.dl}导出季度涉税信息</button></div><div class="kpis">`) : h; }; }
 
 (function boot(){
   STATE.hist = store.get('hist', null) || [{k:'post', id:'s3', ts:Date.now() - 2*3600e3}, {k:'item', id:'p3', ts:Date.now() - 5*3600e3}, {k:'video', id:'s2', ts:Date.now() - 26*3600e3}, {k:'post', id:'s8', ts:Date.now() - 30*3600e3}];
