@@ -7955,7 +7955,7 @@ function setExtra(){ const cl = closingOf(ME);
     <div class="box"><div class="box-h"><h3>账号与隐私</h3></div><div class="box-b set-l">
       <label class="set-r set-2"><span>个性化推荐<span class="mut2" style="display:block;font-size:12.5px">关掉后「推荐」按发布时间排列，不再参考你的关注和互动</span></span>${swBtn(STATE.settings.pers, 'pers')}</label>
       ${API.on() ? `<button class="set-r" data-act="pw-set">${LIVE.me?.hasPassword ? '修改密码' : '设置用户名和密码'}<span class="mut2">${LIVE.me?.username ? esc(LIVE.me.username) + ' ' : ''}›</span></button>` : ''}
-      ${API.on() && LIVE.me?.username ? `<button class="set-r" data-act="rc-new">找回密码用的恢复码<span class="mut2">${LIVE.me.hasRecovery ? '已生成 · 重新生成' : '还没有 · 去生成'} ›</span></button>` : ''}
+      ${API.on() && LIVE.me?.username && !LIVE.staffEmail ? `<button class="set-r" data-act="rc-new">找回密码用的恢复码<span class="mut2">${LIVE.me.hasRecovery ? '已生成 · 重新生成' : '还没有 · 去生成'} ›</span></button>` : ''}
       <button class="set-r" data-act="acc-phone">换绑手机号<span class="mut2">${(() => { const a = ACC.list.find(x => x.id === ME); return a?.phone ? '+86 ' + mask(a.phone) : '未绑定'; })()} ›</span></button>
       <button class="set-r" data-act="acc-devs">登录设备<span class="mut2">${API.on() ? "" : DEVS.length + 1 + " 台 "}›</span></button>
       <a class="set-r" href="#me-blocks">黑名单<span class="mut2">${STATE.blocks.size ? STATE.blocks.size + ' 人' : '没有'} ›</span></a>
@@ -9695,9 +9695,12 @@ const API = {
     if (want !== null && want !== store.get('apiBase', '')){ store.set('apiBase', want); store.set('apiTok', null); }   // 只有换了后端才清登录（以前每次打开带 ?api=self 的链接都会被登出）
     if (q !== null) history.replaceState(history.state, '', location.pathname + location.hash);
     this.base = store.get('apiBase', ''); this.tok = store.get('apiTok', null);
+    /* 网页和接口同域（服务器自己提供网页）时，refresh token 只放在服务器设的 httpOnly cookie 里，本地不存（脚本被注入也偷不走长期令牌） */
+    this.cookie = !!this.base && this.base === location.origin;
+    if (this.cookie && this.tok?.refresh && this.tok.refresh !== 'cookie') this.setTok(this.tok);
   },
   on(){ return !!this.base; },
-  setTok(t){ this.tok = t; store.set('apiTok', t); },
+  setTok(t){ if (t && this.cookie) t = {...t, refresh:'cookie'}; this.tok = t; store.set('apiTok', t); },
   async req(method, path, body, retry = true){
     const h = {}; if (body !== undefined) h['Content-Type'] = 'application/json'; if (this.tok?.access) h.Authorization = 'Bearer ' + this.tok.access;
     let res; try { res = await fetch(this.base + path, {method, headers:h, body: body === undefined ? undefined : JSON.stringify(body)}); }
@@ -9709,7 +9712,7 @@ const API = {
   },
   /* 同一时间只刷新一次（几个请求同时 401 时共用一次刷新） */
   refresh(){ return this._ref ||= (async () => {
-    try { const r = await this.req('POST', '/auth/refresh', {refreshToken:this.tok.refresh}, false); this.setTok({access:r.accessToken, refresh:r.refreshToken}); return true; }
+    try { const r = await this.req('POST', '/auth/refresh', this.cookie ? {} : {refreshToken:this.tok.refresh}, false); this.setTok({access:r.accessToken, refresh:r.refreshToken}); return true; }
     catch(e){ this.setTok(null); return false; } finally { setTimeout(() => this._ref = null, 0); } })(); }
 };
 API.init();
