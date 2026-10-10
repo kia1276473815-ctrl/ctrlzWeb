@@ -10583,6 +10583,49 @@ ACTIONS['lrp-go'] = async b => { b.disabled = true;
 { const boot1 = liveBoot; liveBoot = async function(){ await liveSite(); await boot1(); }; }
 UI.opS = null; applySlides();
 
+/* ================= 互动提醒（连着后端时）：私信页上面三格「喜欢 / 新粉丝 / 回复与@」读服务器 =================
+   每 3 次私信轮询（约 12 秒）问一次未读数，变了才拉列表；新的评论 / 回复弹个提示。
+   喜欢 / 新粉丝 打开就全部已读；回复与@ 按条读（atMark），和原来的交互一样 */
+const LACT = {sig:'', ids:new Set(), tick:0, busy:false};
+const actAt = n => ({id:n.id, u:n.actor.id, k:n.kind === 'reply' ? '回复了你的评论' : '评论了你的帖子', text:n.body, ref:n.post?.id, ts:+new Date(n.createdAt)});
+function actSetAt(n){ const d = Object.getOwnPropertyDescriptor(NOTE_NEW, 'at'); if (!d || !d.get) NOTE_NEW.at = n; }   // 原来 at 是按 AT_READ 现算的 getter；被 refill 成普通数字后就直接赋值
+async function actLoad(force){
+  if (LACT.busy || !API.on() || !API.tok || STATE.role !== 'user') return; LACT.busy = true;
+  try {
+    const u = await API.req('GET', '/me/activity/unread'), sig = JSON.stringify(u);
+    if (!force && sig === LACT.sig) return; LACT.sig = sig;
+    const [lk, fn, at] = await Promise.all(['likes', 'fans', 'at'].map(k => API.req('GET', `/me/activity?kind=${k}&limit=30`)));
+    [...lk.items, ...fn.items, ...at.items].forEach(n => apiUser(n.actor));
+    const fresh = at.items.filter(n => !n.read && !LACT.ids.has(n.id) && LACT.ids.size);   // 第一次加载不弹
+    at.items.forEach(n => LACT.ids.add(n.id));
+    NOTES.likes = lk.items.map(n => ({u:n.actor.id, k:'赞了你的帖子', ref:n.post?.id, ts:+new Date(n.createdAt)}));
+    NOTES.fans = fn.items.map(n => ({u:n.actor.id, ts:+new Date(n.createdAt)}));
+    NOTES.at = at.items.map(actAt); at.items.forEach(n => n.read ? AT_READ.add(n.id) : AT_READ.delete(n.id));
+    NOTE_NEW.likes = u.likes; NOTE_NEW.fans = u.fans; actSetAt(u.at);
+    await dmRefs([...NOTES.likes, ...NOTES.at].filter(n => n.ref).map(n => ({t:'post', ref:n.ref})));   // 提到的帖子本地没有就去取，链接才点得进去
+    fresh.slice(0, 2).forEach(n => toast(`${esc(n.actor.name)} ${n.kind === 'reply' ? '回复了你' : '评论了你的帖子'}：${esc(n.body.slice(0, 30))}`, 'blue'));
+    noteSync(); msgBadge(); if (CUR.key === 'msg|') dmPaint('');
+  } catch(e){} finally { LACT.busy = false; }
+}
+{ const poll0 = dmPoll; dmPoll = async function(){ await poll0(); if (LACT.tick++ % 3 === 0) actLoad(); }; }
+{ const after2 = liveAfterLogin; liveAfterLogin = async function(){ LACT.sig = ''; LACT.ids.clear(); await after2(); actLoad(true); }; }
+wrapAct('note', (orig, b, e) => { const k = b.dataset.v; orig(b, e); if (liveUser() && k !== 'at') API.req('POST', '/me/activity/read', {kind:k}).then(() => { LACT.sig = ''; }).catch(() => {}); });
+{ const mark0 = atMark; atMark = function(id){ const was = AT_READ.has(id); mark0(id); if (!was && liveUser() && /^ac_/.test(id)){ API.req('POST', '/me/activity/read', {ids:[id]}).catch(() => {}); LACT.sig = ''; const d = Object.getOwnPropertyDescriptor(NOTE_NEW, 'at'); if (!d?.get) NOTE_NEW.at = Math.max(0, (NOTE_NEW.at || 0) - 1); noteSync(); msgBadge(); } }; }
+
+/* ================= 数据备份（平台参数页最上面，只有超管、只在用内置数据库时） ================= */
+{ const pa0 = ADMV.params;
+  ADMV.params = () => { const base = pa0(); if (!API.on() || admMe().role !== 'super') return base;
+    if (!LADM.backups && !LADM.busy.backups){ ladmGet('backups', '/admin/backups', r => r); }
+    const B = LADM.backups, mb = n => (n/1024/1024).toFixed(1) + ' MB';
+    const box = !B ? '<div class="box"><div class="box-b mut">正在读取备份…</div></div>' : !B.available ? '' : `<div class="box bk-box"><div class="box-h"><h3>数据备份</h3><button class="pill sm" data-act="bk-now">立即备份</button></div><div class="box-b">
+      <p class="mut2" style="font-size:12.5px;margin:0 0 10px">服务器每 ${B.hours} 小时自动备份一次（启动时也备份），保存在服务器文件夹的 ${esc(B.dir)} 里，保留最近 ${B.keep} 份。恢复要在服务器上操作：先停掉服务器，再运行 npm run demo:restore -- latest。</p>
+      <div class="ad-mini">${B.items.slice(0, 8).map(x => `<span>${fmtDT(+new Date(x.at))} · ${esc(x.file)} · ${mb(x.size)}</span>`).join('') || '<span>还没有备份</span>'}</div></div></div>`;
+    return box + base; };
+}
+ACTIONS['bk-now'] = async b => { if (!admGuard('params')) return; b.disabled = true; b.textContent = '备份中…';
+  try { const r = await STAFF.req('POST', '/admin/backups'); toast(`已备份：${esc(r.file)}`, 'green', 'check'); LADM.backups = null; rerender(); }
+  catch(e){ b.disabled = false; b.textContent = '立即备份'; apiFail(e); } };
+
 /* —— 开店、协议 —— */
 wrapAct('inv-check', async (orig, b) => { if (!liveUser()) return orig(b);
   const i = $('#inv'), v = i.value.trim().toUpperCase(), ag = $('#invAgree');
