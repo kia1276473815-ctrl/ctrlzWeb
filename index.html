@@ -11065,6 +11065,156 @@ const LCLOSE = {v:null, at:0, busy:false};
       API.req('GET', '/me/close/checks').then(r => { const v = r.items.map(x => [x.ok, x.label, x.why]), ch = JSON.stringify(v) !== JSON.stringify(LCLOSE.v); LCLOSE.v = v; if (ch && CUR.key?.startsWith('me')) rerender(); }).catch(() => {}).finally(() => { LCLOSE.busy = false; }); }
     return LCLOSE.v || [[false, '正在检查…', '']]; }; }
 
+/* ================= 后台剩下的页签 + 用户端的入驻 / 发票 / 收款（连着后端时） =================
+   做法：把服务器的数据换成原型的样子放进 ADM.*（这个网址一直连着后端，本地的示例数据用不上，覆盖也无妨），页面代码基本不用改；操作先调接口再刷新。
+   · 平台参数 / 主体备案：/config 读、PUT /admin/settings 存（PLAT、CO_* 和页脚、协议里的主体名都以服务器为准）
+   · 看板：ledger() 换成服务器的流水（/admin/ledger），数量读 /admin/stats 和 /admin/counts
+   · 内容：帖子 / 商品 / 评论的下架和恢复走后台接口
+   · 入驻申请、发票、结算打款：/admin/seller-apps、/admin/invoices、/admin/payouts；用户端 /me/seller-app、/me/invoices、/me/payee */
+const LBIZ = {inv:[], app:undefined, at:0};
+const PAY_ST = {pending:'待打款', paid:'已打款', failed:'打款失败'};
+/* 参数和主体备案 */
+function bizCfg(){ const k = LIVE.cfg; if (!k?.collab) return;
+  ADM.params = {plat:k.plat ?? ADM.params.plat, coFee:k.collab.fee, coRev:k.collab.freeRev, coAuto:k.collab.autoDays}; applyParams();
+  if (k.legal) Object.assign(ADM.site, k.legal); footLegal(); }
+{ const boot4 = liveBoot; liveBoot = async function(){ await boot4(); bizCfg(); if (liveUser()) bizMine(); }; }
+{ const after5 = liveAfterLogin; liveAfterLogin = async function(){ await after5(); bizMine(); }; }
+wrapAct('pm-save', async () => { if (!admGuard('params')) return;
+  const P = {}, L = {}; $$('[data-pm]').forEach(i => { const k = i.dataset.pm; P[k] = Math.min(PM_MAX[k], Math.max(k === 'coAuto' ? 1 : 0, +i.value || 0))/+i.dataset.m; });
+  P.coRev = Math.round(P.coRev); P.coAuto = Math.round(P.coAuto); $$('[data-site]').forEach(i => { L[i.dataset.site] = i.value.trim(); });
+  try { const r = await STAFF.req('PUT', '/admin/settings', {params:P, legal:L}); Object.assign(LIVE.cfg, {plat:r.params.plat, collab:{fee:r.params.coFee, freeRev:r.params.coRev, autoDays:r.params.coAuto}, legal:r.legal}); bizCfg(); toast('已保存，之后的新订单按新参数算', 'green', 'check'); rerender(); }
+  catch(e){ apiFail(e); } });
+
+/* 用户端：我的入驻申请、发票、收款账户和结算记录 */
+async function bizMine(){ if (!liveUser()) return;
+  try { const [a, iv, pe] = await Promise.all([API.req('GET', '/me/seller-app'), API.req('GET', '/me/invoices'), API.req('GET', '/me/payee')]);
+    LBIZ.app = a.app; LBIZ.inv = iv.items; LBIZ.at = Date.now();
+    if (pe.payee) ADM.payee[ME] = pe.payee; else delete ADM.payee[ME];
+    ADM.payouts = pe.payouts.slice().reverse().map(r => ({id:r.id, month:r.month, rows:[{seller:ME, net:f2y(r.net), st:PAY_ST[r.status] || r.status, txn:r.txn}]})); } catch(e){} }
+const bizInvMap = (v, no, item, uid) => ({id:v.id, no, uid, item, amt:f2y(v.amount), kind:v.kind === 'company' ? '企业' : '个人', title:v.title, tax:v.taxNo, mail:v.email, st:{pending:'待开具', issued:'已开具', rejected:'已驳回'}[v.status], invNo:v.invoiceNo, why:v.reason, ts:+new Date(v.createdAt)});
+const bizMyInv = () => LBIZ.inv.map(v => { const o = STATE.orders.find(x => x.id === v.orderId); return bizInvMap(v, o?.no || v.orderId, o ? P(o.pid)?.title || '' : '', ME); });
+{ const os0 = ordSheet; ordSheet = function(no){ if (!liveUser()) return os0(no); const keep = ADM.invoices; ADM.invoices = bizMyInv(); try { return os0(no); } finally { ADM.invoices = keep; } }; }
+wrapAct('inv-go', async (orig, b) => { const o = STATE.orders.find(x => x.no === b.dataset.no); if (!o?.live) return orig(b);
+  const k = $('#ivK .on').dataset.v, t = $('#ivT').value.trim(), x = $('#ivX').value.trim().toUpperCase(), m = $('#ivM').value.trim();
+  const bad = !t ? '#ivT' : k === '企业' && !/^[0-9A-Z]{15}$|^[0-9A-Z]{18}$|^[0-9A-Z]{20}$/.test(x) ? '#ivX' : !/^\S+@\S+\.\S+$/.test(m) ? '#ivM' : null;
+  if (bad){ fxPop($(bad), 'fx-shake', 300); toast('这一项格式不对', 'orange', 'x'); return; }
+  b.disabled = true;
+  try { const v = await API.req('POST', '/me/invoices', {orderId:o.id, kind:k === '企业' ? 'company' : 'personal', title:t, taxNo:x, email:m}); LBIZ.inv.unshift(v); closeSheet(); toast('已提交，开好后发到你的邮箱'); }
+  catch(e){ b.disabled = false; apiFail(e); } });
+/* 收款账户：只把打码后的存上去 */
+{ const pb0 = payeeBox; payeeBox = function(){ if (liveUser() && Date.now() - LBIZ.at > 8000){ LBIZ.at = Date.now(); bizMine().then(() => { if (CUR.key?.startsWith('seller')) rerender(); }); } return pb0(); }; }
+wrapAct('py-save', async (orig, b) => { if (!liveUser()) return orig(b);
+  const k = $('#pyK .on').dataset.v, n = $('#pyN').value.trim(), a = $('#pyA')?.value.replace(/\s/g, '') || '', bk = $('#pyB')?.value.trim() || '';
+  const bad = !n ? '#pyN' : k === 'alipay' && !/^1\d{10}$|^\S+@\S+\.\S+$/.test(a) ? '#pyA' : k === 'bank' && !/^\d{16,19}$/.test(a) ? '#pyA' : k === 'bank' && !bk ? '#pyB' : !$('#pyC').checked ? '.py-ok' : null;
+  if (bad){ fxPop($(bad), 'fx-shake', 300); toast(bad === '.py-ok' ? '请勾选确认' : '这一项格式不对', 'orange', 'x'); return; }
+  b.disabled = true;
+  try { const r = await API.req('PUT', '/me/payee', {kind:k, name:n, acct:a, bank:bk, confirm:true}); ADM.payee[ME] = r.payee; closeSheet(); toast('收款账户已保存（只保存打码后的信息）', 'green', 'check'); rerender(); }
+  catch(e){ b.disabled = false; apiFail(e); } });
+/* 入驻申请 */
+wrapAct('apply-open', async (orig, b, e) => { if (!liveUser()) return orig(b, e);
+  if (LBIZ.app === undefined) await bizMine();
+  if (LBIZ.app?.status === 'pending'){ toast('申请已提交，正在审核', 'blue'); return; }
+  const keep = ADM.apps; ADM.apps = []; try { orig(b, e); } finally { ADM.apps = keep; }
+  if (LBIZ.app?.status === 'rejected') $('#layer .sheet h3')?.insertAdjacentHTML('afterend', `<p class="ad-warn y">上次没有通过：${esc(LBIZ.app.reason || '')}。补充后可以再次申请。</p>`); });
+wrapAct('apply-go', async (orig, b) => { if (!liveUser()) return orig(b);
+  const n = $('#apN').value.trim(), id = $('#apI').value.trim(), ph = $('#apP').value.trim(), l = $('#apL').value.trim(), cats = $$('#apC .on').map(x => x.dataset.v);
+  const bad = !n ? '#apN' : !/^\d{17}[\dXx]$/.test(id) ? '#apI' : !/^1\d{10}$/.test(ph) ? '#apP' : !cats.length ? '#apC' : !l ? '#apL' : null;
+  if (bad){ fxPop($(bad), 'fx-shake', 300); toast(bad === '#apC' ? '选一下想卖的分类' : '这一项格式不对', 'orange', 'x'); return; }
+  b.disabled = true;
+  try { const r = await API.req('POST', '/me/seller-app', {real:n, idno:id, phone:ph, cats, link:l, note:$('#apX').value.trim()}); LBIZ.app = r.app; closeSheet(); toast('申请已提交，1–2 个工作日内会通知你', 'pink'); }
+  catch(e){ b.disabled = false; apiFail(e); } });
+
+/* —— 后台 —— */
+{ const ap0 = ADMV.apply;
+  ADMV.apply = () => { if (!API.on()) return ap0(); const f = UI.adf?.ap || 'todo';
+    if (!LADM.apply || LADM.apv !== f){ LADM.apv = f; LADM.apply = null; ladmGet('apply', '/admin/seller-apps?view=' + f, r => r.items); return ladmWait('入驻申请', '读取中'); }
+    ADM.apps = LADM.apply.map(a => { apiUser(a.user); return {id:a.id, uid:a.user.id, name:a.user.name, real:a.real, idno:a.idno, phone:a.phone, cats:a.cats, link:a.link, note:a.note || '—', ts:+new Date(a.createdAt),
+      st:a.status === 'pending' ? '待审核' : a.status === 'approved' ? '已通过 · ' + (a.inviteCode || '') : '已驳回 · ' + (a.reason || '')}; });
+    return ap0(); }; }
+wrapAct('ap-ok', async (orig, b) => { if (!admGuard('apply')) return;
+  try { const r = await STAFF.req('POST', `/admin/seller-apps/${encodeURIComponent(b.dataset.id)}/decide`, {ok:true}); toast('已通过，邀请码 ' + r.code + ' 已发给本人', 'green', 'check'); LADM.apply = null; rerender(); } catch(e){ apiFail(e); } });
+wrapAct('ap-no', async (orig, b) => { if (!admGuard('apply')) return; const a = ADM.apps.find(x => x.id === b.dataset.id); if (!a) return;
+  rsnSheet(`驳回「${esc(a.name)}」的入驻申请`, 'apply', async why => { try { await STAFF.req('POST', `/admin/seller-apps/${encodeURIComponent(a.id)}/decide`, {ok:false, reason:why.slice(0, 100)}); toast('已驳回，已通知本人', 'orange', 'x'); LADM.apply = null; rerender(); } catch(e){ apiFail(e); } }); });
+
+{ const iv0 = ADMV.invoice;
+  ADMV.invoice = () => { if (!API.on()) return iv0(); const f = UI.adf?.iv || 'todo';
+    if (!LADM.invoice || LADM.ivv !== f){ LADM.ivv = f; LADM.invoice = null; ladmGet('invoice', '/admin/invoices?view=' + f, r => r.items); return ladmWait('发票', '读取中'); }
+    ADM.invoices = LADM.invoice.map(v => { apiUser(v.user); return bizInvMap(v, v.orderNo, v.item, v.user.id); });
+    return iv0(); }; }
+wrapAct('inv-dgo', async (orig, b) => { if (!admGuard('invoice')) return; const n = $('#ivN').value.trim(); if (!/^\d{8,20}$/.test(n)){ fxPop($('#ivN'), 'fx-shake', 300); return; }
+  try { await STAFF.req('POST', `/admin/invoices/${encodeURIComponent(b.dataset.id)}/decide`, {ok:true, invoiceNo:n}); closeSheet(); toast('已开具，已通知用户', 'green', 'check'); LADM.invoice = null; rerender(); } catch(e){ apiFail(e); } });
+wrapAct('inv-no', async (orig, b) => { if (!admGuard('invoice')) return; const v = ADM.invoices.find(x => x.id === b.dataset.id); if (!v) return;
+  rsnSheet(`驳回「${esc(v.title)}」的发票申请`, 'invoice', async why => { try { await STAFF.req('POST', `/admin/invoices/${encodeURIComponent(v.id)}/decide`, {ok:false, reason:why.slice(0, 100)}); toast('已驳回', 'orange', 'x'); LADM.invoice = null; rerender(); } catch(e){ apiFail(e); } }); });
+
+/* 看板：流水来自服务器 */
+const LLEDGER = {v:null, at:0, busy:false};
+{ const lg0 = ledger;
+  ledger = function(){ if (!API.on()) return lg0();
+    if (admCan('orders') && !LLEDGER.busy && Date.now() - LLEDGER.at > 15000){ LLEDGER.busy = true; LLEDGER.at = Date.now();
+      STAFF.req('GET', '/admin/ledger?days=120').then(r => { Object.values(r.users).forEach(u => apiUser(u)); LLEDGER.v = r.items.map(x => ({...x, amt:f2y(x.amt), vc:f2y(x.vc), part:f2y(x.part), ts:+new Date(x.ts)})); if (CUR.key?.startsWith('admin')) rerender(); })
+        .catch(() => {}).finally(() => { LLEDGER.busy = false; }); }
+    return LLEDGER.v || []; }; }
+{ const ds0 = ADMV.dash;
+  ADMV.dash = () => { if (!API.on()) return ds0();
+    if (!LADM.dash){ ladmGet('dash', '/admin/stats', r => r); return ladmWait('看板', '读取中'); }
+    const S = LADM.dash, L = ledger(), mon = monthOf(Date.now()), ML = L.filter(x => monthOf(x.ts) === mon), C = ADMCNT.v || admCnt();
+    const gmv = ML.filter(x => x.st !== 'refund').reduce((a, x) => a + x.amt, 0);
+    const rev = ML.reduce((a, x) => a + (x.type === 'prod' && x.st === 'paid' ? x.amt*PLAT : x.type === 'co' && x.st === 'released' ? (x.amt - (x.part || 0))*CO_FEE : 0), 0);
+    const held = L.filter(x => x.st === 'held' || x.st === 'dispute').reduce((a, x) => a + x.amt, 0);
+    const todo = [['review', '待审核'], ['avatars', '头像'], ['reports', '举报'], ['apply', '入驻'], ['refunds', '退款'], ['disputes', '纠纷'], ['invoice', '发票']].filter(t => admCan(t[0])).map(([k, l]) => [k, l, C[k] || 0]);
+    const body = ds0(), i = body.indexOf('<div class="ad-grid2">');
+    return `${adH('看板', `${mon} · 数据来自服务器的订单流水`)}
+    <div class="kpis"><div class="kpi"><span class="lab">本月成交额</span><b class="num">${admCan('orders') ? yuan2(gmv) : '—'}</b><span class="d">${admCan('orders') ? ML.length + ' 笔订单' : '财务 / 客服可见'}</span></div>
+      <div class="kpi"><span class="lab">平台收入</span><b class="num">${admCan('orders') ? yuan2(rev) : '—'}</b><span class="d">商品 ${+(PLAT*100).toFixed(1)}% · 合作 ${+(CO_FEE*100).toFixed(1)}%</span></div>
+      <div class="kpi"><span class="lab">用户 / 创作者</span><b class="num">${S.users} / ${S.creators}</b><span class="d">今天新增 ${S.newToday} · 在售商品 ${S.onSale}</span></div>
+      <div class="kpi"><span class="lab">托管中的合作款</span><b class="num">${admCan('orders') ? yuan2(held) : '—'}</b><span class="d">纠纷 ${C.disputes || 0} 单</span></div></div>
+    ${todo.length ? `<div class="ad-todo">${todo.map(([k, l, n]) => `<button data-act="atab" data-v="${k}" class="${n ? 'on' : ''}"><b class="num">${n}</b><span>${l}</span></button>`).join('')}</div>` : ''}
+    ${admCan('orders') && i >= 0 ? body.slice(i) : ''}`; }; }
+
+/* 内容：帖子 / 商品 / 评论，下架和恢复走后台接口 */
+{ const ct0 = ADMV.content;
+  ADMV.content = () => { if (!API.on()) return ct0(); const k = UI.adf?.ct || 'post', q = fq('content'), f = UI.adf?.cs || 'all';
+    if (!LADM.content || LADM.ctk !== k){ LADM.ctk = k; LADM.content = null; ladmGet('content', k === 'post' ? '/admin/posts?view=all&limit=50' : k === 'prod' ? '/admin/products?status=all' : '/admin/comments?view=all&limit=50', r => r.items); return ladmWait('内容', '读取中'); }
+    const off = x => x.status === 'taken_down', who = x => x.author || x.seller;
+    const rows = LADM.content.filter(x => (f === 'all' || (f === 'off') === off(x)) && (!q || ((x.title || x.body || '') + who(x).name).toLowerCase().includes(q))).map(x => { apiUser(who(x));
+      const st = off(x) ? stTag(k === 'cmt' ? '已删除' : '已下架', 'orange') : x.status === 'review' || x.status === 'need_info' ? stTag('审核中', 'yellow') : x.status === 'on_sale' || x.status === 'published' ? stTag(k === 'prod' ? '在售' : '在线', 'green') : stTag(x.status, '');
+      const act = off(x) ? `<button class="pill sm lt" data-act="lct" data-v="on" data-k="${k}" data-id="${esc(x.id)}">恢复</button>` : (x.status === 'published' || x.status === 'on_sale') ? `<button class="pill sm" data-act="lct" data-v="off" data-k="${k}" data-id="${esc(x.id)}">${k === 'cmt' ? '删除' : '下架'}</button>` : '';
+      return `<tr><td><span class="ad-u">${k === 'cmt' ? uav(x.author.id) : ''}<span><b>${esc(k === 'cmt' ? x.body : x.title)}</b><i>${esc(who(x).name)}${k === 'cmt' ? ` · 在「${esc(x.postTitle)}」` : k === 'prod' ? ' · ' + yuan2(f2y(x.price)) : ''} · ${fmtDay(+new Date(x.createdAt))}</i></span></span></td><td class="r n">${k === 'prod' ? x.salesCount : ''}</td><td>${st}</td><td class="r">${act}</td></tr>`; }).join('');
+    return `${adH('内容', '已发布的内容；下架后用户端立刻看不到，可以恢复。作者会收到通知', adQ('content', '搜标题、内容或作者'))}
+    <div class="ad-bar2">${adSeg('ct', [['post', '帖子'], ['prod', '商品'], ['cmt', '评论']], k)}${adSeg('cs', [['all', '全部'], ['on', '在线'], ['off', '已下架']], f)}</div>
+    <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>内容</th><th class="r">${k === 'prod' ? '销量' : ''}</th><th>状态</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="mut">没找到</td></tr>'}</tbody></table></div></div>`; }; }
+ACTIONS.lct = b => { if (!admGuard('content')) return; const {k, v, id} = b.dataset;
+  const go1 = async reason => { try {
+      if (k === 'post') await STAFF.req('POST', `/admin/posts/${encodeURIComponent(id)}/${v === 'on' ? 'restore' : 'takedown'}`, v === 'on' ? undefined : {reason});
+      else if (k === 'cmt') await STAFF.req('POST', `/admin/comments/${encodeURIComponent(id)}/${v === 'on' ? 'restore' : 'takedown'}`, v === 'on' ? undefined : {reason});
+      else await STAFF.req('POST', `/admin/products/${encodeURIComponent(id)}/review`, {action:v === 'on' ? 'restore' : 'takedown', reason:reason || ''});
+      toast(v === 'on' ? '已恢复，已通知作者' : '已下架，已通知作者', v === 'on' ? 'green' : 'orange', v === 'on' ? 'check' : 'x'); LADM.content = null; rerender(); } catch(e){ apiFail(e); } };
+  if (v === 'on') go1(); else rsnSheet(k === 'cmt' ? '为什么删除这条评论？' : '为什么下架？', 'content', why => go1(why.slice(0, 200))); };
+
+/* 结算打款 */
+RJ_REASON.payout = ['收款账户信息有误', '收款账户已注销 / 冻结', '户名和实名信息不一致'];
+{ const po0 = ADMV.payout;
+  ADMV.payout = () => { if (!API.on()) return po0(); const want = UI.adf?.pm || '';
+    if (!LADM.payout || LADM.pom !== want){ LADM.pom = want; LADM.payout = null; ladmGet('payout', '/admin/payouts' + (want ? '?month=' + want : ''), r => r); return ladmWait('结算打款', '读取中'); }
+    const D = LADM.payout, m = D.month, rows = D.rows.map(r => { apiUser(r.seller); return r; }), Y = f => yuan2(f2y(f));
+    const sum = k => rows.reduce((a, r) => a + r[k], 0);
+    return `${adH('结算打款', '按订单流水自动计算；生成结算单后金额就定下来，线下打款后填流水号，结果会通知创作者', adSeg('pm', D.months.map(x => [x, x]), m))}
+    <div class="kpis"><div class="kpi"><span class="lab">商品成交</span><b class="num">${Y(sum('gross'))}</b><span class="d">${sum('n')} 单 · 合作放款 ${Y(sum('co'))}</span></div><div class="kpi"><span class="lab">平台收入</span><b class="num">${Y(sum('plat') + sum('coFee'))}</b><span class="d">抽成 ${Y(sum('plat'))} · 合作 ${Y(sum('coFee'))}</span></div><div class="kpi"><span class="lab">支付手续费</span><b class="num">${Y(sum('fee'))}</b><span class="d">卖家承担</span></div><div class="kpi"><span class="lab">应打给创作者</span><b class="num">${Y(sum('net'))}</b><span class="d">${rows.length} 位创作者</span></div></div>
+    <div class="box"><div class="box-h"><h3>${m} · 按创作者</h3>${D.generated ? stTag('结算单已生成', 'green') : rows.length ? `<button class="pill sm" data-act="lpo-gen" data-v="${m}">生成结算单</button>` : ''}</div><div class="tw"><table class="t"><thead><tr><th>创作者</th><th class="r">单数</th><th class="r">商品成交</th><th class="r">手续费</th><th class="r">抽成</th><th class="r">合作放款</th><th class="r">服务费</th><th class="r">应打款</th>${D.generated ? '<th>状态</th><th></th>' : ''}</tr></thead>
+      <tbody>${rows.map(r => `<tr><td><span class="ad-u">${uav(r.seller.id)}<span><b>${esc(r.seller.name)}</b><i>${r.payee ? esc(`${PAYEE_K[r.payee.kind]?.[0] || r.payee.kind} · ${r.payee.name}${r.payee.acct ? ' · ' + r.payee.acct : ''}`) : '<span style="color:var(--orange)">未绑定收款账户</span>'}</i></span></span></td><td class="r n">${r.n}</td><td class="r n">${Y(r.gross)}</td><td class="r n neg">−${Y(r.fee)}</td><td class="r n neg">−${Y(r.plat)}</td><td class="r n">${Y(r.co)}</td><td class="r n neg">−${Y(r.coFee)}</td><td class="r n"><b>${Y(r.net)}</b></td>
+        ${D.generated ? `<td>${stTag(PAY_ST[r.status] || r.status, {pending:'yellow', paid:'green', failed:'orange'}[r.status])}${r.txn ? `<br><span class="mut2 n" style="font-size:11.5px">${esc(r.txn)}</span>` : r.reason ? `<br><span class="mut2" style="font-size:11.5px">${esc(r.reason)}</span>` : ''}</td><td class="r">${r.status !== 'paid' ? `<button class="pill sm" data-act="lpo-pay" data-id="${r.id}">标记已打款</button> <button class="pill sm lt" data-act="lpo-fail" data-id="${r.id}">失败</button>` : ''}</td>` : ''}</tr>`).join('') || `<tr><td colspan="8" class="mut">这个月没有可结算的订单</td></tr>`}</tbody></table></div></div>
+    <p class="mut2" style="font-size:12.5px;margin-top:10px">⚠️ 现在只记录打款状态；接入真实支付后，打款走支付渠道的分账 / 结算接口（微信支付电商收付通、支付宝直付通等）。</p>`; }; }
+Object.assign(ACTIONS, {
+  'lpo-gen': async b => { if (!admGuard('payout')) return; b.disabled = true;
+    try { const r = await STAFF.req('POST', '/admin/payouts/generate', {month:b.dataset.v}); toast(`结算单已生成，已通知 ${r.count} 位创作者`, 'green', 'check'); LADM.payout = null; rerender(); } catch(e){ b.disabled = false; apiFail(e); } },
+  'lpo-pay': b => { if (!admGuard('payout')) return; const id = b.dataset.id;
+    sheet(`<h3>标记已打款</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">线下打款完成后，把银行 / 支付渠道的流水号填在这里，创作者会收到通知。</p><label class="ad-lab" for="poTx">打款流水号</label><input class="inp" id="poTx" autocomplete="off" maxlength="64"><button class="pill lg" data-act="lpo-pgo" data-id="${esc(id)}">确认已打款</button>`); },
+  'lpo-pgo': async b => { const t = $('#poTx').value.trim(); if (t.length < 4){ fxPop($('#poTx'), 'fx-shake', 300); return; } b.disabled = true;
+    try { await STAFF.req('POST', `/admin/payouts/${encodeURIComponent(b.dataset.id)}/mark`, {st:'paid', txn:t}); closeSheet(); toast('已标记打款，已通知创作者', 'green', 'check'); LADM.payout = null; rerender(); } catch(e){ b.disabled = false; apiFail(e); } },
+  'lpo-fail': b => { if (!admGuard('payout')) return; const id = b.dataset.id;
+    rsnSheet('打款失败的原因', 'payout', async why => { try { await STAFF.req('POST', `/admin/payouts/${encodeURIComponent(id)}/mark`, {st:'failed', reason:why.slice(0, 100)}); toast('已标记失败，已通知创作者', 'orange', 'x'); LADM.payout = null; rerender(); } catch(e){ apiFail(e); } }); }
+});
+
 (function boot(){
   STATE.hist = store.get('hist', null) || [{k:'post', id:'s3', ts:Date.now() - 2*3600e3}, {k:'item', id:'p3', ts:Date.now() - 5*3600e3}, {k:'video', id:'s2', ts:Date.now() - 26*3600e3}, {k:'post', id:'s8', ts:Date.now() - 30*3600e3}];
   ACC.boot(); delcApply();
