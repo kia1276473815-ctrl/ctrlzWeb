@@ -2756,7 +2756,7 @@ const POSTS = [
   {id:'s14', type:'question', author:'ash', title:'带 alpha 的 ProRes 4444 循环，网页预览怎么做比较好？', ex:'想在商品页展示透明背景的效果，浏览器好像不支持 ProRes。', tags:['视觉','提问'], likes:24, favs:9, cmts:1, time:'1 周前', attach:[], solved:false, qn:'009'}
 ];
 const TAKEN_P = {};   // 被后台下架的帖子（用户端看不到，管理员还能打开）
-const POST = id => POSTS.find(p => p.id === id) || (id === 'draft' ? UI.cpDraft : undefined) || (STATE.role === 'admin' ? TAKEN_P[id] : undefined);
+const POST = id => POSTS.find(p => p.id === id) || (id === 'draft' ? UI.cpDraft : undefined) || (admOn() ? TAKEN_P[id] : undefined);
 
 const BODY = {
   s1:['这首是周末在家用「雨夜磁带」做的，鼓全部来自 Drums 文件夹，和弦用的是 Keys_Loops 里的 Am7–Fmaj7 循环，换成了 Rhodes 音色。','混音时我只在总线上挂了一个磁带饱和，没有做太多处理。包里自带的底噪已经足够有氛围了。','有人问 BPM：78。所有循环都是这个速度，拉进工程就能对齐。'],
@@ -3005,7 +3005,7 @@ function vcSpend(uid, amt, no){ let need = r2(amt);
 /* 在首页 / 视频流里直接处理内容：内容审核和超级管理员。以管理员身份浏览时用当前后台账号；
    普通身份登录、但这个用户被设成了后台成员（staff.uid）时用他自己的成员身份 */
 const MOD_ROLES = ['super', 'mod'];
-function modActor(){ const s = STATE.role === 'admin' ? admMe() : !API.on() && ADM.staff.find(x => x.uid === ME && x.on); return s && MOD_ROLES.includes(s.role) ? s : null; }   // 连着后端时只认后台登录
+function modActor(){ const s = admOn() ? admMe() : !API.on() && ADM.staff.find(x => x.uid === ME && x.on); return s && MOD_ROLES.includes(s.role) ? s : null; }   // 连着后端时只认后台登录
 PLAT = ADM.params.plat;
 REPORTS.forEach(r => { if (r.kind === 'cmt' && !r.key) r.key = r.ref + ':' + hash(r.au + '|' + r.text); });
 // 待审核 / 举报 / 退款 / 邀请码队列：第一次用种子数据，之后用本地保存的
@@ -3467,6 +3467,10 @@ const ROLE_NAME = {guest:'访客', user:'用户', admin:'管理员'};
 const DEMO = (() => { const q = new URLSearchParams(location.search).get('demo'); if (q !== null) store.set('demo', q === '1'); return !!store.get('demo', false); })();
 const protoOn = () => DEMO && !API.on();                       // 能不能用「原型 · 切换身份」
 const admAllowed = () => API.on() ? !!STAFF.me : protoOn();     // 能不能切成管理员
+/* 连着后端时：用自己的账号登录、同时有后台会话 = 本人身份 + 后台权限（不切成「管理员身份」，发作品、私信、关注都和普通用户一样）。
+   启动早期 API / STAFF 还没定义，取不到就当没有 */
+const liveStaff = () => { try { return API.on() && STATE.role === 'user' && !!STAFF.me; } catch(e){ return false; } };
+const admOn = () => STATE.role === 'admin' || liveStaff();
 const curUser = () => STATE.role === 'guest' ? null : STATE.role === 'admin' ? 'admin' : ME;
 function setRole(r, silent){
   if (!ROLE_NAME[r]) r = 'user'; if (r === 'admin' && !admAllowed()) r = API.on() ? 'guest' : 'user';
@@ -6616,7 +6620,7 @@ const ADM_TABS = [
 // 当前后台账号：连着后端时就是登录的后台账号（角色以后端为准）；纯原型演示用本地的成员列表
 const admMe = () => API.on() ? (STAFF.me || {id:'-', name:'未登录', role:'none', on:false}) : ADM.staff.find(s => s.id === ADM.me && s.on) || ADM.staff.find(s => s.on) || ADM.staff[0];
 const admCan = tab => (ADM_TABS.find(t => t[0] === tab) || [, , , []])[3].includes(admMe().role);
-const admGuard = tab => { if (STATE.role === 'admin' && admCan(tab)) return true; toast('当前角色没有这个权限', 'orange', 'x'); return false; };
+const admGuard = tab => { if (admOn() && admCan(tab)) return true; toast('当前角色没有这个权限', 'orange', 'x'); return false; };
 // 后台页签之间切换 = 页内页签：原地换网址、不新增返回记录、不播翻页动画（同 stab / doc-tab）
 const admTab = k => { const h = '#admin-' + k; if (curH() === h) return; UI.adminTab = k; if (typeof LADM !== 'undefined' && k !== 'users') LADM[k] = null;   // 接后端的页签：每次切过去都重新读
   NAVX.inpage = true; navReplace(h); };
@@ -6929,7 +6933,7 @@ ADMV.audit = () => { const who = UI.adf?.lg || 'all', q = fq('audit'), list = AD
 
 ROUTES.admin = arg => {
   if (arg) UI.adminTab = arg;
-  if (STATE.role !== 'admin' || !admAllowed()) return API.on()
+  if (!admOn() || !admAllowed()) return API.on()
     ? gate('管理', '用后台账号登录：邮箱、密码和动态口令。后台账号和 App 账号分开，由超级管理员创建。', `<button class="pill lg" data-act="adm-login">后台登录</button>`)
     : gate('管理', '管理后台要连上后端、用后台账号登录才能进入。', protoOn() ? `<button class="pill lg" data-act="adm-login">演示：以管理员身份查看</button>` : '');
   const me = admMe(), tabs = ADM_TABS.filter(t => t[3].includes(me.role));
@@ -7985,7 +7989,7 @@ ADMV.invoice = () => { const f = UI.adf?.iv || 'todo', L = ADM.invoices.filter(v
 function msgList(sel){
   const ids = Object.keys(CHATS).filter(id => USERS[id] && !blocked(id)).sort((a, b) => lastTs(b) - lastTs(a));
   return `<div class="m-quick">${[['likes','喜欢','pink',IC.heartF],['fans','新粉丝','blue','<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.4-7 8-7s7 2.5 8 7z"/></svg>'],['at','回复与@','yellow',RIC.cm]].map(([k,l,c,ic]) => { const n = NOTE_NEW[k] || 0; return `<button class="mq c-${c} mq-${k} ${n ? 'live' : ''}" data-act="note" data-v="${k}" data-n="${n}" aria-label="${l}${n ? '，' + n + ' 条新的' : ''}"><span class="mq-h"><span class="g">${ic}</span><b>${l}</b></span><span class="mq-n">${n}</span></button>`; }).join('')}</div>
-  <div class="m-list">${STATE.role === 'user' ? sysRow() : ''}${ids.map(id => { const m = CHATS[id][CHATS[id].length - 1], u = USERS[id]; return `<a class="mrow ${sel === id ? 'on' : ''}" data-go="msg-${id}">${av(id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>${esc(msgPreview(m))}</span></span><span class="mr"><time>${ago(m.ts)}</time>${CHAT_UNREAD[id] ? `<i class="bdg">${CHAT_UNREAD[id]}</i>` : ''}</span></a>`; }).join('') || '<div class="rnone">还没有私信</div>'}</div>`;
+  <div class="m-list">${STATE.role === 'user' ? sysRow() : ''}${ids.map(id => { const m = CHATS[id][CHATS[id].length - 1], u = USERS[id]; return `<a class="mrow ${sel === id ? 'on' : ''}" data-go="msg-${id}">${av(id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>${m ? esc(msgPreview(m)) : '还没有消息，打个招呼吧'}</span></span><span class="mr"><time>${m ? ago(m.ts) : ''}</time>${CHAT_UNREAD[id] ? `<i class="bdg">${CHAT_UNREAD[id]}</i>` : ''}</span></a>`; }).join('') || '<div class="rnone">还没有私信</div>'}</div>`;
 }
 function bubble(m, uid){
   if (m.rc) return `<div class="msep">${m.me ? '你' : esc(uname(uid))}撤回了一条消息</div>`;
@@ -9105,7 +9109,8 @@ document.addEventListener('rendered', syncSearchBtn);
 document.addEventListener('rendered', () => { const r = routeOf(CUR.hash), meRoot = r === 'me' && !parentOf(CUR.hash);
   $('#hd').classList.toggle('at-home', r === 'home'); $('#hd').classList.toggle('at-me', meRoot);
   document.documentElement.classList.toggle('no-hd', !parentOf(CUR.hash)); });   // 一级页面在手机上没有顶栏
-function contactIds(){ return [...new Set([...Object.keys(CHATS), ...STATE.follows])].filter(id => USERS[id] && id !== ME); }
+const LSRCH = new Set();   // 连着后端时搜索从后端找到的人（私信搜索里也能直接发起私信）
+function contactIds(){ return [...new Set([...Object.keys(CHATS), ...STATE.follows, ...LSRCH])].filter(id => USERS[id] && id !== ME); }
 function openSearch(scope, tab){
   scope = scope === undefined ? searchScope() : scope; if (!scope || $('#srch')) return; const S = SCOPES[scope];
   UI.stabs ||= {}; UI.stabs[scope] = tab || null;   // 没手动选过页签时，自动停在第一个有结果的页签
@@ -9132,7 +9137,7 @@ function openSearch(scope, tab){
       if (scope === 'all'){
         G.post = POSTS.filter(p => (p.title + p.ex + p.tags.join(' ') + (p.type === 'question' ? '提问' : '')).toLowerCase().includes(v))
           .map(p => ({go:'post-' + p.id, img:p.cover ? cover(p.cover, hash(p.id)%50, 120, 120) : null, t:hl(p.title), s:`${USERS[p.author].name} · ${typeTagCN[p.type]}`}));
-        G.user = Object.values(USERS).filter(u => (u.name + u.role + u.bio).toLowerCase().includes(v)).map(u => ({go:'user-' + u.id, av:u.id, t:hl(u.name), s:u.role}));
+        G.user = Object.values(USERS).filter(u => (!API.on() || (LIVE.u.has(u.id) && u.id !== ME)) && (u.name + u.role + u.bio + (u.handle || '')).toLowerCase().includes(v)).map(u => ({go:'user-' + u.id, av:u.id, t:hl(u.name), s:u.role}));
       }
     }
     const keys = S.tabs.map(([k]) => k), tab = keys.includes(UI.stabs[scope]) ? UI.stabs[scope] : (keys.find(k => G[k].length) || keys[0]), rows = G[tab];
@@ -9152,6 +9157,15 @@ function openSearch(scope, tab){
   draw();
 }
 const typeTagCN = {image:'图文', audio:'声音', video:'视频', question:'提问'};
+{ const open0 = openSearch;
+  openSearch = function(scope, tab){
+    open0(scope, tab); const q = $('#sq'), el = $('#srch'); if (!q || !el || !API.on() || !API.tok || el.dataset.s === 'shop') return;
+    let t = 0, seq = 0;
+    q.addEventListener('input', () => { clearTimeout(t); const v = q.value.trim(); if (!v) return;
+      t = setTimeout(async () => { const my = ++seq;
+        try { const r = await API.req('GET', '/users?q=' + encodeURIComponent(v)); if (my !== seq || !el.isConnected) return; r.items.forEach(u => { apiUser(u); LSRCH.add(u.id); }); el._draw?.(); } catch(e){} }, 250); });
+  };
+}
 function closeSearch(){ const el = $('#srch'); if (!el) return; el.remove(); if (!CUR.post) document.documentElement.style.overflow = ''; }
 ACTIONS.sclose = () => closeSearch();
 /* 历史搜索：每个板块各记最近 10 条，去重，新的在前 */
@@ -9244,7 +9258,7 @@ const STAFF = {
   load(){ try { const j = JSON.parse(sessionStorage.getItem('ctrlz2.staff') || 'null'); if (j){ this.tok = j.tok; this.me = j.me; } } catch(e){} },
   save(){ try { this.tok ? sessionStorage.setItem('ctrlz2.staff', JSON.stringify({tok:this.tok, me:this.me})) : sessionStorage.removeItem('ctrlz2.staff'); } catch(e){} },
   set(tok, s){ this.tok = tok; this.me = {id:s.id, name:s.name, role:s.role, email:s.email, on:true}; this.save(); },
-  drop(tell){ this.tok = this.me = null; this.save(); for (const k in LADM) if (k !== 'busy') LADM[k] = null;   /* 换人登录不串数据 */ if (STATE.role === 'admin'){ setRole(API.tok ? 'user' : 'guest', true); if (tell) toast('后台登录已过期，请重新登录', 'blue'); rerender(); } },
+  drop(tell){ this.tok = this.me = null; this.save(); for (const k in LADM) if (k !== 'busy') LADM[k] = null;   /* 换人登录不串数据 */ if (STATE.role === 'admin'){ setRole(API.tok ? 'user' : 'guest', true); if (tell) toast('后台登录已过期，请重新登录', 'blue'); rerender(); } else if (tell && /^admin/.test(CUR.key || '')){ toast('后台登录已过期，请重新进入', 'blue'); rerender(); } },
   async req(method, path, body){
     const h = {}; if (body !== undefined) h['Content-Type'] = 'application/json'; if (this.tok) h.Authorization = 'Bearer ' + this.tok;
     let res; try { res = await fetch(API.base + path, {method, headers:h, body: body === undefined ? undefined : JSON.stringify(body)}); }
@@ -9267,11 +9281,11 @@ function admLoginSheet(){ const pre = STATE.role === 'user' ? LIVE.staffEmail ||
 Object.assign(ACTIONS, {
   // 进后台：连着后端时，有有效会话就直接进，没有就登录；纯原型只有演示模式能进
   'adm-login': async () => { if (!API.on()){ if (protoOn()){ setRole('admin'); go('admin'); } return; }
-    if (await STAFF.check()){ setRole('admin'); go('admin'); } else admLoginSheet(); },
+    if (await STAFF.check()){ if (!liveUser()) setRole('admin'); go('admin'); } else admLoginSheet(); },
   'adm-login-go': async b => { const e = $('#alE').value.trim(), p = $('#alP').value, t = $('#alT').value.trim();
     if (!e || !p){ fxPop(!e ? $('#alE') : $('#alP'), 'fx-shake', 300); return; } if (b.disabled) return; b.disabled = true;
     try { const r = await STAFF.req('POST', '/admin/auth/login', {email:e, password:p, ...(t ? {totp:t} : {})}); STAFF.set(r.token, r.staff);
-      closeSheet(); setRole('admin'); toast(`已登录后台：${esc(r.staff.name)} · ${ADM_ROLES[r.staff.role]?.[0] || r.staff.role}`, 'green', 'check'); go('admin'); }
+      closeSheet(); if (!liveUser()) setRole('admin'); toast(`已登录后台：${esc(r.staff.name)} · ${ADM_ROLES[r.staff.role]?.[0] || r.staff.role}`, 'green', 'check'); go('admin'); }
     catch(err){ b.disabled = false; apiFail(err); if (err.code === 'totp_required') $('#alT')?.focus(); } },
   'adm-out': async () => { try { if (STAFF.tok) await STAFF.req('POST', '/admin/auth/logout'); } catch(e){} STAFF.drop(); setRole(API.on() && API.tok ? 'user' : API.on() ? 'guest' : 'user', true); toast('已退出后台', 'blue'); go('home'); }
 });
@@ -9345,7 +9359,7 @@ Object.assign(ACTIONS, {
 // 用户弹窗里的处置：连着后端时先调接口（后端会通知本人、写操作日志、封禁时踢下线），成功了再更新界面
 const US_ACT = {warn:'warn', mute1:'mute1', mute7:'mute7', ban7:'ban7', ban0:'ban_forever', lift:'lift'};
 { const usDo0 = ACTIONS['us-do'];
-  ACTIONS['us-do'] = async b => { if (API.on() && STATE.role === 'admin'){ const v = b.dataset.v, uid = b.dataset.id, act = v === 'verify' ? (acctOf(uid).verified ? 'unverify' : 'verify') : US_ACT[v];
+  ACTIONS['us-do'] = async b => { if (API.on() && admOn()){ const v = b.dataset.v, uid = b.dataset.id, act = v === 'verify' ? (acctOf(uid).verified ? 'unverify' : 'verify') : US_ACT[v];
       if (!admGuard('users')) return;
       try { await STAFF.req('POST', `/admin/users/${encodeURIComponent(uid)}/actions`, {action:act, reason:$('#usWhy')?.value.trim() || '违反社区规范'}); } catch(e){ apiFail(e); return; }
       LADM.users = null; }
@@ -9425,7 +9439,7 @@ async function liveBoot(){
       if (r.needsPhone) setTimeout(() => ACTIONS['live-bind'](), 600);
     }
     if (API.tok) liveMe(await API.req('GET', '/me'));
-    if (STAFF.tok && /^#admin/.test(location.hash) && await STAFF.check()) setRole('admin', true);   // 刷新后台页面：会话还有效就留在后台
+    if (STAFF.tok && await STAFF.check() && !liveUser() && /^#admin/.test(location.hash)) setRole('admin', true);   // 刷新后台页面：会话还有效就留在后台（用 App 账号进的后台，身份还是本人）
     await liveFeed(); await liveShop();
     if (liveUser()){ await liveMeExtras(); await liveMine(); }
   } catch(e){ apiFail(e); }
@@ -9792,7 +9806,7 @@ ACTIONS['pw-go'] = async b => { const U = $('#pwU'), O = $('#pwO'), N = $('#pwN'
 { const admLogin0 = ACTIONS['adm-login'];
   ACTIONS['adm-login'] = async () => {
     if (!API.on() || !LIVE.staffEmail || STATE.role !== 'user') return admLogin0();
-    if (await STAFF.check()){ setRole('admin'); go('admin'); return; }
+    if (await STAFF.check()){ go('admin'); return; }
     const t = LIVE.cfg.adminTotp, noPw = !LIVE.me?.hasPassword;
     sheet(`<h3>进入后台</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">${noPw ? '你的账号还没有密码。先设置一个密码，再用它进后台。' : `再输一次你的登录密码${t ? '，以及验证器 App 里的 6 位动态口令' : ''}。连续输错会被限制 15 分钟。`}</p>
       ${noPw ? '<button class="pill lg" data-act="pw-set">设置密码</button>' : `<label class="ad-lab" for="avP">登录密码</label><input class="inp" id="avP" type="password" autocomplete="current-password">
@@ -9806,7 +9820,7 @@ Object.assign(ACTIONS, {
   'adm-email': () => admLoginSheet(),
   'adm-via-go': async b => { const P = $('#avP'), T = $('#avT'); if (!P.value){ fxPop(P, 'fx-shake', 300); return; } if (b.disabled) return; b.disabled = true;
     try { const r = await API.req('POST', '/admin/auth/via-user', {password:P.value, ...(T?.value.trim() ? {totp:T.value.trim()} : {})}); STAFF.set(r.token, r.staff);
-      closeSheet(); setRole('admin'); toast(`已进入后台：${esc(r.staff.name)} · ${ADM_ROLES[r.staff.role]?.[0] || r.staff.role}`, 'green', 'check'); go('admin'); }
+      closeSheet(); toast(`已进入后台：${esc(r.staff.name)} · ${ADM_ROLES[r.staff.role]?.[0] || r.staff.role}`, 'green', 'check'); go('admin'); }
     catch(err){ b.disabled = false; apiFail(err); if (err.code === 'wrong_password'){ P.value = ''; P.focus(); } else if (/totp/.test(err.code || '')) T?.focus(); } }
 });
 

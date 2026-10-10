@@ -52,6 +52,8 @@
 - 连着后端时 `admMe()` 就是登录的后台账号（角色以后端为准）。已接后端的：「人员与权限」（`ladmStaffView`：列表、加人、改角色、停用）、「用户」（`ladmUsersView`：列表、搜索、超管「新建账号」= 用户名密码 App 账号 + 可选后台权限、「重置密码」）、用户弹窗的警告 / 禁言 / 封禁 / 解除（`us-do` 先调 `/admin/users/{id}/actions`）。数据缓存在 `LADM`，改动后置空重读。其余页签仍是原型数据
 - 新建后台账号的初始密码和动态口令只显示一次（`credSheet`，复制用 `cp-secret`，不要把密码弹在 toast 里）
 - 后台账号可以关联 App 账号（后端 `staff.userId`）：`/me` 返回 `staffEmail` / `staffRole`，存在 `LIVE.staffEmail`，侧边菜单显示「进入后台」→ 再输一次自己的登录密码（`/admin/auth/via-user`，`LIVE.cfg.adminTotp` 为真时多一个动态口令框），底下留「用后台邮箱登录」（`admLoginSheet`）
+- **连着后端时进后台不切身份**：用 App 账号登录 + 有后台会话 = 本人 + 后台权限（`liveStaff()` / `admOn()`），`STATE.role` 仍是 `user`，发作品、私信、关注和普通用户完全一样；后台页、`admGuard`、`modActor`、`us-do` 都认 `admOn()`。只有没登录 App、直接用后台邮箱登录时才切成 `admin` 身份。判断「是不是管理员」不要再直接写 `STATE.role === 'admin'`
+- 搜索连着后端时去 `GET /users?q=` 找人（`LSRCH`，私信搜索里也能直接发起私信），不列示例用户
 - 本机测试账号：后端 `npm run demo:accounts` 只生成一个超管（用户名 `admin`，密码写进后端文件夹的「测试账号.txt」）。其他账号在后台「用户 › 新建账号」建（用户名 + 密码 + 可选后台权限，`lus-new` / `acctSheet`），忘了密码点「重置密码」（`lus-pw`）
 - 待审核（`ADMV.review`）：左队列 + 右详情（`rvDetail`：内容、来源与授权、发布者资质与历史、审核清单 `RV_CK`）；操作是通过 / 要求补充材料（`rv-ask`，留在队列里标「待补充」，卖家那边同步）/ 驳回。卖家「提交审核」会把完整快照推进 `REVIEW`（`sp` 关联卖家的商品）；`decl` 是来源声明 + 授权文件，上架表单还没收集
 - 数据都在 `ADM`（浏览器本地 `store 'adm'`，原型阶段）；接后端时把各个「adm 操作」换成接口，页面不用改。待审核 / 举报 / 退款 / 邀请码队列也随 `ADM` 保存
