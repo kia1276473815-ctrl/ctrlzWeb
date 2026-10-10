@@ -7200,7 +7200,7 @@ ROUTES.home = () => {
   return `<div class="wrap home">
     <div class="htabs"><button class="rl-ic dk ht-l pg-only" data-act="me-menu" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><span class="ht-no" aria-hidden="true">${ISSUE_NO}<i>今日</i></span><div class="ht-t" role="tablist"><button role="tab" class="${tab === 'fol' ? 'on' : ''}" data-act="htab" data-v="fol">关注</button><button role="tab" class="${tab === 'rec' ? 'on' : ''}" data-act="htab" data-v="rec">推荐</button></div><button class="rl-ic dk ht-r pg-only" data-act="search" aria-label="搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div>
     <div class="hfeed">${annBar()}${tab === 'rec' && !STATE.settings.pers ? `<p class="pers-off">已关闭个性化推荐 · 按发布时间排列 <a href="#me-settings">设置</a></p>` : ''}${tab === 'fol' ? `<div class="sugg"><span class="lab">${list.length ? '还可以关注' : '先关注几位创作者'}</span><div class="sugg-r">${sugg.map(u => `<div class="sg ${ucls(u.id)}"><a data-go="user-${u.id}">${av(u.id, 'md')}<b>${esc(u.name)}</b><span>${esc(u.role.split(' · ')[0])}</span></a><button class="pill sm" data-act="follow" data-id="${u.id}">关注</button></div>`).join('')}</div></div>` : ''}
-    ${list.length ? `<div class="mason">${list.map(postCard).join('')}</div>` : `<div class="empty"><div class="x">空</div><span>关注的人还没有发东西</span></div>`}</div>
+    ${list.length ? `<div class="mason">${list.map(postCard).join('')}</div>` : `<div class="empty"><div class="x">空</div><span>${tab === 'fol' ? '关注的人还没有发东西' : '还没有人发东西，来发第一条吧'}</span>${tab === 'fol' ? '' : '<button class="pill" data-act="compose">发布</button>'}</div>`}</div>
   </div>`;
 };
 ROUTES.feed = ROUTES.home;
@@ -9453,8 +9453,10 @@ function loadHarmonySC(){
 const API = {
   base: '', tok: null, _ref: null,
   init(){
-    const q = new URLSearchParams(location.search).get('api');
-    if (q !== null){ store.set('apiBase', q.trim() === 'self' ? location.origin : q.trim().replace(/\/+$/, '')); store.set('apiTok', null); history.replaceState(history.state, '', location.pathname + location.hash); }   // ?api=self：网页和接口在同一个地址（本机测试）
+    const q = new URLSearchParams(location.search).get('api'), served = document.querySelector('meta[name="ctrlz-api"]')?.content === 'self';
+    const want = q !== null ? (q.trim() === 'self' ? location.origin : q.trim().replace(/\/+$/, '')) : served ? location.origin : null;   // 网页是 ctrlz-server 给的：一直连它自己（不会掉回本地模拟）
+    if (want !== null && want !== store.get('apiBase', '')){ store.set('apiBase', want); store.set('apiTok', null); }   // 只有换了后端才清登录（以前每次打开带 ?api=self 的链接都会被登出）
+    if (q !== null) history.replaceState(history.state, '', location.pathname + location.hash);
     this.base = store.get('apiBase', ''); this.tok = store.get('apiTok', null);
   },
   on(){ return !!this.base; },
@@ -9873,7 +9875,7 @@ ACTIONS['api-go'] = async () => { const u = $('#apiU').value.trim().replace(/\/+
   store.set('apiBase', u); store.set('apiTok', null); location.reload(); };
 ACTIONS['api-off'] = () => { store.set('apiBase', ''); store.set('apiTok', null); location.reload(); };
 const apiBox = () => `<div class="box"><div class="box-h"><h3>原型 · 数据来源</h3><span class="tag ${API.on() ? 'c-green' : 'k'}">${API.on() ? '真实后端' : '本地模拟'}</span></div><div class="box-b set-l">
-  ${API.on() ? `<div class="set-r"><span>后端地址<span class="mut2" style="display:block;font-size:12.5px;word-break:break-all">${esc(API.base)}</span></span><button class="pill sm lt" data-act="api-off">切回本地模拟</button></div>
+  ${API.on() ? `<div class="set-r"><span>后端地址<span class="mut2" style="display:block;font-size:12.5px;word-break:break-all">${esc(API.base)}</span></span>${document.querySelector('meta[name="ctrlz-api"]') ? '' : '<button class="pill sm lt" data-act="api-off">切回本地模拟</button>'}</div>
     <p class="mut2" style="font-size:12.5px;margin:6px 0 0">已接通：用户名密码登录、信息流、帖子（含声音 / 可视化）、评论、点赞、关注、拉黑、私信、官方通知、设置、商城、管理后台。合作仍是本地模拟。</p>`
   : `<div class="set-r"><span>现在用的是浏览器里的示例数据</span><button class="pill sm" data-act="api-set">连接后端</button></div>`}</div></div>`;
 

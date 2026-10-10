@@ -110,6 +110,7 @@
 
 ## 数据接口层（本地模拟 / 真实后端）
 - 后端在私有仓库 kia1276473815-ctrl/ctrlz-server（第 1 阶段：账号、内容、互动、通知、后台接口）
+- **网页由 ctrlz-server 提供时（本机 / cpolar）一直连它**：服务器在页面里加 `<meta name="ctrlz-api" content="self">`，`API.init` 看到就用当前地址当后端，不会掉回本地模拟（踩过：朋友换浏览器 / 换 cpolar 地址后进了示例数据，发的帖子只存在自己手机上）。带 `?api=` 的链接只在后端变了时才清登录
 - 默认「本地模拟」，和原型完全一样；`?api=后端地址`（`?api=self` = 网页和接口同一个地址，本机测试时后端用 STATIC_DIR 顺便提供网页）（或「设置 › 原型 · 数据来源」）切到「真实后端」，存在 `store 'apiBase'`；令牌在 `store 'apiTok'`（refresh 暂存 localStorage，上线同域后换 httpOnly cookie）
 - `API.req(方法, 路径, 请求体)`：自动带 token、401 时刷新一次（同时只刷一次）；错误是带 `code` 的 Error，`apiFail(e)` 统一提示（`phone_required` 会弹出绑定手机号）
 - 做法是「不改页面代码」：`apiUser` / `apiPost` / `apiCmt` 把后端数据灌进 `USERS` / `POSTS` / `BODY` / `COMMENTS`（真实帖子 `live:true`，`COMMENTS[id]` 先置空，免得用上示例评论；`p.likes` 不含自己的赞，和 `likes()` 的算法一致）；`wrapAct(名字, fn)` 包装现有操作：先照原样改界面，再调接口，失败撤回并提示
