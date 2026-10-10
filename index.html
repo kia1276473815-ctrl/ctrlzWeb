@@ -6186,7 +6186,7 @@ ROUTES.shop = arg => {
   let list = PRODUCTS.filter(p => onSale(p) && (s.cat === 'all' || p.cat === s.cat) && (!CATS[s.cat]?.subs || !s.sub || s.sub === 'all' || p.sub === s.sub) && (s.price === 'all' || (s.price === 'free' && p.price === 0) || (s.price === 'lt50' && p.price > 0 && p.price < 50) || (s.price === '50' && p.price >= 50 && p.price <= 100) || (s.price === 'gt100' && p.price > 100)));
   const sorts = {hot:(a,b) => b.sales - a.sales, new:(a,b) => PRODUCTS.indexOf(b) - PRODUCTS.indexOf(a), asc:(a,b) => a.price - b.price};
   list = [...list].sort(sorts[s.sort]);
-  const tile = (k, c, en, cn, n) => `<button class="cat ${c ? 'c-' + c : 'all'} ${c ? 'grain' : ''} ${s.cat===k?'on':''}" data-act="sf" data-k="cat" data-v="${k}">${s.cat===k ? '<span class="cjelly" aria-hidden="true"><span class="lg-rim"></span></span>' : ''}<span class="x">${en}<sup class="ct">${n}</sup></span><span class="cn">${cn}</span>${CAT_ART[k].replace('<svg', `<svg class="sh${k === 'all' ? ' all' : ''}" aria-hidden="true" style="color:${k === 'all' ? 'var(--paper)' : INK[c === 'yellow' ? 'blue' : c === 'blue' ? 'yellow' : 'ink']}"`)}</button>`;
+  const tile = (k, c, en, cn, n) => `<button class="cat ${c ? 'c-' + c : 'all'} ${c ? 'grain' : ''} ${s.cat===k?'on':''}" data-act="sf" data-k="cat" data-v="${k}">${s.cat===k ? '<span class="cjelly" aria-hidden="true"><span class="lg-rim"></span></span>' : ''}<span class="x">${en}<sup class="ct">${n}</sup></span><span class="cn">${esc(cn)}</span>${CAT_ART[k].replace('<svg', `<svg class="sh${k === 'all' ? ' all' : ''}" aria-hidden="true" style="color:${k === 'all' ? 'var(--paper)' : INK[c === 'yellow' ? 'blue' : c === 'blue' ? 'yellow' : 'ink']}"`)}</button>`;
   onMount(root => { const bn = $('.bn', root); bn && mountBanner(root); });
   return `<section class="bn c-pink" tabindex="0" aria-roledescription="carousel" aria-label="精选海报">
     <canvas></canvas><div class="bcur" aria-hidden="true"></div>
@@ -6599,7 +6599,7 @@ function uploadView(){
   const est = n => (U.price*(1 - PLAT - n)).toFixed(2);
   const look = {...U.look, txt:U.en}; const fakeCover = cover(look, 1, 480, 480);
   const steps = [
-    ['是什么', `<div class="fg"><div class="fl full"><div class="seg up-grp" style="margin-bottom:12px">${[['sound','采样包作品'],['visual','视觉作品']].map(([k,l]) => `<button class="${G === k ? 'on' : ''}" data-act="up-grp" data-v="${k}">${l}</button>`).join('')}</div><label>分类</label><div class="rail" style="flex-wrap:wrap">${Object.entries(CATS).filter(([k]) => GROUP_CATS[G].includes(k)).map(([k,cc]) => `<button class="chip c-${cc.c} ${U.cat===k?'on':''}" data-act="up-set" data-k="cat" data-v="${k}"><span class="dot"></span>${cc.subs ? (cc.t || cc.k) + ' · ' + cc.subs[G === 'visual' ? 'vis' : 'aud'][1] : cc.cn}</button>`).join('')}</div></div>
+    ['是什么', `<div class="fg"><div class="fl full"><div class="seg up-grp" style="margin-bottom:12px">${[['sound','采样包作品'],['visual','视觉作品']].map(([k,l]) => `<button class="${G === k ? 'on' : ''}" data-act="up-grp" data-v="${k}">${l}</button>`).join('')}</div><label>分类</label><div class="rail" style="flex-wrap:wrap">${Object.entries(CATS).filter(([k]) => GROUP_CATS[G].includes(k)).map(([k,cc]) => `<button class="chip c-${cc.c} ${U.cat===k?'on':''}" data-act="up-set" data-k="cat" data-v="${k}"><span class="dot"></span>${cc.subs ? (cc.t || cc.k) + ' · ' + cc.subs[G === 'visual' ? 'vis' : 'aud'][1] : esc(cc.cn)}</button>`).join('')}</div></div>
       <div class="fl"><label for="up-t">名字</label><input class="inp" id="up-t" data-up="title" value="${esc(U.title)}"></div><div class="fl"><label for="up-e">英文名</label><input class="inp" id="up-e" data-up="en" value="${esc(U.en)}"></div>
       <div class="fl full"><label for="up-p">价格</label><div style="display:flex;gap:10px;align-items:center"><input class="inp" id="up-p" data-up="price" inputmode="decimal" value="${U.price}" style="max-width:140px"><span class="mut" style="font-size:13px" id="up-est">每单到手约 ¥${est(.01)}（扣 ${PLAT*100}% 平台费和支付手续费）</span></div></div>
       <div class="fl full"><label for="up-d">介绍</label><textarea class="inp" id="up-d" data-up="desc" rows="3" placeholder="里面有什么、怎么用、适合什么风格">${esc(U.desc || '')}</textarea></div></div>`, !!U.title],
@@ -7085,7 +7085,9 @@ const CATS0 = Object.fromEntries(Object.entries(CATS).map(([k, c]) => [k, {...c}
 function catsConf(){ if (UI.opC) return UI.opC; const saved = ADM.cats || []; const base = saved.filter(c => CATS0[c.k]).map(c => ({...c}));
   Object.keys(CATS0).forEach(k => { if (!base.some(b => b.k === k)) base.push({k, cn:CATS0[k].cn, on:true}); }); return UI.opC = base; }
 function applyCats(){ if (!ADM.cats) return; const C = catsConf(); UI.opC = null;
-  const keys = Object.keys(CATS); keys.forEach(k => delete CATS[k]); C.forEach(c => { CATS[c.k] = {...CATS0[c.k], cn:c.cn || CATS0[c.k].cn, off:!c.on}; }); }
+  const keys = Object.keys(CATS); keys.forEach(k => delete CATS[k]); C.filter(c => CATS0[c.k]).forEach(c => { CATS[c.k] = {...CATS0[c.k], cn:catName(c.cn) || CATS0[c.k].cn, off:!c.on}; }); }
+/* 分类名只当纯文字用：去掉 HTML 特殊字符、限 12 个字（分类名会被拼进很多地方，不能指望每处都转义） */
+const catName = v => String(v ?? '').replace(/[<>&"'`]/g, '').trim().slice(0, 12);
 applySlides(); applyCats();
 
 /* ================= 海报声音：每个场景的发声点是一个「槽位」，运营可以在后台给槽位换一段采样 =================
@@ -7134,7 +7136,7 @@ applySlides = function(){
   if (!ADM.slides){ SLIDES.splice(0, SLIDES.length, ...SLIDES0.map(s => ({...s, cta:[...s.cta]}))); return; }
   const out = slidesConf().filter(c => c.on).map(c => { const s0 = SLIDES0.find(s => s.scene === c.scene);
     return {...s0, kicker:c.kicker === strip(s0.kicker) ? s0.kicker : esc(c.kicker), title:c.title === strip(s0.title) ? s0.title : esc(c.title), sub:esc(c.sub), cta:[esc(c.cta), c.link],
-      c:c.c, price:c.price ? +c.price : undefined, bg:c.bg || s0.bg, bgd:c.bgd || s0.bgd, samples:c.samples}; });
+      c:c.c, price:c.price ? +c.price : undefined, bg:/^#[0-9a-f]{6}$/i.test(c.bg) ? c.bg : s0.bg, bgd:/^#[0-9a-f]{6}$/i.test(c.bgd) ? c.bgd : s0.bgd, samples:c.samples}; });
   UI.opS = null; if (out.length){ SLIDES.splice(0, SLIDES.length, ...out); UI.bi = 0; } psPreload(); };
 
 /* 海报编辑器 */
@@ -7732,6 +7734,7 @@ const DOCS = {   // 用户协议、隐私政策里有主体名和费率，用 ge
     ['我们怎么用', ['提供注册登录、发布、交易、私信、合作托管等功能；', '内容安全审核、反欺诈、处理举报和投诉；', '向你发送服务通知（审核结果、订单和结算状态等）；', '在你同意的前提下，基于你的关注和浏览改进推荐。你可以在设置里关掉个性化推荐。']],
     ['共享、委托处理与公开', ['我们不会出售你的个人信息。为了完成支付、短信、内容审核、云存储等功能，会把必要的信息交给受托的第三方处理，见《第三方信息共享清单》。', '你主动公开发布的内容，其他用户可以看到。']],
     ['存储与保护', ['个人信息存储在中华人民共和国境内的服务器。确需向境外提供的，会依法单独告知并取得同意，并完成相应的安全评估或认证。', '身份证号、收款账户等敏感信息加密存储，后台只显示打码后的内容，员工按最小权限访问并留有操作记录。', '保存期限为实现目的所需的最短时间；注销后删除或匿名化，法律要求保留的交易记录除外（一般不少于 3 年）。']],
+    ['私信', ['私信只有你和对方能看到。你撤回的消息不再对对方显示，但会在平台保留，用于处理可能的纠纷、举报和投诉。', '只有在处理合作纠纷、举报或你的申诉时，经授权的工作人员才会查看相关双方的私信：查看前必须写明理由，每次查看都会被记录在案。']],
     ['你的权利', ['查询和更正：在「编辑资料」「设置」里查看和修改；', '复制：在「设置 › 导出我的个人信息」下载一份副本；', '删除与注销：在「设置 › 注销账号」申请；', '撤回同意：关闭相应功能或通知；', '投诉：通过客服邮箱联系我们，我们会在 15 个工作日内答复。']],
     ['未成年人', ['我们不主动面向未满 14 周岁的儿童提供服务。如发现在未取得监护人同意的情况下收集了儿童个人信息，会尽快删除。']],
     ['更新', [`政策更新时，我们会在显著位置提示你。本版本生效日期：${DOC_D}。`]]]; }},
@@ -10498,7 +10501,8 @@ ACTIONS['dv-go'] = async b => { const a = b.dataset.a, c = b.dataset.b, why = ($
     const other = a === ME ? c : c === ME ? a : null, L = other ? CHATS[other] || [] : null;
     $('#dvLog').innerHTML = L ? `<div class="dv-log">${L.map(m => `<div class="dv-m ${m.me ? 'b' : 'a'}"><span class="dv-w">${esc(uname(m.me ? ME : other))} · ${fmtDT(m.ts)}</span><span>${m.rc ? '<em>（已撤回）</em>' : m.t === 'text' ? esc(m.text) : '[' + ({img:'图片', post:'帖子', prod:'商品', co:'合作邀约', cosys:'系统'}[m.t] || m.t) + ']'}</span></div>`).join('') || '<p class="mut2">没有私信</p>'}</div>` : '<p class="ad-warn y">原型里只有你自己参与的会话数据。连上后端后可以看任意两个人的记录。</p>'; return; }
   b.disabled = true;
-  try { const r = await STAFF.req('GET', `/admin/dm?a=${encodeURIComponent(a)}&b=${encodeURIComponent(c)}&reason=${encodeURIComponent(why)}`); apiUser(r.a); apiUser(r.b);
+  const ref = ($('#dvX').value.match(/rp_[a-z0-9]+/i) || [])[0];   // 补充里写了举报编号就带上，后端会核对它和这两个人有关
+  try { const r = await STAFF.req('POST', '/admin/dm', {a, b:c, reason:why, ...(ref ? {ref} : {})}); apiUser(r.a); apiUser(r.b);
     b.hidden = true; $('#dvLog').innerHTML = `<p class="mut2" style="margin:10px 0 6px">共 ${r.items.length} 条 · 理由「${esc(why)}」已记进操作日志</p><div class="dv-log">${r.items.map(m => `<div class="dv-m ${m.from === a ? 'a' : 'b'}"><span class="dv-w">${esc(m.from === a ? r.a.name : r.b.name)} · ${fmtDT(+new Date(m.createdAt))}${m.read ? ' · 已读' : ''}</span><span>${m.recalled ? '<em>（已撤回，原文）</em>' : ''}${dvBody(m)}</span></div>`).join('') || '<p class="mut2">这两个人之间没有私信</p>'}</div>`; }
   catch(e){ b.disabled = false; apiFail(e); } };
 ACTIONS['dv-open'] = b => dmViewSheet(b.dataset.a, b.dataset.b, b.dataset.why || '');
@@ -10529,7 +10533,7 @@ function luSheet(r){ const u = r.user, c = r.counts, uid = u.id, yuanF = f => '�
     ${pane('posts', `<div class="ad-mini">${r.posts.map(p => `<a data-go="post-${esc(p.id)}">${fmtDT(+new Date(p.createdAt))} · ${esc(p.title)} · ${{published:'公开', review:'审核中', taken_down:'已下架'}[p.status] || p.status}</a>`).join('') || '<span>没有帖子</span>'}</div>`)}
     ${pane('orders', `<span class="ad-lab">买的</span><div class="ad-mini">${r.bought.map(o => `<span>${fmtDT(+new Date(o.createdAt))} · ${esc(o.title)} · ${yuanF(o.price)} · 卖家 ${esc(o.peer.name)} · ${esc(o.status)}</span>`).join('') || '<span>没有</span>'}</div>
       <span class="ad-lab">卖的</span><div class="ad-mini">${r.sold.map(o => `<span>${fmtDT(+new Date(o.createdAt))} · ${esc(o.title)} · ${yuanF(o.price)} · 买家 ${esc(o.peer.name)} · ${esc(o.status)}</span>`).join('') || '<span>没有</span>'}</div>`)}
-    ${pane('dm', `<p class="mut2" style="font-size:12.5px">只显示和谁聊过、各发了几条；要看内容点「查看记录」，需要写理由并记进操作日志。</p><div class="lu-dm">${r.dmPeers.map(p => { apiUser(p.peer); return `<div class="lu-dmr">${uav(p.peer.id)}<span><b>${esc(p.peer.name)}</b><i>TA 发 ${p.sent} 条 · 收 ${p.received} 条 · 最近 ${ago(+new Date(p.lastAt))}</i></span>${admCan('reports') ? `<button class="pill sm lt" data-act="dv-open" data-a="${esc(uid)}" data-b="${esc(p.peer.id)}">查看记录</button>` : ''}</div>`; }).join('') || '<span class="mut2">没有私信</span>'}</div>`)}
+    ${pane('dm', !r.dmVisible ? '<p class="mut2" style="font-size:12.5px">私信对象和登录 IP 属于隐私，只有超级管理员、内容审核和客服能看。</p>' : `<p class="mut2" style="font-size:12.5px">只显示和谁聊过、各发了几条；要看内容点「查看记录」，需要写理由并记进操作日志。</p><div class="lu-dm">${r.dmPeers.map(p => { apiUser(p.peer); return `<div class="lu-dmr">${uav(p.peer.id)}<span><b>${esc(p.peer.name)}</b><i>TA 发 ${p.sent} 条 · 收 ${p.received} 条 · 最近 ${ago(+new Date(p.lastAt))}</i></span>${admCan('reports') ? `<button class="pill sm lt" data-act="dv-open" data-a="${esc(uid)}" data-b="${esc(p.peer.id)}">查看记录</button>` : ''}</div>`; }).join('') || '<span class="mut2">没有私信</span>'}</div>`)}
     ${pane('dev', `<div class="ad-mini">${r.devices.map(d => `<span>${esc(d.device || '未知设备')} · ${esc(d.ip || '')} · ${fmtDT(+new Date(d.lastUsedAt))}${d.active ? '' : ' · 已退出'}</span>`).join('') || '<span>没有记录</span>'}</div>`)}
     ${pane('log', `<div class="ad-mini">${r.sanctions.map(s => `<span>${fmtDT(+new Date(s.at))} · ${esc(s.action)} · ${esc(s.by)}${s.reason ? ' · ' + esc(s.reason) : ''}</span>`).join('') || '<span>没有处置记录</span>'}</div>`)}
   </div>`; }
