@@ -1685,6 +1685,8 @@ body.reels-open .totop{display:none}
 .pv-demo audio,.rv-pv audio{width:100%;height:40px}
 .rv-pv{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600}
 .pv-vid{display:block;width:100%;max-height:70vh;border-radius:14px;background:#000}
+.buybar s{font-size:.6em;font-weight:600;color:var(--ink-3);margin-left:6px}
+.sale-t{align-self:center;white-space:nowrap}
 .feed-more{display:flex;justify-content:center;padding:18px 0 28px}
 .fb-shot{display:block;max-width:220px;max-height:220px;border-radius:12px;margin-top:6px;border:1px solid var(--rule-2)}
 pre.fb-st{white-space:pre-wrap;word-break:break-all;font-size:11.5px;max-height:220px;overflow:auto;margin:6px 0 0}
@@ -7644,7 +7646,8 @@ const lastTs = uid => { const m = CHATS[uid]; return m && m.length ? m[m.length 
    上半部分 = 私信联系人，点头像选人（可多选），附一句话后发送；下半部分 = 复制链接 / 发到其它 App（手机系统分享）。
    输入框和发送按钮一直在，选人前是灰的，面板高度不会跳 */
 const SHARE_PATH = {post:'#post-', prod:'#item-', user:'#user-'};
-const shareUrl = (k, id) => location.href.split('#')[0] + SHARE_PATH[k] + id;
+const shareUrl = (k, id) => typeof API !== 'undefined' && API.cookie ? `${location.origin}/s/${{post:'p', prod:'i', user:'u'}[k]}/${encodeURIComponent(id)}`   // 网页由服务器提供时：分享出去的链接带这条内容自己的标题、简介、图片
+  : location.href.split('#')[0] + SHARE_PATH[k] + id;
 function shareSheet(k, id){
   if (needLogin()) return; const obj = k === 'post' ? POST(id) : k === 'prod' ? P(id) : USERS[id]; if (!obj) return;
   const pick = new Set(), to = shareTargets().filter(uid => !(k === 'user' && uid === id));   // 不把主页分享给主页的主人
@@ -11494,6 +11497,44 @@ Object.assign(ACTIONS, {
       apiProduct(r); closeSheet(); toast(r.status === 'review' && was !== 'review' ? '已保存，商品进入复审，通过后重新上架' : '试听素材已保存', 'green', 'check'); await liveMine(); rerender(); }
     catch(e){ b.disabled = false; b.textContent = '保存'; apiFail(e); } }
 });
+
+/* ================= 限时折扣、分享卡片的封面图（连着后端时） =================
+   · 折扣：服务器给 salePrice / saleUntil，页面上 price = 折扣价、orig = 原价（卡片和付款面板原来就会显示划线原价），商品页底栏加「限时 · 剩 N 天」
+   · 卖家在「管理」里设置 / 取消折扣（PUT /products/{id}/sale，最长 30 天，不用重新审核）
+   · 分享卡片要商品自己的封面图：卖家打开网站时，后台把还没有封面图的商品按封面样式画成 1200×630 的图传上去（PUT /products/{id}/cover-image） */
+{ const ap1 = apiProduct; apiProduct = function(p){ const o = ap1(p); if (p && 'salePrice' in p){
+    if (p.salePrice != null){ o.price = f2y(p.salePrice); o.orig = f2y(p.price); o.saleUntil = +new Date(p.saleUntil); } else { o.price = f2y(p.price); o.orig = undefined; o.saleUntil = undefined; } }
+  return o; }; }
+const saleLeft = o => { const d = Math.ceil((o.saleUntil - Date.now())/864e5); return d <= 1 ? '今天结束' : `剩 ${d} 天`; };
+{ const it2 = ROUTES.item; ROUTES.item = id => { const h = it2(id), o = P(id); if (!o?.saleUntil || o.saleUntil < Date.now()) return h;
+    return h.replace(/<div class="buybar"><span class="price">([^<]*)<\/span>/, (m, pr) => `<div class="buybar"><span class="price">${pr}<s>¥${o.orig}</s></span><span class="tag c-pink sale-t">限时 · ${saleLeft(o)}</span>`); }; }
+wrapAct('sp-manage', (orig, b, e) => { orig(b, e); const p = P(b.dataset.id); if (!p?.live) return;
+  $$('#layer .sp-ver').at(-1)?.insertAdjacentHTML('afterend', `<div class="sp-ver"><div><b>限时折扣</b><span class="mut2">${p.saleUntil && p.saleUntil > Date.now() ? `¥${p.price}（原价 ¥${p.orig}）· ${saleLeft(p)}` : '没有在打折'}</span></div><button class="pill sm lt" data-act="sale-open" data-id="${esc(p.id)}">${p.saleUntil && p.saleUntil > Date.now() ? '修改' : '设置折扣'}</button></div>`); });
+ACTIONS['sale-open'] = b => { const p = P(b.dataset.id), base = p.orig ?? p.price, on = p.saleUntil && p.saleUntil > Date.now();
+  if (!base){ toast('免费的商品不用打折', 'orange', 'x'); return; }
+  sheet(`<h3>限时折扣 · ${esc(p.title)}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">原价 ¥${base}。折扣只对标准许可生效，到期自动恢复原价，不用重新审核。</p>
+    <label class="ad-lab" for="saP">折扣价（元）</label><input class="inp" id="saP" type="number" min="0.01" step="0.01" value="${on ? p.price : Math.round(base*.8*100)/100}">
+    <div class="chips" style="margin-top:8px">${[9, 8, 7, 5].map(z => `<button class="chip" data-act="sale-q" data-v="${Math.round(base*z*10)/100}">${z} 折</button>`).join('')}</div>
+    <label class="ad-lab">持续</label><div class="seg ad-seg" id="saD">${[1, 3, 7, 14, 30].map(d => `<button class="${d === 7 ? 'on' : ''}" data-act="sale-d" data-v="${d}">${d} 天</button>`).join('')}</div>
+    <button class="pill lg" data-act="sale-go" data-id="${esc(p.id)}">开始折扣</button>${on ? `<button class="pill lg lt" data-act="sale-stop" data-id="${esc(p.id)}">取消折扣</button>` : ''}`); };
+Object.assign(ACTIONS, {
+  'sale-q': b => { $('#saP').value = b.dataset.v; },
+  'sale-d': b => $$('#saD button').forEach(x => x.classList.toggle('on', x === b)),
+  'sale-go': async b => { const p = P(b.dataset.id), v = y2f(+$('#saP').value), base = y2f(p.orig ?? p.price);
+    if (!(v >= 1) || v >= base){ fxPop($('#saP'), 'fx-shake', 300); toast('折扣价要比原价低', 'orange', 'x'); return; } b.disabled = true;
+    try { const r = await API.req('PUT', `/products/${encodeURIComponent(p.id)}/sale`, {price:v, days:+$('#saD .on').dataset.v}); apiProduct(r); closeSheet(); toast(`开始打折：¥${f2y(v)}，${saleLeft(P(p.id))}`, 'pink'); rerender(); }
+    catch(e){ b.disabled = false; apiFail(e); } },
+  'sale-stop': async b => { b.disabled = true;
+    try { const r = await API.req('PUT', `/products/${encodeURIComponent(b.dataset.id)}/sale`, {price:null}); apiProduct(r); closeSheet(); toast('已取消折扣，恢复原价'); rerender(); }
+    catch(e){ b.disabled = false; apiFail(e); } }
+});
+/* 封面图：后台慢慢补（每次打开最多 5 个） */
+async function coverSync(){ if (!liveUser() || !STATE.seller) return; const todo = Object.values(LSHOP.mine || {}).filter(p => !p.hasCoverImage).slice(0, 5);
+  for (const m of todo){ try { const o = P(m.id); if (!o) continue;
+    const url = cover(o.cover, hash(o.id) % 50, 1200, 630), blob = await (await fetch(url)).blob();
+    const up = await liveUpload(new File([blob], 'cover.jpg', {type:'image/jpeg'}), 'product_cover');
+    await API.req('PUT', `/products/${encodeURIComponent(m.id)}/cover-image`, {uploadId:up.id}); m.hasCoverImage = true; } catch(e){ break; } } }
+{ const lm4 = liveMine; liveMine = async function(){ await lm4(); (window.requestIdleCallback || setTimeout)(() => coverSync()); }; }
 
 (function boot(){
   STATE.hist = store.get('hist', null) || [{k:'post', id:'s3', ts:Date.now() - 2*3600e3}, {k:'item', id:'p3', ts:Date.now() - 5*3600e3}, {k:'video', id:'s2', ts:Date.now() - 26*3600e3}, {k:'post', id:'s8', ts:Date.now() - 30*3600e3}];
