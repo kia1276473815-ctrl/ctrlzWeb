@@ -11043,6 +11043,28 @@ wrapAct('dp-go', async (orig, b) => { const o = CO_BY(b.dataset.id); if (!o?.liv
     closeSheet(); toast('已裁决，已通知双方', 'green', 'check'); LADM.disputes = null; rerender(); }
   catch(e){ b.disabled = false; apiFail(e); } });
 
+/* ================= 敏感词、注销检查（连着后端时） =================
+   · 敏感词以服务器为准：后台「敏感词」读写 /admin/words，「试一下」问服务器；用户端不再用本地的示例词拦（censor 返回空，由服务器判断）
+   · 注销前的检查读 /me/close/checks（服务器也会再查一遍） */
+{ const cs0 = censor; censor = text => API.on() ? null : cs0(text); }
+{ const wd0 = ADMV.words;
+  ADMV.words = () => { if (!API.on()) return wd0();
+    if (!LADM.words){ ladmGet('words', '/admin/words', r => r.items); return ladmWait('敏感词', '读取中'); }
+    const W = {block:LADM.words.filter(w => w.level === 'block').map(w => w.word), review:LADM.words.filter(w => w.level === 'review').map(w => w.word)};
+    const keep = ADM.words; ADM.words = W; try { return wd0().replace(/data-act="wd-del" data-lv="(\w+)" data-i="(\d+)"/g, (m, lv, i) => `data-act="wd-del" data-lv="${lv}" data-i="${i}" data-w="${esc(W[lv][+i])}"`); } finally { ADM.words = keep; } }; }
+wrapAct('wd-add', async (orig, b) => { if (!admGuard('words')) return; const lv = b.dataset.lv, i = $('#wd-' + lv), v = i.value.trim(); if (!v) return;
+  try { await STAFF.req('PUT', '/admin/words', {word:v, level:lv}); LADM.words = null; rerender(); setTimeout(() => $('#wd-' + lv)?.focus(), 50); toast(`已${lv === 'block' ? '拦截' : '送审'}「${esc(v)}」`, 'green', 'check'); } catch(e){ apiFail(e); } });
+wrapAct('wd-del', async (orig, b) => { if (!admGuard('words')) return; const w = b.dataset.w; if (!w) return;
+  try { await STAFF.req('DELETE', `/admin/words/${encodeURIComponent(w)}`); LADM.words = null; rerender(); } catch(e){ apiFail(e); } });
+wrapAct('wd-test', async () => { const r = $('#wdR');
+  try { const v = await STAFF.req('POST', '/admin/words/test', {text:$('#wdT').value}); r.innerHTML = v.level === 'pass' ? '没有命中，可以正常发出' : v.level === 'block' ? `会被<b style="color:var(--orange)">拦截</b>：命中「${esc(v.word)}」` : `能发出，但会<b>送审</b>：命中「${esc(v.word)}」`; } catch(e){ apiFail(e); } });
+const LCLOSE = {v:null, at:0, busy:false};
+{ const cc0 = closeChecks;
+  closeChecks = function(){ if (!liveUser()) return cc0();
+    if (!LCLOSE.busy && Date.now() - LCLOSE.at > 5000){ LCLOSE.busy = true; LCLOSE.at = Date.now();
+      API.req('GET', '/me/close/checks').then(r => { const v = r.items.map(x => [x.ok, x.label, x.why]), ch = JSON.stringify(v) !== JSON.stringify(LCLOSE.v); LCLOSE.v = v; if (ch && CUR.key?.startsWith('me')) rerender(); }).catch(() => {}).finally(() => { LCLOSE.busy = false; }); }
+    return LCLOSE.v || [[false, '正在检查…', '']]; }; }
+
 (function boot(){
   STATE.hist = store.get('hist', null) || [{k:'post', id:'s3', ts:Date.now() - 2*3600e3}, {k:'item', id:'p3', ts:Date.now() - 5*3600e3}, {k:'video', id:'s2', ts:Date.now() - 26*3600e3}, {k:'post', id:'s8', ts:Date.now() - 30*3600e3}];
   ACC.boot(); delcApply();
