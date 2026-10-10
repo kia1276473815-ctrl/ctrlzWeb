@@ -4417,7 +4417,9 @@ function mountBanner(root){
       if (k >= 1) B.trans = null; }
     if (!isDark()) grainify(g, w, h, .5);
     // 底边渐隐到页面底色：海报的颗粒纸面不再一刀切地接到下面的分类卡上
-    const dk = isDark(); if (B.pcK !== dk){ B.pcK = dk; B.pc = (getComputedStyle(document.body).backgroundColor.match(/\d+/g) || [242, 242, 238]).slice(0, 3).join(','); }
+    /* 换深浅色时页面底色有 0.35 秒过渡：切换后的 0.6 秒里每帧重读底色，跟着一起变（只在切换那一刻读一次会读到旧颜色，浅色模式下海报底边留一条黑带） */
+    const dk = isDark(); if (B.pcK !== dk){ B.pcK = dk; B.pcT = performance.now(); }
+    if (B.pcT != null){ B.pc = (getComputedStyle(document.body).backgroundColor.match(/\d+/g) || [242, 242, 238]).slice(0, 3).join(','); if (performance.now() - B.pcT > 600) B.pcT = null; }
     const fh = Math.min(h*.16, 80*dpr), fg = g.createLinearGradient(0, h - fh, 0, h); fg.addColorStop(0, `rgba(${B.pc},0)`); fg.addColorStop(.55, `rgba(${B.pc},.6)`); fg.addColorStop(1, `rgb(${B.pc})`); g.fillStyle = fg; g.fillRect(0, h - fh, w, fh);
   }));
 }
