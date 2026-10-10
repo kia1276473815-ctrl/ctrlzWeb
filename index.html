@@ -695,7 +695,7 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .rv-ck .on span{color:var(--ink-3)}
 @media (max-width:860px){ .rv{grid-template-columns:minmax(0,1fr)} .rv-q{position:static;flex-direction:row;overflow-x:auto;scrollbar-width:none} .rv-qi{flex:0 0 220px} .rv-hd{grid-template-columns:96px minmax(0,1fr)} .rv-hd img{width:96px;height:96px} .rv-d{padding:16px} }
 .flags{display:flex;gap:6px;flex-wrap:wrap}
-.flag{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;font-size:12.5px;background:var(--green-t)}
+.flag{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;font-size:12.5px;background:var(--green-t);color:var(--ink)}   /* 底色是随深浅色变的淡色，字也要跟着变 */
 .flag.w{background:var(--orange-t)}
 .qact{display:flex;gap:8px;margin-top:auto;flex-wrap:wrap}
 .qact .pill kbd{background:transparent;border-color:currentColor;color:inherit;opacity:.6;margin-left:4px}
@@ -924,8 +924,9 @@ footer p{font-size:13px;color:var(--ink-3);text-align:right;line-height:1.8}
   --pink-t:#3B1A2C; --blue-t:#192146; --yellow-t:#383114; --orange-t:#3C2015; --green-t:#11301E; --violet-t:#281F45;
 }
 /* 压在彩色色块上的文字，两种模式都用深墨 */
-.tag,.pill.pk,.pill.cc,.cat:not(.all),.card .cv,.post .media,.stage,.shopband,.kpi.cc,.catband a,.stk,.av,.flag,mark,.pays button i,.toast i,.sellrow:hover,.tplp button .ic{color:var(--on)}
+.tag,.pill.pk,.pill.cc,.cat:not(.all),.card .cv,.post .media,.stage,.shopband,.kpi.cc,.catband a,.stk,.av,mark,.pays button i,.toast i,.sellrow:hover,.tplp button .ic{color:var(--on)}
 .stamp{color:var(--sc,var(--on))}
+.stamp.big{color:var(--sc,var(--ink))}   /* 大印章（后台空状态 ALL CLEAR、帖子里的 SOLVED）印在页面底色上，没指定颜色时跟着深浅色走，不然深色模式下看不见 */
 /* 试听台是印在纸上的实物：两种模式都保持纸色 */
 .wbox,.pad,.syn-r,.xy,.kb .w{background:var(--sheet)}
 .pad.hit,.kb .w.hit{background:var(--on);color:var(--sheet)}
@@ -1487,6 +1488,9 @@ body.reels-open .totop{display:none}
 .msep{text-align:center;font-size:11.5px;color:var(--ink-3);padding:6px 0}
 .msg{display:flex;align-items:flex-end;gap:8px;max-width:82%}
 .msg .av{width:32px;height:32px;font-size:11px;flex:none}
+.msg-av{flex:none;display:block;border-radius:50%;cursor:pointer;transition:transform .15s var(--spring)}
+.msg-av:active{transform:scale(.9)}
+.msg-av:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .msg.me{align-self:flex-end;flex-direction:row-reverse}
 .bub{padding:10px 14px;border-radius:16px 16px 16px 4px;background:var(--paper);font-size:15px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 .msg.me .bub{background:var(--ink);color:var(--paper);border-radius:16px 16px 4px 16px}
@@ -2220,7 +2224,7 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
     box-shadow:inset 0 1px 0 var(--lg-hi),inset 0 -1px 0 var(--lg-lo),inset 0 0 0 .5px var(--lg-ln),inset 0 -8px 14px -10px rgba(20,20,24,.2),0 6px 14px -6px var(--lg-sh);
     transition:left .46s cubic-bezier(.3,1.35,.5,1),width .46s cubic-bezier(.3,1.35,.5,1),transform .26s cubic-bezier(.3,1.7,.5,1),opacity .2s}
   .tb-blob.fx-mv{transform:scaleX(1.3) scaleY(.86)}
-  .tb.prs .tb-blob{transform:scaleX(1.06) scaleY(.9)}
+  .tb.fx-prs .tb-blob{transform:scaleX(1.06) scaleY(.9)}   /* 不能叫 .prs：那是预设试听那一排按钮的类名，会把发布按钮压成 32px 高的胶囊 */
   .tb a svg{transition:transform .26s cubic-bezier(.3,1.7,.5,1)}
   .tb a.on svg{transform:scale(1.08)}
   .tb .bdg{z-index:4}
@@ -3485,7 +3489,7 @@ function setRole(r, silent){
   if (!ROLE_NAME[r]) r = 'user'; if (r === 'admin' && !admAllowed()) r = API.on() ? 'guest' : 'user';
   STATE.role = r; store.set('role', r);
   const b = $('#meBtn');
-  if (r === 'guest'){ b.className = 'av'; b.style.background = 'var(--card)'; b.style.boxShadow = 'inset 0 0 0 1px var(--rule)'; b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1.2-3.8 4-5.5 7.5-5.5s6.3 1.7 7.5 5.5"/></svg>'; }
+  b.style.color = ''; if (r === 'guest'){ b.className = 'av'; b.style.background = 'var(--card)'; b.style.color = 'var(--ink)'; b.style.boxShadow = 'inset 0 0 0 1px var(--rule)';   /* 游客图标画在卡片色上：字色跟着深浅色走（.av 默认是固定深色，深色模式下看不见） */ b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1.2-3.8 4-5.5 7.5-5.5s6.3 1.7 7.5 5.5"/></svg>'; }
   else if (r === 'admin'){ b.className = 'av c-orange'; b.style.background = ''; b.style.boxShadow = ''; b.textContent = 'AZ'; }
   else { b.className = 'av ' + ucls(ME); b.style.background = ''; b.style.boxShadow = ''; if (AVIMG[ME]) b.innerHTML = `<img src="${AVIMG[ME]}" alt="">`; else b.textContent = USERS[ME].ini; }
   badge();
@@ -5341,7 +5345,7 @@ function sleeve(pr){
   const u = USERS[pr.seller], c = CATS[pr.cat], own = STATE.owned.has(pr.id);
   const cp = COVER_PALS[pr.cover?.pal], gl = k => k === 'ink' ? INK.yellow : INK[k] || INK[c.c];   // 深色模式悬停的氛围光 = 封面两种主色
   return `<article class="slv c-${c.c}" data-go="item-${pr.id}" data-flip="i-${pr.id}">
-    <div class="cv" data-qbox="${pr.id}" style="--ga:${gl(cp ? cp.a : c.c)};--gb:${gl(cp ? cp.b : c.c)}"><img src="${cover(pr.cover, hash(pr.id) % 50)}" alt="" width="480" height="480">${own ? '<span class="own tag k">已拥有</span>' : pr.price === 0 ? '<span class="own tag" style="background:var(--paper)">免费</span>' : ''}<span class="pv"><button class="pbtn" data-act="qplay" data-id="${pr.id}" aria-label="试听 ${esc(pr.title)}">${IC.play}</button></span></div>
+    <div class="cv" data-qbox="${pr.id}" style="--ga:${gl(cp ? cp.a : c.c)};--gb:${gl(cp ? cp.b : c.c)}"><img src="${cover(pr.cover, hash(pr.id) % 50)}" alt="" width="480" height="480">${own ? '<span class="own tag k">已拥有</span>' : pr.price === 0 ? '<span class="own tag" style="background:var(--paper);color:var(--ink)">免费</span>' : ''}<span class="pv"><button class="pbtn" data-act="qplay" data-id="${pr.id}" aria-label="试听 ${esc(pr.title)}">${IC.play}</button></span></div>
     <div class="bd"><div class="en"><span class="dot"></span>${esc(pr.en)}</div><h3>${esc(pr.title)}</h3><div class="ft"><span class="price">${pr.price ? '¥' + pr.price : '免费'}${pr.orig ? `<s>¥${pr.orig}</s>` : ''}</span><a class="by" data-go="user-${u.id}">${av(u.id,'sm')}<span>${esc(u.name)}</span></a></div></div></article>`;
 }
 
@@ -5515,9 +5519,9 @@ function tbBlob(){
   const tb = $('.tb'); if (!tb) return;
   // 柔光跟着手指 / 光标；按住时果冻压扁
   tb.addEventListener('pointermove', e => { const r = tb.getBoundingClientRect(); tb.style.setProperty('--mx', (e.clientX - r.left) + 'px'); tb.classList.add('hov'); }, {passive: true});
-  tb.addEventListener('pointerleave', () => tb.classList.remove('hov', 'prs'));
-  tb.addEventListener('pointerdown', e => { const r = tb.getBoundingClientRect(); tb.style.setProperty('--mx', (e.clientX - r.left) + 'px'); tb.classList.add('hov', 'prs'); }, {passive: true});
-  addEventListener('pointerup', () => { tb.classList.remove('prs'); if (matchMedia('(hover:none)').matches) tb.classList.remove('hov'); }, {passive: true});
+  tb.addEventListener('pointerleave', () => tb.classList.remove('hov', 'fx-prs'));
+  tb.addEventListener('pointerdown', e => { const r = tb.getBoundingClientRect(); tb.style.setProperty('--mx', (e.clientX - r.left) + 'px'); tb.classList.add('hov', 'fx-prs'); }, {passive: true});
+  addEventListener('pointerup', () => { tb.classList.remove('fx-prs'); if (matchMedia('(hover:none)').matches) tb.classList.remove('hov'); }, {passive: true});
   addEventListener('resize', () => { tbBlob(); LG.scan(); });
 })();
 document.addEventListener('rendered', () => { tbBlob(); requestAnimationFrame(() => LG.scan()); });
@@ -5980,7 +5984,7 @@ function renderPost(id, fresh){
   else if (p.type === 'image' && p.img) media = `<img src="${p.img}" alt="">${p.imgs && p.imgs.length > 1 ? `<span class="tag k" style="position:absolute;right:16px;bottom:16px;z-index:2">共 ${p.imgs.length} 张</span>` : ''}`;
   else if (p.type === 'image') media = `<img src="${cover(p.cover, hash(p.id)%50, 1000, Math.round(1000*(p.h||1)))}" alt="">`;
   if (p.type === 'video' && p.vis) media = `<div data-qbox="v:${p.id}" style="position:absolute;inset:0"><img src="${cover({...p.vis, txt:p.title}, 1, 960, 960)}" alt="" style="width:100%;height:100%;object-fit:cover"><span class="pv"><button class="pbtn" data-act="qplay" data-id="v:${p.id}" aria-label="播放">${IC.play}</button></span></div>`;
-  else   if (p.type === 'video') media = `<div data-vbox="${p.id}" style="width:100%;position:relative"><img src="${cover(p.cover, hash(p.id)%50, 960, 560)}" alt="" style="width:100%"><span class="plat" style="position:absolute;left:14px;bottom:14px;font:700 11px/1 var(--f-b);padding:6px 9px;border-radius:999px;background:var(--paper)">${p.plat}</span><span class="pv big"><button class="pbtn" data-act="vplay" data-id="${p.id}" aria-label="播放">${IC.play}</button></span></div>`;
+  else   if (p.type === 'video') media = `<div data-vbox="${p.id}" style="width:100%;position:relative"><img src="${cover(p.cover, hash(p.id)%50, 960, 560)}" alt="" style="width:100%"><span class="plat" style="position:absolute;left:14px;bottom:14px;font:700 11px/1 var(--f-b);padding:6px 9px;border-radius:999px;background:var(--paper);color:var(--ink)">${p.plat}</span><span class="pv big"><button class="pbtn" data-act="vplay" data-id="${p.id}" aria-label="播放">${IC.play}</button></span></div>`;
   if (p.type === 'audio'){ const pr = p.attach[0] && P(p.attach[0]); media = `<div class="grain" style="position:absolute;inset:0;padding:clamp(18px,3vw,36px);display:flex;flex-direction:column;justify-content:space-between"><span class="tag k" style="align-self:flex-start;position:relative;z-index:2">声音 · <span data-wt="${p.id}">${p.dur}</span></span><canvas data-wave="${p.id}" data-seed="${p.seed}" data-bars="72" tabindex="0" role="slider" aria-label="播放进度" style="width:100%;height:34%;position:relative;z-index:2"></canvas><div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;position:relative;z-index:2"><span class="x" style="font-size:clamp(44px,6vw,92px);mix-blend-mode:multiply">${esc(pr ? pr.en : 'SOUND')}</span><button class="pbtn" data-act="aplay" data-id="${p.id}" style="width:76px;height:76px" aria-label="播放">${IC.play}</button></div></div>`; }
   if (p.type === 'question') media = `<div class="grain" style="position:absolute;inset:0;padding:clamp(18px,3vw,36px);display:flex;flex-direction:column;justify-content:space-between"><span class="x" style="font-size:clamp(130px,18vw,240px);line-height:.8;mix-blend-mode:multiply;position:relative;z-index:2">?</span>
     <div style="position:relative;z-index:2;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap"><span class="x" style="font-size:clamp(34px,4vw,56px)">Q.${p.qn}</span>
@@ -6436,7 +6440,7 @@ ROUTES.seller = arg => {
     onMount(root => { if (reduced()) return; const bs = $$('.bars .b', root); bs.forEach((b, k) => { const i = b.querySelector('i'), em = b.querySelector('em'), last = k === bs.length - 1;   // 柱子依次从 0 长出来，本月最后长、多跳一下
       i.animate(last ? [{height:'0px'}, {height:`calc(${i.style.height} * 1.12)`, offset:.7}, {height:i.style.height}] : [{height:'0px'}, {height:i.style.height}], {duration:last ? 760 : 560, delay:120 + k*90, easing:'cubic-bezier(.2,.9,.25,1)', fill:'backwards'});
       em && em.animate([{opacity:0, transform:'translateY(6px)'}, {opacity:1, transform:'none'}], {duration:300, delay:420 + k*90, fill:'backwards'}); }); });
-    body = `${payeeBox()}<div class="kpis"><div class="kpi cc c-pink grain"><span class="lab" style="color:var(--ink);position:relative;z-index:2">九月预计到手</span><b data-roll="${tot.net.toFixed(2)}" data-pre="¥" style="position:relative;z-index:2">¥${tot.net.toFixed(2)}</b><span class="d" style="color:var(--ink);position:relative;z-index:2">已扣 ${PLAT*100}% 平台费与支付手续费</span></div>
+    body = `${payeeBox()}<div class="kpis"><div class="kpi cc c-pink grain"><span class="lab" style="color:var(--on);position:relative;z-index:2">九月预计到手</span><b data-roll="${tot.net.toFixed(2)}" data-pre="¥" style="position:relative;z-index:2">¥${tot.net.toFixed(2)}</b><span class="d" style="color:var(--on);position:relative;z-index:2">已扣 ${PLAT*100}% 平台费与支付手续费</span></div>
       <div class="kpi"><span class="lab">九月销售额</span><b data-roll="${gross}" data-pre="¥">¥${gross}</b><span class="d">${paid.length} 单 · 1 单退款</span></div>
       <div class="kpi"><span class="lab">30 天浏览</span><b data-roll="5210">5,210</b><span class="d" style="color:var(--green);font-weight:600">比上月多 18%</span></div>
       <div class="kpi"><span class="lab">下单率</span><b>6.6%</b><span class="d">每 100 次浏览约 7 单</span></div></div>
@@ -6587,7 +6591,7 @@ function onboarding(){
   return `<div class="wrap"><div class="ph"><h1 class="x">开店<span class="s">by invite</span></h1></div>
   <div style="max-width:640px"><p style="font-size:clamp(17px,2vw,20px);line-height:1.55;margin-bottom:20px">现在只要有邀请码，任何人都可以开店卖自己的作品。</p>
     ${inviteForm('seller-upload')}
-    <div class="kpis k3" style="margin-top:28px"><div class="kpi cc c-pink grain"><b style="position:relative;z-index:2">${PLAT*100}%</b><span class="d" style="color:var(--ink);position:relative;z-index:2">平台只收这么多</span></div><div class="kpi cc c-blue grain"><b style="position:relative;z-index:2;color:var(--paper)">月结</b><span class="d" style="color:var(--paper);position:relative;z-index:2">每月结算一次</span></div><div class="kpi cc c-yellow grain"><b style="position:relative;z-index:2">0.6–1%</b><span class="d" style="color:var(--ink);position:relative;z-index:2">支付手续费由卖家承担</span></div></div></div></div>`;
+    <div class="kpis k3" style="margin-top:28px"><div class="kpi cc c-pink grain"><b style="position:relative;z-index:2">${PLAT*100}%</b><span class="d" style="color:var(--on);position:relative;z-index:2">平台只收这么多</span></div><div class="kpi cc c-blue grain"><b style="position:relative;z-index:2;color:var(--paper)">月结</b><span class="d" style="color:var(--paper);position:relative;z-index:2">每月结算一次</span></div><div class="kpi cc c-yellow grain"><b style="position:relative;z-index:2">0.6–1%</b><span class="d" style="color:var(--on);position:relative;z-index:2">支付手续费由卖家承担</span></div></div></div></div>`;
 }
 const inviteForm = next => `<form class="invf" data-next="${next}" onsubmit="return false"><input class="inp x" id="inv" value="${API.on() ? '' : 'CTRLZ-T4V-01M'}" placeholder="CTRLZ-XXX-XXX" aria-label="邀请码" autocapitalize="characters" spellcheck="false"><button class="pill lg" data-act="inv-check" aria-label="开通">${IC.arrow}</button></form>${agreeBox('invAgree')}`;
 function inviteSheet(next){ sheet(`<h3>上架作品需要邀请码</h3><p class="mut" style="font-size:14px;margin-top:-6px">填一次就好，开通后可以直接上架。</p>${inviteForm(next)}<button class="pill lt" data-act="apply-open" style="align-self:flex-start">没有邀请码？申请入驻</button>`, d => { setTimeout(() => { const i = $('#inv', d); i && i.select(); }, 80); }); }
@@ -8006,23 +8010,24 @@ function msgList(sel){
   return `<div class="m-quick">${[['likes','喜欢','pink',IC.heartF],['fans','新粉丝','blue','<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.4-7 8-7s7 2.5 8 7z"/></svg>'],['at','回复与@','yellow',RIC.cm]].map(([k,l,c,ic]) => { const n = NOTE_NEW[k] || 0; return `<button class="mq c-${c} mq-${k} ${n ? 'live' : ''}" data-act="note" data-v="${k}" data-n="${n}" aria-label="${l}${n ? '，' + n + ' 条新的' : ''}"><span class="mq-h"><span class="g">${ic}</span><b>${l}</b></span><span class="mq-n">${n}</span></button>`; }).join('')}</div>
   <div class="m-list">${STATE.role === 'user' ? sysRow() : ''}${ids.map(id => { const m = CHATS[id][CHATS[id].length - 1], u = USERS[id]; return `<a class="mrow ${sel === id ? 'on' : ''}" data-go="msg-${id}">${av(id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>${m ? esc(msgPreview(m)) : '还没有消息，打个招呼吧'}</span></span><span class="mr"><time>${m ? ago(m.ts) : ''}</time>${CHAT_UNREAD[id] ? `<i class="bdg">${CHAT_UNREAD[id]}</i>` : ''}</span></a>`; }).join('') || '<div class="rnone">还没有私信</div>'}</div>`;
 }
+const msgAv = uid => `<a class="msg-av" data-go="user-${esc(uid)}" aria-label="${esc(uname(uid))} 的主页">${av(uid)}</a>`;   // 聊天里对方的头像：点了去主页
 function bubble(m, uid){
   if (m.rc) return `<div class="msep">${m.me ? '你' : esc(uname(uid))}撤回了一条消息</div>`;
   let inner = '';
   if (m.t === 'text') inner = `<div class="bub">${esc(m.text)}</div>`;
   else if (m.t === 'img') inner = `<div class="bimg"><img src="${m.url || cover(m.cover || 'rings', 3, 360, 440)}" alt=""></div>`;
   else if (m.t === 'post'){ const p = POST(m.ref); inner = p ? `<a class="bcard" data-go="${postHref(p)}"><span class="bcv">${miniThumb(p)}${inStream(p) ? `<i class="bplay">${IC.play}</i>` : ''}</span><b>${esc(p.title)}</b><span class="by">${av(p.author, 'sm')}${esc(USERS[p.author].name)}</span></a>` : `<div class="bub">[帖子已删除]</div>`; }
-  else if (m.t === 'co'){ const o = CO_BY(m.ref); if (o) return `<div class="msg ${m.me ? 'me' : ''} co-m">${m.me ? '' : av(uid)}${coCard(o, m.v)}</div>`; }
+  else if (m.t === 'co'){ const o = CO_BY(m.ref); if (o) return `<div class="msg ${m.me ? 'me' : ''} co-m">${m.me ? '' : msgAv(uid)}${coCard(o, m.v)}</div>`; }
   else if (m.t === 'cosys') return `<div class="msep co-sys"><span>${esc(m.text)}</span></div>`;
   else if (m.t === 'prod'){ const p = P(m.ref); inner = p ? `<a class="bcard prod c-${CATS[p.cat].c}" data-go="item-${p.id}"><span class="bcv"><img src="${cover(p.cover, hash(p.id) % 50, 300, 300)}" alt=""></span><b>${esc(p.title)}</b><span class="by"><i class="dot"></i>${esc(p.kind)}<em>${p.price ? yuan(p.price) : '免费'}</em></span></a>` : ''; }
   const rc = m.me && (m.t === 'text' || m.t === 'img') && Date.now() - m.ts < RC_MS ? `<button class="bub-rc" data-act="msg-rc" data-u="${uid}" data-ts="${m.ts}">撤回</button>` : '';
-  return `<div class="msg ${m.me ? 'me' : ''}">${m.me ? '' : av(uid)}${inner}${rc}</div>`;
+  return `<div class="msg ${m.me ? 'me' : ''}">${m.me ? '' : msgAv(uid)}${inner}${rc}</div>`;
 }
-function convBody(uid){ const ms = CHATS[uid] || []; let last = 0; return ms.map(m => { const sep = m.ts - last > 30*60e3 ? `<div class="msep">${ago(m.ts)}</div>` : ''; last = m.ts; return sep + bubble(m, uid); }).join('') + (TYPING[uid] ? `<div class="msg">${av(uid)}<div class="bub typing"><i></i><i></i><i></i></div></div>` : ''); }
+function convBody(uid){ const ms = CHATS[uid] || []; let last = 0; return ms.map(m => { const sep = m.ts - last > 30*60e3 ? `<div class="msep">${ago(m.ts)}</div>` : ''; last = m.ts; return sep + bubble(m, uid); }).join('') + (TYPING[uid] ? `<div class="msg">${msgAv(uid)}<div class="bub typing"><i></i><i></i><i></i></div></div>` : ''); }
 const TYPING = {};
 function conv(uid){
   const u = USERS[uid];
-  return `<div class="conv"><div class="cv-h"><button class="hd-back" data-act="back" aria-label="返回">${IC.back}</button><a data-go="user-${uid}" class="cv-who">${av(uid, 'sm')}<b>${esc(u.name)}</b></a>${STATE.follows.has(uid) || blocked(uid) ? '' : `<button class="pill sm" data-act="follow" data-id="${uid}">关注</button>`}<button class="cv-mo" data-act="cv-more" data-id="${uid}" aria-label="更多">⋯</button></div>
+  return `<div class="conv"><div class="cv-h"><button class="hd-back" data-act="back" aria-label="返回">${IC.back}</button><a data-go="user-${uid}" class="cv-who">${av(uid, 'sm')}<b>${esc(u.name)}</b></a>${blocked(uid) ? '' : `<button class="pill sm ${STATE.follows.has(uid) ? 'lt' : ''}" data-act="follow" data-id="${uid}">${STATE.follows.has(uid) ? '已关注' : '关注'}</button>`}<button class="cv-mo" data-act="cv-more" data-id="${uid}" aria-label="更多">⋯</button></div>
     <div class="cv-b" id="cvB">${convBody(uid)}</div>
     ${blocked(uid) ? `<div class="cv-blk">你已拉黑 TA，不能互发消息<button class="pill sm lt" data-act="blk" data-id="${uid}">解除拉黑</button></div>` : ''}<div class="cv-f" ${blocked(uid) ? 'hidden' : ''}><span class="cdock"><label class="cv-ic" title="发图片">${RIC.img}<input type="file" id="cvImg" accept="image/*" hidden></label><button class="cv-ic" data-act="cv-pick" data-id="${uid}" title="分享作品或商品">${IC.plus}</button></span><textarea class="inp" id="cvIn" rows="1" placeholder="发消息…" autocomplete="off" enterkeyhint="send"></textarea><button class="pill sm ic" data-act="cv-send" data-id="${uid}" aria-label="发送">${IC.arrow}</button></div></div>`;
 }
@@ -9379,7 +9384,8 @@ const typeTagCN = {image:'图文', audio:'声音', video:'视频', question:'提
     let t = 0, seq = 0;
     q.addEventListener('input', () => { clearTimeout(t); const v = q.value.trim(); if (!v) return;
       t = setTimeout(async () => { const my = ++seq;
-        try { const r = await API.req('GET', '/users?q=' + encodeURIComponent(v)); if (my !== seq || !el.isConnected) return; r.items.forEach(u => { apiUser(u); LSRCH.add(u.id); }); el._draw?.(); } catch(e){} }, 250); });
+        const dm = el.dataset.s === 'msg';
+        try { const r = await API.req('GET', (dm ? '/dm/contacts?q=' : '/users?q=') + encodeURIComponent(v)); if (my !== seq || !el.isConnected) return; r.items.forEach(u => { apiUser(u); if (dm) LSRCH.add(u.id); }); el._draw?.(); } catch(e){} }, 250); });
   };
 }
 function closeSearch(){ const el = $('#srch'); if (!el) return; el.remove(); if (!CUR.post) document.documentElement.style.overflow = ''; }
@@ -10155,11 +10161,11 @@ wrapAct('shr-send', (orig, b, e) => { const d = b.closest('.sheet'), to = [...d.
   closeSheet();
   Promise.all(to.map(async uid => { if (!dmLive(uid)) return; await liveDmSend(uid, first); if (msg) await liveDmSend(uid, {t:'text', text:msg}); LDM.full.delete(uid); }))
     .then(() => { toast(`已发送给 ${to.map(u => esc(uname(u))).join('、')}`, 'pink'); dmPoll(); }, apiFail); });
-wrapAct('new-chat', () => sheet(`<h3>发起私信</h3><div class="rsearch">${IC.search}<input class="inp" id="ncQ" placeholder="搜昵称或用户名" autocomplete="off"></div><div class="m-list" id="ncL"><div class="rnone">正在读取…</div></div>`, d => {
+wrapAct('new-chat', () => sheet(`<h3>发起私信</h3><p class="mut" style="font-size:13px;margin-top:-6px">这里是你关注的人，和你买过作品的创作者。其他人可以去 TA 的主页发私信。</p><div class="rsearch">${IC.search}<input class="inp" id="ncQ" placeholder="搜昵称或用户名" autocomplete="off"></div><div class="m-list" id="ncL"><div class="rnone">正在读取…</div></div>`, d => {
   let seq = 0, t = 0;
   const draw = async () => { const q = $('#ncQ', d).value.trim(), my = ++seq;
-    try { const r = await API.req('GET', '/users' + (q ? '?q=' + encodeURIComponent(q) : '')); if (my !== seq || !d.isConnected) return;
-      $('#ncL', d).innerHTML = r.items.map(u => { apiUser(u); return `<a class="mrow" data-go="msg-${esc(u.id)}">${av(u.id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>@${esc(u.handle)}</span></span>${STATE.follows.has(u.id) ? '<span class="tag k">已关注</span>' : ''}</a>`; }).join('') || `<div class="rnone">${q ? '没找到' : '还没有其他用户'}</div>`; }
+    try { const r = await API.req('GET', '/dm/contacts' + (q ? '?q=' + encodeURIComponent(q) : '')); if (my !== seq || !d.isConnected) return;
+      $('#ncL', d).innerHTML = r.items.map(u => { apiUser(u); return `<a class="mrow" data-go="msg-${esc(u.id)}">${av(u.id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>${[u.rel.includes('following') ? '已关注' : '', u.rel.includes('bought') ? '买过 TA 的作品' : ''].filter(Boolean).join(' · ')}</span></span></a>`; }).join('') || `<div class="rnone">${q ? '没找到' : '还没有可以私信的人：先去关注一些创作者吧'}</div>`; }
     catch(e){ apiFail(e); } };
   $('#ncQ', d).addEventListener('input', () => { clearTimeout(t); t = setTimeout(draw, 250); }); draw(); setTimeout(() => $('#ncQ', d).focus(), 60); }));
 

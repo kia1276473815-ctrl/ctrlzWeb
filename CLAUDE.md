@@ -114,7 +114,7 @@
 - `API.req(方法, 路径, 请求体)`：自动带 token、401 时刷新一次（同时只刷一次）；错误是带 `code` 的 Error，`apiFail(e)` 统一提示（`phone_required` 会弹出绑定手机号）
 - 做法是「不改页面代码」：`apiUser` / `apiPost` / `apiCmt` 把后端数据灌进 `USERS` / `POSTS` / `BODY` / `COMMENTS`（真实帖子 `live:true`，`COMMENTS[id]` 先置空，免得用上示例评论；`p.likes` 不含自己的赞，和 `likes()` 的算法一致）；`wrapAct(名字, fn)` 包装现有操作：先照原样改界面，再调接口，失败撤回并提示
 - **登录（连着后端时）**：`GET /config` → `LIVE.cfg`。登录面板是「登录 / 注册」两个页签（用户名 + 密码，`AUTH.lm`、`au-pw` / `auPwGo`），`cfg.phoneLogin` 为真才多一个「手机号」页签（沿用原来的验证码流程），`cfg.wechatLogin` 为真才显示微信。注册后进原来的「起名字、选颜色」步骤。设置 › 账号与隐私 › 修改密码（`pw-set`，`LIVE.me.hasPassword / username`）。会话中核对密码失败后端返回 403，不要改成 401（`API.req` 遇到 401 会当登录过期）
-- **私信（连着后端时）**：`/dm/*`，`LDM` 状态。会话列表每 4 秒轮询（`dmPoll`，页面在后台不轮询），打开的会话每次读全部（`dmConv`）并标已读，只在内容变了时重画（`dmPaint`）。`sendMsg` 先放一条 `pend` 的消息再调接口；图片带 `file` 上传（`dm_image`）；撤回 / 全部已读 / 分享面板发送 / 发起私信（`GET /users?q=` 找人）都包装过。示例私信和通知在 `liveReset` 里清空
+- **私信（连着后端时）**：`/dm/*`，`LDM` 状态。「发起私信」和私信页的搜索只列有关系的人（`GET /dm/contacts`：我关注的人、我买过 TA 东西的卖家；买过我东西的人不放，大卖家会太多），其他人从 TA 主页发私信。聊天里对方的头像可以点去主页（`msgAv`）。会话列表每 4 秒轮询（`dmPoll`，页面在后台不轮询），打开的会话每次读全部（`dmConv`）并标已读，只在内容变了时重画（`dmPaint`）。`sendMsg` 先放一条 `pend` 的消息再调接口；图片带 `file` 上传（`dm_image`）；撤回 / 全部已读 / 分享面板发送 / 发起私信（`GET /users?q=` 找人）都包装过。示例私信和通知在 `liveReset` 里清空
 - **声音 / 可视化帖子**：发帖时把音频传上去（`post_audio`；浏览器认不出的格式和「示例音频」用 `wavBlob` 转 WAV），后端 type 是 `audio`，`style.vis` 有值就是可视化。`apiPost` 给出 `aurl` / `adur`；`renderTrack` 遇到真实帖子就下载解码（地址过期重新取一次帖子）
 - 已接通：用户名密码登录、手机号登录（新用户建档存名字）、微信登录跳转（`au-3p` wx）、信息流、别人主页（`LIVE.prof`）、帖子评论（`openPost` 打开时拉）、点赞、评论、删评论、发帖（文字 / 提问 / 图片 / 视频链接；图片先 `/uploads` 再直传）、编辑删除帖子、关注、拉黑、个性化推荐、资料、登录设备、换绑 / 绑定手机号（`live-bind`）、官方通知、导出、注销、退出。合作仍是本地模拟
 - **第 2 阶段（商城）也接上了**（见 `商城接后端` 那一段）：`apiProduct` / `apiOrder` 把后端商品、订单灌进 `PRODUCTS` / `STATE.orders`；卖家的 `SELLER_PRODUCTS` / `SELLER_ORDERS` / `MONTHLY` 来自 `/me/products`、`/me/sales`；余额 `LSHOP.wallet`（分），`vcBal` / `agreeNeed` 连着后端时读 `LSHOP`。开店（`inv-check` → `/me/seller`）、协议确认、上架（交付文件和授权文件真的上传 `liveUpload`，提交 `/products`，待补充 / 驳回用 `sp-redo` 填回表单 PATCH 重新提交）、下单付款（`do-pay` → `/orders`，成功后复用 `paidUI`）、下载（签名地址）、退款都用 `wrapAct` 包装。后台的待审核（`REVIEW` 换成 `rvOfLive`）、订单流水、退款、代金券、邀请码、主页下架走 `/admin/*`，缓存在 `LADM`，切页签时重读。金额：后端「分」、页面「元」（`f2y` / `y2f`）。示例商品的试听（pads / presets / 视觉）暂时用通用的演示内容
@@ -122,6 +122,13 @@
 - 真实后端模式只推荐真实用户（`LIVE.u`）；示例用户在后端不存在，关注它们只改本地
 - 改网址时保留 `history.state`（`replaceState(history.state, …)`），否则返回逻辑会把人退出网站
 - 联调：后端 `DEV_EXPOSE_OTP=true` 时验证码会像短信一样从顶部滑下；同一 IP 10 分钟最多登录 20 次（测试别每次都登录）
+
+## 深色模式可见性（每次改样式都要检查）
+- 颜色变量：`--ink` / `--paper` / `--card` / `--*-t`（淡色）会随深浅色翻转；`--on`（#141418）和 `--sheet` 固定不变。**字色和底色必须同一类**：底色会翻转（`--paper`、`--card`、`--*-t`）→ 字用 `--ink`；底色是固定亮色（品牌色 `--c`、`--yellow` 等）→ 字用 `--on`。混用就会在某个模式下看不见（踩过：开店页彩色卡片的小字、帖子视频的平台标签、商品「免费」角标、后台审核的标记 `.flag`、后台空状态的 ALL CLEAR 印章、游客头像图标）
+- 全局那条 `.tag,.pill.pk,…{color:var(--on)}` 只给「固定亮色底」的组件用；底色会翻转的组件不要放进去，或者自己写 `color:var(--ink)`
+- 状态切换后也要看（如关注后的「已关注」、选中、已点赞）；不要用「切换后直接不渲染按钮」，要显示成另一种状态
+- 自查办法：深色模式下逐页（含面板、后台各页签、手机和电脑两种宽度）算文字 / 图标与实际底色的对比度，低于 2 的逐个看（玻璃角标、荧光笔页签、空状态大水印是有意的）
+- 类名别和已有组件撞：底栏按住时的类叫 `fx-prs`，以前叫 `prs` 撞上了预设试听那排按钮的样式，发布按钮被压成 32px 高的胶囊
 
 ## 材质层（液态玻璃 / 毛玻璃 / 3D）
 - 液态玻璃折射 `LG`：思路来自 shuding/liquid-glass（MIT），SVG 位移贴图做 `backdrop-filter:url()`，只有 Chromium 生效；其它浏览器用 CSS 版（`.lgx` / `.lg-rim` / 高光边）。要加折射的元素登记在 `LG` 的 `SPEC` 里
