@@ -1678,6 +1678,9 @@ body.reels-open .totop{display:none}
 .au-eye{flex:none;height:40px;padding:0 12px;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink-2)}
 .au-eye:hover{color:var(--ink)}
 .au-fg{margin:-4px 0 0;font-size:12.5px;color:var(--ink-3);text-align:center}
+.feed-more{display:flex;justify-content:center;padding:18px 0 28px}
+.fb-shot{display:block;max-width:220px;max-height:220px;border-radius:12px;margin-top:6px;border:1px solid var(--rule-2)}
+pre.fb-st{white-space:pre-wrap;word-break:break-all;font-size:11.5px;max-height:220px;overflow:auto;margin:6px 0 0}
 .au-lnk{background:none;border:0;padding:4px 2px;margin:-4px 0;font:inherit;color:var(--ink);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .rc-code{display:block;font:700 clamp(15px,5vw,22px)/1.3 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em;white-space:nowrap;text-align:center;padding:16px 12px;margin:6px 0 4px;border:1.5px dashed var(--rule-2);border-radius:14px;background:var(--card);color:var(--ink);user-select:all;word-break:break-all}
 .au-ag{position:relative;display:flex;align-items:flex-start;gap:10px;font-size:12.5px;color:var(--ink-3);line-height:20px;border-radius:10px}
@@ -9870,7 +9873,7 @@ const apiCmt = c => (apiUser(c.author), {id:c.id, u:c.author.id, t:c.body, time:
 
 /* —— 读取 —— */
 async function liveFeed(){
-  const r = await API.req('GET', '/posts?tab=rec&limit=50'), feed = r.items.map(apiPost), got = new Set(feed.map(p => p.id));
+  const r = await API.req('GET', '/posts?tab=rec&limit=50'), feed = r.items.map(apiPost), got = new Set(feed.map(p => p.id)); LIVE.next = r.next;
   POSTS.splice(0, POSTS.length, ...Object.values(LIVE.pend).filter(p => p.author === ME && !got.has(p.id)), ...feed);   // 自己审核中的帖子放最前面（带「审核中」）
 }
 async function liveMeExtras(){
@@ -10096,7 +10099,7 @@ async function liveAfterLogin(){ try { liveMe(await API.req('GET', '/me')); awai
       LIVE.prof[id] = 'loading';
       Promise.all([API.req('GET', `/users/${id}`), API.req('GET', `/posts?author=${encodeURIComponent(id)}&limit=50`)]).then(([u, ps]) => {
         apiUser(u, {fans:u.followers, follow:u.following}); u.isFollowing ? STATE.follows.add(u.id) : STATE.follows.delete(u.id);
-        ps.items.forEach(p => { const np = apiPost(p); if (!POSTS.some(x => x.id === np.id)) POSTS.push(np); });
+        ps.items.forEach(p => { const np = apiPost(p); if (!POSTS.some(x => x.id === np.id)) POSTS.push(np); }); (LIVE.pnext ||= {})[id] = ps.next;
         LIVE.prof[id] = 'ok'; rerender();
       }).catch(e => { LIVE.prof[id] = 'missing'; if (e.status !== 404) apiFail(e); rerender(); });
       return `<div class="wrap msub"><div class="empty miss"><div class="x">···</div><span>正在加载</span></div></div>`;
@@ -10152,7 +10155,7 @@ const apiOrder = o => (apiUser(o.seller), {id:o.id, no:o.no, pid:o.productId, pr
 function liveApplyOrder(o){ STATE.orders = [apiOrder(o), ...STATE.orders.filter(x => x.id !== o.id)]; STATE.owned.add(o.productId); const p = P(o.productId); if (p) p.sales++; }
 
 /* —— 读取 —— */
-async function liveShop(){ try { const r = await API.req('GET', '/products'); PRODUCTS.splice(0); r.items.forEach(apiProduct); } catch(e){ apiFail(e); } }
+async function liveShop(){ try { const r = await API.req('GET', '/products'); PRODUCTS.splice(0); r.items.forEach(apiProduct); LSHOP.next = r.next; } catch(e){ apiFail(e); } }
 async function liveMine(){
   if (!liveUser()) return;
   try {
@@ -11319,6 +11322,87 @@ ACTIONS['tax-go'] = async b => { const q = $('#taxQ .on').dataset.v; b.disabled 
   catch(e){ b.disabled = false; apiFail(e); } };
 ACTIONS['tax-dl'] = () => { if (LADM.tax) csvDownload(`ctrlz-tax-${$('#taxQ .on').dataset.v}.csv`, LADM.tax); };
 { const po1 = ADMV.payout; ADMV.payout = () => { const h = po1(); return API.on() ? h.replace('<div class="kpis">', `<div class="ad-inl" style="justify-content:flex-end;margin:-6px 0 10px"><button class="pill sm lt" data-act="tax-open">${IC.dl}导出季度涉税信息</button></div><div class="kpis">`) : h; }; }
+
+/* ================= 翻页、搜索、话题、浏览统计、反馈问题、报错上报（连着后端时） =================
+   · 首页 / 商城 / 别人主页的作品：到底部自动加载下一页（moreBox + IntersectionObserver），也可以点「加载更多」
+   · 搜索：首页搜帖子（标题 / 正文 / 话题）和商品，商城搜商品，都问服务器；首页搜索的推荐词换成热门话题（/tags/hot）
+   · 商品页打开时记一次浏览（/products/{id}/view），工作室「我的产品」显示浏览量和下单率（/me/product-stats）
+   · 菜单「反馈问题」→ /feedback（自动带设备、浏览器、页面，登录了可以附截图）；网页报错自动上报 /client-errors；后台「反馈与报错」页签 */
+const MORE = {busy:{}};
+const moreBox = k => `<div class="wrap feed-more"><button class="pill lt" data-act="more" data-v="${esc(k)}">加载更多</button></div>`;
+const addPosts = items => items.map(apiPost).forEach(p => { if (!POSTS.some(x => x.id === p.id)) POSTS.push(p); });
+async function moreLoad(k){ if (MORE.busy[k]) return; MORE.busy[k] = true;
+  try {
+    if (k === 'home' && LIVE.next){ const r = await API.req('GET', '/posts?tab=rec&limit=30&cursor=' + encodeURIComponent(LIVE.next)); LIVE.next = r.next; addPosts(r.items); }
+    else if (k === 'shop' && LSHOP.next){ const r = await API.req('GET', '/products?limit=60&cursor=' + encodeURIComponent(LSHOP.next)); LSHOP.next = r.next; r.items.forEach(apiProduct); }
+    else if (k.startsWith('user:')){ const id = k.slice(5), c = LIVE.pnext?.[id]; if (c){ const r = await API.req('GET', `/posts?author=${encodeURIComponent(id)}&limit=50&cursor=${encodeURIComponent(c)}`); LIVE.pnext[id] = r.next; addPosts(r.items); } }
+    rerender();
+  } catch(e){ apiFail(e); } finally { MORE.busy[k] = false; } }
+ACTIONS.more = b => { b.disabled = true; b.textContent = '加载中…'; moreLoad(b.dataset.v); };
+const MORE_IO = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ const b = e.target.querySelector('[data-act="more"]'); if (b && !b.disabled) ACTIONS.more(b); } }), {rootMargin:'600px 0px'}) : null;
+const moreWatch = () => { if (MORE_IO) $$('.feed-more').forEach(el => MORE_IO.observe(el)); };
+{ const h0 = ROUTES.home; ROUTES.home = (...a) => { const h = h0(...a); if (!API.on() || !LIVE.next) return h; onMount(moreWatch); return h + moreBox('home'); }; }
+{ const s0 = ROUTES.shop; ROUTES.shop = (...a) => { const h = s0(...a); if (!API.on() || !LSHOP.next) return h; onMount(moreWatch); return h + moreBox('shop'); }; }
+{ const u0 = ROUTES.user; ROUTES.user = id => { const h = u0(id); if (!API.on() || !LIVE.pnext?.[id] || (UI.userTab && UI.userTab !== 'works')) return h; onMount(moreWatch); return h + moreBox('user:' + id); }; }
+
+/* 搜索问服务器（帖子、商品），首页的推荐词换成热门话题 */
+{ const os2 = openSearch;
+  openSearch = function(scope, tab){ os2(scope, tab); const q = $('#sq'), el = $('#srch'); if (!q || !el || !API.on() || el.dataset.s === 'msg') return;
+    let t = 0, seq = 0;
+    q.addEventListener('input', () => { clearTimeout(t); const v = q.value.trim().replace(/^#/, ''); if (!v) return;
+      t = setTimeout(async () => { const my = ++seq;
+        try { const [ps, pr] = await Promise.all([el.dataset.s === 'all' ? API.req('GET', '/posts?limit=30&q=' + encodeURIComponent(v)) : null, API.req('GET', '/products?limit=30&q=' + encodeURIComponent(v))]);
+          if (my !== seq || !el.isConnected) return; if (ps) addPosts(ps.items); pr.items.forEach(apiProduct); el._draw?.(); } catch(e){} }, 250); }); }; }
+async function hotTags(){ try { const r = await API.req('GET', '/tags/hot'); if (r.items.length) SCOPES.all.tries = r.items.slice(0, 8).map(x => x.tag); } catch(e){} }
+
+/* 商品浏览（每次打开商品页只记一次；服务器 30 分钟内同一个人只算一次） */
+const PV = new Set();
+{ const it0 = ROUTES.item; ROUTES.item = id => { if (API.on() && P(id)?.live && !PV.has(id)){ PV.add(id); API.req('POST', `/products/${encodeURIComponent(id)}/view`).catch(() => {}); } return it0(id); }; }
+{ const lm3 = liveMine; liveMine = async function(){ await lm3(); if (!liveUser() || !STATE.seller) return;
+    try { const r = await API.req('GET', '/me/product-stats?days=30');
+      SELLER_PRODUCTS.forEach(sp => { const x = r.items.find(i => i.id === sp.id); sp.views = x?.views || 0; sp.conv = x?.views ? (Math.min(100, x.orders / x.views * 100)).toFixed(1) + '%' : '—'; }); } catch(e){} }; }
+{ const boot5 = liveBoot; liveBoot = async function(){ await boot5(); hotTags(); }; }
+
+/* 反馈问题 */
+const fbDevice = () => `${uaName()} · ${screen.width}×${screen.height} · ${navigator.userAgent}`.slice(0, 300);
+wrapAct('me-menu', (orig, b, e) => { orig(b, e);
+  $('#layer .drw-thm')?.insertAdjacentHTML('beforebegin', `<button class="drw-sw" data-act="fb-open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M12 8.5v3M12 14h.01"/></svg>反馈问题</button>`); });
+ACTIONS['fb-open'] = () => { closeSheet();
+  sheet(`<h3>反馈问题</h3><p class="mut" style="font-size:13.5px;margin-top:-6px;line-height:1.6">遇到 bug、哪里不好用、想要什么功能都可以写。会自动附上：设备和浏览器（${esc(uaName())}）、当前页面。</p>
+    <textarea class="inp" id="fbT" rows="5" maxlength="2000" placeholder="比如：在商品页点「下载」没反应"></textarea>
+    ${liveUser() ? '<label class="ad-lab" for="fbF">截图（可选）</label><input type="file" id="fbF" accept="image/png,image/jpeg,image/webp" class="inp" style="padding-top:11px">' : '<p class="mut2" style="font-size:12.5px;margin:0">登录后可以附截图</p>'}
+    <button class="pill lg" data-act="fb-go">发送</button>`, d => setTimeout(() => $('#fbT', d)?.focus(), 80)); };
+ACTIONS['fb-go'] = async b => { const t = $('#fbT').value.trim(), f = $('#fbF')?.files?.[0];
+  if (t.length < 4){ fxPop($('#fbT'), 'fx-shake', 300); toast('多写几个字说明问题', 'orange', 'x'); return; }
+  if (f && f.size > 10*1024*1024){ toast('截图太大了（最大 10MB）', 'orange', 'x'); return; }
+  b.disabled = true; b.textContent = '发送中…';
+  try { const up = f ? await liveUpload(f, 'feedback_image') : null;
+    await API.req('POST', '/feedback', {text:t, page:(location.hash || '#home').slice(0, 300), device:fbDevice(), ...(up ? {uploadId:up.id} : {})});
+    closeSheet(); toast('收到了，谢谢你！处理后会在「CTRL Z 官方」里回复', 'green', 'check'); }
+  catch(e){ b.disabled = false; b.textContent = '发送'; apiFail(e); } };
+
+/* 网页报错自动上报（每次打开最多报 10 个，同一个只报一次；接口自己的错误不报） */
+const CERR = {n:0, seen:new Set()};
+function cerrSend(msg, stack){ if (!API.on() || CERR.n >= 10 || !msg) return; const k = msg + '|' + String(stack || '').slice(0, 200); if (CERR.seen.has(k)) return; CERR.seen.add(k); CERR.n++;
+  fetch(API.base + '/client-errors', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({msg:String(msg).slice(0, 500), stack:String(stack || '').slice(0, 3000), page:location.hash.slice(0, 300), device:fbDevice()})}).catch(() => {}); }
+addEventListener('error', e => { if (e.message) cerrSend(e.message, e.error?.stack || `${e.filename}:${e.lineno}:${e.colno}`); });
+addEventListener('unhandledrejection', e => { const r = e.reason; if (r?.code) return; cerrSend('Unhandled: ' + (r?.message || String(r)), r?.stack || ''); });
+
+/* 后台「反馈与报错」 */
+ADM_TABS.splice(ADM_TABS.findIndex(t => t[0] === 'audit'), 0, ['feedback', '反馈与报错', '系统', ['super', 'cs', 'ops']]);
+ADMV.feedback = () => { if (!API.on()) return adH('反馈与报错', '连上后端后，用户的反馈和网页报错会出现在这里') + adEmpty('ALL CLEAR', '原型里没有数据');
+  const v = UI.adf?.fb || 'open';
+  if (!LADM.feedback || LADM.fbv !== v){ LADM.fbv = v; LADM.feedback = null; ladmGet('feedback', v === 'err' ? '/admin/client-errors' : '/admin/feedback?view=' + v, r => r.items); return ladmWait('反馈与报错', '读取中'); }
+  const seg = adSeg('fb', [['open', '待处理'], ['all', '全部反馈'], ['err', '网页报错']], v);
+  if (v === 'err') return `${adH('反馈与报错', '网页上的报错自动上报，同一个错误合并计数，保留最近 30 天', seg)}<div class="ad-list">${LADM.feedback.map(x => `<div class="ad-row"><div class="ad-rm"><b>${esc(x.msg)} <span class="tag k">${x.n} 次</span></b><span class="mut">${esc(x.page || '—')} · ${esc(x.device.slice(0, 90))}</span><span class="mut2">最近 ${fmtDT(+new Date(x.lastAt))} · 第一次 ${fmtDT(+new Date(x.firstAt))}</span>${x.stack ? `<details class="ad-dt"><summary>调用栈</summary><pre class="fb-st">${esc(x.stack)}</pre></details>` : ''}</div></div>`).join('') || adEmpty('ALL CLEAR', '最近没有报错')}</div>`;
+  return `${adH('反馈与报错', '用户在菜单「反馈问题」里发来的；处理后登录的用户会收到回复', seg)}<div class="ad-list">${LADM.feedback.map(f => { if (f.user) apiUser(f.user);
+    return `<div class="ad-row ${f.status === 'open' ? '' : 'dim'}"><div class="ad-rm"><b>${esc(f.text)}</b><span class="mut">${f.user ? esc(f.user.name) : '没登录的用户'} · 页面 ${esc(f.page || '—')} · ${fmtDT(+new Date(f.createdAt))}</span><span class="mut2">${esc(f.device.slice(0, 120))}</span>${f.shot ? `<a href="${esc(f.shot)}" target="_blank" rel="noopener"><img class="fb-shot" src="${esc(f.shot)}" alt="截图"></a>` : ''}${f.status !== 'open' ? `<span class="mut2">已处理 · ${esc(f.handledBy || '')}${f.note ? ' · ' + esc(f.note) : ''}</span>` : ''}</div>
+      <div class="ad-ra">${f.status === 'open' ? `<button class="pill sm" data-act="fb-done" data-id="${esc(f.id)}">已处理</button>` : ''}</div></div>`; }).join('') || adEmpty('ALL CLEAR', '没有待处理的反馈')}</div>`; };
+ACTIONS['fb-done'] = b => { if (!admGuard('feedback')) return;
+  sheet(`<h3>反馈已处理</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">写一句回复（可选），登录的用户会在「CTRL Z 官方」里收到。</p><textarea class="inp" id="fbN" placeholder="例如：已经修好了，刷新一下就行"></textarea><button class="pill lg" data-act="fb-dgo" data-id="${esc(b.dataset.id)}">确认</button>`); };
+ACTIONS['fb-dgo'] = async b => { b.disabled = true;
+  try { await STAFF.req('POST', `/admin/feedback/${encodeURIComponent(b.dataset.id)}/done`, {note:$('#fbN').value.trim()}); closeSheet(); toast('已处理', 'green', 'check'); LADM.feedback = null; rerender(); }
+  catch(e){ b.disabled = false; apiFail(e); } };
 
 (function boot(){
   STATE.hist = store.get('hist', null) || [{k:'post', id:'s3', ts:Date.now() - 2*3600e3}, {k:'item', id:'p3', ts:Date.now() - 5*3600e3}, {k:'video', id:'s2', ts:Date.now() - 26*3600e3}, {k:'post', id:'s8', ts:Date.now() - 30*3600e3}];
