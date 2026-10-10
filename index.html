@@ -1687,6 +1687,11 @@ body.reels-open .totop{display:none}
 .pv-vid{display:block;width:100%;max-height:70vh;border-radius:14px;background:#000}
 .buybar s{font-size:.6em;font-weight:600;color:var(--ink-3);margin-left:6px}
 .sale-t{align-self:center;white-space:nowrap}
+.co-stg{display:flex;flex-direction:column;gap:6px;margin:4px 0}
+.co-stg>div{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8px 12px;border-radius:12px;background:var(--card);font-size:13.5px}
+.co-stg>div.on{outline:2px solid var(--ink)}
+.co-stg>div.done{opacity:.6}
+.co-stg i{font-style:normal;font-size:12px;color:var(--ink-3)}
 .feed-more{display:flex;justify-content:center;padding:18px 0 28px}
 .fb-shot{display:block;max-width:220px;max-height:220px;border-radius:12px;margin-top:6px;border:1px solid var(--rule-2)}
 pre.fb-st{white-space:pre-wrap;word-break:break-all;font-size:11.5px;max-height:220px;overflow:auto;margin:6px 0 0}
@@ -10943,7 +10948,8 @@ function coMap(s){
   const o = CO_BY(s.id) || {};
   Object.assign(o, {id:s.id, no:s.no, live:true, from:s.from.id, to:s.to.id, svc:s.svc, title:s.title, note:s.note, budget:y(s.budget), price:y(s.price), due:s.due, fields:s.fields || {},
     st:{paying:'accepted', ruling:'dispute'}[s.status] || s.status, v:s.v, rev:s.rev, offers:s.offers.map(x => ({by:x.by, price:f2y(x.price), note:x.note, ts:+new Date(x.at)})),
-    ts:+new Date(s.createdAt), paidAt:coT(s.paidAt), delivAt:coT(s.delivAt), doneAt:coT(s.doneAt), why:s.why, fee:y(s.fee),
+    ts:+new Date(s.createdAt), paidAt:coT(s.paidAt), delivAt:coT(s.delivAt), doneAt:coT(s.doneAt), why:s.why, fee:y(s.fee), stage:s.stage || 0,
+    stages:s.stages ? s.stages.map(x => ({t:x.t, amount:f2y(x.amount), doneAt:coT(x.doneAt), refund:x.refund ? f2y(x.refund) : 0})) : null,
     ruling:s.ruling ? {kind:s.ruling.kind, refund:f2y(s.ruling.refund), text:s.ruling.text} : null,
     deliv:s.deliv ? {ver:s.deliv.ver, by:s.to.id, links:s.deliv.links, texts:s.deliv.texts, files:s.deliv.files.map(f => f.name), fi:s.deliv.files} : null,
     rated:Object.fromEntries(s.rated.map(u => [u, true])),
@@ -10997,7 +11003,7 @@ const coAct = (o, body) => API.req('POST', `/collabs/${encodeURIComponent(o.id)}
     const d = $('#layer .sheet'), D = SVC_DEF[CF.k], b = $('#cfB'), fields = {...CF.f}, uid = CF.uid;
     $$('[data-cf]', d).forEach(i => { if (i.value.trim()) fields[i.dataset.cf] = i.value.trim(); });
     const ref = $('#cfR').value.trim(), note = $('#cfN').value.trim() + (ref ? `\n参考：${ref}` : '');
-    let r; try { r = await API.req('POST', '/collabs', {to:uid, svc:CF.k, title:$('#cfT').value.trim(), note, budget:CF.k === 'co' || !b?.value ? null : y2f(+b.value), due:CF.due, fields}); }
+    let r; try { r = await API.req('POST', '/collabs', {to:uid, svc:CF.k, title:$('#cfT').value.trim(), note, budget:CF.k === 'co' || !b?.value ? null : y2f(+b.value), due:CF.due, fields, ...coStagesBody(CF.k === 'co' || !b?.value ? null : y2f(+b.value))}); }
     catch(e){ apiFail(e); return; }
     coMap(r); sfx('ok'); haptic(14);
     const st = document.createElement('div'); st.className = 'cf-sent'; st.innerHTML = `<span class="stamp big pop" style="--sc:var(--pink)">SENT<small>已发出</small></span>`; d.appendChild(st);
@@ -11535,6 +11541,64 @@ async function coverSync(){ if (!liveUser() || !STATE.seller) return; const todo
     const up = await liveUpload(new File([blob], 'cover.jpg', {type:'image/jpeg'}), 'product_cover');
     await API.req('PUT', `/products/${encodeURIComponent(m.id)}/cover-image`, {uploadId:up.id}); m.hasCoverImage = true; } catch(e){ break; } } }
 { const lm4 = liveMine; liveMine = async function(){ await lm4(); (window.requestIdleCallback || setTimeout)(() => coverSync()); }; }
+
+/* ================= 合作分阶段付款（连着后端时） =================
+   发邀约时可选「不分 / 两段 / 三段」（按预算分好金额，改价时服务器按比例重算）；每段托管 → 交付 → 验收，验收后这段放款，再付下一段。
+   页面上的金额统一用 coDue(o)（当前这一段要付 / 托管的钱）；原来按 o.price 画的面板，用 coSwap 临时换成这一段的金额 */
+const CO_STG = {2:[['小样', .4], ['完整版', .6]], 3:[['小样', .3], ['完整版', .5], ['母带 / 定稿', .2]]};
+CF.stg = 0;
+function coStagesBody(budget){ const P = CO_STG[CF.stg]; if (!P || budget == null) return {}; let left = budget;
+  return {stages:P.map(([t, r], i) => { const a = i === P.length - 1 ? left : Math.round(budget*r/100)*100 || Math.round(budget*r); left -= a; return {t, amount:a}; })}; }
+const coDue = o => o.stages?.length ? o.stages[o.stage]?.amount ?? o.price : o.price;
+const coSwap = (o, fn) => { if (!o?.stages?.length) return fn(); const p0 = o.price; o.price = coDue(o); try { return fn(); } finally { o.price = p0; } };
+{ const cf0 = coForm; coForm = function(uid, k, tile){ CF.stg = 0; cf0(uid, k, tile); if (!API.on() || k === 'co') return;
+    $('#cfB')?.closest('.cf-l')?.insertAdjacentHTML('afterend', `<div class="cf-l"><span>分阶段付款<em>大单可以分几次托管</em></span><div class="chips">${[[0, '一次付清'], [2, '两段 · 小样 40% / 完整 60%'], [3, '三段 · 小样 30% / 完整 50% / 母带 20%']].map(([v, l]) => `<button class="chip ${v ? '' : 'on'}" data-act="cf-stg" data-v="${v}">${l}</button>`).join('')}</div><span class="cf-hint">每一段：付款托管 → TA 交付 → 你验收，验收后这段的钱才打给 TA，再付下一段</span></div>`); }; }
+ACTIONS['cf-stg'] = b => { CF.stg = +b.dataset.v; $$('[data-act="cf-stg"]').forEach(c => c.classList.toggle('on', c === b)); fxPop(b, 'fx-jelly', 400);
+  if (CF.stg && !$('#cfB')?.value){ toast('分阶段要先填预算', 'orange', 'x'); fxPop($('#cfB'), 'fx-shake', 300); } };
+{ const cc0 = coCard; coCard = function(o, v, mode){ const h = cc0(o, v, mode); if (!o.stages?.length) return h; const n = o.stages.length, sg = o.stages[o.stage];
+    const txt = o.st === 'done' || o.st === 'refunded' ? `${n} 段 · 已结束` : `第 ${o.stage + 1} / ${n} 段 · ${sg.t} ${cny(sg.amount)}`;
+    return h.replace('<dl class="co-f">', `<dl class="co-f"><div><dt>阶段</dt><dd>${esc(txt)}</dd></div>`); }; }
+{ const ca0 = coActs; coActs = function(o){ let h = ca0(o); if (!o.stages?.length) return h; const n = o.stage + 1, last = o.stage === o.stages.length - 1;
+    h = h.replace(`担保付款 ${cny(o.price)}`, `付第 ${n} 段 ${cny(coDue(o))}`); if (!last) h = h.replace('>确认验收<', `>验收第 ${n} 段<`); return h; }; }
+{ const cv0 = coView; coView = function(o){ coSwap(o, () => cv0(o)); if (!o?.stages?.length) return;
+    $('#layer .sheet .co-f.full')?.insertAdjacentHTML('afterend', `<div class="co-stg">${o.stages.map((g, i) => `<div class="${g.doneAt ? 'done' : i === o.stage && !['done', 'refunded'].includes(o.st) ? 'on' : ''}"><b>${i + 1}. ${esc(g.t)}</b><span class="num">${cny(g.amount)}</span><i>${g.doneAt ? (g.refund ? `裁决 · 退回 ${cny(g.refund)}` : '已验收放款') : i === o.stage && !['done', 'refunded'].includes(o.st) ? CO_ST[o.st]?.[1] || '' : i > o.stage && !['done', 'refunded'].includes(o.st) ? '未开始' : '不再进行'}</i></div>`).join('')}</div>`); }; }
+{ const ds1 = disputeSheet; disputeSheet = function(id){ const o = CO_BY(id); return coSwap(o, () => ds1(id)); }; }
+/* 付款面板、验收面板按这一段的金额画；不是最后一段的验收不弹「完成」和评价 */
+wrapAct('co-a', (orig, b, e) => { const o = CO_BY(b.dataset.id), a = b.dataset.a; if (!o?.live || !o.stages?.length || !['pay', 'confirm'].includes(a)) return orig(b, e); coSwap(o, () => orig(b, e)); });
+wrapAct('co-do', async (orig, b, e) => { const o = CO_BY(b.dataset.id); if (!o?.live || !o.stages?.length || b.dataset.a !== 'confirm' || o.stage >= o.stages.length - 1) return orig(b, e);
+  b.disabled = true; let r; try { r = await coAct(o, {a:'confirm'}); } catch(err){ b.disabled = false; apiFail(err); return; }
+  const g = o.stages[o.stage]; closeSheet(); toast(`第 ${o.stage + 1} 段「${g.t}」已验收，${cny(coNet(g.amount))} 打给 TA；下一段等你付款`, 'green', 'check'); coAfter(r, 'fx-jelly'); });
+wrapAct('co-paygo', async (orig, b, e) => { const o = CO_BY(b.dataset.id); if (!o?.live || !o.stages?.length) return orig(b, e);
+  b.disabled = true; let r; try { r = await coAct(o, {a:'pay', method:{'微信支付':'wechat', '支付宝':'alipay'}[UI.pay] || 'card'}); } catch(err){ b.disabled = false; apiFail(err); return; }
+  closeSheet(); toast(`第 ${o.stage + 1} 段 ${cny(coDue(o))} 已托管，验收后才打给 TA`, 'blue', 'check'); coAfter(r); });
+
+/* ================= 网页推送（连着后端时） =================
+   设置 › 通知 里的「浏览器推送」：开启 = 请求通知权限 → 用服务器的公钥订阅（sw.js 收推送、点通知打开对应页面）→ PUT /me/push；关闭 = 退订 + DELETE。
+   推什么由上面的四个通知开关决定（服务器按 notifyPrefs 过滤），官方通知总是推。iPhone 要先添加到主屏幕、从主屏幕打开才能开 */
+const PUSH = {on:null, busy:false, checked:false};
+const pushOK = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const iosNoPWA = () => /iPhone|iPad|iPod/.test(navigator.userAgent) && !(navigator.standalone || matchMedia('(display-mode: standalone)').matches);
+const b64u = s => { const p = '='.repeat((4 - s.length % 4) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(b, c => c.charCodeAt(0)); };
+async function pushCheck(){ if (PUSH.checked || !pushOK()) return; PUSH.checked = true;
+  try { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription(); const on = !!sub && Notification.permission === 'granted'; if (on !== PUSH.on){ PUSH.on = on; if (CUR.key?.startsWith('me')) rerender(); } } catch(e){} }
+function pushRow(){ if (!liveUser()) return ''; pushCheck();
+  const hint = !pushOK() ? (iosNoPWA() ? 'iPhone 要先点「分享 › 添加到主屏幕」，从主屏幕打开才能开启' : '这个浏览器不支持推送') : iosNoPWA() ? 'iPhone 要先点「分享 › 添加到主屏幕」，从主屏幕打开才能开启'
+    : Notification.permission === 'denied' ? '你拒绝过通知权限，要在浏览器的网站设置里打开' : '新私信、点赞、关注、回复会推到通知栏（按上面的开关），官方通知总会推';
+  const can = pushOK() && !iosNoPWA() && Notification.permission !== 'denied';
+  return `<label class="set-r set-2"><span>浏览器推送<span class="mut2" style="display:block;font-size:12.5px">${hint}</span></span>${can ? swBtn(!!PUSH.on, 'push-tg') : ''}</label>`; }
+{ const se0 = setExtra; setExtra = function(){ const h = se0(); return API.on() ? h.replace(/(<h3>通知<\/h3>[\s\S]*?<div class="box-b set-l">)/, '$1' + pushRow()) : h; }; }
+ACTIONS['push-tg'] = async b => { if (PUSH.busy) return; PUSH.busy = true; b.disabled = true;
+  try {
+    const reg = await navigator.serviceWorker.getRegistration() || await navigator.serviceWorker.register('sw.js'); await navigator.serviceWorker.ready;
+    const cur = await reg.pushManager.getSubscription();
+    if (PUSH.on && cur){ await API.req('DELETE', '/me/push', {endpoint:cur.endpoint}).catch(() => {}); await cur.unsubscribe(); PUSH.on = false; toast('已关闭这台设备的推送'); }
+    else {
+      if (await Notification.requestPermission() !== 'granted'){ toast('没有拿到通知权限', 'orange', 'x'); return; }
+      const k = (await API.req('GET', '/push/key')).key; if (!k){ toast('服务器还没开推送', 'orange', 'x'); return; }
+      const sub = cur || await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64u(k)}), j = sub.toJSON();
+      await API.req('PUT', '/me/push', {endpoint:j.endpoint, keys:j.keys, device:uaName()}); PUSH.on = true; toast('推送已开启：新消息会出现在通知栏', 'green', 'check'); }
+  } catch(e){ apiFail(e.code ? e : Object.assign(new Error('开启推送失败：' + (e.message || e)), {code:'push'})); }
+  finally { PUSH.busy = false; rerender(); } };
 
 (function boot(){
   STATE.hist = store.get('hist', null) || [{k:'post', id:'s3', ts:Date.now() - 2*3600e3}, {k:'item', id:'p3', ts:Date.now() - 5*3600e3}, {k:'video', id:'s2', ts:Date.now() - 26*3600e3}, {k:'post', id:'s8', ts:Date.now() - 30*3600e3}];
