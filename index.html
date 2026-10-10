@@ -1678,6 +1678,13 @@ body.reels-open .totop{display:none}
 .au-eye{flex:none;height:40px;padding:0 12px;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink-2)}
 .au-eye:hover{color:var(--ink)}
 .au-fg{margin:-4px 0 0;font-size:12.5px;color:var(--ink-3);text-align:center}
+.pve-r{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0;border-bottom:1px dashed var(--rule-2)}
+.pve-r .inp{flex:1 1 140px;min-width:0}
+.pve-r .mut2{font-size:12.5px;flex:1 1 110px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pv-demo{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.pv-demo audio,.rv-pv audio{width:100%;height:40px}
+.rv-pv{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600}
+.pv-vid{display:block;width:100%;max-height:70vh;border-radius:14px;background:#000}
 .feed-more{display:flex;justify-content:center;padding:18px 0 28px}
 .fb-shot{display:block;max-width:220px;max-height:220px;border-radius:12px;margin-top:6px;border:1px solid var(--rule-2)}
 pre.fb-st{white-space:pre-wrap;word-break:break-all;font-size:11.5px;max-height:220px;overflow:auto;margin:6px 0 0}
@@ -6265,7 +6272,7 @@ function pvSample(pr){
   const hit = (i, e) => {
     const pe = $$('.pad')[i]; if (pe && !reduced()){ const r = pe.getBoundingClientRect(), d = document.createElement('span'); d.className = 'rip'; d.style.left = (e ? e.clientX - r.left : r.width/2) + 'px'; d.style.top = (e ? e.clientY - r.top : r.height/2) + 'px'; pe.appendChild(d); setTimeout(() => d.remove(), 600); }
     if (!AU.init()) return; if (!bus){ bus = AU.ctx.createGain(); bus.gain.value = .9; bus.connect(AU.buses.preview); }
-    const [, type, tone] = pr.pads[i]; AU.drum(type, AU.ctx.currentTime, tone, bus, 1); st.sel = i; st.hitT = performance.now();
+    const [, type, tone, url] = pr.pads[i]; if (url) pvBuf(url, bus); else AU.drum(type, AU.ctx.currentTime, tone, bus, 1); st.sel = i; st.hitT = performance.now();   // url = 卖家传的真实试听
     $$('.pad').forEach((p, k) => { p.classList.toggle('sel', k === i); if (k === i){ p.classList.add('hit'); setTimeout(() => p.classList.remove('hit'), 110); } });
     const l = $('#padName'); if (l) l.textContent = pr.pads[i][0];
   };
@@ -6292,7 +6299,9 @@ function pvPreset(pr){
   const OMIN = Math.ceil((24 - base - 12)/12), OMAX = Math.floor((84 - base - 12)/12);   // 键盘范围 C1 ～ C7
   const KMAP = 'AWSEDFTGYHUJK';
   const out = () => { AU.init(); const b = AU.bus('syn', .9); AU.send('syn', st.p.spc*.8); return b; };
-  const play = (m, dur=.3, t) => { if (!AU.init()) return; st.hitT = performance.now() + (t ? (t - AU.ctx.currentTime)*1000 : 0); AU.note(m, t || AU.ctx.currentTime, dur, {...st.p, gain:.2, sub: base === 36}, out()); };
+  const play = (m, dur=.3, t) => { if (!AU.init()) return; st.hitT = performance.now() + (t ? (t - AU.ctx.currentTime)*1000 : 0);
+    const url = pr.presets[st.cur]?.[2]; if (url){ pvNote(url, m, t || AU.ctx.currentTime, dur, st.p, out()); return; }   // 卖家录的音：按音高变调，XY 板仍然控制滤波和包络
+    AU.note(m, t || AU.ctx.currentTime, dur, {...st.p, gain:.2, sub: base === 36}, out()); };
   const mk = (k, label, fmt) => { const h = slider({label, val:st.p[k], fmt, onChange:x => { st.p[k] = x; }}); ids[k] = lastId(); return h; };
   ACTIONS.preset = b => {
     const i = +b.dataset.i, target = pr.presets[i][1]; st.cur = i; st.p.wav = target.wav; $$('.prs button').forEach((x, k) => x.classList.toggle('on', k === i));
@@ -10824,7 +10833,7 @@ async function ladmShop(k){ if (LADM.busy[k]) return; LADM.busy[k] = true;
 const declView = (d, docs) => { d = d || {}; const lab = Object.fromEntries(DC_SRC), docOf = n => (docs || []).find(x => x.name.startsWith(n + ' · '));
   return {src:(d.src || []).map(k => lab[k] || k).join(' + '), third:(d.third || []).map(t => ({n:t.n, lic:tpLab(t.lic) + (t.link ? ' · ' + t.link : ''), doc:t.docName || (t.docKey ? '授权文件' : ''), url:t.docKey ? docOf(t.n)?.url : null})),
     ai:(d.src || []).includes('ai') ? d.ai : '没有使用 AI', voice:d.voice === 'yes' ? '有，已上传授权书' : '没有', vdoc:d.voiceDocName || '', vurl:(docs || []).find(x => x.name.startsWith('人声'))?.url}; };
-const rvOfLive = p => ({id:p.id, live:true, kind:'商品', sp:p.id, title:p.title, who:apiUser(p.seller).id, seller:p.seller, cat:CATS[p.cat]?.cn || p.cat, time:fmtDT(+new Date(p.updatedAt)).slice(0, 11), flags:p.flags, cover:{...p.cover, txt:p.en || p.title},
+const rvOfLive = p => ({id:p.id, live:true, kind:'商品', sp:p.id, title:p.title, preview:p.preview, who:apiUser(p.seller).id, seller:p.seller, cat:CATS[p.cat]?.cn || p.cat, time:fmtDT(+new Date(p.updatedAt)).slice(0, 11), flags:p.flags, cover:{...p.cover, txt:p.en || p.title},
   price:f2y(p.price), en:p.en, desc:p.desc, files:`${p.fileName} · ${fmtSize(p.fileSize)}`, fileUrl:p.fileUrl, tpl:({sample:'敲打 16 个 pad', preset:'XY 板 + 键盘弹奏', video:'12 秒视频循环'})[p.tpl] || '',
   lic:['发行作品', '演出与直播', '切片改编'].concat(p.extPrice != null ? ['扩展许可 ¥' + f2y(p.extPrice)] : [], p.aiTrain ? ['允许训练 AI'] : []), orig:+new Date(p.createdAt),
   decl:declView(p.decl, p.docs), st:p.status === 'need_info' ? '待补充' : '', ask:p.reviewNote, ck:p.checklist || []});
@@ -11403,6 +11412,88 @@ ACTIONS['fb-done'] = b => { if (!admGuard('feedback')) return;
 ACTIONS['fb-dgo'] = async b => { b.disabled = true;
   try { await STAFF.req('POST', `/admin/feedback/${encodeURIComponent(b.dataset.id)}/done`, {note:$('#fbN').value.trim()}); closeSheet(); toast('已处理', 'green', 'check'); LADM.feedback = null; rerender(); }
   catch(e){ b.disabled = false; apiFail(e); } };
+
+/* ================= 商品真实试听（连着后端时） =================
+   卖家在「我的产品 › 管理 › 设置试听」传素材（PUT /products/{id}/preview，上架过的要重新审核）；商品详情 GET /products/{id} 带 preview（临时地址）。
+   · 采样包：pr.pads[i] = [名字, 'url', 0, 地址]，敲 pad 放真实音频（pvBuf）；有真实素材时去掉「演示循环」（那是合成器的）
+   · 预设：pr.presets[i] = [名字, 参数, 地址]，弹键盘按音高变调播放（以 C4 为准，pvNote），XY 板控制滤波和包络
+   · 视觉：有预览视频就放视频（pvVideo），没有才放演示动画；都可以带一段完整 demo（pvDemo）
+   · 审核员在待审核详情里能听到 / 看到全部素材 */
+const PVRAW = new Map(), PVDEC = new Map();
+const pvFetch = url => { if (!PVRAW.has(url)) PVRAW.set(url, fetch(url).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null)); return PVRAW.get(url); };
+const pvGet = url => { if (!PVDEC.has(url)) PVDEC.set(url, pvFetch(url).then(b => b ? AU.ctx.decodeAudioData(b.slice(0)) : null).catch(() => null)); return PVDEC.get(url); };
+async function pvBuf(url, bus){ const b = await pvGet(url); if (!b) return; const s = AU.ctx.createBufferSource(); s.buffer = b; s.connect(bus); s.start(); }
+async function pvNote(url, m, t, dur, p, out){ const b = await pvGet(url); if (!b) return; const c = AU.ctx, now = Math.max(t, c.currentTime);
+  const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), A = .003 + (p.atk || 0)*1.2, R = .05 + (p.rel || 0)*2.2;
+  s.buffer = b; s.playbackRate.value = Math.pow(2, (m - 60)/12);
+  f.type = 'lowpass'; f.frequency.value = 120*Math.pow(2, (p.cut ?? .85)*7.5); f.Q.value = .5 + (p.res || 0)*12;
+  g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(.9, now + A); g.gain.setValueAtTime(.9, now + Math.max(A, dur)); g.gain.linearRampToValueAtTime(0, now + Math.max(A, dur) + R);
+  s.connect(f); f.connect(g); g.connect(out); s.start(now); s.stop(now + Math.max(A, dur) + R + .05); }
+const pvDemo = pr => pr.demoUrl ? `<div class="pv-demo"><span class="lab">完整 demo</span><audio controls preload="none" src="${esc(pr.demoUrl)}"></audio></div>` : '';
+{ const ap0 = apiProduct; apiProduct = function(p){ const o = ap0(p); if (p && 'preview' in p){ const v = p.preview; o.preview = v; o.pvAt = Date.now();
+    o.realPads = !!v?.pads?.length; o.realPresets = !!v?.presets?.length;
+    if (o.realPads) o.pads = v.pads.map(x => [x.n, 'url', 0, x.url]); else if (o.pads?.[0]?.[3]) o.pads = PADS_CONCRETE;
+    if (o.realPresets) o.presets = v.presets.map(x => [x.n, {cut:.85, res:.1, atk:.005, rel:.35, det:0, spc:.25, wav:'saw'}, x.url]); else if (o.presets?.[0]?.[2]) o.presets = PRESETS_TERMINAL;
+    o.demoUrl = v?.demo?.url || null; o.videoUrl = v?.video?.url || null; }
+  return o; }; }
+{ const ps0 = pvSample; pvSample = function(pr){ let h = ps0(pr); if (!pr.realPads) return h + pvDemo(pr);
+    h = h.replace(/<button class="pill lt" data-act="pv-loop">[\s\S]*?<\/button>/, ''); onMount(() => pr.pads.forEach(x => x[3] && pvFetch(x[3]))); return h + pvDemo(pr); }; }
+{ const pp0 = pvPreset; pvPreset = function(pr){ const h = pp0(pr); if (pr.realPresets) onMount(() => pr.presets.forEach(x => x[2] && pvFetch(x[2]))); return h + pvDemo(pr); }; }
+{ const pv0 = pvVideo; pvVideo = function(pr){ if (!pr.videoUrl) return pv0(pr) + pvDemo(pr);
+    return `<div class="stage grain"><div class="stage-h"><span class="x">${esc(pr.en)}</span><span class="tag k">预览视频</span></div><video class="pv-vid" controls playsinline loop muted preload="metadata" src="${esc(pr.videoUrl)}"></video></div>${pvDemo(pr)}`; }; }
+/* 打开商品页时取一次详情（带试听素材），临时地址 3 小时内不重复取 */
+{ const it1 = ROUTES.item; ROUTES.item = id => { const o = P(id);
+    if (API.on() && o?.live && (!o.pvAt || Date.now() - o.pvAt > 3*3600e3 || (o.status !== 'on_sale' && Date.now() - o.pvAt > 5000))){ o.pvAt = Date.now();   // 本地状态不是在售（可能是审核前缓存的）也重新取
+      API.req('GET', `/products/${encodeURIComponent(id)}`).then(d => { const had = JSON.stringify([P(id)?.preview ?? null, P(id)?.status]); apiProduct(d); if (JSON.stringify([d.preview ?? null, d.status]) !== had && CUR.key === 'item|' + id) rerender(); }).catch(() => {}); }
+    return it1(id); }; }
+/* 审核员听素材 */
+{ const rd0 = rvDetail; rvDetail = function(r){ const h = rd0(r), v = r.preview; if (!v) return h;
+    const au = (n, u) => `<div class="rv-pv"><span>${esc(n)}</span><audio controls preload="none" src="${esc(u)}"></audio></div>`;
+    const sec = `<section class="rv-s"><h4>试听素材（买家不用付款就能听 / 看）</h4>${v.video ? `<video class="pv-vid" controls playsinline preload="metadata" src="${esc(v.video.url)}"></video>` : ''}${[...v.pads, ...v.presets].map(x => au(x.n, x.url)).join('')}${v.demo ? au('完整 demo', v.demo.url) : ''}</section>`;
+    return h.replace('<section class="rv-s"><h4>来源与授权</h4>', sec + '<section class="rv-s"><h4>来源与授权</h4>'); }; }
+
+/* —— 卖家：设置试听 —— */
+const PVE = {};
+wrapAct('sp-manage', (orig, b, e) => { orig(b, e); const p = P(b.dataset.id); if (!p?.live) return; const v = p.preview;
+  const sum = v === undefined ? '点「设置试听」查看' : !v ? '还没有，买家听到的是通用的演示声音' : [v.pads?.length && v.pads.length + ' 个 pad', v.presets?.length && v.presets.length + ' 个音色', v.video && '预览视频', v.demo && '完整 demo'].filter(Boolean).join(' · ');
+  $('#layer .sp-ver')?.insertAdjacentHTML('afterend', `<div class="sp-ver"><div><b>试听素材</b><span class="mut2">${esc(sum)}</span></div><button class="pill sm lt" data-act="pv-edit" data-id="${esc(p.id)}">设置试听</button></div>`); });
+ACTIONS['pv-edit'] = async b => { const id = b.dataset.id; b.disabled = true; let d;
+  try { d = await API.req('GET', `/products/${encodeURIComponent(id)}`); apiProduct(d); } catch(e){ b.disabled = false; apiFail(e); return; }
+  const v = d.preview || {pads:[], presets:[], demo:null, video:null}, T = tplOf(P(id));
+  Object.assign(PVE, {id, T, pads:v.pads.map(x => ({n:x.n, key:x.key})), presets:v.presets.map(x => ({n:x.n, key:x.key})), demo:v.demo ? {key:v.demo.key, name:'已上传'} : null, video:v.video ? {key:v.video.key, name:'已上传'} : null});
+  sheet(`<h3>试听素材</h3><p class="mut" style="font-size:13.5px;margin-top:-6px;line-height:1.6">${T === 'sample' ? '每个 pad 传一段短音频（最多 16 个），买家在商品页敲 pad 时播放。' : T === 'preset' ? '每个音色录一个 C4 的单音（1–3 秒，最多 12 个），买家弹键盘时按音高变调播放。' : '传一段预览视频（最大 100MB），代替商品页的演示动画。'}还可以加一段完整 demo。<b>上架过的商品改了试听要重新审核</b>，审核期间暂时不能购买。</p>
+    <div id="pveL"></div>
+    <input type="file" id="pveF" hidden ${T === 'video' ? 'accept="video/mp4,video/webm,video/quicktime"' : 'accept="audio/*" multiple'}><input type="file" id="pveD" hidden accept="audio/*">
+    <button class="pill lg" data-act="pve-save">保存</button>`, dd => {
+      $('#pveF', dd).addEventListener('change', pveAdd);
+      $('#pveD', dd).addEventListener('change', ev => { const f = ev.target.files?.[0]; ev.target.value = ''; if (f){ PVE.demo = {file:f, name:f.name}; pveDraw(); } });
+      pveDraw(); }); };
+const pveK = () => PVE.T === 'preset' ? 'presets' : 'pads', pveMax = () => PVE.T === 'preset' ? 12 : 16;
+function pveDraw(){ const L = $('#pveL'); if (!L) return; const k = pveK();
+  const row = (x, i) => `<div class="pve-r"><input class="inp" data-pve="${i}" value="${esc(x.n)}" maxlength="24" aria-label="名字"><span class="mut2">${x.file ? esc(x.file.name) + ' · ' + fmtSize(x.file.size) : '已上传'}</span><button class="pill sm lt" data-act="pve-del" data-i="${i}" aria-label="删除">${IC.x}</button></div>`;
+  const one = (lab, x, pick, del) => `<div class="pve-r"><b>${lab}</b><span class="mut2">${x ? esc(x.file ? x.file.name + ' · ' + fmtSize(x.file.size) : x.name) : '可选'}</span><button class="pill sm lt" data-act="${pick}">${x ? '换一个' : '选择文件'}</button>${x ? `<button class="pill sm lt" data-act="${del}">删除</button>` : ''}</div>`;
+  L.innerHTML = (PVE.T === 'video' ? one('预览视频', PVE.video, 'pve-pick', 'pve-vdel')
+    : `${PVE[k].map(row).join('') || '<p class="mut2" style="margin:4px 0">还没有</p>'}${PVE[k].length < pveMax() ? `<button class="pill sm lt" data-act="pve-pick" style="margin-top:8px">${IC.plus}添加音频（可以一次选多个）</button>` : ''}`)
+    + one('完整 demo', PVE.demo, 'pve-dpick', 'pve-ddel');
+  $$('[data-pve]', L).forEach(inp => inp.addEventListener('input', () => { PVE[k][+inp.dataset.pve].n = inp.value; })); }
+function pveAdd(ev){ const fs = [...(ev.target.files || [])]; ev.target.value = '';
+  if (PVE.T === 'video'){ if (fs[0]) PVE.video = {file:fs[0], name:fs[0].name}; pveDraw(); return; }
+  const k = pveK(); fs.slice(0, pveMax() - PVE[k].length).forEach(f => PVE[k].push({n:f.name.replace(/\.[^.]+$/, '').replace(/[<>"'&`]/g, '').slice(0, 24).toUpperCase() || 'PAD', file:f})); pveDraw(); }
+Object.assign(ACTIONS, {
+  'pve-pick': () => $('#pveF')?.click(), 'pve-dpick': () => $('#pveD')?.click(),
+  'pve-del': b => { PVE[pveK()].splice(+b.dataset.i, 1); pveDraw(); },
+  'pve-vdel': () => { PVE.video = null; pveDraw(); }, 'pve-ddel': () => { PVE.demo = null; pveDraw(); },
+  'pve-save': async b => { const k = pveK();
+    if (PVE[k].some(x => !x.n.trim())){ toast('每一项都要有名字', 'orange', 'x'); return; }
+    const files = [...PVE[k].filter(x => x.file), ...[PVE.demo, PVE.video].filter(x => x?.file)];
+    if (files.some(x => x.file.size > 100*1024*1024)){ toast('单个文件最大 100MB', 'orange', 'x'); return; }
+    b.disabled = true; let n = 0;
+    try { for (const x of files){ b.textContent = `上传中 ${++n} / ${files.length}…`; x.up = (await liveUpload(x.file, 'product_preview')).id; }
+      const one = x => x ? (x.up ? {uploadId:x.up} : {key:x.key}) : null, was = P(PVE.id)?.status;
+      const r = await API.req('PUT', `/products/${encodeURIComponent(PVE.id)}/preview`, {[k]:PVE[k].map(x => ({n:x.n.trim(), ...(x.up ? {uploadId:x.up} : {key:x.key})})), demo:one(PVE.demo), video:PVE.T === 'video' ? one(PVE.video) : null});
+      apiProduct(r); closeSheet(); toast(r.status === 'review' && was !== 'review' ? '已保存，商品进入复审，通过后重新上架' : '试听素材已保存', 'green', 'check'); await liveMine(); rerender(); }
+    catch(e){ b.disabled = false; b.textContent = '保存'; apiFail(e); } }
+});
 
 (function boot(){
   STATE.hist = store.get('hist', null) || [{k:'post', id:'s3', ts:Date.now() - 2*3600e3}, {k:'item', id:'p3', ts:Date.now() - 5*3600e3}, {k:'video', id:'s2', ts:Date.now() - 26*3600e3}, {k:'post', id:'s8', ts:Date.now() - 30*3600e3}];
