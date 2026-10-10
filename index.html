@@ -2231,6 +2231,107 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 }
 @media (max-width:760px) and (max-height:430px), (max-height:430px) and (min-aspect-ratio:3/2){ @media (max-width:760px){ :root{--tbcap:48px;--tbgap:8px} .tb-blob{top:4px;bottom:4px} } }
 
+/* ---- 后台 · 海报编辑器：左边海报列表，右边编辑（预览 / 文案 / 外观 / 声音） ---- */
+.pe [hidden],.smp[hidden],.lu-p[hidden],#opDirty[hidden],.dv-in [hidden],[data-act="dv-go"][hidden]{display:none!important}   /* 这些地方的 display:flex 会盖掉 hidden 属性 */
+.pe{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr);gap:16px;align-items:start;margin-bottom:28px}
+.pe-list{display:flex;flex-direction:column;gap:6px;position:sticky;top:12px}
+.pe-it{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:6px;padding:6px 8px 6px 6px;border-radius:14px;background:var(--card);box-shadow:inset 0 0 0 1.5px transparent;transition:box-shadow .15s}
+.pe-it.on{box-shadow:inset 0 0 0 2px var(--ink)}
+.pe-it.off .pe-pick b{opacity:.5}
+.pe-pick{display:flex;align-items:center;gap:10px;min-width:0;padding:6px;text-align:left;border-radius:10px}
+.pe-pick span{display:flex;flex-direction:column;min-width:0;gap:3px}
+.pe-pick b{font:800 14px/1.2 var(--f-x);font-stretch:110%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pe-pick em{font-style:normal;font-size:11.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pe-dot{width:14px;height:14px;border-radius:50%;background:var(--c);flex:none}
+.pe-ud{display:flex;gap:4px}
+.pe-ud .pill{min-width:30px;padding:0 8px}
+.pe-ed{display:flex;flex-direction:column;gap:14px;min-width:0}
+.pe-ed section{padding:16px 18px;border-radius:18px;background:var(--card);display:flex;flex-direction:column;gap:12px}
+.pe-ed h4{font:800 15px/1 var(--f-b)}
+.pe-g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.pe-g2 label{display:flex;flex-direction:column;gap:10px;min-width:0}
+.pe-g2 .pe-w{grid-column:1 / -1}
+.pe-prev{position:relative;overflow:hidden;border-radius:18px;padding:22px 22px 20px;min-height:180px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;box-shadow:inset 0 0 0 1px var(--rule)}
+.pe-pv-bar{position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--c)}
+.pe-pv-k{font:700 11px/1 var(--f-b);letter-spacing:.08em;opacity:.7}
+.pe-pv-t{font:900 clamp(26px,4vw,40px)/1 var(--f-x);font-stretch:120%;letter-spacing:-.01em;overflow-wrap:anywhere}
+.pe-pv-s{font-size:13.5px;opacity:.8}
+.pe-pv-c{margin-top:6px;display:inline-flex;gap:8px;align-items:center;height:36px;padding:0 16px;border-radius:999px;background:currentColor;font:700 13px/1 var(--f-b)}
+.pe-pv-c{color:inherit} .pe-pv-c{background:var(--c);color:#141418}
+.pe-pv-c em{font-style:normal;font-weight:500;opacity:.6}
+.pe-pv-tag{position:absolute;right:14px;top:14px;font-size:11px;opacity:.55}
+.pe-cols{display:flex;gap:10px;flex-wrap:wrap}
+.pe-cols button{width:34px;height:34px;border-radius:50%;background:var(--c);box-shadow:inset 0 0 0 2px rgba(0,0,0,.08);transition:transform .15s var(--spring)}
+.pe-cols button.on{box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--ink)}
+.pe-cols button:active{transform:scale(.9)}
+.pe-bgs{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.pe-bgs .ad-lab{width:100%;margin:0}
+.pe-bg{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)}
+.pe-bg input{width:44px;height:32px;padding:0;border:0;border-radius:8px;background:none;cursor:pointer}
+.pe-tip{font-size:12.5px;margin:-4px 0 0}
+.pe-snd{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--rule)}
+.pe-snd:first-of-type{border-top:0}
+.pe-sn{display:flex;flex-direction:column;gap:3px;min-width:0}
+.pe-sn b{font-size:14px}
+.pe-sn em{font-style:normal;font-size:12px;color:var(--ink-3)}
+.pe-sa{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.pe-sa svg{width:12px;height:12px}
+.pe-up{cursor:pointer}
+@media (max-width:900px){
+  .pe{grid-template-columns:minmax(0,1fr)}
+  .pe-list{position:static;flex-direction:row;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+  .pe-list::-webkit-scrollbar{display:none}
+  .pe-it{flex:none;width:min(78vw,280px)}
+  .pe-g2{grid-template-columns:minmax(0,1fr)}
+  .pe-snd{flex-direction:column;align-items:flex-start}
+  .pe-sa{justify-content:flex-start}
+}
+/* ---- 站内信：搜人 ---- */
+.smp{display:flex;flex-direction:column;gap:8px}
+.smp .ad-q .inp{width:100%}
+.smp-res{display:flex;flex-direction:column;gap:2px;max-height:240px;overflow:auto}
+.smp-res > .mut2{font-size:12.5px;padding:6px 2px}
+.smp-r{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;text-align:left}
+.smp-r:hover{background:var(--paper)}
+.smp-r span{display:flex;flex-direction:column;min-width:0}
+.smp-r b{font-size:14px} .smp-r i{font-style:normal;font-size:12px;color:var(--ink-3)}
+.smp-sel{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;padding:4px 6px 4px 4px;border-radius:999px;background:var(--paper);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.smp-sel b{font-size:14px}
+.smp-x{width:26px;height:26px;border-radius:50%;display:grid;place-items:center}
+.smp-x svg{width:14px;height:14px}
+/* ---- 查看私信记录 ---- */
+.dv-in{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.dv-log{display:flex;flex-direction:column;gap:10px;max-height:52vh;overflow:auto;padding:12px;border-radius:14px;background:var(--paper)}
+.dv-m{display:flex;flex-direction:column;gap:3px;max-width:86%;font-size:14px;line-height:1.5}
+.dv-m.b{align-self:flex-end;text-align:right}
+.dv-m > span:last-child{padding:8px 12px;border-radius:12px;background:var(--card);color:var(--ink);overflow-wrap:anywhere}
+.dv-m.b > span:last-child{background:var(--ink);color:var(--paper)}
+.dv-m em{font-style:normal;color:var(--orange);font-size:12px;margin-right:4px}
+.dv-m a{text-decoration:underline}
+.dv-w{font-size:11.5px;color:var(--ink-3)}
+.dv-img{max-width:180px;border-radius:8px;display:block}
+/* ---- 用户全貌 ---- */
+.lu-kv span i{font-style:normal;font-size:11.5px;color:var(--ink-3)}
+#luS{min-width:0}
+#luS .ad-u{flex-wrap:wrap} #luS .ad-u > span:not(.tag):last-of-type{flex:1;min-width:0} #luS .ad-u > .tag{flex:none;width:auto} #luS .ad-u i{white-space:normal;max-width:none}
+#luS .lu-kv{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px} #luS .lu-kv span{padding:8px 10px} #luS .lu-kv b{font-size:15px}
+#luS .lu-tabs{max-width:100%} #luS .ad-acts{flex-wrap:wrap}
+@media (max-width:420px){ #luS .lu-kv span{padding:7px 8px;font-size:11px} #luS .lu-kv b{font-size:14px} }
+.lu-tabs{margin-top:6px;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap}
+.lu-tabs::-webkit-scrollbar{display:none}
+.lu-p{display:flex;flex-direction:column;gap:10px}
+.lu-p .ad-mini a{color:var(--ink-2);text-decoration:underline;text-underline-offset:2px}
+.lu-dm{display:flex;flex-direction:column;gap:8px}
+.lu-dmr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px}
+.lu-dmr span{display:flex;flex-direction:column;min-width:0}
+.lu-dmr b{font-size:14px} .lu-dmr i{font-style:normal;font-size:12px;color:var(--ink-3)}
+/* ---- 举报（连着后端） ---- */
+.rp-tgt{display:flex;flex-direction:column;gap:4px;margin:6px 0 2px;padding:10px 12px;border-radius:12px;background:var(--paper);font-size:13px;color:var(--ink-2)}
+.rp-tgt b{color:var(--ink);font-size:13.5px}
+.rp-tgt img{max-width:160px;border-radius:8px}
+.rp-tgt i{font-style:normal;font-size:12px;color:var(--orange)}
+.rp-live .ad-ra{flex-wrap:wrap;justify-content:flex-end}
+tr.lg-dm td{background:color-mix(in srgb,var(--yellow) 10%,transparent)}
 /* ---- 发布按钮 = 奶油软胶：哑光、柔和体积，按下被压扁、松手果冻回弹 ---- */
 /* 像微微从上往下看的一颗软胶按钮：顶面亮、下沿露出一圈更深的侧壁（贴着按钮本体，不是错开的投影），
    底下一团柔和的接触阴影；+ 往上挪 1px，落在顶面的正中 */
@@ -3721,10 +3822,10 @@ SCENES.beat = B => {
     down(x, y){ const s = find(x, y); if (!s) return; const c = geo(s);
       if (s.play){ // 大圆（唱片）：和其他图形一样，点一下发一声（底鼓 + 低音），不再开启循环
         if (playing()) GEN.stop(); ripple(rip, c.x, c.y, c.r*.3, INKC()); s.p = 1; if (!AU.init()) return; const now = AU.ctx.currentTime, bus = AU.bus('tap', .9);
-        AU.drum('kick', now, 0, bus, 1); AU.note(43, now, .35, {cut:.5, res:.3, atk:0, rel:.6, det:.12, wav:'triangle', gain:.26}, bus); return; }
+        psnd(B, 'disc', () => { AU.drum('kick', now, 0, bus, 1); AU.note(43, now, .35, {cut:.5, res:.3, atk:0, rel:.6, det:.12, wav:'triangle', gain:.26}, bus); }); return; }
       s.p = 1; s.jr += s.t === 'rect' ? .08 : s.t === 'tri' ? .35 : 0; ripple(rip, x, y, 8, PALETTES[B.pal].map(k => INK[k])[s.c]);
       if (!AU.init()) return; const now = AU.ctx.currentTime;
-      if (s.d) AU.drum(s.d, now, .2, AU.bus('tap', .9), 1); else { AU.send('tap', .4); AU.note(s.n, now, .2, {cut:.6, res:.35, atk:0, rel:.5, det:.18, wav:'triangle', gain:.24}, AU.bus('tap', .9)); }
+      psnd(B, 'shape', () => { if (s.d) AU.drum(s.d, now, .2, AU.bus('tap', .9), 1); else { AU.send('tap', .4); AU.note(s.n, now, .2, {cut:.6, res:.35, atk:0, rel:.5, det:.18, wav:'triangle', gain:.24}, AU.bus('tap', .9)); } }, s.n ? psRate(s.n) : 1);
     },
     leave(){ hover = null; }
   };
@@ -3763,7 +3864,7 @@ SCENES.field = B => {
     },
     hot(){ return 'sound'; },
     down(x, y){ for (const p of P){ const dx = p.x - x, dy = p.y - y, d = Math.hypot(dx, dy) + 1; if (d < 300){ const k = (1 - d/300)*22; p.vx += dx/d*k; p.vy += dy/d*k; } } ripple(rip, x, y, 10, INK.orange); ripple(rip, x, y, 30, INK.blue, .7);
-      if (!AU.init()) return; const n = AU.ctx.currentTime, bus = AU.bus('tap', .9); AU.drum('kick', n, 0, bus, 1); AU.drum('crash', n + .01, .7, bus, .5); }
+      if (!AU.init()) return; psnd(B, 'tap', () => { const n = AU.ctx.currentTime, bus = AU.bus('tap', .9); AU.drum('kick', n, 0, bus, 1); AU.drum('crash', n + .01, .7, bus, .5); }); }
   };
 };
 
@@ -3781,7 +3882,7 @@ SCENES.drums = B => {
   const PAT = [0,5,2,5,1,5,0,5, 0,5,2,5,1,3,4,5];
   const P = d => ({x:G.x(d.x), y:G.y(d.y), r:d.r*G.u});
   const find = (x, y) => { for (let i = D.length - 1; i >= 0; i--){ const p = P(D[i]); if (Math.hypot(x - p.x, y - p.y) < p.r) return D[i]; } return null; };
-  const strike = (d, sound) => { d.s = .9; const p = P(d); ripple(rip, p.x, p.y, p.r, INK[d.c], sound ? 1 : .45); if (sound && AU.init()) AU.drum(d.d, AU.ctx.currentTime, d.tone || 0, AU.bus('tap', .9), 1); };
+  const strike = (d, sound) => { d.s = .9; const p = P(d); ripple(rip, p.x, p.y, p.r, INK[d.c], sound ? 1 : .45); if (sound && AU.init()) psnd(B, d.d, () => AU.drum(d.d, AU.ctx.currentTime, d.tone || 0, AU.bus('tap', .9), 1)); };
   /* 波纹真的会推开周围的东西：每一道波前经过的地方，沿着离开波心的方向鼓出去一下（高斯形的波包，随波纹寿命衰减）。
      鼓面轮廓、刻纹、鼓名都按点位移；下面的大标题逐个字母、副标题和按钮也被波推一下（只动 transform） */
   const wv = (x, y) => { let dx = 0, dy = 0; for (const r of rip){ const ex = x - r.x, ey = y - r.y, d = Math.hypot(ex, ey) || 1, k = (d - r.r)/(G.u*.42), a = Math.exp(-k*k)*Math.min(1, Math.max(0, r.life))*G.u*.3; dx += ex/d*a; dy += ey/d*a; } return [dx, dy]; };
@@ -3827,7 +3928,7 @@ SCENES.strings = B => {
   let px = null, armed = false, ghost = -1, gT = 0, nextG = 2400, G = GRID(B);
   const sx = s => G.x(.45 + s.i*(5.1/(n-1)));
   const top = s => G.y(.25 + s.i/(n-1)*1.9), bot = () => G.y(4.15);
-  const pluck = (s, sound) => { s.a = 1; s.ph = 0; if (sound && AU.init()){ const p = PRESETS_TERMINAL[1][1]; AU.send('tap', .5); AU.note(s.n + 12, AU.ctx.currentTime, .12, {...p, gain:.18}, AU.bus('tap', .9)); } };
+  const pluck = (s, sound) => { s.a = 1; s.ph = 0; if (sound && AU.init()) psnd(B, 'pluck', () => { const p = PRESETS_TERMINAL[1][1]; AU.send('tap', .5); AU.note(s.n + 12, AU.ctx.currentTime, .12, {...p, gain:.18}, AU.bus('tap', .9)); }, Math.pow(2, (s.n + 12 - 72)/12)); };   // 采样按 C5 录
   const cross = (a, b, sound, y) => { if (a === null) return; const lo = Math.min(a, b), hi = Math.max(a, b); STR.forEach(s => { const x = sx(s); if (x > lo && x <= hi && (y === undefined || y > top(s) - 6)) pluck(s, sound); }); };
   const inBand = (x, y) => y > G.y(.25) - 20 && y < bot() + G.u*.7 && x > G.x(0) - 20 && x < G.x(6) + 20;
   return {
@@ -4174,7 +4275,7 @@ SCENES.pack = B => {
   // 袋子在图形区里的大致范围（3D 和 2D 一样大）
   const box = () => { const h = Math.min(B.H*.8, B.W*.9*1.5), w = h/1.5; return {x:B.W/2 - w/2, y:B.H/2 - h/2, w, h}; };
   const onBag = (x, y) => { const r = box(); return x > r.x - 16 && x < r.x + r.w + 16 && y > r.y - 10 && y < r.y + r.h + 10; };
-  const crinkle = () => { if (!AU.init()) return; const n = AU.ctx.currentTime, o = AU.bus('tap', .9); AU.drum('hat', n, .7, o, .35); AU.drum('clap', n + .03, .5, o, .22); };
+  const crinkle = () => { if (!AU.init()) return; psnd(B, 'crinkle', () => { const n = AU.ctx.currentTime, o = AU.bus('tap', .9); AU.drum('hat', n, .7, o, .35); AU.drum('clap', n + .03, .5, o, .22); }); };
   // 2D 的袋子：粉色袋身 + 锯齿封口 + 孔版几何 + 一道跟着光标走的反光
   function flat(g, t){
     const r = box(), k = 1 + sq*.05, cx = r.x + r.w/2, cy = r.y + r.h/2, w = r.w, h = r.h, z = Math.max(4, w/26);
@@ -4215,7 +4316,7 @@ SCENES.pack = B => {
     balls = Array.from({length:n}, (_, i) => { const a = -Math.PI/2 + (Math.random() - .5)*Math.PI*1.6, v = (.55 + Math.random()*.6)*s;
       const k = i % 3 === 2 ? {n:KEYS[ni % KEYS.length][0], l:KEYS[ni % KEYS.length][1], c:['green', 'violet', 'blue'][ni++ % 3]} : (([d, l, c]) => ({d, l, c}))(SB[di++ % SB.length]);
       return {...k, x:cx + (Math.random() - .5)*r.w*.4, y:cy + (Math.random() - .5)*r.h*.3, vx:Math.cos(a)*v, vy:Math.sin(a)*v, r:B.m*(.055 + Math.random()*.03), rot:0, q:0, hv:0, tone:Math.random()*.5}; });
-    if (AU.init()){ const t0 = AU.ctx.currentTime, o = AU.bus('tap', .9); AU.drum('kick', t0, 0, o, 1); AU.drum('sub', t0, .2, o, .6); AU.drum('clap', t0 + .004, .2, o, .7); AU.drum('crash', t0 + .01, .3, o, .7); }
+    if (AU.init()) psnd(B, 'burst', () => { const t0 = AU.ctx.currentTime, o = AU.bus('tap', .9); AU.drum('kick', t0, 0, o, 1); AU.drum('sub', t0, .2, o, .6); AU.drum('clap', t0 + .004, .2, o, .7); AU.drum('crash', t0 + .01, .3, o, .7); });
   }
   const ballAt = (x, y) => { for (let i = balls.length - 1; i >= 0; i--){ const b = balls[i]; if (Math.hypot(x - b.x, y - b.y) < b.r*1.15 + 4) return b; } return null; };
   function hit(b, x){
@@ -4223,7 +4324,7 @@ SCENES.pack = B => {
     b.vy = -(.85 + Math.random()*.35)*s; b.vx += (b.x - x)/b.r*.18*s + (Math.random() - .5)*.12*s; b.q = .55;
     ripple(rip, b.x, b.y, b.r, INK[b.c], .7); lastP = performance.now();
     if (!AU.init()) return; const now = AU.ctx.currentTime, o = AU.bus('tap', .9);
-    if (b.n){ AU.send('tap', .4); AU.note(b.n, now, .25, {cut:.6, res:.35, atk:0, rel:.6, det:.18, wav:'triangle', gain:.24}, o); } else AU.drum(b.d, now, b.tone, o, .9);
+    psnd(B, 'ball', () => { if (b.n){ AU.send('tap', .4); AU.note(b.n, now, .25, {cut:.6, res:.35, atk:0, rel:.6, det:.18, wav:'triangle', gain:.24}, o); } else AU.drum(b.d, now, b.tone, o, .9); }, b.n ? psRate(b.n) : 1);
   }
   const push = (x, y) => { const s = S(), R = B.m*.4; for (const b of balls){ const dx = b.x - x, dy = b.y - y, d = Math.hypot(dx, dy) + 1; if (d < R){ const k = (1 - d/R)*.6*s; b.vx += dx/d*k; b.vy += dy/d*k - k*.5; b.zz = 0; } }
     ripple(rip, x, y, 8, inkA(.5), .6); lastP = performance.now(); };
@@ -4292,7 +4393,7 @@ SCENES.pack = B => {
       const idle = !B.ptr.in && !B.ptr.down;
       if (idle){ nx = Math.sin(t/1700)*.4; ny = Math.sin(t/2300)*.18; }
       E *= Math.exp(-dt/TAU); if (E < TH*.3) rise = false;
-      if (st === 'bag'){ if (E > TH) burst(); else if (!rise && strain() > .5 && AU.init()){ rise = true; AU.drum('rise', AU.ctx.currentTime, .5, AU.bus('tap', .9), .3); } }
+      if (st === 'bag'){ if (E > TH) burst(); else if (!rise && strain() > .5 && AU.init()){ rise = true; psnd(B, 'rise', () => AU.drum('rise', AU.ctx.currentTime, .5, AU.bus('tap', .9), .3)); } }
       else if (st === 'burst' && performance.now() - lastP > 25000){ st = 'seal'; tS = performance.now(); hov = null; }
       if (mode === 'gl' && pap){
         if (!papOn){ pap.setSpeed(.22); papOn = true; }
@@ -4324,7 +4425,7 @@ SCENES.stamp = B => {
   const stamp = (g, x, y, rot, sc, a) => { sc *= SC(); g.save(); g.translate(x, y); g.rotate(rot); g.scale(sc, sc); g.globalAlpha = a; g.strokeStyle = g.fillStyle = INK.blue; g.lineWidth = 5; const w = 210, h = 104;
     g.beginPath(); g.roundRect ? g.roundRect(-w/2, -h/2, w, h, 12) : g.rect(-w/2, -h/2, w, h); g.stroke(); g.lineWidth = 2; g.beginPath(); g.roundRect ? g.roundRect(-w/2 + 9, -h/2 + 9, w - 18, h - 18, 7) : g.rect(-w/2 + 9, -h/2 + 9, w - 18, h - 18); g.stroke();
     g.font = '900 34px Archivo, sans-serif'; g.textAlign = 'center'; g.fillText('INVITED', 0, 6); g.font = '700 14px "HarmonyOS Sans SC", "PingFang SC", sans-serif'; g.fillText('受 邀 · CTRL Z', 0, 32); g.restore(); g.textAlign = 'start'; };
-  const put = (x, y, sound, fade) => { marks.push({x, y, rot:(Math.random() - .5)*.35, a:fade ? .6 : .92, fade}); if (marks.length > 14) marks.shift(); if (sound && AU.init()){ const n = AU.ctx.currentTime; AU.drum('tom', n, 0, AU.bus('tap', .9), 1); AU.drum('kick', n, .4, AU.bus('tap', .9), .6); } };
+  const put = (x, y, sound, fade) => { marks.push({x, y, rot:(Math.random() - .5)*.35, a:fade ? .6 : .92, fade}); if (marks.length > 14) marks.shift(); if (sound && AU.init()) psnd(B, 'stamp', () => { const n = AU.ctx.currentTime; AU.drum('tom', n, 0, AU.bus('tap', .9), 1); AU.drum('kick', n, .4, AU.bus('tap', .9), .6); }); };
   return {
     draw(g, W, H, t, dt){
       G = GRID(B);
@@ -6985,6 +7086,133 @@ function applyCats(){ if (!ADM.cats) return; const C = catsConf(); UI.opC = null
   const keys = Object.keys(CATS); keys.forEach(k => delete CATS[k]); C.forEach(c => { CATS[c.k] = {...CATS0[c.k], cn:c.cn || CATS0[c.k].cn, off:!c.on}; }); }
 applySlides(); applyCats();
 
+/* ================= 海报声音：每个场景的发声点是一个「槽位」，运营可以在后台给槽位换一段采样 =================
+   psnd(B, 槽位, 原来的合成音, 变调倍率)：这张海报这个槽位有采样就放采样（有音高的槽位按倍率变调），没有就照旧放合成音 */
+const PS_NAME = {beat:'唱片 / 几何（CTRL Z）', pack:'样品包（SEALED）', field:'粒子场（FIELD/GRID）', drums:'水泥管鼓（CONCRETE）', strings:'琴弦（TERMINAL）', stamp:'盖章（开你的店）'};
+const PSD = (k, tone = 0, v = 1) => () => { if (!AU.init()) return; AU.drum(k, AU.ctx.currentTime, tone, AU.bus('tap', .9), v); };
+const PSN = (n, p) => () => { if (!AU.init()) return; AU.send('tap', .4); AU.note(n, AU.ctx.currentTime, .25, p || {cut:.6, res:.35, atk:0, rel:.5, det:.18, wav:'triangle', gain:.24}, AU.bus('tap', .9)); };
+const PS_SLOTS = {   // [槽位, 名字, 说明, 默认声音（试听用）]
+  beat:[['disc', '中间的唱片', '点大圆', () => { PSD('kick')(); PSN(43, {cut:.5, res:.3, atk:0, rel:.6, det:.12, wav:'triangle', gain:.26})(); }], ['shape', '小图形', '点圆 / 方 / 三角，会按图形的音高变调', PSN(60)]],
+  pack:[['crinkle', '捏袋子', '揉、捏袋子时', () => { PSD('hat', .7, .35)(); setTimeout(PSD('clap', .5, .22), 30); }], ['rise', '快要炸了', '袋子鼓到一半时', PSD('rise', .5, .3)], ['burst', '炸开', '袋子炸开的一下', () => { PSD('kick')(); PSD('sub', .2, .6)(); PSD('crash', .3, .7)(); }], ['ball', '点小球', '炸出来的小球，会按音高变调', PSN(60)]],
+  field:[['tap', '点粒子场', '点一下推开粒子', () => { PSD('kick')(); PSD('crash', .7, .5)(); }]],
+  drums:[['kick', 'KICK', '最大的那根管子', PSD('kick')], ['tom', 'TOM', '', PSD('tom')], ['snare', 'SNARE', '', PSD('snare')], ['clap', 'CLAP', '', PSD('clap')], ['perc', 'GLASS', '', PSD('perc', .7)], ['hat', 'HAT', '最小的那根', PSD('hat')]],
+  strings:[['pluck', '拨弦', '每根弦按自己的音高变调（采样请录 C5）', () => { if (!AU.init()) return; const p = PRESETS_TERMINAL[1][1]; AU.send('tap', .5); AU.note(72, AU.ctx.currentTime, .12, {...p, gain:.18}, AU.bus('tap', .9)); }]],
+  stamp:[['stamp', '盖章', '每盖一下', () => { PSD('tom')(); PSD('kick', .4, .6)(); }]]
+};
+const PSB = {};   // 采样地址 → 解码好的声音（或正在解码的 Promise）
+function psmpLoad(url){
+  if (!url || PSB[url]) return PSB[url];
+  const C = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!C) return null;
+  return PSB[url] = fetch(url.startsWith('/') ? (API.base || '') + url : url).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(ab => new Promise((res, rej) => { const x = new C(1, 2, 44100).decodeAudioData(ab, res, rej); if (x?.then) x.then(res, rej); }))
+    .then(buf => PSB[url] = buf).catch(() => { PSB[url] = 'bad'; return null; });
+}
+function psPlay(buf, rate = 1, gain = 1){ if (!AU.init() || !(buf instanceof AudioBuffer)) return false; const s = AU.ctx.createBufferSource(), g = AU.ctx.createGain(); s.buffer = buf; s.playbackRate.value = rate; g.gain.value = gain; s.connect(g); g.connect(AU.bus('tap', .9)); s.start(); return true; }
+function psnd(B, slot, fb, rate = 1){
+  const u = SLIDES[B.i]?.samples?.[slot]?.url;
+  if (u){ const b = PSB[u]; if (b instanceof AudioBuffer && psPlay(b, rate)) return; if (!b) psmpLoad(u); }
+  fb();
+}
+const psRate = n => Math.pow(2, (n - 60)/12);   // 以 C4 为原调
+const psPreload = () => SLIDES.forEach(s => Object.values(s.samples || {}).forEach(x => x?.url && psmpLoad(x.url)));
+
+/* ================= 海报编辑：配置字段、应用、编辑界面 =================
+   每张海报能改：显示与否、顺序、小标题 / 大标题 / 一句话 / 按钮文字、按钮跳到哪、主色、价格、浅色 / 深色背景、每个发声槽位的采样。
+   连着后端时存到服务器（PUT /admin/site/slides，所有人 GET /site/config 读），原型里存在本地 ADM.slides */
+const PS_COLS = ['pink', 'blue', 'yellow', 'orange', 'green', 'violet'];
+const okRoute = r => /^[a-z0-9][a-z0-9_-]*$/i.test(String(r || ''));
+slidesConf = function(){ if (UI.opS) return UI.opS;   // 编辑中的草稿：一直是同一份（每次重建会让改动落到被丢掉的那份上）
+  const saved = ADM.slides || [];
+  const one = (s0, c = {}) => ({scene:s0.scene, on:c.on ?? true, kicker:c.kicker ?? strip(s0.kicker), title:c.title ?? strip(s0.title), sub:c.sub ?? s0.sub, cta:c.cta ?? s0.cta[0],
+    link:okRoute(c.link) ? c.link : s0.cta[1], c:PS_COLS.includes(c.c) ? c.c : s0.c, price:c.price === undefined ? (s0.price ?? null) : c.price, bg:c.bg || '', bgd:c.bgd || '', samples:{...(c.samples || {})}});
+  const base = saved.map(c => { const s0 = SLIDES0.find(s => s.scene === c.scene); return s0 && one(s0, c); }).filter(Boolean);
+  SLIDES0.forEach(s => { if (!base.some(b => b.scene === s.scene)) base.push(one(s)); });
+  return UI.opS = base; };
+applySlides = function(){
+  if (!ADM.slides){ SLIDES.splice(0, SLIDES.length, ...SLIDES0.map(s => ({...s, cta:[...s.cta]}))); return; }
+  const out = slidesConf().filter(c => c.on).map(c => { const s0 = SLIDES0.find(s => s.scene === c.scene);
+    return {...s0, kicker:c.kicker === strip(s0.kicker) ? s0.kicker : esc(c.kicker), title:c.title === strip(s0.title) ? s0.title : esc(c.title), sub:esc(c.sub), cta:[esc(c.cta), c.link],
+      c:c.c, price:c.price ? +c.price : undefined, bg:c.bg || s0.bg, bgd:c.bgd || s0.bgd, samples:c.samples}; });
+  UI.opS = null; if (out.length){ SLIDES.splice(0, SLIDES.length, ...out); UI.bi = 0; } psPreload(); };
+
+/* 海报编辑器 */
+const peLinks = () => [['shop', '商城首页'], ...Object.entries(CATS0).map(([k, c]) => ['shop-' + k, '分类 · ' + c.cn]), ['seller', '开店（填邀请码）'],
+  ...PRODUCTS.filter(p => onSale(p)).slice(0, 60).map(p => ['item-' + p.id, '商品 · ' + p.title])];
+const pePrev = s => { const dk = isDark(), bg = dk ? (s.bgd || SLIDES0.find(x => x.scene === s.scene)?.bgd || '#151518') : (s.bg || SLIDES0.find(x => x.scene === s.scene)?.bg || PAPER);
+  return `<div class="pe-prev c-${s.c}" style="background:${esc(bg)};color:${dk ? '#ECECE6' : '#141418'}"><i class="pe-pv-bar"></i><span class="pe-pv-k">${esc(s.kicker)}</span><b class="pe-pv-t">${esc(s.title)}</b><span class="pe-pv-s">${esc(s.sub)}</span>
+    <span class="pe-pv-c">${esc(s.cta)}${s.price ? `<em>¥${esc(s.price)}</em>` : ''} →</span><span class="pe-pv-tag">${PS_NAME[s.scene] || s.scene}</span></div>`; };
+function peSnd(s){ const L = PS_SLOTS[s.scene] || [];
+  return L.map(([k, n, d]) => { const m = s.samples?.[k];
+    return `<div class="pe-snd"><span class="pe-sn"><b>${esc(n)}</b><em>${m ? '采样：' + esc(m.name || '已上传') : '默认合成音'}${d ? ' · ' + esc(d) : ''}</em></span>
+      <span class="pe-sa"><button class="pill sm lt" data-act="op-play" data-k="${k}">${IC.play}试听</button><label class="pill sm lt pe-up">${m ? '换一个' : '上传采样'}<input type="file" accept="audio/*" data-op-file="${k}" hidden></label>${m ? `<button class="pill sm lt" data-act="op-sreset" data-k="${k}">恢复默认</button>` : ''}</span></div>`; }).join('') || '<p class="mut2">这张海报没有声音</p>'; }
+function peEditor(S, i){ const s = S[i], links = peLinks(), custom = !links.some(([v]) => v === s.link);
+  return `<div class="pe-ed" data-i="${i}">
+    <div id="pePrev">${pePrev(s)}</div>
+    <section><h4>文案</h4><div class="pe-g2">
+      <label><span class="ad-lab">小标题</span><input class="inp" data-op="kicker" data-i="${i}" maxlength="30" value="${esc(s.kicker)}"></label>
+      <label><span class="ad-lab">大标题</span><input class="inp" data-op="title" data-i="${i}" maxlength="24" value="${esc(s.title)}"></label>
+      <label class="pe-w"><span class="ad-lab">一句话</span><input class="inp" data-op="sub" data-i="${i}" maxlength="40" value="${esc(s.sub)}"></label>
+      <label><span class="ad-lab">按钮文字</span><input class="inp" data-op="cta" data-i="${i}" maxlength="12" value="${esc(s.cta)}"></label>
+      <label><span class="ad-lab">按钮跳到</span><select class="inp" data-op="link" data-i="${i}">${links.map(([v, l]) => `<option value="${esc(v)}" ${v === s.link ? 'selected' : ''}>${esc(l)}</option>`).join('')}<option value="__custom" ${custom ? 'selected' : ''}>其它页面（填地址）</option></select></label>
+      <label class="pe-w" ${custom ? '' : 'hidden'} id="peLinkC"><span class="ad-lab">页面地址（# 后面那段，例如 item-p3、user-xxx）</span><input class="inp" data-op="linkc" data-i="${i}" value="${esc(custom ? s.link : '')}" placeholder="shop-sample"></label></div></section>
+    <section><h4>外观</h4>
+      <span class="ad-lab">主色（按钮、进度条、换页时的色块）</span><div class="pe-cols">${PS_COLS.map(c => `<button class="c-${c} ${s.c === c ? 'on' : ''}" data-act="op-c" data-v="${c}" aria-label="${c}" aria-pressed="${s.c === c}"></button>`).join('')}</div>
+      <div class="pe-g2"><label><span class="ad-lab">价格（不填就不显示）</span><input class="inp" data-op="price" data-i="${i}" inputmode="decimal" value="${s.price ?? ''}" placeholder="例如 68"></label>
+        <span class="pe-bgs"><span class="ad-lab">背景色</span><label class="pe-bg">浅色<input type="color" data-op="bg" data-i="${i}" value="${s.bg || SLIDES0.find(x => x.scene === s.scene)?.bg || PAPER}"></label><label class="pe-bg">深色<input type="color" data-op="bgd" data-i="${i}" value="${s.bgd || SLIDES0.find(x => x.scene === s.scene)?.bgd || '#151518'}"></label>${s.bg || s.bgd ? '<button class="more" data-act="op-bgreset">恢复默认</button>' : ''}</span></div></section>
+    <section><h4>互动声音</h4><p class="mut2 pe-tip">用户在海报上点、敲、拨的时候发出的声音。上传一小段采样（mp3 / wav，10 MB 以内，最好 3 秒以内）就会替换掉默认的合成音。</p>${peSnd(s)}</section>
+  </div>`; }
+ADMV.ops = () => { const S = slidesConf(), C = catsConf(), i = clamp(UI.opSel || 0, 0, S.length - 1);
+  return `${adH('商城海报', '左边选一张、右边改；保存后所有人的商城马上更新', `<span class="tag c-yellow" id="opDirty" ${UI.opDirty ? '' : 'hidden'}>有改动还没保存</span><button class="pill sm lt" data-act="op-preview">去商城看看</button><button class="pill sm" data-act="op-save">保存</button>`)}
+  <div class="pe"><div class="pe-list">${S.map((x, k) => `<div class="pe-it ${k === i ? 'on' : ''} ${x.on ? '' : 'off'}">
+      <button class="pe-pick" data-act="op-pick" data-i="${k}"><i class="pe-dot c-${x.c}"></i><span><b>${esc(x.title)}</b><em>${PS_NAME[x.scene] || x.scene}${x.on ? '' : ' · 已隐藏'}${Object.keys(x.samples || {}).length ? ' · 换了声音' : ''}</em></span></button>
+      <span class="pe-ud"><button class="pill sm lt" data-act="op-mv" data-k="s" data-i="${k}" data-d="-1" aria-label="上移" ${k ? '' : 'disabled'}>↑</button><button class="pill sm lt" data-act="op-mv" data-k="s" data-i="${k}" data-d="1" aria-label="下移" ${k < S.length - 1 ? '' : 'disabled'}>↓</button></span>
+      <button class="sw ${x.on ? 'on' : ''}" data-act="op-son" data-i="${k}" aria-label="显示这张海报" aria-pressed="${x.on}"><i></i></button></div>`).join('')}</div>
+    ${peEditor(S, i)}</div>
+  ${adH('商城分类', '分类名、顺序、是否在商城显示（隐藏只是收起入口，商品还在「全部」里）；和海报一起保存')}
+  <div class="box"><div class="ad-cfg">${C.map((c, k) => `<div class="ad-cf c2"><button class="sw ${c.on ? 'on' : ''}" data-act="op-con" data-i="${k}" aria-label="显示这个分类" aria-pressed="${c.on}"><i></i></button><span class="ad-cfk">${esc(c.k)}</span><input class="inp" data-op="cn" data-i="${k}" value="${esc(c.cn)}" placeholder="中文名">
+    <span class="ad-ud"><button class="pill sm lt" data-act="op-mv" data-k="c" data-i="${k}" data-d="-1" aria-label="上移" ${k ? '' : 'disabled'}>↑</button><button class="pill sm lt" data-act="op-mv" data-k="c" data-i="${k}" data-d="1" aria-label="下移" ${k < C.length - 1 ? '' : 'disabled'}>↓</button></span></div>`).join('')}</div></div>`;
+};
+const opDirty = () => { UI.opDirty = true; const t = $('#opDirty'); if (t) t.hidden = false; };
+const opCur = () => slidesConf()[clamp(UI.opSel || 0, 0, slidesConf().length - 1)];
+const opPrevRefresh = () => { const p = $('#pePrev'); if (p) p.innerHTML = pePrev(opCur()); };
+queueMicrotask(() => { const mv0 = ACTIONS['op-mv'], son0 = ACTIONS['op-son'], con0 = ACTIONS['op-con'];   // 原来的海报操作定义在后面：等整段脚本跑完再接管
+  Object.assign(ACTIONS, {
+    'op-pick': b => { UI.opSel = +b.dataset.i; rerender(); },
+    'op-mv': b => { if (b.dataset.k === 's'){ const i = +b.dataset.i, j = i + +b.dataset.d; if (UI.opSel === i) UI.opSel = j; else if (UI.opSel === j) UI.opSel = i; } mv0(b); opDirty(); },
+    'op-son': b => { son0(b); opDirty(); }, 'op-con': b => { con0(b); opDirty(); },
+    'op-c': b => { opCur().c = b.dataset.v; opDirty(); rerender(); },
+    'op-bgreset': () => { const s = opCur(); s.bg = s.bgd = ''; opDirty(); rerender(); },
+    'op-sreset': b => { delete opCur().samples[b.dataset.k]; opDirty(); rerender(); },
+    'op-play': async b => { const s = opCur(), k = b.dataset.k, m = s.samples?.[k], slot = (PS_SLOTS[s.scene] || []).find(x => x[0] === k);
+      if (m?.url){ const buf = await psmpLoad(m.url); if (!psPlay(buf instanceof AudioBuffer ? buf : PSB[m.url])) toast('这个声音文件放不出来，换一个试试', 'orange', 'x'); return; }
+      slot?.[3]?.(); },
+    'op-preview': () => { if (UI.opDirty) toast('先保存，商城里才是新的样子', 'orange'); go('shop'); },
+    'op-save': async b => { if (!admGuard('ops')) return; const S = slidesConf().map(s => ({...s, samples:Object.fromEntries(Object.entries(s.samples || {}).map(([k, v]) => [k, {key:v.key, name:v.name}]))}));
+      if (!S.some(s => s.on)){ toast('至少留一张海报', 'orange', 'x'); return; }
+      const C = catsConf().map(c => ({...c}));
+      if (API.on()){ if (b) b.disabled = true;
+        try { const r = await STAFF.req('PUT', '/admin/site/slides', {value:S}); await STAFF.req('PUT', '/admin/site/cats', {value:C}); ADM.slides = r.value; ADM.cats = C; }
+        catch(e){ if (b) b.disabled = false; apiFail(e); return; } }
+      else { ADM.slides = slidesConf().map(s => ({...s})); ADM.cats = C; admLog('保存海报与分类', `${S.filter(s => s.on).length} 张海报 · ${C.filter(c => c.on).length} 个分类`); }
+      admSave(); UI.opS = UI.opC = null; applySlides(); applyCats(); UI.opDirty = false; toast(API.on() ? '已保存，所有人的商城都更新了' : '已保存，商城已更新', 'green', 'check'); rerender(); }
+  });
+});
+/* 改文案：只改数据和预览，不整页重画（不打断输入） */
+document.addEventListener('input', e => { const i = e.target.closest?.('[data-op]'); if (!i || !/^(kicker|title|sub|cta|price|bg|bgd|linkc)$/.test(i.dataset.op)) return; const s = slidesConf()[+i.dataset.i]; if (!s) return;
+  const k = i.dataset.op; if (k === 'price'){ const v = i.value.trim(); s.price = v === '' ? null : (/^\d+(\.\d{1,2})?$/.test(v) ? v : s.price); } else if (k === 'linkc'){ if (okRoute(i.value.trim())) s.link = i.value.trim(); } else s[k] = i.value;
+  opDirty(); opPrevRefresh(); }, true);
+document.addEventListener('change', async e => { const t = e.target;
+  if (t.matches?.('select[data-op="link"]')){ const s = slidesConf()[+t.dataset.i]; if (!s) return; const c = t.value === '__custom', w = $('#peLinkC'); if (w) w.hidden = !c; if (!c) s.link = t.value; else $('#peLinkC input')?.focus(); opDirty(); return; }
+  const k = t.dataset?.opFile; if (!k || !t.files?.[0]) return; const f = t.files[0], s = opCur(); t.value = '';
+  if (f.size > 10*1024*1024){ toast('声音文件最大 10 MB', 'orange', 'x'); return; }
+  const local = URL.createObjectURL(f), buf = await psmpLoad(local); if (!(buf instanceof AudioBuffer)){ toast('这个文件读不出来，换 mp3 或 wav 试试', 'orange', 'x'); return; }
+  if (buf.duration > 8) toast(`这段有 ${Math.round(buf.duration)} 秒，海报上点一下就会放完整段，建议剪到 3 秒以内`, 'orange');
+  if (API.on()){ const mime = /^audio\//.test(f.type) ? f.type : 'audio/wav';
+    try { const up = await STAFF.req('POST', '/admin/uploads', {mime, size:f.size}); const put = await fetch(up.uploadUrl, {method:'PUT', headers:up.headers, body:f}).catch(() => null); if (!put?.ok) throw new Error('上传失败，请重试');
+      s.samples[k] = {key:up.key, name:f.name, url:local}; } catch(err){ apiFail(err); return; } }
+  else s.samples[k] = {name:f.name, url:local};   // 原型：只在这次打开有效
+  psPlay(buf); opDirty(); rerender(); });
+
 /* —— 操作 —— */
 const rsnSheet = (title, kind, go) => sheet(`<h3>${title}</h3><div class="ad-rs">${RJ_REASON[kind].map((x, i) => `<button class="pill lt ${i ? '' : 'on'}" data-act="rs-pick">${esc(x)}</button>`).join('')}</div><label class="ad-lab">补充说明（可选）</label><textarea class="inp" id="rsX" placeholder="会一起发给对方"></textarea><button class="pill lg" data-act="rs-go">确认驳回</button>`, d => { RSN.go = go; });
 const RSN = {go:null};
@@ -7174,7 +7402,7 @@ document.addEventListener('change', e => { const s = e.target.closest?.('[data-a
   if (a === 'lsf-role'){ lsfPatch(s.dataset.id, {role:s.value}); return; }
   if (a === 'sf-role'){ if (!admGuard('staff')) return; const st = ADM.staff.find(x => x.id === s.dataset.id); st.role = s.value; admLog('修改角色', st.name, ADM_ROLES[st.role][0]); admSave(); rerender(); } });
 /* 海报 / 分类的文字输入：边打边记到草稿里（保存后才生效） */
-document.addEventListener('input', e => { const i = e.target.closest?.('[data-op]'); if (!i) return; const k = i.dataset.op, idx = +i.dataset.i; if (k === 'cn') catsConf()[idx].cn = i.value; else slidesConf()[idx][k] = i.value; });
+document.addEventListener('input', e => { const i = e.target.closest?.('[data-op]'); if (!i) return; const k = i.dataset.op, idx = +i.dataset.i; if (k === 'cn'){ catsConf()[idx].cn = i.value; opDirty(); } });   // 海报字段见「海报编辑」
 /* ================= 社区骨架：首页（关注 / 推荐）、短视频、私信、我的 ================= */
 const isVid = p => p && p.type === 'video';
 const durSec = d => { const m = String(d || '').match(/(\d+):(\d+)/); return m ? +m[1]*60 + +m[2] : 60; };
@@ -10209,6 +10437,144 @@ function wavBlob(buf){
   const after0 = liveAfterLogin;
   liveAfterLogin = async function(){ refill(CHATS, {}); refill(CHAT_UNREAD, {}); LDM.full.clear(); LDM.last = {}; await after0(); dmStart(); };
 }
+
+/* ================= 连着后端：站点配置（海报 / 分类 / 公告）以服务器为准 ================= */
+async function liveSite(){
+  try { const r = await API.req('GET', '/site/config');
+    ADM.slides = Array.isArray(r.slides) ? r.slides : null; ADM.cats = Array.isArray(r.cats) ? r.cats : null; ADM.ann = Array.isArray(r.ann) ? r.ann : [];
+    UI.opS = UI.opC = null; applySlides(); if (ADM.cats) applyCats(); else { Object.keys(CATS).forEach(k => delete CATS[k]); Object.entries(CATS0).forEach(([k, c]) => CATS[k] = {...c}); }
+  } catch(e){}
+}
+const annPush = async () => { if (!API.on()) return; try { await STAFF.req('PUT', '/admin/site/ann', {value:ADM.ann}); } catch(e){ apiFail(e); } };
+['an-on', 'an-del', 'an-save'].forEach(k => wrapAct(k, async (orig, b, e) => { orig(b, e); await annPush(); }));
+
+/* ================= 站内信：「指定用户」改成搜索（用户多了也找得到） ================= */
+ADMV.notice = () => { const to = UI.smTo ? 'one' : (UI.smMode || 'all'), canAll = admMe().role !== 'cs' || !API.on();
+  return `${adH('公告', '开着的公告显示在首页顶部，用户可以关掉', `<button class="pill sm" data-act="an-new">${IC.plus}新公告</button>`)}
+  <div class="ad-list">${ADM.ann.map(a => `<div class="ad-row ${a.on ? '' : 'dim'}"><div class="ad-rm"><b>${esc(a.title)}</b><span class="mut">${esc(a.body)}</span><span class="mut2">${a.aud === 'creators' ? '只给创作者' : '所有人'} · ${fmtDT(a.ts)}</span></div>
+    <div class="ad-ra"><button class="sw ${a.on ? 'on' : ''}" data-act="an-on" data-id="${a.id}" aria-label="显示公告" aria-pressed="${a.on}"><i></i></button><button class="pill sm lt" data-act="an-edit" data-id="${a.id}">编辑</button><button class="pill sm lt" data-act="an-del" data-id="${a.id}">删除</button></div></div>`).join('') || '<div class="rnone">还没有公告</div>'}</div>
+  ${adH('站内信', '发到用户私信最上面的「CTRL Z 官方」')}
+  <div class="box ad-form"><div class="ad-f2"><label class="ad-lab">发给</label><div class="seg ad-seg" id="smTo">${[['all', '所有用户'], ['creators', '所有创作者'], ['one', '指定用户']].filter(([v]) => canAll || v === 'one').map(([v, l]) => `<button class="${to === v || (!canAll && v === 'one') ? 'on' : ''}" data-act="sm-to" data-v="${v}">${l}</button>`).join('')}</div></div>
+    <div class="smp" id="smPick" ${to === 'one' || !canAll ? '' : 'hidden'}>${UI.smTo ? `<span class="smp-sel">${uav(UI.smTo)}<b>${esc(uname(UI.smTo))}</b><button class="smp-x" data-act="sm-clr" aria-label="换一个人">${IC.x}</button></span>`
+      : `<label class="ad-q">${IC.search}<input class="inp" id="smQ" placeholder="搜昵称、用户名或 ID" autocomplete="off"></label><div class="smp-res" id="smRes"><span class="mut2">输入几个字开始搜</span></div>`}</div>
+    <label class="ad-lab">标题</label><input class="inp" id="smT" placeholder="例如：结算规则更新" maxlength="40">
+    <label class="ad-lab">内容</label><textarea class="inp" id="smX" placeholder="写给用户的话" maxlength="1000"></textarea>
+    <button class="pill" data-act="sm-send" style="align-self:flex-start">发送</button></div>`; };
+const smRow = u => `<button class="smp-r" data-act="sm-pick" data-id="${esc(u.id)}">${uav(u.id)}<span><b>${esc(u.name)}</b><i>${u.username ? '用户名 ' + esc(u.username) : '@' + esc(u.handle || u.id)}</i></span></button>`;
+let smSeq = 0, smT = 0;
+document.addEventListener('input', e => { if (e.target.id !== 'smQ') return; const q = e.target.value.trim(), my = ++smSeq; clearTimeout(smT);
+  smT = setTimeout(async () => { const box = $('#smRes'); if (!box) return; if (!q){ box.innerHTML = '<span class="mut2">输入几个字开始搜</span>'; return; }
+    let L; if (API.on()){ try { L = (await STAFF.req('GET', '/admin/users?limit=20&q=' + encodeURIComponent(q))).items; L.forEach(u => apiUser(u)); } catch(err){ apiFail(err); return; } }
+    else L = allUids().filter(u => (uname(u) + u).toLowerCase().includes(q.toLowerCase())).slice(0, 20).map(u => ({id:u, name:uname(u), handle:u}));
+    if (my !== smSeq || !$('#smRes')) return; $('#smRes').innerHTML = L.map(smRow).join('') || '<span class="mut2">没找到</span>'; }, 250); });
+Object.assign(ACTIONS, {
+  'sm-to': b => { UI.smMode = b.dataset.v; if (b.dataset.v !== 'one') UI.smTo = null; $$('#smTo button').forEach(x => x.classList.toggle('on', x === b)); $('#smPick').hidden = b.dataset.v !== 'one'; if (b.dataset.v === 'one') setTimeout(() => $('#smQ')?.focus(), 30); },
+  'sm-pick': b => { UI.smTo = b.dataset.id; UI.smMode = 'one'; const t = $('#smT')?.value, x = $('#smX')?.value; rerender(); if ($('#smT')){ $('#smT').value = t || ''; $('#smX').value = x || ''; } },
+  'sm-clr': () => { UI.smTo = null; const t = $('#smT')?.value, x = $('#smX')?.value; rerender(); if ($('#smT')){ $('#smT').value = t || ''; $('#smX').value = x || ''; } setTimeout(() => $('#smQ')?.focus(), 30); },
+  'sm-send': async b => { if (!admGuard('notice')) return; const to = $('#smTo .on')?.dataset.v || 'all', t = $('#smT').value.trim(), x = $('#smX').value.trim();
+    if (to === 'one' && !UI.smTo){ fxPop($('#smQ'), 'fx-shake', 300); toast('先搜一个人', 'orange', 'x'); return; }
+    if (!t || !x){ fxPop(!t ? $('#smT') : $('#smX'), 'fx-shake', 300); return; }
+    if (API.on()){ b.disabled = true;
+      try { const r = to === 'one' ? await STAFF.req('POST', '/admin/notify', {userId:UI.smTo, title:t, body:x}) : await STAFF.req('POST', '/admin/notify/broadcast', {to, title:t, body:x});
+        toast(to === 'one' ? `已发给 ${esc(uname(UI.smTo))}` : `已发给 ${r.sent} 人`, 'green', 'check'); $('#smT').value = $('#smX').value = ''; } catch(e){ apiFail(e); } b.disabled = false; return; }
+    const ids = to === 'one' ? [UI.smTo] : to === 'creators' ? Object.keys(USERS).filter(u => u !== 'mio') : allUids(); ids.forEach(u => notify(u, t, x));
+    admLog('发站内信', to === 'one' ? '@' + uname(ids[0]) : to === 'creators' ? '所有创作者' : '所有用户', t); admSave(); toast(`已发给 ${ids.length} 人`); $('#smT').value = $('#smX').value = ''; },
+  'us-msg': b => { const uid = b.dataset.id; closeSheet(); UI.smTo = uid; UI.smMode = 'one'; admTab('notice'); }
+});
+
+/* ================= 查看私信记录（处理纠纷 / 举报 / 申诉时）：要写理由，后端记进操作日志 ================= */
+function dmViewSheet(a, b, preset = ''){
+  sheet(`<h3>查看私信记录</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">${esc(uname(a))} 和 ${esc(uname(b))} 之间的私信。查看会记进操作日志（谁、什么时候、为什么看），只在处理纠纷、举报、申诉时使用。</p>
+    <label class="ad-lab">为什么要看</label><div class="ad-rs" id="dvR">${['处理合作纠纷', '处理举报', '用户申诉', '核实交易'].map((x, i) => `<button class="pill lt ${(preset ? x === preset.split('：')[0] : !i) ? 'on' : ''}" data-act="rs-pick">${x}</button>`).join('')}</div>
+    <input class="inp" id="dvX" placeholder="补充（可选），例如订单号 / 举报编号" value="${esc(preset.split('：')[1] || '')}">
+    <button class="pill lg" data-act="dv-go" data-a="${esc(a)}" data-b="${esc(b)}">查看记录</button><div id="dvLog"></div>`); }
+const dvBody = m => m.kind === 'image' ? (m.url ? `<a href="${esc(m.url)}" target="_blank" rel="noopener"><img src="${esc(m.url)}" alt="图片" class="dv-img"></a>` : '[图片]')
+  : m.kind === 'post' ? `[分享的帖子] <a data-go="post-${esc(m.ref)}">${esc(POST(m.ref)?.title || m.ref)}</a>` : m.kind === 'prod' ? `[分享的商品] <a data-go="item-${esc(m.ref)}">${esc(P(m.ref)?.title || m.ref)}</a>` : esc(m.body);
+ACTIONS['dv-go'] = async b => { const a = b.dataset.a, c = b.dataset.b, why = ($('#dvR .on')?.textContent || '处理举报') + ($('#dvX').value.trim() ? '：' + $('#dvX').value.trim() : '');
+  if (!API.on()){   // 原型：只有自己参与的会话有数据
+    const other = a === ME ? c : c === ME ? a : null, L = other ? CHATS[other] || [] : null;
+    $('#dvLog').innerHTML = L ? `<div class="dv-log">${L.map(m => `<div class="dv-m ${m.me ? 'b' : 'a'}"><span class="dv-w">${esc(uname(m.me ? ME : other))} · ${fmtDT(m.ts)}</span><span>${m.rc ? '<em>（已撤回）</em>' : m.t === 'text' ? esc(m.text) : '[' + ({img:'图片', post:'帖子', prod:'商品', co:'合作邀约', cosys:'系统'}[m.t] || m.t) + ']'}</span></div>`).join('') || '<p class="mut2">没有私信</p>'}</div>` : '<p class="ad-warn y">原型里只有你自己参与的会话数据。连上后端后可以看任意两个人的记录。</p>'; return; }
+  b.disabled = true;
+  try { const r = await STAFF.req('GET', `/admin/dm?a=${encodeURIComponent(a)}&b=${encodeURIComponent(c)}&reason=${encodeURIComponent(why)}`); apiUser(r.a); apiUser(r.b);
+    b.hidden = true; $('#dvLog').innerHTML = `<p class="mut2" style="margin:10px 0 6px">共 ${r.items.length} 条 · 理由「${esc(why)}」已记进操作日志</p><div class="dv-log">${r.items.map(m => `<div class="dv-m ${m.from === a ? 'a' : 'b'}"><span class="dv-w">${esc(m.from === a ? r.a.name : r.b.name)} · ${fmtDT(+new Date(m.createdAt))}${m.read ? ' · 已读' : ''}</span><span>${m.recalled ? '<em>（已撤回，原文）</em>' : ''}${dvBody(m)}</span></div>`).join('') || '<p class="mut2">这两个人之间没有私信</p>'}</div>`; }
+  catch(e){ b.disabled = false; apiFail(e); } };
+ACTIONS['dv-open'] = b => dmViewSheet(b.dataset.a, b.dataset.b, b.dataset.why || '');
+
+/* 合作纠纷：裁决面板里加上双方的私信记录 */
+{ const ds0 = disputeSheet;
+  disputeSheet = function(id){ ds0(id); const o = CO_BY(id), log = $('#layer .sheet .ad-log'); if (!o || !log) return;
+    log.insertAdjacentHTML('afterend', `<div class="dv-in"><span class="ad-lab">双方私信</span><button class="pill sm lt" data-act="dv-open" data-a="${esc(o.from)}" data-b="${esc(o.to)}" data-why="处理合作纠纷：${esc(o.title)}">查看 ${esc(uname(o.from))} 和 ${esc(uname(o.to))} 的私信</button></div>`); }; }
+
+/* ================= 用户全貌（连着后端时） ================= */
+{ const us0 = userSheet;
+  userSheet = function(uid){ if (!API.on()) return us0(uid);
+    sheet(`<div class="ad-us" id="luS"><div class="ad-u big">${uav(uid, 'md')}<span><b>${esc(uname(uid))}</b><i>读取中…</i></span></div></div>`, d => d.classList.add('lus-sheet'));
+    STAFF.req('GET', `/admin/users/${encodeURIComponent(uid)}/overview`).then(r => { const box = $('#luS'); if (!box) return; LADM.ov = r; box.outerHTML = luSheet(r); }).catch(apiFail); };
+}
+const luTab = (k, n) => `<button class="${(UI.luTab || 'act') === k ? 'on' : ''}" data-act="lu-tab" data-v="${k}">${n}</button>`;
+function luSheet(r){ const u = r.user, c = r.counts, uid = u.id, yuanF = f => '¥' + (f/100).toFixed(2), D = (UI.luTab || 'act'), stt = u.banned ? stTag('封禁', 'orange') : u.muteUntil ? stTag('禁言', 'yellow') : u.status === 'closing' ? stTag('注销中', 'violet') : stTag('正常', 'green');
+  const pane = (k, h) => `<div class="lu-p" data-p="${k}" ${D === k ? '' : 'hidden'}>${h}</div>`;
+  return `<div class="ad-us" id="luS"><div class="ad-u big">${uav(uid, 'md')}<span><b>${esc(u.name)}</b><i>${u.username ? '用户名 ' + esc(u.username) + ' · ' : ''}@${esc(u.handle)} · 注册于 ${fmtDay(+new Date(u.createdAt))}</i></span>${stt}</div>
+    ${u.banned ? `<p class="ad-warn">封禁${u.banUntil ? '至 ' + fmtDay(+new Date(u.banUntil)) : '（永久）'}</p>` : ''}${u.muteUntil ? `<p class="ad-warn y">禁言至 ${fmtDay(+new Date(u.muteUntil))}</p>` : ''}
+    <div class="ad-kv lu-kv"><span>帖子<b>${c.posts}</b></span><span>评论<b>${c.comments}</b></span><span>粉丝<b>${c.followers}</b></span><span>关注<b>${c.following}</b></span><span>买过<b>${c.bought}</b><i>${yuanF(c.boughtAmount)}</i></span><span>卖出<b>${c.sold}</b><i>${yuanF(c.soldAmount)}</i></span><span>退款<b>${c.refunds}</b></span><span>被举报<b>${c.reportsAgainst}</b></span></div>
+    <p class="mut2" style="font-size:12.5px;margin:2px 0 0">登录方式：${[u.username ? '用户名密码' : '', u.phone ? '手机 ' + esc(u.phone) : '', u.wechat ? '微信' : ''].filter(Boolean).join(' · ') || '—'}</p>
+    <div class="seg ad-seg lu-tabs">${luTab('act', '处置')}${luTab('posts', '帖子')}${luTab('orders', '订单')}${luTab('dm', '私信对象')}${luTab('dev', '登录设备')}${luTab('log', '处置记录')}</div>
+    ${pane('act', `<label class="ad-lab">处理原因（会发给用户）</label><input class="inp" id="usWhy" placeholder="例如：多次发布引流广告">
+      <div class="ad-acts"><button class="pill sm lt" data-act="us-do" data-v="warn" data-id="${esc(uid)}">警告</button><button class="pill sm lt" data-act="us-do" data-v="mute1" data-id="${esc(uid)}">禁言 1 天</button><button class="pill sm lt" data-act="us-do" data-v="mute7" data-id="${esc(uid)}">禁言 7 天</button>
+        <button class="pill sm pk" data-act="us-do" data-v="ban7" data-id="${esc(uid)}">封禁 7 天</button><button class="pill sm pk" data-act="us-do" data-v="ban0" data-id="${esc(uid)}">永久封禁</button>${u.banned || u.muteUntil ? `<button class="pill sm" data-act="us-do" data-v="lift" data-id="${esc(uid)}">解除限制</button>` : ''}</div>
+      <div class="ad-acts"><button class="pill sm lt" data-act="us-msg" data-id="${esc(uid)}">发站内信</button>${u.username && admCan('staff') ? `<button class="pill sm lt" data-act="lus-pw" data-id="${esc(uid)}">重置密码</button>` : ''}${admCan('staff') ? `<button class="pill sm lt" data-act="lus-staff" data-id="${esc(uid)}">开后台账号</button>` : ''}<a class="pill sm lt" data-go="user-${esc(uid)}">看主页</a></div>`)}
+    ${pane('posts', `<div class="ad-mini">${r.posts.map(p => `<a data-go="post-${esc(p.id)}">${fmtDT(+new Date(p.createdAt))} · ${esc(p.title)} · ${{published:'公开', review:'审核中', taken_down:'已下架'}[p.status] || p.status}</a>`).join('') || '<span>没有帖子</span>'}</div>`)}
+    ${pane('orders', `<span class="ad-lab">买的</span><div class="ad-mini">${r.bought.map(o => `<span>${fmtDT(+new Date(o.createdAt))} · ${esc(o.title)} · ${yuanF(o.price)} · 卖家 ${esc(o.peer.name)} · ${esc(o.status)}</span>`).join('') || '<span>没有</span>'}</div>
+      <span class="ad-lab">卖的</span><div class="ad-mini">${r.sold.map(o => `<span>${fmtDT(+new Date(o.createdAt))} · ${esc(o.title)} · ${yuanF(o.price)} · 买家 ${esc(o.peer.name)} · ${esc(o.status)}</span>`).join('') || '<span>没有</span>'}</div>`)}
+    ${pane('dm', `<p class="mut2" style="font-size:12.5px">只显示和谁聊过、各发了几条；要看内容点「查看记录」，需要写理由并记进操作日志。</p><div class="lu-dm">${r.dmPeers.map(p => { apiUser(p.peer); return `<div class="lu-dmr">${uav(p.peer.id)}<span><b>${esc(p.peer.name)}</b><i>TA 发 ${p.sent} 条 · 收 ${p.received} 条 · 最近 ${ago(+new Date(p.lastAt))}</i></span>${admCan('reports') ? `<button class="pill sm lt" data-act="dv-open" data-a="${esc(uid)}" data-b="${esc(p.peer.id)}">查看记录</button>` : ''}</div>`; }).join('') || '<span class="mut2">没有私信</span>'}</div>`)}
+    ${pane('dev', `<div class="ad-mini">${r.devices.map(d => `<span>${esc(d.device || '未知设备')} · ${esc(d.ip || '')} · ${fmtDT(+new Date(d.lastUsedAt))}${d.active ? '' : ' · 已退出'}</span>`).join('') || '<span>没有记录</span>'}</div>`)}
+    ${pane('log', `<div class="ad-mini">${r.sanctions.map(s => `<span>${fmtDT(+new Date(s.at))} · ${esc(s.action)} · ${esc(s.by)}${s.reason ? ' · ' + esc(s.reason) : ''}</span>`).join('') || '<span>没有处置记录</span>'}</div>`)}
+  </div>`; }
+ACTIONS['lu-tab'] = b => { UI.luTab = b.dataset.v; $$('.lu-tabs button').forEach(x => x.classList.toggle('on', x === b)); $$('#luS .lu-p').forEach(p => p.hidden = p.dataset.p !== b.dataset.v); };
+wrapAct('us-do', async (orig, b, e) => { await orig(b, e); if (API.on() && $('#luS')) STAFF.req('GET', `/admin/users/${encodeURIComponent(b.dataset.id)}/overview`).then(r => { const box = $('#luS'); if (box) box.outerHTML = luSheet(r); }).catch(() => {}); });
+
+/* ================= 举报（连着后端时）：用户提交到服务器；后台看举报对象、内容、双方私信 ================= */
+wrapAct('do-report', async (orig, b, e) => { if (!liveUser()) return orig(b, e);
+  const why = $('#rpR .on')?.textContent || '违反社区规范', x = $('#rpX')?.value.trim() || '', k = b.dataset.k;
+  if (/版权/.test(why) && x.length < 10){ fxPop($('#rpX'), 'fx-shake', 300); $('#rpX').focus(); toast('版权投诉请写明原作链接或权属证明（至少 10 个字）', 'orange', 'x'); return; }
+  let kind = {post:'post', prod:'product', user:'user', cmt:'comment'}[k] || k, targetId = b.dataset.id;
+  if (k === 'cmt'){ const pid = b.dataset.p, c = cmtsOf(pid).find(c => cmtKey(pid, c) === b.dataset.id); targetId = c?.id; if (!targetId){ toast('这条评论还没同步到服务器，稍后再试', 'orange'); return; } }
+  b.disabled = true;
+  try { await API.req('POST', '/reports', {kind, targetId, reason:why, detail:x}); closeSheet(); toast('收到，处理结果会通过「CTRL Z 官方」通知你'); } catch(err){ b.disabled = false; apiFail(err); } });
+async function ladmGet(k, url, pick){ if (LADM.busy[k]) return; LADM.busy[k] = true; try { LADM[k] = pick(await STAFF.req('GET', url)); } catch(e){ apiFail(e); LADM[k] ||= []; } finally { LADM.busy[k] = false; } rerender(); }
+const RP_K = {post:'帖子', comment:'评论', user:'用户', product:'商品', message:'私信'};
+{ const rp0 = ADMV.reports;
+  ADMV.reports = () => { if (!API.on()) return rp0(); const v = UI.adf?.lrp || 'open';
+    if (!LADM.reports || LADM.rpv !== v){ LADM.rpv = v; LADM.reports = null; ladmGet('reports', '/admin/reports?view=' + v, r => r.items); return ladmWait('举报', '读取中'); }
+    return `${adH('举报', '先看内容和双方私信再处理；结果会通知举报人', adSeg('lrp', [['open', '待处理'], ['all', '全部']], v))}
+    <div class="ad-list">${LADM.reports.map(r => { apiUser(r.reporter); r.targetUser && apiUser(r.targetUser); const open = r.status === 'open', t = r.target;
+      const link = r.kind === 'post' ? `post-${r.targetId}` : r.kind === 'product' ? `item-${r.targetId}` : r.kind === 'user' ? `user-${r.targetId}` : r.targetUser ? `user-${r.targetUser.id}` : '';
+      return `<div class="ad-row rp-live ${open ? '' : 'dim'}"><div class="ad-rm"><b><span class="tag ${/版权/.test(r.reason) ? 'c-orange' : 'k'}">${RP_K[r.kind] || r.kind}</span> ${esc(r.reason)}</b>
+        <span class="mut">${esc(r.reporter.name)} 举报 ${r.targetUser ? esc(r.targetUser.name) + (r.againstCount > 1 ? `（共被举报 ${r.againstCount} 次）` : '') : '—'} · ${fmtDT(+new Date(r.createdAt))}</span>
+        ${t ? `<div class="rp-tgt"><b>${esc(t.title)}</b>${t.body ? `<span>${esc(t.body.slice(0, 160))}</span>` : ''}${t.url ? `<img src="${esc(t.url)}" alt="">` : ''}${t.status && t.status !== 'published' && t.status !== 'sent' ? `<i>${esc({review:'审核中', taken_down:'已下架', deleted:'已删除', recalled:'已撤回'}[t.status] || t.status)}</i>` : ''}</div>` : ''}
+        ${r.detail ? `<span class="mut2">补充：${esc(r.detail)}</span>` : ''}${open ? '' : `<span class="mut2">${r.status === 'resolved' ? '属实' : '不成立'} · ${esc(r.handledBy || '')}${r.note ? ' · ' + esc(r.note) : ''}</span>`}</div>
+        <div class="ad-ra">${link ? `<a class="pill sm lt" data-go="${esc(link)}">查看</a>` : ''}${r.targetUser ? `<button class="pill sm lt" data-act="dv-open" data-a="${esc(r.reporter.id)}" data-b="${esc(r.targetUser.id)}" data-why="处理举报：${esc(r.id)}">双方私信</button><button class="pill sm lt" data-act="us-open" data-id="${esc(r.targetUser.id)}">处置用户</button>` : ''}
+          ${open ? `<button class="pill sm lt" data-act="lrp-do" data-v="dismissed" data-id="${esc(r.id)}">不成立</button><button class="pill sm" data-act="lrp-do" data-v="resolved" data-id="${esc(r.id)}">属实</button>` : ''}</div></div>`; }).join('') || adEmpty('ALL CLEAR', '没有待处理的举报')}</div>`; };
+}
+ACTIONS['lrp-do'] = b => { if (!admGuard('reports')) return; const ok = b.dataset.v === 'resolved';
+  sheet(`<h3>${ok ? '举报属实' : '举报不成立'}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">${ok ? '记得先用「处置用户」或下架内容处理被举报的人。' : ''}说明会一起发给举报人。</p><textarea class="inp" id="lrpX" placeholder="${ok ? '例如：已下架该帖子并警告作者' : '例如：内容为原创，未发现侵权'}"></textarea><button class="pill lg" data-act="lrp-go" data-v="${b.dataset.v}" data-id="${esc(b.dataset.id)}">确认</button>`); };
+ACTIONS['lrp-go'] = async b => { b.disabled = true;
+  try { await STAFF.req('POST', `/admin/reports/${encodeURIComponent(b.dataset.id)}/resolve`, {result:b.dataset.v, note:$('#lrpX').value.trim()}); closeSheet(); toast('已处理，已通知举报人', 'green', 'check'); LADM.reports = null; rerender(); }
+  catch(e){ b.disabled = false; apiFail(e); } };
+
+/* ================= 操作日志（连着后端时读服务器的；查看私信记录也在里面） ================= */
+{ const lg0 = ADMV.audit;
+  ADMV.audit = () => { if (!API.on()) return lg0();
+    if (!LADM.audit){ ladmGet('audit', '/admin/audit?limit=50', r => r.items); return ladmWait('操作日志', '读取中'); }
+    const q = fq('audit'), L = LADM.audit.filter(a => !q || (a.staffName + a.action + a.targetId + JSON.stringify(a.detail)).toLowerCase().includes(q));
+    const det = a => { const d = a.detail || {}; return [d.reason, d.with ? '和 ' + uname(d.with) : '', d.title, d.note, d.name, d.username].filter(Boolean).map(x => esc(String(x))).join(' · '); };
+    return `${adH('操作日志', `后台的每一个操作都会记下来 · 最近 ${L.length} 条`, adQ('audit', '搜成员、操作或对象'))}
+    <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>时间</th><th>成员</th><th>操作</th><th>对象</th><th>说明</th></tr></thead><tbody>${L.map(a => `<tr class="${/查看私信/.test(a.action) ? 'lg-dm' : ''}"><td class="mut2 n">${fmtDT(+new Date(a.createdAt))}</td><td><b>${esc(a.staffName)}</b> <span class="mut2">${ADM_ROLES[a.role]?.[0] || a.role}</span></td><td>${esc(a.action)}</td><td>${a.targetType === 'user' ? `<a data-act="us-open" data-id="${esc(a.targetId)}">${esc(uname(a.targetId))}</a>` : esc(a.targetId)}</td><td class="mut2">${det(a)}</td></tr>`).join('') || '<tr><td colspan="5" class="mut">没有记录</td></tr>'}</tbody></table></div></div>`; };
+}
+
+/* 启动：站点配置以服务器为准；海报的新字段立即生效 */
+{ const boot1 = liveBoot; liveBoot = async function(){ await liveSite(); await boot1(); }; }
+UI.opS = null; applySlides();
 
 /* —— 开店、协议 —— */
 wrapAct('inv-check', async (orig, b) => { if (!liveUser()) return orig(b);
