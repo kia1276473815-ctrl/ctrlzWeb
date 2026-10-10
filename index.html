@@ -10626,6 +10626,77 @@ ACTIONS['bk-now'] = async b => { if (!admGuard('params')) return; b.disabled = t
   try { const r = await STAFF.req('POST', '/admin/backups'); toast(`已备份：${esc(r.file)}`, 'green', 'check'); LADM.backups = null; rerender(); }
   catch(e){ b.disabled = false; b.textContent = '立即备份'; apiFail(e); } };
 
+/* ================= 头像 / 收藏 / 商品评价接后端（连着后端时） =================
+   · 头像：拼图形只把「配方」存到服务器（各端自己画，马上生效）；上传照片走审核（后台「头像」页签）；用回首字母 = 清掉
+   · 收藏：存服务器，登录后读回来；收藏里提到的帖子 / 商品本地没有就去取
+   · 商品评价：读写服务器，不再显示示例评价 */
+const AVSH = {};
+function avShapesImg(sp){ const k = JSON.stringify(sp); if (AVSH[k]) return AVSH[k];
+  const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'); g.scale(.5, .5); g.fillStyle = sp.bg; g.fillRect(0, 0, 512, 512);
+  for (const x of sp.sh || []){ if (!AV_SHAPES[x.t]) continue; g.save(); g.translate(x.x, x.y); g.rotate(x.r*Math.PI/180); g.fillStyle = g.strokeStyle = x.c; AV_SHAPES[x.t].draw(g, x.s); g.restore(); }
+  return AVSH[k] = c.toDataURL('image/png'); }
+const avAbs = u => u && u.startsWith('/') ? (API.base || '') + u : u;
+{ const au0 = apiUser;
+  apiUser = function(u, extra){ const r = au0(u, extra);   // 头像以服务器为准：拼的头像现画，照片用稳定地址，都没有就用首字母
+    if ('avatarShapes' in u || 'avatarUrl' in u){ if (u.avatarShapes) AVIMG[u.id] = avShapesImg(u.avatarShapes); else if (u.avatarUrl) AVIMG[u.id] = avAbs(u.avatarUrl); else delete AVIMG[u.id]; }
+    return r; }; }
+const avMeRefresh = () => { if (STATE.role === 'user') setRole('user', true); };
+wrapAct('ave-save', async (orig, b, e) => { if (!liveUser()) return orig(b, e);
+  const shapes = {bg:AVE.bg, sh:AVE.sh.map(x => ({t:x.t, x:Math.round(x.x), y:Math.round(x.y), s:Math.round(x.s), r:Math.round(x.r) % 360, c:x.c}))};
+  try { const r = await API.req('POST', '/me/avatar', {kind:'shapes', shapes}); apiUser(r.user); avMeRefresh(); closeSheet(); toast('头像换好了', 'pink'); rerender(); } catch(err){ apiFail(err); } });
+wrapAct('av-reset', async (orig, b, e) => { if (!liveUser()) return orig(b, e);
+  try { const r = await API.req('POST', '/me/avatar', {kind:'none'}); apiUser(r.user); avMeRefresh(); closeSheet(); toast('换回了首字母头像'); rerender(); } catch(err){ apiFail(err); } });
+wrapAct('avc-send', async (orig, b, e) => { if (!liveUser()) return orig(b, e);
+  const o = document.createElement('canvas'); o.width = o.height = 512; o.getContext('2d').drawImage(AVC.cv, 0, 0, 512, 512); b.disabled = true;
+  try { const blob = await new Promise(r => o.toBlob(r, 'image/jpeg', .88)); const up = await liveUpload(new File([blob], 'avatar.jpg', {type:'image/jpeg'}), 'avatar');
+    await API.req('POST', '/me/avatar', {kind:'photo', uploadId:up.id}); closeSheet(); toast('已提交，管理员审核通过后换上', 'yellow'); }
+  catch(err){ b.disabled = false; apiFail(err); } });
+wrapAct('av-edit', async (orig, b, e) => { if (!liveUser()) return orig(b, e);
+  for (let i = AVQ.length - 1; i >= 0; i--) if (AVQ[i].uid === ME) AVQ.splice(i, 1);   // 审核状态以服务器为准
+  try { const s = await API.req('GET', '/me/avatar');
+    if (s.pending) AVQ.push({id:s.pending.id, uid:ME, img:s.pending.url, time:fmtDT(+new Date(s.pending.createdAt))});
+    if (s.rejected && store.get('avRejSeen', '') !== s.rejected.at){ AVREJ[ME] = true; store.set('avRejSeen', s.rejected.at); } } catch(err){}
+  orig(b, e); });
+wrapAct('av-cancel', async (orig, b, e) => { if (!liveUser()) return orig(b, e); try { await API.req('DELETE', '/me/avatar/pending'); orig(b, e); } catch(err){ apiFail(err); } });
+/* 后台「头像」页签 */
+{ const avv0 = ADMV.avatars;
+  ADMV.avatars = () => { if (!API.on()) return avv0();
+    if (!LADM.avatars){ ladmGet('avatars', '/admin/avatars', r => r.items); return ladmWait('头像审核', '读取中'); }
+    return adH('头像审核', '用户上传的照片头像，通过后才对外显示；驳回要写原因') + (LADM.avatars.length ? `<div class="avq">${LADM.avatars.map(q => { apiUser(q.user); return `<div class="avq-i"><img src="${esc(q.url)}" alt="待审核头像"><div style="min-width:0"><b>${esc(q.user.name)}</b><span>${fmtDT(+new Date(q.createdAt))} · 上传的照片</span></div><div class="avq-a"><button class="pill sm lt" data-act="lavq" data-v="0" data-id="${esc(q.id)}">驳回</button><button class="pill sm" data-act="lavq" data-v="1" data-id="${esc(q.id)}">通过</button></div></div>`; }).join('')}</div>` : adEmpty('ALL CLEAR', '没有待审核的头像')); };
+}
+ACTIONS.lavq = b => { if (!admGuard('avatars')) return; const id = b.dataset.id;
+  const go1 = async (ok, reason = '') => { try { await STAFF.req('POST', `/admin/avatars/${encodeURIComponent(id)}/decide`, {ok, reason}); toast(ok ? '已通过，已通知本人' : '已驳回，已通知本人', ok ? 'green' : 'orange', ok ? 'check' : 'x'); } catch(e){ apiFail(e); } LADM.avatars = null; rerender(); };
+  if (b.dataset.v === '1') go1(true); else rsnSheet('为什么驳回这个头像？', 'avatar', why => go1(false, why)); };
+
+/* —— 收藏 —— */
+async function liveFavs(){
+  try { const r = await API.req('GET', '/me/favs'); STATE.favs = new Set([...r.posts, ...r.products]);
+    await dmRefs([...r.posts.map(ref => ({t:'post', ref})), ...r.products.map(ref => ({t:'prod', ref}))]); } catch(e){}
+}
+{ const after3 = liveAfterLogin; liveAfterLogin = async function(){ await after3(); await liveFavs(); rerender(); }; }
+{ const boot2 = liveBoot; liveBoot = async function(){ await boot2(); if (liveUser()){ await liveFavs(); rerender(); } }; }
+wrapAct('fav', async (orig, b, e) => { const id = b.dataset.id, was = STATE.favs.has(id); orig(b, e); if (!liveUser()) return;
+  const kind = P(id) && !POST(id) ? 'product' : 'post';
+  try { await API.req(was ? 'DELETE' : 'PUT', `/me/favs/${kind}/${encodeURIComponent(id)}`); }
+  catch(err){ was ? STATE.favs.add(id) : STATE.favs.delete(id); apiFail(err); rerender(); } });
+
+/* —— 商品评价 —— */
+const LPRV = {};
+{ const pb0 = prvBox;
+  prvBox = function(p){ if (!API.on()) return pb0(p);
+    const R = LPRV[p.id];
+    if (!R){ LPRV[p.id] = 'loading'; API.req('GET', `/products/${encodeURIComponent(p.id)}/reviews`).then(r => { LPRV[p.id] = r; r.items.forEach(x => apiUser(x.user)); if (CUR.key?.startsWith('item|')) rerender(); }).catch(() => { LPRV[p.id] = {items:[], count:0, avg:null, canWrite:false}; }); }
+    if (!R || R === 'loading') return `<section class="sec prv"><div class="sh"><h2 class="x">评价</h2></div><p class="mut2">读取中…</p></section>`;
+    return `<section class="sec prv"><div class="sh"><h2 class="x">评价<span class="s">${R.count} 条</span></h2>${R.canWrite && STATE.role === 'user' ? `<button class="pill sm" data-act="prv-write" data-id="${esc(p.id)}">写评价</button>` : ''}</div>
+      <div class="prv-h">${R.count ? `<b class="x num">${R.avg.toFixed(1)}</b>${stars(R.avg)}` : '<b class="x num">—</b>'}<span class="mut2">只有买过的人能评价</span></div>
+      <div class="prv-l">${R.items.slice(0, 6).map(r => `<div class="prv-r">${uav(r.user.id, 'sm')}<div style="min-width:0"><div class="prv-m"><b>${esc(r.user.name)}</b>${stars(r.stars, 'sm')}<time>${fmtDay(+new Date(r.createdAt))}</time></div><p>${esc(r.body || '买家没有写文字评价')}</p></div></div>`).join('') || '<p class="mut2">还没有评价</p>'}</div></section>`; };
+}
+wrapAct('prv-write', (orig, b, e) => { const p = P(b.dataset.id); if (liveUser() && p) STATE.owned.add(p.id); orig(b, e); });   // 能不能写由服务器的 canWrite 决定
+wrapAct('prv-send', async (orig, b, e) => { if (!liveUser()) return orig(b, e);
+  const id = b.dataset.id, s = +$('.co-rate').dataset.s, t = $('#prvT').value.trim(); if (!s){ fxPop($('.co-sts'), 'fx-shake', 300); toast('先点星星打分', 'orange', 'star'); return; }
+  b.disabled = true;
+  try { await API.req('POST', `/products/${encodeURIComponent(id)}/reviews`, {stars:s, body:t}); delete LPRV[id]; closeSheet(); toast('评价已发布', 'pink'); rerender(); } catch(err){ b.disabled = false; apiFail(err); } });
+
 /* —— 开店、协议 —— */
 wrapAct('inv-check', async (orig, b) => { if (!liveUser()) return orig(b);
   const i = $('#inv'), v = i.value.trim().toUpperCase(), ag = $('#invAgree');
