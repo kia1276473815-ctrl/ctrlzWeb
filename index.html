@@ -3592,7 +3592,7 @@ function setRole(r, silent){
   const b = $('#meBtn');
   b.style.color = ''; if (r === 'guest'){ b.className = 'av'; b.style.background = 'var(--card)'; b.style.color = 'var(--ink)'; b.style.boxShadow = 'inset 0 0 0 1px var(--rule)';   /* 游客图标画在卡片色上：字色跟着深浅色走（.av 默认是固定深色，深色模式下看不见） */ b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1.2-3.8 4-5.5 7.5-5.5s6.3 1.7 7.5 5.5"/></svg>'; }
   else if (r === 'admin'){ b.className = 'av c-orange'; b.style.background = ''; b.style.boxShadow = ''; b.textContent = 'AZ'; }
-  else { b.className = 'av ' + ucls(ME); b.style.background = ''; b.style.boxShadow = ''; if (AVIMG[ME]) b.innerHTML = `<img src="${AVIMG[ME]}" alt="">`; else b.textContent = USERS[ME].ini; }
+  else { b.className = 'av ' + ucls(ME); b.style.background = ''; b.style.boxShadow = ''; if (AVIMG[ME]) b.innerHTML = `<img src="${AVIMG[ME]}" alt="">`; else b.textContent = avIni(USERS[ME]); }
   badge();
   if (!silent){ toast(`现在以「${ROLE_NAME[r]}」身份浏览`, 'blue'); rerender(); }
 }
@@ -5296,7 +5296,9 @@ ACTIONS.totop = () => { const s = CUR.post ? postScroller() : null; (s || window
 
 /* ================= 共享组件 ================= */
 const ucls = uid => 'c-' + (USERS[uid]?.c || 'orange');
-function av(uid, cls=''){ const u = USERS[uid]; if (!u) return `<span class="av c-orange ${cls}">AZ</span>`; const img = AVIMG[uid]; return `<span class="av ${ucls(uid)} ${cls}">${img ? `<img src="${img}" alt="">` : esc(u.ini)}</span>`; }
+/* 头像里的字：存着的缩写缺了 / 不像缩写（比如 "undefined"）/ 超过 2 个字，就按名字现算（nameIni 一定是 1–2 个字），不会溢出头像 */
+const avIni = u => { const i = u?.ini; return typeof i === 'string' && i && i !== 'undefined' && [...i].length <= 2 ? i : nameIni(u?.name); };
+function av(uid, cls=''){ const u = USERS[uid]; if (!u) return `<span class="av c-orange ${cls}">AZ</span>`; const img = AVIMG[uid]; return `<span class="av ${ucls(uid)} ${cls}">${img ? `<img src="${img}" alt="">` : esc(avIni(u))}</span>`; }
 /* ================= 头像：自己画（马上生效）/ 上传照片（管理员审核通过后才换上） ================= */
 const AVIMG = store.get('avImgs', {});   // 已生效的头像 {用户: 图片}
 const AVQ = store.get('avq', []);        // 待审核的上传头像 [{id, uid, img, time}]
@@ -8745,7 +8747,7 @@ function restoreAccount(id){
     refill(CHATS, {}); refill(CHAT_UNREAD, {}); refill(NOTES, {likes:[], fans:[], at:[]}); refill(NOTE_NEW, {likes:0, fans:0, at:0}); }
   store.set('seller', STATE.seller); store.set('hist', STATE.hist);
 }
-const userOf = a => ({id:a.id, name:a.name, ini:a.ini, c:a.c, role:'新朋友', city:'', bio:'', fans:0, follow:0, likes:'0', cover:'wave'});
+const userOf = a => ({id:a.id, name:a.name, ini:avIni(a), c:a.c, role:'新朋友', city:'', bio:'', fans:0, follow:0, likes:'0', cover:'wave'});
 ACC.boot = () => {
   ACC.list.filter(a => a.name).forEach(a => { USERS[a.id] = userOf(a); });
   const cur = store.get('me', 'rin');
@@ -10175,7 +10177,8 @@ LIVE.cfg = {phoneLogin:true, passwordLogin:true, wechatLogin:false, requirePhone
 async function liveCfg(){ try { Object.assign(LIVE.cfg, await API.req('GET', '/config')); } catch(e){} }
 const USER_RE = /^[A-Za-z0-9_]{3,20}$/;
 { const me0 = liveMe;
-  liveMe = function(me){ LIVE.me = me; me0(me); const a = ACC.list.find(x => x.id === me.id); if (a){ a.username = me.username || undefined; ACC.save(); } }; }
+  liveMe = function(me){ LIVE.me = me; me0(me); const a = ACC.list.find(x => x.id === me.id); if (a){ a.username = me.username || undefined; a.ini = avIni(USERS[me.id]); ACC.save(); }
+    const b = $('#meBtn'); if (b && STATE.role === 'user' && !AVIMG[ME]) b.textContent = avIni(USERS[ME]); }; }   // 改了名字，侧栏的「我」头像也跟着换
 
 /* —— 登录面板 —— */
 const auLiveSeg = () => `<div class="au-seg" role="tablist">${[['pw', '登录'], ['reg', '注册'], ...(LIVE.cfg.phoneLogin ? [['phone', '手机号']] : [])].map(([k, l]) => `<button role="tab" aria-selected="${AUTH.lm === k}" class="${AUTH.lm === k ? 'on' : ''}" data-act="au-lm" data-v="${k}">${l}</button>`).join('')}</div>`;
