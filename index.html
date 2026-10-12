@@ -798,8 +798,12 @@ mark{background:var(--yellow);color:inherit;border-radius:3px;padding:0 1px}
 body.post-open .player{bottom:auto;top:calc(10px + env(safe-area-inset-top,0px));animation:none}
 @media (min-width:761px) and (min-height:561px){ body.post-open.playing .ov{padding-top:84px;transition:padding .25s var(--ease)} body.post-open.playing .post{height:min(860px,calc(100vh - 108px))} }
 /* 吐司 */
-.toasts{position:fixed;left:50%;top:calc(var(--hdy) + 12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:120;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
-.toast{display:flex;align-items:center;gap:10px;height:42px;padding:0 18px 0 8px;border-radius:999px;background:var(--ink);color:var(--paper);font-size:14px;animation:tin .32s var(--spring);white-space:nowrap}
+.toasts{position:fixed;left:50%;top:calc(var(--hdy) + 12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:120;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:max-content;max-width:calc(100vw - 32px)}
+.toast{display:flex;align-items:center;gap:10px;min-height:42px;max-width:min(520px,calc(100vw - 32px));padding:8px 18px 8px 8px;border-radius:21px;background:var(--ink);color:var(--paper);font-size:14px;line-height:1.4;animation:tin .32s var(--spring)}
+.toast > span{min-width:0}
+.toast .t-undo{flex:none;margin:-4px -8px -4px 6px;height:34px;padding:0 14px;border-radius:999px;background:var(--yellow);color:var(--on);font-weight:700;pointer-events:auto}
+@media (max-width:760px){ .toast{animation-name:tinB} }   /* 手机上提示条在底部：从下面进、往下面退 */
+@keyframes tinB{from{transform:translateY(14px) scale(.9);opacity:0}}
 .toast i{width:26px;height:26px;border-radius:50%;background:var(--c,var(--green));display:grid;place-items:center;color:var(--ink)}
 .toast i svg{width:13px;height:13px}
 @keyframes tin{from{transform:translateY(-14px) scale(.9);opacity:0}}
@@ -973,10 +977,13 @@ html.theming,html.theming *{transition:background-color .35s ease,color .35s eas
 .cvis .cvp{grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
 .cvis .cvp button span{display:none}
 
+/* 减少动效：关掉位移 / 缩放 / 弹跳这些「动」的部分，保留 180ms 的淡入淡出和颜色变化，让状态变化仍然看得出来（苹果：减少动效不是没有反馈） */
 @media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.001s!important;animation-iteration-count:1!important;transition-duration:.001s!important}
+  *,*::before,*::after{animation-duration:.001s!important;animation-iteration-count:1!important;transition-property:opacity,color,background-color,border-color,box-shadow,fill,stroke!important;transition-duration:.18s!important}
+  .sheet,.drw,.sov,.toast,.ann,.pop-in{animation:fade .18s ease both!important}
 }
-html.rm *,html.rm *::before,html.rm *::after{animation-duration:.001s!important;animation-iteration-count:1!important;transition-duration:.001s!important}
+html.rm *,html.rm *::before,html.rm *::after{animation-duration:.001s!important;animation-iteration-count:1!important;transition-property:opacity,color,background-color,border-color,box-shadow,fill,stroke!important;transition-duration:.18s!important}
+html.rm .sheet,html.rm .drw,html.rm .sov,html.rm .toast,html.rm .ann{animation:fade .18s ease both!important}
 
 /* ===== 回到顶部（外圈 = 阅读进度） ===== */
 .totop{--fab-b:24px;--fab-p:0px;position:fixed;right:max(16px,calc(var(--g) - 8px));bottom:calc(var(--fab-b) + var(--fab-p) + env(safe-area-inset-bottom,0px));z-index:87;width:50px;height:50px;border-radius:50%;background:var(--card);color:var(--ink);box-shadow:0 6px 22px rgba(20,20,24,.16);display:grid;place-items:center;opacity:0;transform:translateY(14px) scale(.86);pointer-events:none;transition:opacity .2s,transform .32s var(--spring),bottom .25s var(--ease)}
@@ -3711,12 +3718,22 @@ function rngSet(id, v, fire=true){
 })();
 
 /* ================= 吐司 / 浮层 / 点赞爆点 ================= */
-function toast(msg, c='green', icon='check'){
+/* 提示条。显示时长按字数算（读得完，2.2–6 秒）；声音跟着结果走：成功「叮」，警告 / 出错是轻的「嗒」，普通信息不出声（苹果：反馈的声音要和原因一致）。
+   o.undo：带「撤销」按钮（5 秒），点了调用 o.undo()；o.ms：自定义时长 */
+function toast(msg, c='green', icon='check', o = {}){
   const el = document.createElement('div'); el.className = 'toast c-' + c;
-  el.innerHTML = `<i>${IC[icon] || IC.check}</i><span>${msg}</span>`; $('#toasts').appendChild(el); sfx('ok');
-  setTimeout(() => { el.style.transition = 'opacity .25s, transform .25s'; el.style.opacity = 0; el.style.transform = 'translateY(-8px)'; setTimeout(() => el.remove(), 260); }, 2200);
+  el.innerHTML = `<i>${IC[icon] || IC.check}</i><span>${msg}</span>${o.undo ? '<button class="t-undo" type="button">撤销</button>' : ''}`; $('#toasts').appendChild(el);
+  const bad = c === 'orange' || c === 'red' || icon === 'x' || icon === 'lock'; if (bad) sfx('tick'); else if (c !== 'blue') sfx('ok');
+  const len = String(msg).replace(/<[^>]+>/g, '').length, ms = o.ms || (o.undo ? 5000 : clamp(1600 + len * 55, 2200, 6000));
+  const out = () => { if (!el.isConnected || el.dataset.out) return; el.dataset.out = 1; el.style.transition = 'opacity .25s, transform .25s'; el.style.opacity = 0; el.style.transform = `translateY(${isMob() ? 8 : -8}px)`; setTimeout(() => el.remove(), 260); };
+  const t = setTimeout(out, ms);
+  if (o.undo) $('.t-undo', el).addEventListener('click', () => { clearTimeout(t); try { o.undo(); } finally { out(); } }, {once:true});
+  return el;
 }
 let _sheetClean = null;
+/* 删了还能撤销的评论：key → 5 秒后真正提交的定时器。离开页面时立刻提交，免得删了没删掉 */
+const CDEL_PEND = new Map();
+addEventListener('pagehide', () => { for (const [k, t] of CDEL_PEND){ clearTimeout(t); } const ks = [...CDEL_PEND.keys()]; CDEL_PEND.clear(); ks.forEach(k => { const pid = k.slice(0, k.lastIndexOf(':')); STATE.cdel.delete(k); try { ACTIONS['cmt-dgo']({dataset:{p:pid, k, quiet:'1'}}); } catch(e){} }); });
 function sheet(html, mount){
   closeSheet({instant:true}); ghostsOff(); $('#layer').innerHTML = `<div class="sov" data-ov><div class="sheet" role="dialog" aria-modal="true"><button class="x-close" data-act="close" aria-label="关闭">${IC.x}</button>${html}</div></div>`;
   if (mount) _sheetClean = mount($('#layer .sheet')) || null;
@@ -5624,7 +5641,7 @@ function ovSync(){ const count = overlayNodes().length, open = count > 0;
 new MutationObserver(ovSync).observe($('#layer'), {childList:true});
 new MutationObserver(ovSync).observe(document.body, {childList:true});
 /* 网址没变的后退（关弹层那一条）不会触发 hashchange，在这里处理 */
-addEventListener('popstate', () => { const st = history.state; if (!st || st.ctrlz == null || curH() !== HST.stk[HST.d]) return;
+addEventListener('popstate', e => { VT.ua = e.hasUAVisualTransition ? performance.now() : 0; const st = history.state; if (!st || st.ctrlz == null || curH() !== HST.stk[HST.d]) return;
   HST.d = st.ctrlz; HST.stk[HST.d] = curH(); const want = Math.min(st.ov || 0, overlayNodes().length); HST.ovN = want; HST.ov = want > 0;
   while (overlayNodes().length > want) closeTopOverlay();
   if (HST.pend){ const p = HST.pend; HST.pend = null; navReplace(p); }
@@ -8489,9 +8506,13 @@ Object.assign(ACTIONS, {
   'post-dgo': b => { const id = b.dataset.id, i = POSTS.findIndex(p => p.id === id); if (i < 0) return; POSTS.splice(i, 1); MINE.del.push(id); delete MINE.ed[id]; mineSave(); closeSheet();
     if (CUR.post === id) ACTIONS.pclose(); toast('已删除', 'blue'); setTimeout(rerender, 60); },
   // 评论：本人删除 / 他人举报
-  'cmt-del': b => { const pid = b.dataset.p, k = b.dataset.k;
-    sheet(`<h3>删除这条评论？</h3><button class="pill lg au-lo" data-act="cmt-dgo" data-p="${pid}" data-k="${esc(k)}">删除</button>`); },
-  'cmt-dgo': b => { const pid = b.dataset.p, k = b.dataset.k; STATE.cdel.add(k); store.set('cdel', [...STATE.cdel]); const p = POST(pid); if (p && p.cmts > 0) p.cmts--; closeSheet(); toast('评论已删除', 'blue');
+  'cmt-del': b => { const pid = b.dataset.p, k = b.dataset.k; if (CDEL_PEND.has(k)) return;
+    const redraw = () => { if (RL.on && typeof openReelCm === 'function') openReelCm(); else if (CUR.post === pid) renderPost(pid); else rerender(); };
+    STATE.cdel.add(k); redraw();   // 先在本地藏起来（不存、不调接口）
+    const commit = () => { if (!CDEL_PEND.has(k)) return; CDEL_PEND.delete(k); STATE.cdel.delete(k); ACTIONS['cmt-dgo']({dataset:{p:pid, k, quiet:'1'}}); };
+    CDEL_PEND.set(k, setTimeout(commit, 5000));
+    toast('评论已删除', 'blue', 'check', {undo:() => { clearTimeout(CDEL_PEND.get(k)); CDEL_PEND.delete(k); STATE.cdel.delete(k); redraw(); }}); },
+  'cmt-dgo': b => { const pid = b.dataset.p, k = b.dataset.k; STATE.cdel.add(k); store.set('cdel', [...STATE.cdel]); const p = POST(pid); if (p && p.cmts > 0) p.cmts--; closeSheet(); if (!b.dataset.quiet) toast('评论已删除', 'blue');
     if (RL.on && typeof openReelCm === 'function') openReelCm(); else if (CUR.post === pid) renderPost(pid); else rerender(); },
   // 卖家商品管理
   'sp-manage': b => { const p = P(b.dataset.id); if (!p || p.seller !== ME) return;
@@ -9414,10 +9435,11 @@ function navDir(from, to){
     addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
   }, true);
 })();
-const VT = {t: null};
+const VT = {t: null, ua: 0};   // ua：浏览器刚播过自己的返回动画（popstate.hasUAVisualTransition）的时间
 addEventListener('pointerdown', () => { if (VT.t){ try { VT.t.skipTransition(); } catch(e){} } }, {capture: true, passive: true});
 function pageSwap(dir, fn){
-  if (!dir || !document.startViewTransition || reduced() || !isMob()){ fn(); return; }
+  const ua = VT.ua && performance.now() - VT.ua < 800; VT.ua = 0;   // 浏览器已经播过返回动画，再滑一次会像播了两遍
+  if (ua || !dir || !document.startViewTransition || reduced() || !isMob()){ fn(); return; }
   const r = document.documentElement; r.dataset.vt = dir;
   // 翻页动画期间页面不响应点击：新页面画得慢时（手机上）会像卡住。点一下就直接跳到动画结尾，最长 1.2 秒也自动结束
   try { const t = document.startViewTransition(fn); VT.t = t; const kill = setTimeout(() => { try { t.skipTransition(); } catch(e){} }, 1200);
