@@ -26,7 +26,7 @@ test('移动过场提前取消接住 ready，旧完成任务不能清除新过�
     fn();update.resolve();transitions.push(t);return t;
   }},console:{error:(...v)=>errors.push(v)},addEventListener(){},reduced:()=>false,isMob:()=>true,
     setTimeout:f=>{const id=timers.size+1;timers.set(id,f);return id;},clearTimeout:id=>timers.delete(id)});
-  vm.runInContext(section('const VT = {t: null};','/* ================= 深浅色切换的过场'),ctx);
+  vm.runInContext(section('const VT = {','/* ================= 深浅色切换的过场'),ctx);
   let updates=0;ctx.update=()=>updates++;
   vm.runInContext("pageSwap('tab',update);VT.t.skipTransition();pageSwap('tab',update);",ctx);
   transitions[0].finish();await tick();

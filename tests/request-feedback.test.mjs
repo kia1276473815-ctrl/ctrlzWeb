@@ -75,7 +75,7 @@ function feeds(){
   const pending=[],old={id:'old'},status={innerHTML:''};let patches=0;
   const ctx=vm.createContext({console,Promise,Map,Set,LIVE:{pend:{},feed:{status:'ready',seq:0}},POSTS:[old],ME:'me',CUR:{key:'home|',post:null},ACTIONS:{},
     API:{base:'fixture',on:()=>true,req:()=>{const wait=defer();pending.push(wait);return wait.promise;}},apiPost:x=>x,esc:String,
-    $:sel=>sel==='#app .feed-state'?status:sel==='#app .mason'?{}:null,patchMoreList:()=>patches++,rerender:()=>patches++,apiFail(){}});
+    $:sel=>sel==='#app .feed-state'?status:sel==='#app .mason'?{}:null,$$:()=>[],patchMoreList:()=>patches++,rerender:()=>patches++,apiFail(){}});
   vm.runInContext(section('function feedStatusHtml(){','async function liveMeExtras(){'),ctx);return {ctx,pending,old,status,get patches(){return patches;}};
 }
 test('刷新等待及失败保留已有作品和滚动容器，显示可重试状态',async()=>{

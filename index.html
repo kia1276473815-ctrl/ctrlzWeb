@@ -3241,9 +3241,9 @@ REPORTS.forEach(r => { if (r.kind === 'cmt' && !r.key) r.key = r.ref + ':' + has
 [['review', REVIEW], ['reports', REPORTS], ['refunds', REFUNDS], ['invites', INVITES]].forEach(([k, arr]) => { if (Array.isArray(ADM[k])) arr.splice(0, arr.length, ...ADM[k]); ADM[k] = arr; });
 // 被下架的帖子从 POSTS 里拿出来：用户端完全看不到，管理员还能打开查看
 Object.keys(ADM.taken.post).forEach(id => { const i = POSTS.findIndex(p => p.id === id); if (i >= 0) TAKEN_P[id] = POSTS.splice(i, 1)[0]; });
-/* 评论：按「帖子 + 作者 + 内容」认一条（原型里评论没有 id）；被下架的评论在所有地方都不显示 */
-const cmtKey = (pid, c) => pid + ':' + hash(c.u + '|' + c.t);
-const cmtsOf = pid => (COMMENTS[pid] || COMMENTS._default).concat(UI.newCmts[pid] || []).filter(c => (c.id && POST(pid)?.live || !ADM.taken.cmt[cmtKey(pid, c)] && !STATE.cdel?.has(cmtKey(pid, c))) && !blocked(c.u));
+/* 评论：真实评论优先按 ID，原型按「帖子 + 作者 + 内容」识别；被下架的评论在各处过滤。 */
+const cmtKey = (pid, c) => pid + ':' + (c.id || hash(c.u + '|' + c.t));
+const cmtsOf = pid => (COMMENTS[pid] || COMMENTS._default).concat(UI.newCmts[pid] || []).filter(c => !(typeof CDEL_PEND !== 'undefined' && CDEL_PEND.get(cmtKey(pid, c))?.scope === cdelScope()) && (c.id && POST(pid)?.live || !ADM.taken.cmt[cmtKey(pid, c)] && !STATE.cdel?.has(cmtKey(pid, c))) && !blocked(c.u));
 function cmtFlash(pid,c){ const f=UI.flashCmt; return !!(f && f.p===pid && (f.id ? c.id===f.id : c.t===f.t && (!f.u || c.u===f.u))); }
 /* 账号状态 */
 const acctOf = uid => ADM.acct[uid] ||= {warns:[]};
@@ -3736,9 +3736,20 @@ function toast(msg, c='green', icon='check', o = {}){
   return el;
 }
 let _sheetClean = null;
-/* 删了还能撤销的评论：key → 5 秒后真正提交的定时器。离开页面时立刻提交，免得删了没删掉 */
+/* 删评论：5 秒内可撤销；提交期间仍隐藏。作用域包含服务、令牌轮次和账号，旧计时器不能借新账号提交。 */
 const CDEL_PEND = new Map();
-addEventListener('pagehide', () => { for (const [k, t] of CDEL_PEND){ clearTimeout(t); } const ks = [...CDEL_PEND.keys()]; CDEL_PEND.clear(); ks.forEach(k => { const pid = k.slice(0, k.lastIndexOf(':')); STATE.cdel.delete(k); try { ACTIONS['cmt-dgo']({dataset:{p:pid, k, quiet:'1'}}); } catch(e){} }); });
+const cdelScope = () => JSON.stringify([API.base, API.epoch, ME, STATE.role]);
+function cdelFinish(k, item, preserve = false){ if (CDEL_PEND.get(k) === item){ clearTimeout(item.timer); CDEL_PEND.delete(k); if (!preserve) STATE.cdel.delete(k); } }
+function cdelCommit(k, item, keepalive = false){
+  if (CDEL_PEND.get(k) !== item || item.sent) return;
+  clearTimeout(item.timer); if (cdelScope() !== item.scope){ cdelFinish(k, item); return; }
+  item.sent = true; item.local = !API.on() || !POST(item.pid)?.live || !item.id;
+  try { const task = ACTIONS['cmt-dgo']({dataset:{p:item.pid, k, cid:item.id || '', quiet:'1', keepalive:keepalive ? '1' : ''}, cdel:item});
+    Promise.resolve(task).catch(() => {}).finally(() => { cdelFinish(k, item, item.local); });
+  } catch(e){ cdelFinish(k, item); }
+}
+// 离开文档时尽力提交（keepalive）；浏览器退出、网络中断或需要刷新认证时仍不能保证送达。
+addEventListener('pagehide', () => { for (const [k, item] of CDEL_PEND) cdelCommit(k, item, true); });
 function sheet(html, mount){
   closeSheet({instant:true}); ghostsOff(); $('#layer').innerHTML = `<div class="sov" data-ov><div class="sheet" role="dialog" aria-modal="true"><button class="x-close" data-act="close" aria-label="关闭">${IC.x}</button>${html}</div></div>`;
   if (mount) _sheetClean = mount($('#layer .sheet')) || null;
@@ -8518,13 +8529,13 @@ Object.assign(ACTIONS, {
     if (CUR.post === id) ACTIONS.pclose(); toast('已删除', 'blue'); setTimeout(rerender, 60); },
   // 评论：本人删除 / 他人举报
   'cmt-del': b => { const pid = b.dataset.p, k = b.dataset.k; if (CDEL_PEND.has(k)) return;
-    const redraw = () => { if (RL.on && typeof openReelCm === 'function') openReelCm(); else if (CUR.post === pid) renderPost(pid); else rerender(); };
-    STATE.cdel.add(k); redraw();   // 先在本地藏起来（不存、不调接口）
-    const commit = () => { if (!CDEL_PEND.has(k)) return; CDEL_PEND.delete(k); STATE.cdel.delete(k); ACTIONS['cmt-dgo']({dataset:{p:pid, k, quiet:'1'}}); };
-    CDEL_PEND.set(k, setTimeout(commit, 5000));
-    toast('评论已删除', 'blue', 'check', {undo:() => { clearTimeout(CDEL_PEND.get(k)); CDEL_PEND.delete(k); STATE.cdel.delete(k); redraw(); }}); },
-  'cmt-dgo': b => { const pid = b.dataset.p, k = b.dataset.k; STATE.cdel.add(k); store.set('cdel', [...STATE.cdel]); const p = POST(pid); if (p && p.cmts > 0) p.cmts--; closeSheet(); if (!b.dataset.quiet) toast('评论已删除', 'blue');
-    if (RL.on && typeof openReelCm === 'function') openReelCm(); else if (CUR.post === pid) renderPost(pid); else rerender(); },
+    const c = (COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || []).find(c => cmtKey(pid, c) === k); if (!c || !cmtMine(c)) return;
+    const redraw = () => { if (RL.on && RL.cm && reelCur()?.id === pid && typeof openReelCm === 'function') openReelCm(); else if (CUR.post === pid) renderPost(pid); else if (UI.meTab === 'cmts') patchMyComments(); };
+    const item = {pid, id:c.id, scope:cdelScope(), timer:0, sent:false}; CDEL_PEND.set(k, item);
+    item.timer = setTimeout(() => cdelCommit(k, item), 5000); redraw();   // 只用本轮待删记录隐藏，不写持久删除标记
+    toast('评论已删除', 'blue', 'check', {undo:() => { if (CDEL_PEND.get(k) !== item || item.sent) return; const current = cdelScope() === item.scope; cdelFinish(k, item); if (current) redraw(); }}); },
+  'cmt-dgo': b => { const pid = b.dataset.p, k = b.dataset.k; STATE.cdel.add(k); store.set('cdel', [...STATE.cdel]); const p = POST(pid); if (p && p.cmts > 0) p.cmts--; if (!b.dataset.quiet){ closeSheet(); toast('评论已删除', 'blue'); }
+    if (RL.on && RL.cm && reelCur()?.id === pid && typeof openReelCm === 'function') openReelCm(); else if (CUR.post === pid) renderPost(pid); else if (UI.meTab === 'cmts') patchMyComments(); },
   // 卖家商品管理
   'sp-manage': b => { const p = P(b.dataset.id); if (!p || p.seller !== ME) return;
     sheet(`<h3>管理「${esc(p.title)}」</h3>
@@ -10283,7 +10294,7 @@ const API = {
       const send = async canRetry => {
         const current = () => { if (base !== this.base || epoch !== this.epoch) throw Object.assign(new Error('账号已切换'), {code:'cancel'}); }; current();
         const sentToken = this.tok, h = {}; if (body !== undefined) h['Content-Type'] = 'application/json'; if (sentToken?.access) h.Authorization = 'Bearer ' + sentToken.access;
-        const res = await fetch(base + path, {method, headers:h, body:body === undefined ? undefined : JSON.stringify(body), signal});
+        const res = await fetch(base + path, {method, headers:h, body:body === undefined ? undefined : JSON.stringify(body), signal, ...(options.keepalive === true ? {keepalive:true} : {})});
         current();
         if (res.status === 401 && canRetry && token?.refresh && !path.startsWith('/auth/')){
           if (await requestWait(this.refresh(), signal)){ if (base !== this.base || !this.tok) throw Object.assign(new Error('账号已切换'), {code:'cancel'}); return send(false); }
@@ -10609,7 +10620,7 @@ function feedStatusHtml(){
   if (!s || s.status === 'pending' || s.status === 'refreshing') return `<div class="request-note" role="status">${POSTS.length ? '正在更新作品…' : '正在读取作品…'}</div>`;
   if (s.status === 'error') return `<div class="request-note" role="status"><span>${esc(s.error || '作品读取失败，请重试')}</span><button class="pill sm lt" data-act="feed-retry">重试</button></div>`; return '';
 }
-function syncFeedState(){ const el = $('#app .feed-state'); if (el) el.innerHTML = feedStatusHtml(); }
+function syncFeedState(){ const el = $('#app .feed-state'); if (el){ el.innerHTML = feedStatusHtml(); if (['ready','error'].includes(LIVE.feed?.status)) $$('.sk-list', el.parentElement).forEach(n => n.remove()); } }
 async function liveFeed(){
   const state = LIVE.feed ||= {seq:0}, seq = ++state.seq, base = API.base, me = ME; state.status = POSTS.length ? 'refreshing' : 'pending'; state.error = null; syncFeedState();
   try { const r = await API.req('GET', '/posts?tab=rec&limit=50'); if (LIVE.feed !== state || state.seq !== seq || base !== API.base || me !== ME) return;
@@ -10730,9 +10741,18 @@ wrapAct('clike',(orig,b,e)=>cmtLikeToggle(b,orig,e));
 wrapAct('rl-cl',(orig,b,e)=>cmtLikeToggle(b,orig,e));
 wrapAct('at-like',(orig,b,e)=>cmtNoticeLike(b,orig,e));
 wrapAct('cmt-dgo', async (orig, b, e) => {
-  const pid = b.dataset.p, k = b.dataset.k, c = cmtsOf(pid).find(x => cmtKey(pid, x) === k); orig(b, e);
-  if (!c?.id || !liveUser()) return;
-  const current = accountSession(); try { await API.req('DELETE', `/comments/${c.id}`); if (current()) myCmtInvalidate(); } catch(err){ if (!current()) return; STATE.cdel.delete(k); store.set('cdel', [...STATE.cdel]); apiFail(err); softRefresh(); }
+  const pid = b.dataset.p, k = b.dataset.k, item = b.cdel, scope = item?.scope || cdelScope();
+  if (cdelScope() !== scope){ if (item) cdelFinish(k, item); return; }
+  const c = (COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || []).find(x => b.dataset.cid ? x.id === b.dataset.cid : cmtKey(pid, x) === k);
+  if (!c || !cmtMine(c)){ if (item) cdelFinish(k, item); return; }
+  const p = POST(pid), before = p?.cmts || 0; orig(b, e);
+  if (!c.id || !p?.live || !liveUser()){ if (item){ clearTimeout(item.timer); CDEL_PEND.delete(k); } return; }
+  const removed = Math.max(0, before - (p.cmts || 0)), current = () => cdelScope() === scope && liveUser();
+  try { await API.req('DELETE', `/comments/${encodeURIComponent(c.id)}`, undefined, true, {keepalive:b.dataset.keepalive === '1'}); if (!current()) return;
+    for (const list of [COMMENTS[pid], UI.newCmts[pid]]) if (list) for (let i = list.length - 1; i >= 0; i--) if (list[i].id === c.id) list.splice(i, 1);
+    myCmtInvalidate();
+  } catch(err){ if (!current()) return; if (POST(pid) === p) p.cmts += removed; apiFail(err); }
+  finally { if (item) cdelFinish(k, item); else STATE.cdel.delete(k); if (current()){ store.set('cdel', [...STATE.cdel]); cmtPaint(pid); patchMyComments(); } }
 });
 /* 发帖：声音 / 可视化帖子把音频真的传上去（浏览器认不出的格式转成 WAV），封面样式和时长放在 style 里 */
 wrapAct('cp-publish', async (orig, b, e) => {
@@ -10970,7 +10990,7 @@ const apiOrder = o => (apiUser(o.seller), {id:o.id, no:o.no, pid:o.productId, ti
 function liveApplyOrder(o){ STATE.orders = [apiOrder(o), ...STATE.orders.filter(x => x.id !== o.id)]; STATE.owned.add(o.productId); LSHOP.library?.set(o.productId,{productId:o.productId,orderId:o.id,downloads:o.downloads}); const p = P(o.productId); if (p) p.sales++; }
 
 /* —— 读取 —— */
-function syncShopState(){ const el = $('#app .shop-state'); if (el) el.innerHTML = shopStatusHtml(); }
+function syncShopState(){ const el = $('#app .shop-state'); if (el){ el.innerHTML = shopStatusHtml(); if (['ready','error'].includes(LSHOP.feed?.status)) $$('.sk-list', el.parentElement).forEach(n => n.remove()); } }
 async function liveShop(){
   const state = LSHOP.feed ||= {seq:0}, seq = ++state.seq, base = API.base, me = ME;
   const current = () => LSHOP.feed === state && state.seq === seq && base === API.base && me === ME;

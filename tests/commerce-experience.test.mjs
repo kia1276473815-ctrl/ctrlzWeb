@@ -14,7 +14,7 @@ function shopRealm(products=[]){
     LSHOP:{feed:{status:'ready',seq:0},next:null},onSale:p=>p.status==='on_sale',esc:String,
     API:{base:'fixture',on:()=>true,req:()=>{const d=defer();pending.push(d);return d.promise;}},
     P:id=>ctx.PRODUCTS.find(p=>p.id===id),apiProduct:p=>{const old=ctx.PRODUCTS.find(x=>x.id===p.id);if(old)return Object.assign(old,p);ctx.PRODUCTS.push(p);return p;},
-    sleeve:p=>JSON.stringify(p),$:s=>s==='#app .shop-state'?status:s==='#app .grid-p'?{}:null,
+    sleeve:p=>JSON.stringify(p),$$:()=>[],$:s=>s==='#app .shop-state'?status:s==='#app .grid-p'?{}:null,
     patchMoreList:(k,changed)=>patches.push({k,changed:[...changed]}),rerender:()=>patches.push({full:true}),apiFail:e=>failures.push(e.message)});
   vm.runInContext(section('function shopProducts(){','ROUTES.shop = arg => {'),ctx);
   vm.runInContext(section('function syncShopState(){','async function liveMine(){'),ctx);
