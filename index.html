@@ -3148,16 +3148,16 @@ const ADM = Object.assign({
   audit:[],
   params:{plat:.03, coFee:.05, coRev:2, coAuto:7},
   vouchers:[],                               // 代金券：{id, uid, amt 面额, exp 到期时间（0 = 长期）, note 说明, by, ts, off 撤回时间}
-  vuse:[],                                   // 用券记录：{vid, uid, no 订单号, amt 抵扣, ts}；一张券只能有一条算数的（订单退款后这条不算，券恢复）
+  vuse:[],                                   // 用券记录：{vid, uid, no 订单号, amt 抵扣, ts}；一张券只有一条，用过就作废，退款也不恢复
   agree:{}                                   // 同意协议的记录：uid → {seller:{v 版本, ts}, license:{…}}（接后端后存服务器，作为证据）
 }, store.get('adm', {}));
 const admSave = () => store.set('adm', ADM);
 /* ================= 代金券（原型：存在 ADM 里；连着后端时读 LSHOP.wallet = GET /me/wallet） =================
    超级管理员发给用户。**每张只能用一次**：一单最多用一张、不能叠加；用在一单上就整张用掉，抵扣 = min(面额, 价格)，
-   没抵扣完的部分作废，不找零、不留到下次。订单退款后整张恢复（有效期不变）。只能买商品，不能提现 / 转让。
+   没抵扣完的部分作废，不找零、不留到下次。**用过就彻底作废，退款也不恢复**（退款只退现金）。只能买商品，不能提现 / 转让。
    卖家照原价结算，券抵扣的部分由平台承担。付款前一定要让用户看到「整张用掉 / 剩下的作废」的提醒（payBox 里的 vcWarn） */
 const r2 = x => Math.round(x*100)/100, VC_MAX = 2000;
-const vcUse = v => ADM.vuse.find(u => u.vid === v.id && rfOf(u.no)?.st !== '已退款');   // 这张券现在算数的那次使用
+const vcUse = v => ADM.vuse.find(u => u.vid === v.id);   // 这张券用在了哪一单（退款了也算用过）
 const vcUsed = v => vcUse(v)?.amt || 0;
 const vcLeft = v => vcUse(v) ? 0 : v.amt;
 const vcSt = v => v.off ? ['已撤回', ''] : vcUse(v) ? ['已用', ''] : v.exp && v.exp < Date.now() ? ['已过期', ''] : ['可用', 'green'];
@@ -6465,7 +6465,7 @@ function vcPick(pr){ const L = vcFree(ME); if (!L.length || !(pr.price > 0)) ret
 function vcWarn(v, pr){ const ded = r2(Math.min(v.amt, pr.price)), w = r2(v.amt - ded);
   return `<div class="vcw ${w > 0 ? 'waste' : ''} ${UI.vcOk ? 'ok' : ''}" id="vcw" role="alert">
     <div class="vcw-t"><span class="vcw-use" style="flex:${ded}"><i>这单抵扣</i><b class="num">${yuan2(ded)}</b></span>${w > 0 ? `<span class="vcw-cut" style="flex:${Math.max(w, v.amt * .22)}"><i>作废</i><b class="num">${yuan2(w)}</b></span>` : '<span class="vcw-hole" aria-hidden="true"></span>'}</div>
-    <div class="vcw-m"><b>${w > 0 ? `剩下的 ${yuan2(w)} 会作废` : '这张券会整张用掉'}</b><span>${yuan2(v.amt)} 的券只能用一次${w > 0 ? `，这单只抵扣 ${yuan2(ded)}，不找零、也不能留到下次` : '，用完就没了'}。以后退款的话，券会恢复。</span></div>
+    <div class="vcw-m"><b>${w > 0 ? `剩下的 ${yuan2(w)} 会作废` : '这张券会整张用掉'}</b><span>${yuan2(v.amt)} 的券只能用一次${w > 0 ? `，这单只抵扣 ${yuan2(ded)}，不找零、也不能留到下次` : '，用完就没了'}。用券买的东西不能退款（商品有问题可以申诉），券也不会退回。</span></div>
     ${UI.vcOk ? '<span class="vcw-ok">已确认</span>' : ''}</div>`; }
 /* 提醒出现时的动效：整块弹出；会作废的那截先抖两下再被撕掉、掉落，撕口迸出几何碎片；不作废的就在票根上打一个孔 */
 function vcWarnFx(el){ if (!el || reduced()) return; const E = 'cubic-bezier(.2,.9,.3,1.3)';
@@ -6607,7 +6607,7 @@ function meLegacy(arg){
   const nav = [['lib','资源库', owned.length],['orders','订单', 0],['favs','收藏', 0],['settings','设置', 0]];
   let body = '';
   if (t === 'lib') body = `<div class="lib">${owned.map(p => `<div class="li c-${CATS[p.cat].c}"><img src="${cover(p.cover, hash(p.id)%50, 180, 180)}" alt="" data-go="item-${p.id}" style="cursor:pointer"><div style="min-width:0"><div class="lab" style="display:flex;gap:6px;align-items:center"><span class="dot"></span>${esc(p.en)}</div><h4>${esc(p.title)}</h4><div class="m">${esc(p.size)}${verNew(p) ? ` · <b style="color:var(--pink)">有新版本 ${esc(p.ver)}</b>` : ''}</div><div class="li-b">${dlBtns(p, 'sm')}${prvMine(p.id) ? '' : `<button class="pill sm lt" data-act="prv-write" data-id="${p.id}">评价</button>`}</div></div>${dlOf(p.id).links.length || dlOf(p.id).texts.length ? `<div class="dlx" id="dlx-${p.id}" hidden>${dlPanel(p)}</div>` : ''}</div>`).join('')}</div>`;
-  if (t === 'orders') body = `<div class="box"><div class="tw"><table class="t"><thead><tr><th>资源</th><th>付款方式</th><th class="r">金额</th><th>时间</th><th>状态</th><th></th></tr></thead><tbody>${STATE.orders.map(o => { const p = P(o.pid); return `<tr class="ad-click" data-act="ord-open" data-no="${o.no}"><td><a data-go="item-${p.id}" style="cursor:pointer;font-weight:600">${esc(p.title)}</a>${o.fresh ? ' <span class="tag c-pink">新</span>' : ''}<div class="mut2" style="font-size:11.5px;font-family:var(--f-b)">${o.no}</div></td><td>${o.pay}${o.vc && o.pay !== '代金券' ? ' + 代金券' : ''}</td><td class="r n">${yuan2(o.price)}${o.vc ? `<div class="mut2" style="font-size:11.5px">券 −${yuan2(o.vc)}</div>` : ''}</td><td class="mut2 n">${o.time}</td><td><span class="st"><span class="dot c-${ordSt(o) === '已完成' ? 'green' : ordSt(o) === '退款中' ? 'orange' : 'violet'}"></span>${ordSt(o)}</span>${rfOf(o.no)?.st === '已拒绝' ? '<div class="mut2" style="font-size:11.5px">退款未通过</div>' : ''}</td><td class="r"><button class="pill sm lt" data-act="ord-open" data-no="${o.no}">详情</button> ${ordSt(o) === '已完成' && o.price > 0 && !rfOf(o.no) ? `<button class="pill sm lt" data-act="refund" data-no="${o.no}">退款</button>` : ''}</td></tr>`; }).join('')}</tbody></table></div></div>`;
+  if (t === 'orders') body = `<div class="box"><div class="tw"><table class="t"><thead><tr><th>资源</th><th>付款方式</th><th class="r">金额</th><th>时间</th><th>状态</th><th></th></tr></thead><tbody>${STATE.orders.map(o => { const p = P(o.pid); return `<tr class="ad-click" data-act="ord-open" data-no="${o.no}"><td><a data-go="item-${p.id}" style="cursor:pointer;font-weight:600">${esc(p.title)}</a>${o.fresh ? ' <span class="tag c-pink">新</span>' : ''}<div class="mut2" style="font-size:11.5px;font-family:var(--f-b)">${o.no}</div></td><td>${o.pay}${o.vc && o.pay !== '代金券' ? ' + 代金券' : ''}</td><td class="r n">${yuan2(o.price)}${o.vc ? `<div class="mut2" style="font-size:11.5px">券 −${yuan2(o.vc)}</div>` : ''}</td><td class="mut2 n">${o.time}</td><td><span class="st"><span class="dot c-${ordSt(o) === '已完成' ? 'green' : ordSt(o) === '退款中' ? 'orange' : 'violet'}"></span>${ordSt(o)}</span>${rfOf(o.no)?.st === '已拒绝' ? '<div class="mut2" style="font-size:11.5px">退款未通过</div>' : ''}</td><td class="r"><button class="pill sm lt" data-act="ord-open" data-no="${o.no}">详情</button> ${ordSt(o) === '已完成' && o.price > 0 && !rfOf(o.no) ? `<button class="pill sm lt" data-act="refund" data-no="${o.no}">${o.vc ? '申诉' : '退款'}</button>` : ''}</td></tr>`; }).join('')}</tbody></table></div></div>`;
   if (t === 'favs'){ const fp = PRODUCTS.filter(p => STATE.favs.has(p.id)), fs = POSTS.filter(p => STATE.favs.has(p.id)); onMount(root => mountWaves(root));
     body = `${fp.length ? `<div class="grid-p">${fp.map(sleeve).join('')}</div>` : ''}${fs.length ? `<div class="mason" style="margin-top:32px">${fs.map(postCard).join('')}</div>` : ''}${!fp.length && !fs.length ? '<div class="empty"><div class="x">空</div><span>看到喜欢的就点书签</span></div>' : ''}`; }
   const profBox = `<div class="box"><div class="box-h"><h3>资料</h3></div><div class="box-b"><div class="fg"><div class="fl"><label for="pf-n">名字</label><input class="inp" id="pf-n" value="${esc(u.name)}"></div><div class="fl"><label for="pf-c">城市</label><input class="inp" id="pf-c" value="${esc(u.city)}"></div><div class="fl full"><label for="pf-b">一句话介绍</label><textarea class="inp" id="pf-b">${esc(u.bio)}</textarea></div></div><button class="pill" data-act="save-prof" style="margin-top:14px">保存</button></div></div>`;
@@ -7395,7 +7395,7 @@ Object.assign(ACTIONS, {
   // 退款
   'rf-do': b => { if (!admGuard('refunds')) return; const r = REFUNDS.find(x => x.no === b.dataset.no); if (!r) return; const ok = b.dataset.v === 'ok';
     r.st = ok ? '已退款' : '已拒绝'; ADM.lst[r.no] = ok ? 'refund' : 'paid'; refundSync(); admLog(ok ? '同意退款' : '拒绝退款', `${r.no} ${r.item}`, yuan2(r.amt));
-    notify(r.buyer, ok ? '退款已同意' : '退款申请没有通过', ok ? `「${r.item}」${r.amt > 0 ? `的 ${yuan2(r.amt)} 会原路退回，1–3 个工作日到账${r.vc ? '；用掉的代金券已经恢复，可以再用一次' : ''}` : '：用掉的代金券已经恢复，可以再用一次'}。` : `「${r.item}」${r.dl === '未下载' ? '' : r.dl + '，'}按《退款规则》不支持退款。如果文件有问题可以联系卖家，或回复这条通知说明。`);
+    notify(r.buyer, ok ? '退款已同意' : '退款申请没有通过', ok ? `「${r.item}」${r.amt > 0 ? `的 ${yuan2(r.amt)} 会原路退回，1–3 个工作日到账${r.vc ? `；代金券抵扣的 ${yuan2(r.vc)} 不退（券用过就作废）` : ''}` : `：代金券抵扣的 ${yuan2(r.vc || 0)} 不退（券用过就作废）`}。` : `「${r.item}」${r.dl === '未下载' ? '' : r.dl + '，'}按《退款规则》不支持退款。如果文件有问题可以联系卖家，或回复这条通知说明。`);
     admSave(); toast(r.st, ok ? 'green' : 'orange', ok ? 'check' : 'x'); rerender(); },
   // 纠纷
   'dp-open': b => disputeSheet(b.dataset.id),
@@ -7859,6 +7859,7 @@ const DOCS = {   // 用户协议、隐私政策里有主体名和费率，用 ge
   refund:{t:'退款规则', s:[
     ['数字资源', ['购买后 7 天内、还没有下载或查看过链接的，可以极速退款，原路退回；', '已经下载或查看过的，因为数字资源可以复制，原则上不退；但文件损坏、和描述严重不符的，可以申请，由平台审核；', '免费领取的资源不涉及退款。']],
     ['合作订单', ['付款后钱由平台托管；创作者交付后可以验收或申请修改（免费修改次数见订单）；', '双方谈不拢可以申请平台介入，平台看完记录后裁决：全额放款、部分退款或全额退款。']],
+    ['代金券', ['**用代金券买的商品，不是商品本身的问题（不想要了、买错了等）不能退款，只能就商品问题申诉**：文件损坏、和描述不符的，由平台审核；', '**代金券每张只能用一次，用过就作废：申诉通过也只退你实际付的钱，代金券抵扣的部分不退，券也不会恢复。**付款前会提醒你。']],
     ['到账时间', ['原路退回，一般 1–3 个工作日到账。']],
     ['付款前的确认', ['数字资源可以无限复制，按《消费者权益保护法》第二十五条，**经你在付款时确认，下载或查看过的数字资源不适用七日无理由退货**；付款按钮旁会提示这一点。文件损坏、和描述严重不符的不受此限。']]]},
 
@@ -8087,16 +8088,23 @@ Object.assign(ACTIONS, {
   'close-undo': () => { delete ADM.closing[ME]; notify(ME, '已撤销注销', '账号恢复正常使用。'); admSave(); toast('已撤销注销', 'green'); rerender(); },
   // 退款
   refund: b => { const o = STATE.orders.find(x => x.no === b.dataset.no), p = P(o.pid); if (!o || ordSt(o) !== '已完成') return;
-    const n = STATE.dlc[o.pid] || 0, days = (Date.now() - ordTs(o))/864e5, fast = !n && days <= 7;
+    const n = STATE.dlc[o.pid] || 0, days = (Date.now() - ordTs(o))/864e5, ap = o.vc > 0, fast = !ap && !n && days <= 7;
+    /* 用代金券买的：非商品问题不能退款，只能就商品问题（文件损坏 / 和描述不符）申诉，平台审核 */
+    if (ap) return sheet(`<h3>申诉：${esc(p.title)}</h3><div class="rf-k"><b>用代金券买的，不能退款</b><span>不想要了、买错了这类不是商品本身的问题，不能退款。文件损坏、和描述不符的可以申诉，平台 1 个工作日内审核。</span></div>
+      <p class="ad-warn" style="margin:0">申诉通过也只退你实际付的 ${yuan2(r2(o.price - o.vc))}；代金券抵扣的 ${yuan2(o.vc)} 不退，券用过就作废。</p>
+      <label class="ad-lab">商品有什么问题</label><div class="ad-rs" id="rfR">${['文件损坏', '和描述不符'].map((r, i) => `<button class="pill lt ${i ? '' : 'on'}" data-act="rs-pick">${r}</button>`).join('')}</div>
+      <textarea class="inp" id="rfX" placeholder="说明具体问题，比如哪个文件打不开、哪里和描述不一样（必填）"></textarea>
+      <p class="mut2" style="font-size:12.5px;margin:0">按 <a href="#doc-refund" style="text-decoration:underline">退款规则</a> 处理。</p>
+      <button class="pill lg" data-act="do-refund" data-no="${o.no}">提交申诉</button>`);
     sheet(`<h3>退款：${esc(p.title)}</h3><div class="rf-k ${fast ? 'ok' : ''}"><b>${fast ? '可以极速退款' : '需要平台审核'}</b><span>${fast ? '还没下载过，提交后马上原路退回' : n ? `已下载或查看过 ${n} 次，数字资源原则上不退；文件损坏、和描述严重不符的可以申请` : '已超过 7 天，需要平台审核'}</span></div>
       <label class="ad-lab">原因</label><div class="ad-rs" id="rfR">${(fast ? ['不想要了', '重复购买', '文件损坏', '和描述不符'] : ['文件损坏', '和描述不符', '其他']).map((r, i) => `<button class="pill lt ${i ? '' : 'on'}" data-act="rs-pick">${r}</button>`).join('')}</div>
       <textarea class="inp" id="rfX" placeholder="${fast ? '补充一句（可选）' : '说明具体问题，比如哪个文件打不开（必填）'}"></textarea>
       <p class="mut2" style="font-size:12.5px;margin:0">按 <a href="#doc-refund" style="text-decoration:underline">退款规则</a> 处理，原路退回，1–3 个工作日到账。</p>
       <button class="pill lg" data-act="do-refund" data-no="${o.no}">${fast ? '确认退款' : '提交申请'}</button>`); },
-  'do-refund': b => { const o = STATE.orders.find(x => x.no === b.dataset.no), p = P(o.pid), n = STATE.dlc[o.pid] || 0, fast = !n && (Date.now() - ordTs(o))/864e5 <= 7, x = $('#rfX').value.trim();
+  'do-refund': b => { const o = STATE.orders.find(x => x.no === b.dataset.no), p = P(o.pid), n = STATE.dlc[o.pid] || 0, fast = !(o.vc > 0) && !n && (Date.now() - ordTs(o))/864e5 <= 7, x = $('#rfX').value.trim();
     if (!fast && !x){ fxPop($('#rfX'), 'fx-shake', 300); $('#rfX').focus(); return; }
-    const cash = r2(o.price - (o.vc || 0)), vcTxt = o.vc ? '用掉的代金券会恢复，可以再用一次' : '';   // 只退实付的现金；券抵扣的部分自动回到原来那张券上
-    const r = {no:o.no, pid:o.pid, item:p.title, amt:cash, vc:o.vc || 0, buyer:ME, reason:($('#rfR .on')?.textContent || '其他') + (x ? '：' + x : ''), dl:n ? `已下载 ${n} 次` : '未下载', ts:Date.now(), st:fast ? '已退款' : '待处理', auto:fast};
+    const cash = r2(o.price - (o.vc || 0)), vcTxt = o.vc ? `代金券抵扣的 ${yuan2(o.vc)} 不退（券用过就作废）` : '';   // 只退实付的现金；券用过就作废，不恢复
+    const r = {no:o.no, pid:o.pid, item:p.title, amt:cash, vc:o.vc || 0, buyer:ME, reason:(o.vc > 0 ? '【申诉】' : '') + ($('#rfR .on')?.textContent || '其他') + (x ? '：' + x : ''), dl:n ? `已下载 ${n} 次` : '未下载', ts:Date.now(), st:fast ? '已退款' : '待处理', auto:fast};
     REFUNDS.unshift(r); if (fast){ ADM.lst[o.no] = 'refund'; notify(ME, '退款成功', `「${p.title}」${cash > 0 ? `的 ${yuan2(cash)} 已原路退回，1–3 个工作日到账${vcTxt ? '；' + vcTxt : ''}` : '：' + vcTxt}。`); } else ADM.lst[o.no] = 'refunding';
     admSave(); refundSync(); closeSheet(); toast(fast ? '已退款，原路退回' : '已提交，平台会在 1 个工作日内处理', fast ? 'green' : 'orange', fast ? 'check' : undefined); badge(); rerender(); },
   // 收款账户
@@ -8203,7 +8211,7 @@ function receiptPNG(o){ const p = P(o.pid), W = 720, H = 920, c = document.creat
   toast('凭证已保存'); }
 function ordSheet(no){ const o = STATE.orders.find(x => x.no === no); if (!o) return; const p = P(o.pid), inv = invOf(no), st = ordSt(o);
   sheet(`<h3>订单详情</h3><div class="ad-kv col"><span>订单号<b class="n">${o.no}</b></span><span>资源<b>${esc(p.title)}</b></span><span>卖家<b>${esc(uname(p.seller))}</b></span><span>金额<b>${o.price ? yuan2(o.price) : '免费'}</b></span>${o.vc ? `<span>代金券抵扣<b>−${yuan2(o.vc)}</b></span><span>实付<b>${yuan2(r2(o.price - o.vc))}</b></span>` : ''}<span>支付方式<b>${esc(o.pay)}</b></span>${o.lic ? `<span>许可编号<b class="n">${esc(o.lic)}</b></span>` : ''}<span>时间<b>${esc(o.time)}</b></span><span>状态<b>${st}</b></span>${inv ? `<span>发票<b>${inv.st}${inv.invNo ? ' · ' + esc(inv.invNo) : ''}</b></span>` : ''}</div>
-    <div class="ad-acts"><a class="pill sm lt" data-go="item-${p.id}">查看资源</a><button class="pill sm lt" data-act="ord-rcpt" data-no="${o.no}">${IC.dl}保存凭证</button>${o.price > 0 && st !== '已退款' && !inv ? `<button class="pill sm lt" data-act="inv-open" data-no="${o.no}">申请发票</button>` : ''}<a class="pill sm lt" href="#msg-${p.seller}">联系卖家</a>${st === '已完成' && o.price > 0 && !rfOf(o.no) ? `<button class="pill sm lt" data-act="refund" data-no="${o.no}">退款</button>` : ''}</div>`); }
+    <div class="ad-acts"><a class="pill sm lt" data-go="item-${p.id}">查看资源</a><button class="pill sm lt" data-act="ord-rcpt" data-no="${o.no}">${IC.dl}保存凭证</button>${o.price > 0 && st !== '已退款' && !inv ? `<button class="pill sm lt" data-act="inv-open" data-no="${o.no}">申请发票</button>` : ''}<a class="pill sm lt" href="#msg-${p.seller}">联系卖家</a>${st === '已完成' && o.price > 0 && !rfOf(o.no) ? `<button class="pill sm lt" data-act="refund" data-no="${o.no}">${o.vc ? '申诉' : '退款'}</button>` : ''}</div>`); }
 
 /* —— 登录设备（原型：本机 + 示例设备） —— */
 const uaName = () => { const u = navigator.userAgent; const os = /iPhone/.test(u) ? 'iPhone' : /iPad|Macintosh.*Mobile/.test(u) ? 'iPad' : /Android/.test(u) ? 'Android' : /Mac/.test(u) ? 'Mac' : /Windows/.test(u) ? 'Windows' : '电脑';
@@ -10882,9 +10890,10 @@ wrapAct('dl', async (orig, b) => { const id = b.dataset.id, pr = P(id); if (!pr?
   catch(e){ apiFail(e); } });
 /* —— 退款：后端判断能不能极速退款 —— */
 wrapAct('do-refund', async (orig, b) => { const o = STATE.orders.find(x => x.no === b.dataset.no); if (!o?.live) return orig(b);
-  const x = $('#rfX').value.trim(), reason = ($('#rfR .on')?.textContent || '其他') + (x ? '：' + x : ''), fast = !(STATE.dlc[o.pid] || 0) && (Date.now() - ordTs(o))/864e5 <= 7;
+  const pick = $('#rfR .on')?.textContent || '其他', x = $('#rfX').value.trim(), reason = pick + (x ? '：' + x : ''), fast = !(o.vc > 0) && !(STATE.dlc[o.pid] || 0) && (Date.now() - ordTs(o))/864e5 <= 7;
   if (!fast && !x){ fxPop($('#rfX'), 'fx-shake', 300); $('#rfX').focus(); return; }
-  try { const r = await API.req('POST', `/orders/${o.id}/refund`, {reason}); closeSheet(); toast(r.fast ? '已退款，原路退回' : '已提交，平台会在 1 个工作日内处理', r.fast ? 'green' : 'orange', r.fast ? 'check' : undefined); await liveShop(); await liveMine(); rerender(); }
+  const problem = pick === '文件损坏' ? 'broken' : pick === '和描述不符' ? 'mismatch' : 'other';
+  try { const r = await API.req('POST', `/orders/${o.id}/refund`, {reason, problem}); closeSheet(); toast(r.fast ? '已退款，原路退回' : r.appeal ? '申诉已提交，平台会在 1 个工作日内审核' : '已提交，平台会在 1 个工作日内处理', r.fast ? 'green' : 'orange', r.fast ? 'check' : undefined); await liveShop(); await liveMine(); rerender(); }
   catch(e){ apiFail(e); } });
 
 /* —— 「我 › 代金券」（原型和后端共用；数据统一走 vcItems） —— */
@@ -10896,10 +10905,10 @@ function walletView(){
     : ADM.vuse.filter(u => u.uid === ME).map(u => { const v = ADM.vouchers.find(x => x.id === u.vid), o = STATE.orders.find(x => x.no === u.no), p = o && P(o.pid);
       return {title:p ? p.title : u.no, no:u.no, ded:u.amt, waste:v ? r2(v.amt - u.amt) : 0, back:rfOf(u.no)?.st === '已退款', ts:u.ts}; }).sort((a, b) => b.ts - a.ts);
   return `<div class="box wal-h"><span class="lab">代金券</span><b class="x num">${n}<small>张能用</small></b>
-    <div class="vc-rule"><span class="vc-rule-i" aria-hidden="true">1×</span><span><b>每张券只能用一次</b>用在一单上就整张用掉，没抵扣完的部分作废，不找零、不能留到下次；一单只能用一张。</span></div>
-    <span class="mut2">退款后用掉的券会恢复（有效期不变）· 不能提现，也不能转给别人</span>${soon ? `<span class="tag c-orange">${soon} 张在 7 天内到期</span>` : ''}${n ? `<a class="pill" href="#shop" style="align-self:flex-start">去逛逛</a>` : ''}</div>
+    <div class="vc-rule"><span class="vc-rule-i" aria-hidden="true">1×</span><span><b>每张券只能用一次</b>用在一单上就整张用掉，没抵扣完的部分作废，不找零、不能留到下次。用券买的东西不能退款（商品有问题可以申诉），券也不会退回。一单只能用一张。</span></div>
+    <span class="mut2">不能提现，也不能转给别人</span>${soon ? `<span class="tag c-orange">${soon} 张在 7 天内到期</span>` : ''}${n ? `<a class="pill" href="#shop" style="align-self:flex-start">去逛逛</a>` : ''}</div>
     <div class="box"><div class="box-h"><h3>我的代金券</h3></div><div class="box-b set-l">${V.map(v => `<div class="set-r vc-r ${on(v) ? '' : 'dim'}"><span class="vc-a"><b class="num">${yuan2(v.amt)}</b><i>${on(v) ? '只能用一次' : '面额'}</i></span><span class="vc-m"><b>${esc(v.note || 'CTRL Z 代金券')}</b><span class="mut2">${v.exp ? fmtDay(v.exp) + ' 到期' : '长期有效'} · ${fmtDay(v.ts)} 收到</span>${v.use ? `<span class="mut2">用在「${esc(v.use.title)}」：抵扣 ${yuan2(v.use.ded)}${v.use.waste > 0 ? `，作废 ${yuan2(v.use.waste)}` : ''}</span>` : ''}</span>${stTag(...v.st)}</div>`).join('') || '<div class="rnone">还没有代金券</div>'}</div></div>
-    <div class="box"><div class="box-h"><h3>使用记录</h3></div><div class="box-b set-l">${U.map(u => `<div class="set-r ${u.back ? 'dim' : ''}"><span><b>${esc(u.title)}</b><span class="mut2" style="display:block;font-size:12px">${fmtDT(u.ts)} · ${esc(u.no)}${u.back ? ' · 已退款，券已恢复' : u.waste > 0 ? ` · 作废 ${yuan2(u.waste)}` : ''}</span></span><b class="num" style="color:${u.back ? 'var(--ink-3)' : 'var(--pink)'}">−${yuan2(u.ded)}</b></div>`).join('') || '<div class="rnone">还没用过</div>'}</div></div>`;
+    <div class="box"><div class="box-h"><h3>使用记录</h3></div><div class="box-b set-l">${U.map(u => `<div class="set-r ${u.back ? 'dim' : ''}"><span><b>${esc(u.title)}</b><span class="mut2" style="display:block;font-size:12px">${fmtDT(u.ts)} · ${esc(u.no)}${u.back ? ' · 已退款（券不退回）' : ''}${u.waste > 0 ? ` · 作废 ${yuan2(u.waste)}` : ''}</span></span><b class="num" style="color:${u.back ? 'var(--ink-3)' : 'var(--pink)'}">−${yuan2(u.ded)}</b></div>`).join('') || '<div class="rnone">还没用过</div>'}</div></div>`;
 }
 const liveWalletView = walletView;
 
