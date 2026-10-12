@@ -2161,18 +2161,15 @@ html.thvt::view-transition-group(thfx),html.thvt::view-transition-old(thfx),html
 .slv .cv::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),rgba(255,255,255,.5),transparent 55%)}
 .slv .cv.tilt::after{opacity:1}
 .slv .price{transition:transform .25s var(--spring)} @media (hover:hover) and (pointer:fine){.slv:hover .price{transform:scale(1.08)}}
-/* 试听按钮：轻轻「呼吸」，提示可以点 */
-@keyframes breathe{0%{transform:scale(1);opacity:.55}70%,100%{transform:scale(1.45);opacity:0}}
+/* 试听按钮（封面上的播放键）：不加外圈扩散动效（用户要求去掉） */
 .slv .pbtn{position:relative}
-.slv .pbtn::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--paper);animation:breathe 2.6s var(--ease) infinite;pointer-events:none}
-.grid-p .slv:nth-child(3n+2) .pbtn::after{animation-delay:.8s} .grid-p .slv:nth-child(3n) .pbtn::after{animation-delay:1.6s}
 @media (hover:hover) and (pointer:fine){.slv .pbtn:hover{transform:scale(1.1)}}
 /* 购买按钮：隔一会儿扫过一道光 */
 @keyframes sheen{0%,72%{transform:translateX(-120%) skewX(-20deg)}100%{transform:translateX(320%) skewX(-20deg)}}
 .pill.cta{position:relative;overflow:hidden}
 .pill.cta::after{content:"";position:absolute;top:0;bottom:0;left:0;width:34%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:sheen 3.6s var(--ease) infinite;pointer-events:none}
-@media (prefers-reduced-motion:reduce){ .slv .pbtn::after,.pill.cta::after{animation:none;opacity:0} }
-html.rm .slv .pbtn::after,html.rm .pill.cta::after{animation:none;opacity:0}
+@media (prefers-reduced-motion:reduce){ .pill.cta::after{animation:none;opacity:0} }
+html.rm .pill.cta::after{animation:none;opacity:0}
 /* ===== 第一批动效：几何碎片、双击点赞、私信入口、头像错版、付款、发布按钮、页签滑动 ===== */
 .fx-shp{position:fixed;z-index:131;pointer-events:none;width:var(--s);height:var(--s);display:block}
 .fx-shp.c{border-radius:50%} .fx-shp.t{clip-path:polygon(50% 0,100% 100%,0 100%)} .fx-shp.h{height:calc(var(--s) / 2);border-radius:999px 999px 0 0}
