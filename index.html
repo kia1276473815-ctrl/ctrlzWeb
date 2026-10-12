@@ -337,6 +337,8 @@ main{min-height:80vh}
 /* ===== 帖子卡 ===== */
 .mason{column-count:4;column-gap:18px}
 .mason > *{break-inside:avoid;margin-bottom:26px}
+/* 卡片整体参与分栏，避免封面和字体重排时被挤入超出容器的额外一列。 */
+.mason > .card{display:inline-block;width:100%;vertical-align:top}
 .card{display:block;cursor:pointer}
 .card .cv{position:relative;overflow:hidden;border-radius:14px;background:var(--c,var(--pink))}
 .card .cv > img,.card .cv > canvas{width:100%;height:auto;display:block;transition:transform .35s var(--ease)}
