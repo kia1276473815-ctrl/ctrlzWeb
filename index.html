@@ -1547,9 +1547,48 @@ body.reels-open .totop{display:none}
 .mh-st > *{display:flex;align-items:baseline;gap:6px;font-size:13px;color:var(--ink-3)}
 .mh-st b{font:800 18px/1 var(--f-b);color:var(--ink);font-variant-numeric:tabular-nums}
 .mh-q{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:900px}
-/* 余额 / 代金券 */
+/* 代金券（每张只能用一次） */
 .wal-h{display:flex;flex-direction:column;gap:8px;padding:22px 22px 20px}
 .wal-h > b{font-size:clamp(40px,7vw,56px);line-height:1;letter-spacing:-.01em}
+.wal-h > b small{font:700 16px/1 var(--f-b);margin-left:8px;letter-spacing:0}
+.vc-rule{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--yellow);color:var(--on);font-size:13.5px;line-height:1.5}
+.vc-rule b{display:block;font-size:15px}
+.vc-rule-i{flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--on);color:var(--yellow);font:800 15px/1 var(--f-d,var(--f-b));transform:rotate(-8deg)}
+/* 付款面板：选券 + 用券提醒 */
+#payBox > *{flex-shrink:0}   /* 付款面板是可滚动的竖排 flex：内容高过屏幕时别把按钮压扁，让面板滚动 */
+.vcx{display:flex;flex-direction:column;gap:10px;min-width:0}
+.vcx-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.vcx-h span{font-size:12.5px;color:var(--ink-3)}
+.vcx-l{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none;overscroll-behavior-x:contain}
+.vcx-l::-webkit-scrollbar{display:none}
+.vct{flex:none;position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:104px;min-height:44px;padding:10px 14px 10px 16px;border-radius:12px;background:var(--card);border:1.5px dashed var(--ink-3);color:var(--ink);text-align:left;
+  -webkit-mask:radial-gradient(circle 6px at 0 50%,#0000 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 6px at 100% 50%,#0000 98%,#000) right/51% 100% no-repeat;mask:radial-gradient(circle 6px at 0 50%,#0000 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 6px at 100% 50%,#0000 98%,#000) right/51% 100% no-repeat}
+.vct b{font-size:17px;line-height:1.1}
+.vct span{font-size:11.5px;font-weight:600}
+.vct.w span{color:var(--orange)}
+.vct i{font-style:normal;font-size:11px;color:var(--ink-3)}
+.vct.on{background:var(--pink);border:1.5px solid var(--pink);color:var(--on)}
+.vct.on span,.vct.on i{color:var(--on)}
+.vct.none{justify-content:center}
+.vcw{position:relative;display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:16px;background:var(--yellow);color:var(--on)}
+.vcw.waste{background:var(--orange)}
+.vcw-t{display:flex;height:46px;border-radius:10px;overflow:visible}
+.vcw-use,.vcw-cut{display:flex;flex-direction:column;justify-content:center;padding:0 12px;min-width:0;white-space:nowrap}
+.vcw-use{background:var(--on);color:var(--yellow);border-radius:10px 0 0 10px}
+.vcw:not(.waste) .vcw-use{border-radius:10px}
+.vcw-cut{background:repeating-linear-gradient(-45deg,rgba(20,20,24,.16) 0 6px,transparent 6px 12px),var(--paper-fixed,#f3efe6);color:#141418;border-left:2px dashed #141418;border-radius:0 10px 10px 0;transform-origin:0 0}
+.vcw-use i,.vcw-cut i{font-style:normal;font-size:10.5px;font-weight:700;opacity:.75}
+.vcw-use b,.vcw-cut b{font-size:16px;line-height:1.1}
+.vcw-cut.torn{opacity:.45;transform:translate(6px,5px) rotate(8deg)}
+.vcw.waste .vcw-t{margin-bottom:16px}
+html.rm .vcw-cut,.rm .vcw-cut{opacity:.45}
+.vcw-hole{position:relative;flex:none;width:46px;margin-left:-23px;display:grid;place-items:center}
+.vcw-hole::before{content:"";width:16px;height:16px;border-radius:50%;background:var(--yellow);box-shadow:inset 0 0 0 2px #141418}
+.vcw-m{display:flex;flex-direction:column;gap:3px;padding-right:58px}
+.vcw-m b{font-size:17px;line-height:1.25}
+.vcw-m span{font-size:12.5px;line-height:1.5}
+.vcw-ok{position:absolute;right:12px;bottom:12px;padding:5px 8px;border:2px solid #141418;border-radius:8px;font-size:12px;font-weight:800;transform:rotate(-8deg)}
+.vcw-go{background:var(--orange);color:var(--on)}
 .wal-h .tag{align-self:flex-start}
 .vc-r{gap:14px}
 .vc-r.dim,.set-r.dim{opacity:.5}
@@ -1562,13 +1601,6 @@ body.reels-open .totop{display:none}
 .vc-f{display:flex;flex-direction:column;gap:8px}
 .vc-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .vc-g label{display:flex;flex-direction:column;gap:6px;min-width:0}
-.vc-tg{display:flex;align-items:center;gap:10px;width:100%;padding:10px 0;text-align:left;color:inherit}
-.vc-tg > i{width:20px;height:20px;border-radius:6px;border:2px solid var(--ink-3);display:grid;place-items:center;flex:none;transition:background .2s,border-color .2s}
-.vc-tg > i svg{width:13px;height:13px;opacity:0;transition:opacity .15s}
-.vc-tg.on > i{background:var(--pink);border-color:var(--pink);color:#141418}
-.vc-tg.on > i svg{opacity:1}
-.vc-tg > span:nth-of-type(1){flex:1;display:flex;flex-direction:column;font-weight:600}
-.vc-tg em{font-style:normal;font-size:12px;font-weight:400;color:var(--ink-3)}
 /* 内容审核 / 超级管理员在信息流里看到的「管理」小按钮 */
 .card{position:relative}
 .modb{position:absolute;left:8px;top:8px;z-index:4;display:flex;align-items:center;gap:4px;height:28px;padding:0 10px 0 8px;border-radius:99px;background:#141418;color:#F2F2EE;font:700 12px/1 var(--f-b);box-shadow:0 4px 12px -4px rgba(0,0,0,.4)}
@@ -3116,25 +3148,38 @@ const ADM = Object.assign({
   audit:[],
   params:{plat:.03, coFee:.05, coRev:2, coAuto:7},
   vouchers:[],                               // 代金券：{id, uid, amt 面额, exp 到期时间（0 = 长期）, note 说明, by, ts, off 撤回时间}
-  vuse:[],                                   // 抵扣记录：{vid, uid, no 订单号, amt, ts}；订单退款后这笔自动算回券里
+  vuse:[],                                   // 用券记录：{vid, uid, no 订单号, amt 抵扣, ts}；一张券只能有一条算数的（订单退款后这条不算，券恢复）
   agree:{}                                   // 同意协议的记录：uid → {seller:{v 版本, ts}, license:{…}}（接后端后存服务器，作为证据）
 }, store.get('adm', {}));
 const admSave = () => store.set('adm', ADM);
-/* ================= 代金券（原型：存在 ADM 里，接后端时换成券表 + 抵扣流水） =================
-   超级管理员发给用户；可以拆开分几次用，付款时先用快过期的；只能买商品，不能提现 / 转让。
-   券的剩余 = 面额 − 没退款的抵扣（订单退款后，抵扣的钱自动回到原来那张券上；券已过期就不再能用）。
-   卖家照原价结算，券抵扣的部分由平台承担 */
+/* ================= 代金券（原型：存在 ADM 里；连着后端时读 LSHOP.wallet = GET /me/wallet） =================
+   超级管理员发给用户。**每张只能用一次**：一单最多用一张、不能叠加；用在一单上就整张用掉，抵扣 = min(面额, 价格)，
+   没抵扣完的部分作废，不找零、不留到下次。订单退款后整张恢复（有效期不变）。只能买商品，不能提现 / 转让。
+   卖家照原价结算，券抵扣的部分由平台承担。付款前一定要让用户看到「整张用掉 / 剩下的作废」的提醒（payBox 里的 vcWarn） */
 const r2 = x => Math.round(x*100)/100, VC_MAX = 2000;
-const vcUsed = v => ADM.vuse.filter(u => u.vid === v.id && rfOf(u.no)?.st !== '已退款').reduce((a, u) => a + u.amt, 0);
-const vcLeft = v => r2(v.amt - vcUsed(v));
-const vcSt = v => v.off ? ['已撤回', ''] : vcLeft(v) <= 0 ? ['已用完', ''] : v.exp && v.exp < Date.now() ? ['已过期', ''] : ['可用', 'green'];
+const vcUse = v => ADM.vuse.find(u => u.vid === v.id && rfOf(u.no)?.st !== '已退款');   // 这张券现在算数的那次使用
+const vcUsed = v => vcUse(v)?.amt || 0;
+const vcLeft = v => vcUse(v) ? 0 : v.amt;
+const vcSt = v => v.off ? ['已撤回', ''] : vcUse(v) ? ['已用', ''] : v.exp && v.exp < Date.now() ? ['已过期', ''] : ['可用', 'green'];
 const vcOf = uid => ADM.vouchers.filter(v => v.uid === uid);
 const vcLive = uid => vcOf(uid).filter(v => vcSt(v)[0] === '可用').sort((a, b) => (a.exp || 9e15) - (b.exp || 9e15));
-const vcBal = uid => API.on() && uid === ME ? (LSHOP.wallet?.balance || 0)/100 : r2(vcLive(uid).reduce((a, v) => a + vcLeft(v), 0));   // 连着后端：余额以后端为准
-// 扣 amt 元（先扣快过期的），记到订单 no 上；返回实际扣掉的
-function vcSpend(uid, amt, no){ let need = r2(amt);
-  for (const v of vcLive(uid)){ if (need <= 0) break; const x = Math.min(need, vcLeft(v)); ADM.vuse.push({vid:v.id, uid, no, amt:r2(x), ts:Date.now()}); need = r2(need - x); }
-  admSave(); return r2(amt - need); }
+/* 统一的样子（元）：{id, amt 面额, exp, note, ts, st:[文字, 颜色], use:{title, no, ded 抵扣, waste 作废, ts} | null}。连着后端时来自 /me/wallet */
+const VC_ST = {active:['可用', 'green'], used_up:['已用', ''], expired:['已过期', ''], revoked:['已撤回', '']};
+function vcItems(uid){
+  if (API.on() && uid === ME) return (LSHOP.wallet?.vouchers || []).map(v => ({id:v.id, amt:f2y(v.amount), exp:v.expiresAt ? +new Date(v.expiresAt) : 0, note:v.note, ts:+new Date(v.createdAt), st:VC_ST[v.status] || [v.status, ''],
+    use:v.use ? {title:v.use.title, no:v.use.orderNo, ded:f2y(v.use.amount), waste:f2y(v.use.waste), ts:+new Date(v.use.createdAt)} : null}));
+  return vcOf(uid).map(v => { const u = vcUse(v), o = u && STATE.orders.find(x => x.no === u.no), p = o && P(o.pid);
+    return {id:v.id, amt:v.amt, exp:v.exp, note:v.note, ts:v.ts, st:vcSt(v), use:u ? {title:p ? p.title : u.no, no:u.no, ded:u.amt, waste:r2(v.amt - u.amt), ts:u.ts} : null}; });
+}
+const vcFree = uid => vcItems(uid).filter(v => v.st[0] === '可用').sort((a, b) => (a.exp || 9e15) - (b.exp || 9e15));
+const vcCount = uid => vcFree(uid).length;
+const vcBal = uid => r2(vcFree(uid).reduce((a, v) => a + v.amt, 0));   // 能用的券面额合计（只是统计，券不能合起来用）
+/* 替用户挑一张：浪费最少——面额够付的里面最小的；都不够付就最大的；一样大先用快过期的（和后端 bestVoucher 一样） */
+function vcBest(L, price){ const e = v => v.exp || 9e15, ok = L.filter(v => v.amt >= price).sort((a, b) => a.amt - b.amt || e(a) - e(b));
+  return ok[0] || L.slice().sort((a, b) => b.amt - a.amt || e(a) - e(b))[0] || null; }
+// 在订单 no 上用掉一整张券 vid，返回抵扣了多少（元）；没抵扣完的部分作废
+function vcSpend(uid, vid, price, no){ const v = vcLive(uid).find(x => x.id === vid); if (!v) return 0;
+  const amt = r2(Math.min(v.amt, price)); ADM.vuse.push({vid:v.id, uid, no, amt, ts:Date.now()}); admSave(); return amt; }
 /* 在首页 / 视频流里直接处理内容：内容审核和超级管理员。以管理员身份浏览时用当前后台账号；
    普通身份登录、但这个用户被设成了后台成员（staff.uid）时用他自己的成员身份 */
 const MOD_ROLES = ['super', 'mod'];
@@ -6396,40 +6441,75 @@ function pvVideo(pr){
 }
 
 /* ================= 购买（前端模拟） ================= */
-// vc：这一单用代金券抵扣的金额（price 仍是商品原价，卖家按原价结算）
-function grant(pr, pay, price, vc = 0){
+// vc：这一单用代金券抵扣的金额，vid：用的哪张券（price 仍是商品原价，卖家按原价结算）
+function grant(pr, pay, price, vc = 0, vid = null){
   STATE.owned.add(pr.id); const d = new Date();
   STATE.orders.unshift({no:`CZ${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}-${String(Math.random()*9999|0).padStart(4,'0')}`, pid:pr.id, price, pay, time:`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`, st:'已完成', fresh:true});
-  const no = STATE.orders[0].no; if (vc > 0) STATE.orders[0].vc = vcSpend(ME, vc, no);
-  if (price > 0){ const o = STATE.orders[0]; notify(ME, '购买成功', `「${pr.title}」${yuan2(price)}${o.vc ? `（代金券抵扣 ${yuan2(o.vc)}，实付 ${yuan2(r2(price - o.vc))}）` : ''} · 订单号 ${no}。已放进「已购资源」，在订单详情里可以保存凭证、申请发票。`); notify(pr.seller, '有新订单', `${uname(ME)} 买了「${pr.title}」${yuan2(price)}，按月结算到你的收款账户。`); }
+  const no = STATE.orders[0].no, face = vid ? ADM.vouchers.find(v => v.id === vid)?.amt || 0 : 0; if (vc > 0 && vid) STATE.orders[0].vc = vcSpend(ME, vid, price, no);
+  if (price > 0){ const o = STATE.orders[0], waste = o.vc ? r2(face - o.vc) : 0; notify(ME, '购买成功', `「${pr.title}」${yuan2(price)}${o.vc ? `（代金券抵扣 ${yuan2(o.vc)}，实付 ${yuan2(r2(price - o.vc))}${waste > 0 ? `；这张券剩下的 ${yuan2(waste)} 已作废` : ''}）` : ''} · 订单号 ${no}。已放进「已购资源」，在订单详情里可以保存凭证、申请发票。`); notify(pr.seller, '有新订单', `${uname(ME)} 买了「${pr.title}」${yuan2(price)}，按月结算到你的收款账户。`); }
 }
-/* 付款面板下半截：代金券抵扣开关 + 付款方式（全额抵扣时不用选）+ 合计 + 按钮。切换开关 / 付款方式只重画这一块 */
-const vcDed = pr => UI.vcUse === false ? 0 : Math.min(vcBal(ME), pr.price);
+/* 付款面板下半截：代金券（选一张 / 不用）+ 用券提醒 + 付款方式（全额抵扣时不用选）+ 合计 + 按钮。切换只重画这一块。
+   UI.vcSel：undefined = 还没选（只有不会作废的券才默认选上）、null = 不用券、券 id = 用这张；UI.vcOk = 用户已经确认「剩下的会作废」 */
+function vcSel(pr){ const L = vcFree(ME); if (!(pr.price > 0) || !L.length) return null;
+  if (UI.vcSel === undefined) return L.filter(v => v.amt <= pr.price).sort((a, b) => b.amt - a.amt)[0] || null;   // 默认只选不会作废的（里面抵扣最多的）；会作废一部分的要用户自己点
+  return L.find(v => v.id === UI.vcSel) || null; }
+const vcDed = pr => { const v = vcSel(pr); return v ? r2(Math.min(v.amt, pr.price)) : 0; };
+const vcWasteOf = pr => { const v = vcSel(pr); return v ? r2(v.amt - Math.min(v.amt, pr.price)) : 0; };
+function vcPick(pr){ const L = vcFree(ME); if (!L.length || !(pr.price > 0)) return ''; const s = vcSel(pr);
+  return `<div class="vcx"><div class="vcx-h"><b>代金券</b><span>每张只能用一次 · 一单只能用一张</span></div>
+    <div class="vcx-l" role="radiogroup" aria-label="选一张代金券">${L.map(v => { const w = r2(v.amt - Math.min(v.amt, pr.price));
+      return `<button class="vct ${s?.id === v.id ? 'on' : ''} ${w > 0 ? 'w' : ''}" role="radio" aria-checked="${s?.id === v.id}" data-act="vc-pick" data-id="${pr.id}" data-v="${v.id}"><b class="num">${yuan2(v.amt)}</b><span>${w > 0 ? `会作废 ${yuan2(w)}` : v.amt === pr.price ? '刚好用完' : `抵扣 ${yuan2(v.amt)}`}</span><i>${v.exp ? fmtDay(v.exp).slice(5) + ' 到期' : '长期有效'}</i></button>`; }).join('')}
+      <button class="vct none ${s ? '' : 'on'}" role="radio" aria-checked="${!s}" data-act="vc-pick" data-id="${pr.id}" data-v=""><b>不用券</b><span>留着下次</span></button></div>
+    ${s ? vcWarn(s, pr) : ''}</div>`; }
+/* 用券提醒：一张票根，左边是这单抵扣的部分，右边虚线外是作废的部分（出现时会被撕掉、碎成几何小块掉下去） */
+function vcWarn(v, pr){ const ded = r2(Math.min(v.amt, pr.price)), w = r2(v.amt - ded);
+  return `<div class="vcw ${w > 0 ? 'waste' : ''} ${UI.vcOk ? 'ok' : ''}" id="vcw" role="alert">
+    <div class="vcw-t"><span class="vcw-use" style="flex:${ded}"><i>这单抵扣</i><b class="num">${yuan2(ded)}</b></span>${w > 0 ? `<span class="vcw-cut" style="flex:${Math.max(w, v.amt * .22)}"><i>作废</i><b class="num">${yuan2(w)}</b></span>` : '<span class="vcw-hole" aria-hidden="true"></span>'}</div>
+    <div class="vcw-m"><b>${w > 0 ? `剩下的 ${yuan2(w)} 会作废` : '这张券会整张用掉'}</b><span>${yuan2(v.amt)} 的券只能用一次${w > 0 ? `，这单只抵扣 ${yuan2(ded)}，不找零、也不能留到下次` : '，用完就没了'}。以后退款的话，券会恢复。</span></div>
+    ${UI.vcOk ? '<span class="vcw-ok">已确认</span>' : ''}</div>`; }
+/* 提醒出现时的动效：整块弹出；会作废的那截先抖两下再被撕掉、掉落，撕口迸出几何碎片；不作废的就在票根上打一个孔 */
+function vcWarnFx(el){ if (!el || reduced()) return; const E = 'cubic-bezier(.2,.9,.3,1.3)';
+  el.animate([{transform:'scale(.92)', opacity:.4}, {transform:'scale(1.02)', opacity:1, offset:.6}, {transform:'none', opacity:1}], {duration:380, easing:E});
+  const cut = $('.vcw-cut', el), hole = $('.vcw-hole', el);
+  if (cut){ const a = cut.animate([{transform:'none'}, {transform:'rotate(-4deg)', offset:.25}, {transform:'rotate(3deg)', offset:.5}, {transform:'rotate(-2deg)', offset:.7}, {transform:'translate(6px,5px) rotate(8deg)', opacity:.45}],
+      {duration:900, delay:280, easing:'ease-in', fill:'forwards'});
+    setTimeout(() => { const r = cut.getBoundingClientRect(); fxShapes(r.left + 4, r.top + r.height/2, 12, 70, ['orange','yellow','pink','ink'], 120); sfx('tap'); haptic(14); }, 280 + 630);
+    a.onfinish = () => cut.classList.add('torn'); }
+  if (hole){ hole.animate([{transform:'scale(1.8)', opacity:0}, {transform:'scale(.85)', opacity:1, offset:.7}, {transform:'none', opacity:1}], {duration:420, delay:260, easing:E, fill:'backwards'});
+    setTimeout(() => { const r = hole.getBoundingClientRect(); fxShapes(r.left + r.width/2, r.top + r.height/2, 6, 50, ['pink','yellow'], 90); haptic(10); }, 520); } }
 function payBox(pr){
-  const bal = vcBal(ME), ded = vcDed(pr), cash = r2(pr.price - ded);
-  return `${cash > 0 ? `<div class="pays">${[['微信支付','green'],['支付宝','blue'],['银行卡','ink']].map(([m,c]) => `<button data-act="paym" data-m="${m}" class="${UI.pay===m?'on':''}"><i style="background:${INK[c]}"></i>${m}</button>`).join('')}</div>` : ''}
+  const ded = vcDed(pr), cash = r2(pr.price - ded), w = vcWasteOf(pr), gate = w > 0 && !UI.vcOk;
+  return `${vcPick(pr)}${cash > 0 ? `<div class="pays">${[['微信支付','green'],['支付宝','blue'],['银行卡','ink']].map(([m,c]) => `<button data-act="paym" data-m="${m}" class="${UI.pay===m?'on':''}"><i style="background:${INK[c]}"></i>${m}</button>`).join('')}</div>` : ''}
     <div class="sum">${pr.orig ? `<div><span class="mut">原价</span><span class="num">${yuan2(pr.orig)}</span></div><div><span class="mut">限时优惠</span><span class="num" style="color:var(--pink)">−${yuan2(pr.orig - pr.price)}</span></div>` : ''}
-      ${bal > 0 ? `<button class="vc-tg ${UI.vcUse === false ? '' : 'on'}" data-act="vc-tg" data-id="${pr.id}" role="switch" aria-checked="${UI.vcUse !== false}"><i>${IC.check}</i><span>代金券抵扣<em>余额 ${yuan2(bal)}</em></span><span class="num" style="color:var(--pink)">${ded ? '−' + yuan2(ded) : '不使用'}</span></button>` : ''}
+      ${ded ? `<div><span class="mut">代金券抵扣</span><span class="num" style="color:var(--pink)">−${yuan2(ded)}</span></div>` : ''}
       <div class="tot"><span>${ded ? '实付' : '合计'}</span><b class="num">${yuan2(cash)}</b></div></div>
-    <button class="pill lg" data-act="do-pay" data-id="${pr.id}" id="payBtn">${cash > 0 ? `${payVerb(UI.pay)} ${yuan2(cash)}` : '用代金券支付'}</button>`;
+    ${gate ? `<button class="pill lg vcw-go" data-act="vc-ok" data-id="${pr.id}">知道了，剩下的 ${yuan2(w)} 作废</button>`
+      : `<button class="pill lg" data-act="do-pay" data-id="${pr.id}" id="payBtn">${cash > 0 ? `${payVerb(UI.pay)} ${yuan2(cash)}` : '用代金券支付'}</button>`}`;
 }
 ACTIONS.buy0 = b => {
   if (needLogin()) return; const pr = P(b.dataset.id);
   if (pr.price === 0){ grant(pr, '免费领取', 0); const cv = b.closest('.pp') ? $('.stage') : b; flyTo(cv.getBoundingClientRect(), cover(pr.cover, hash(pr.id)%50, 200, 200), () => { STATE.libNew++; badge(); }); toast('已放进你的资源库', 'green'); rerender(); return; }
-  UI.pay = UI.pay || '微信支付';
+  UI.pay = UI.pay || '微信支付'; UI.vcSel = undefined; UI.vcOk = false;
+  setTimeout(() => vcWarnFx($('#vcw')), 320);   // 默认选上了券：面板升起后在票根上打孔
   sheet(`<h3>${esc(pr.title)}</h3>
     <div style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:center" class="c-${CATS[pr.cat].c}"><img src="${cover(pr.cover, hash(pr.id)%50, 160, 160)}" alt="" style="width:64px;height:64px;border-radius:12px"><div><b class="x" style="font-size:18px">${esc(pr.en)}</b><div class="mut2" style="font-size:13px;margin-top:4px">${esc(USERS[pr.seller].shop)}</div></div></div>
     <div id="payBox" style="display:contents">${payBox(pr)}</div>
     <p class="mut2 pay-cf">付款即确认：数字资源下载或查看后不适用七日无理由退货（文件损坏、和描述严重不符的除外）。按<a href="#doc-license">《素材使用许可》</a>使用 · <a href="#doc-refund">《退款规则》</a></p>`);
 };
 ACTIONS.paym = b => { UI.pay = b.dataset.m; $$('.pays button').forEach(x => x.classList.toggle('on', x === b)); const pb = $('#payBtn'); pb.textContent = pb.textContent.replace(/^用\S+?支付/, payVerb(UI.pay)); };
-ACTIONS['vc-tg'] = b => { UI.vcUse = UI.vcUse === false; const box = $('#payBox'); if (box) box.innerHTML = payBox(P(b.dataset.id)); };
+ACTIONS['vc-pick'] = b => { const pr = P(b.dataset.id); UI.vcSel = b.dataset.v || null; UI.vcOk = false; haptic(8);
+  const box = $('#payBox'); if (!box) return; box.innerHTML = payBox(pr); vcWarnFx($('#vcw')); fxPop($(`.vct[data-v="${b.dataset.v}"]`), 'fx-jelly'); };
+/* 确认「剩下的会作废」之后才出现付款按钮；票根盖一个「已确认」章 */
+ACTIONS['vc-ok'] = b => { UI.vcOk = true; const box = $('#payBox'); if (!box) return; box.innerHTML = payBox(P(b.dataset.id)); haptic(12);
+  const ok = $('#vcw .vcw-ok'); if (ok && !reduced()) ok.animate([{transform:'scale(2) rotate(-14deg)', opacity:0}, {transform:'scale(.9) rotate(-8deg)', opacity:1, offset:.7}, {transform:'rotate(-8deg)', opacity:1}], {duration:360, easing:'cubic-bezier(.2,.9,.3,1.3)'});
+  fxPop($('#payBtn'), 'fx-up'); };
 const payVerb = m => '用' + m.replace(/支付$/, '') + '支付';
 ACTIONS['do-pay'] = b => {
-  const pr = P(b.dataset.id), sh = $('#layer .sheet'), ded = vcDed(pr), cash = r2(pr.price - ded);
+  const pr = P(b.dataset.id), sh = $('#layer .sheet'), ded = vcDed(pr), cash = r2(pr.price - ded), vid = vcSel(pr)?.id || null;
+  if (vcWasteOf(pr) > 0 && !UI.vcOk) return;   // 会作废的券必须先确认
   sh.innerHTML = `<div class="done"><div class="ring-p" id="rp" style="--p:0"></div><b style="font-size:18px">${cash > 0 ? `正在等待${UI.pay}…` : '正在用代金券支付…'}</b></div>`;
   const t0 = performance.now(); const tick = now => { const k = Math.min(1, (now - t0)/1200); const r = $('#rp'); if (!r) return; r.style.setProperty('--p', k*100); if (k < 1) requestAnimationFrame(tick); else done(); }; requestAnimationFrame(tick);
-  const done = () => { grant(pr, cash > 0 ? UI.pay : '代金券', pr.price, ded); paidUI(pr, sh); };
+  const done = () => { grant(pr, cash > 0 ? UI.pay : '代金券', pr.price, ded, vid); paidUI(pr, sh); };
 };
 function paidUI(pr, sh){ sfx('ok');
     setTimeout(() => { const st = $('#layer .stamp'); if (st){ const r = st.getBoundingClientRect(); fxShapes(r.left + r.width/2, r.top + r.height/2, 28, 170, ['pink','blue','yellow','orange','green'], 70); fxPop($('#layer .sheet'), 'fx-thud', 400); haptic(16); } }, 140);
@@ -6926,7 +7006,7 @@ function usPerm(uid){
   const staff = !cS ? '' : API.on() ? (lsf ? `<span class="tag c-${ADM_ROLES[lsf.role]?.[1] === 'ink' ? 'pink' : ADM_ROLES[lsf.role]?.[1] || 'pink'}">后台 · ${ADM_ROLES[lsf.role]?.[0] || lsf.role}</span><span class="mut2" style="font-size:12.5px">${esc(lsf.email)}</span>`
       : `<button class="pill sm" data-act="lus-staff" data-id="${esc(uid)}">${IC.plus}给他开后台账号</button>`) : sf ? `<span class="tag c-${ADM_ROLES[sf.role][1] === 'ink' ? 'pink' : ADM_ROLES[sf.role][1]}">${sf.on ? '后台成员' : '已停用'} · ${ADM_ROLES[sf.role][0]}</span><button class="pill sm lt" data-act="us-staff-go">去人员与权限</button>`
     : `<select class="inp ad-sel" id="usRole" aria-label="后台角色">${Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}" ${k === 'mod' ? 'selected' : ''}>${n}</option>`).join('')}</select><button class="pill sm" data-act="us-staff" data-id="${esc(uid)}">设为管理员</button>`;
-  return `<label class="ad-lab">后台、开店与代金券</label><div class="ad-acts">${staff}${cI ? `<button class="pill sm lt" data-act="us-inv" data-id="${esc(uid)}">${IC.plus}发开店邀请码</button>` : ''}${cV ? `<button class="pill sm lt" data-act="us-vc" data-id="${esc(uid)}">${IC.plus}发代金券<span class="mut2">（余额 ${yuan2(vcBal(uid))}）</span></button>` : ''}</div>
+  return `<label class="ad-lab">后台、开店与代金券</label><div class="ad-acts">${staff}${cI ? `<button class="pill sm lt" data-act="us-inv" data-id="${esc(uid)}">${IC.plus}发开店邀请码</button>` : ''}${cV ? `<button class="pill sm lt" data-act="us-vc" data-id="${esc(uid)}">${IC.plus}发代金券<span class="mut2">（能用 ${vcCount(uid)} 张）</span></button>` : ''}</div>
     ${cI && inv.length ? `<div class="ad-mini">${inv.map(i => `<span>${i.code} · ${i.st === '已入驻' ? '已开店' : '未使用'} · ${esc(i.by)} ${i.time}</span>`).join('')}</div>` : ''}`;
 }
 function userSheet(uid){
@@ -7038,12 +7118,12 @@ const vcForm = uid => `<div class="ad-form vc-f">${uid ? `<input type="hidden" c
   <button class="pill pk" data-act="vc-send" style="align-self:flex-start">${IC.plus}发放</button></div>`;
 ADMV.vouchers = () => { if (API.on()) return liveVouchersView(); const V = ADM.vouchers.slice().reverse(), q = fq('vc'), f = UI.adf?.vc || 'all';
   const sum = fn => r2(V.reduce((a, v) => a + fn(v), 0)), L = V.filter(v => (f === 'all' || vcSt(v)[0] === f) && (!q || (v.uid + ' ' + uname(v.uid) + ' ' + (v.note || '')).toLowerCase().includes(q)));
-  return `${adH('代金券', `发给用户买商品用：可以拆开分几次用，付款时先用快过期的；不能提现、不能转让。券抵扣的部分由平台承担，卖家照原价结算。单张最多 ${yuan2(VC_MAX)}`)}
-  <div class="box"><div class="box-b"><div class="ad-kv"><span>已发放<b>${yuan2(sum(v => v.amt))}</b></span><span>已抵扣<b>${yuan2(sum(vcUsed))}</b></span><span>未使用<b>${yuan2(sum(v => vcSt(v)[0] === '可用' ? vcLeft(v) : 0))}</b></span><span>过期 / 撤回作废<b>${yuan2(sum(v => ['已过期', '已撤回'].includes(vcSt(v)[0]) ? Math.max(0, vcLeft(v)) : 0))}</b></span></div></div></div>
+  return `${adH('代金券', `发给用户买商品用：每张只能用一次，一单只能用一张，用在一单上就整张用掉，没抵扣完的部分作废、不找零；不能提现、不能转让。券抵扣的部分由平台承担，卖家照原价结算。单张最多 ${yuan2(VC_MAX)}`)}
+  <div class="box"><div class="box-b"><div class="ad-kv"><span>已发放<b>${yuan2(sum(v => v.amt))}</b></span><span>已抵扣<b>${yuan2(sum(vcUsed))}</b></span><span>用剩作废<b>${yuan2(sum(v => vcUse(v) ? r2(v.amt - vcUsed(v)) : 0))}</b></span><span>未使用<b>${yuan2(sum(v => vcSt(v)[0] === '可用' ? v.amt : 0))}</b></span><span>过期 / 撤回作废<b>${yuan2(sum(v => ['已过期', '已撤回'].includes(vcSt(v)[0]) && !vcUse(v) ? v.amt : 0))}</b></span></div></div></div>
   <div class="box" style="margin-top:12px">${vcForm('')}</div>
-  <div class="ad-bar2" style="margin-top:12px">${adSeg('vc', [['all', '全部'], ['可用', '可用'], ['已用完', '已用完'], ['已过期', '已过期'], ['已撤回', '已撤回']], f)}${adQ('vc', '搜用户或说明')}</div>
-  <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>用户</th><th class="r">面额</th><th class="r">剩余</th><th>有效期</th><th>状态</th><th>说明</th><th>发放</th><th></th></tr></thead><tbody>${L.map(v => { const [st, c] = vcSt(v);
-    return `<tr><td><span class="ad-u">${uav(v.uid)}<span><b>${esc(uname(v.uid))}</b><i>@${esc(v.uid)}</i></span></span></td><td class="r n">${yuan2(v.amt)}</td><td class="r n">${yuan2(Math.max(0, vcLeft(v)))}</td><td class="mut2 n">${v.exp ? fmtDay(v.exp) : '长期'}</td><td>${stTag(st, c)}</td><td class="mut2">${esc(v.note || '—')}</td><td class="mut2">${esc(v.by)} ${fmtDT(v.ts).slice(0, 5)}</td><td class="r">${st === '可用' ? `<button class="pill sm lt" data-act="vc-off" data-id="${v.id}">撤回</button>` : ''}</td></tr>`; }).join('') || '<tr><td colspan="8" class="mut">还没有发过代金券</td></tr>'}</tbody></table></div></div>`;
+  <div class="ad-bar2" style="margin-top:12px">${adSeg('vc', [['all', '全部'], ['可用', '可用'], ['已用', '已用'], ['已过期', '已过期'], ['已撤回', '已撤回']], f)}${adQ('vc', '搜用户或说明')}</div>
+  <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>用户</th><th class="r">面额</th><th class="r">抵扣</th><th>有效期</th><th>状态</th><th>说明</th><th>发放</th><th></th></tr></thead><tbody>${L.map(v => { const [st, c] = vcSt(v);
+    return `<tr><td><span class="ad-u">${uav(v.uid)}<span><b>${esc(uname(v.uid))}</b><i>@${esc(v.uid)}</i></span></span></td><td class="r n">${yuan2(v.amt)}</td><td class="r n">${vcUse(v) ? yuan2(vcUsed(v)) : '—'}</td><td class="mut2 n">${v.exp ? fmtDay(v.exp) : '长期'}</td><td>${stTag(st, c)}</td><td class="mut2">${esc(v.note || '—')}</td><td class="mut2">${esc(v.by)} ${fmtDT(v.ts).slice(0, 5)}</td><td class="r">${st === '可用' ? `<button class="pill sm lt" data-act="vc-off" data-id="${v.id}">撤回</button>` : ''}</td></tr>`; }).join('') || '<tr><td colspan="8" class="mut">还没有发过代金券</td></tr>'}</tbody></table></div></div>`;
 };
 
 /* 邀请码 */
@@ -7315,7 +7395,7 @@ Object.assign(ACTIONS, {
   // 退款
   'rf-do': b => { if (!admGuard('refunds')) return; const r = REFUNDS.find(x => x.no === b.dataset.no); if (!r) return; const ok = b.dataset.v === 'ok';
     r.st = ok ? '已退款' : '已拒绝'; ADM.lst[r.no] = ok ? 'refund' : 'paid'; refundSync(); admLog(ok ? '同意退款' : '拒绝退款', `${r.no} ${r.item}`, yuan2(r.amt));
-    notify(r.buyer, ok ? '退款已同意' : '退款申请没有通过', ok ? `「${r.item}」${r.amt > 0 ? `的 ${yuan2(r.amt)} 会原路退回，1–3 个工作日到账${r.vc ? `；代金券 ${yuan2(r.vc)} 已退回你的余额` : ''}` : `：代金券 ${yuan2(r.vc || 0)} 已退回你的余额`}。` : `「${r.item}」${r.dl === '未下载' ? '' : r.dl + '，'}按《退款规则》不支持退款。如果文件有问题可以联系卖家，或回复这条通知说明。`);
+    notify(r.buyer, ok ? '退款已同意' : '退款申请没有通过', ok ? `「${r.item}」${r.amt > 0 ? `的 ${yuan2(r.amt)} 会原路退回，1–3 个工作日到账${r.vc ? '；用掉的代金券已经恢复，可以再用一次' : ''}` : '：用掉的代金券已经恢复，可以再用一次'}。` : `「${r.item}」${r.dl === '未下载' ? '' : r.dl + '，'}按《退款规则》不支持退款。如果文件有问题可以联系卖家，或回复这条通知说明。`);
     admSave(); toast(r.st, ok ? 'green' : 'orange', ok ? 'check' : 'x'); rerender(); },
   // 纠纷
   'dp-open': b => disputeSheet(b.dataset.id),
@@ -7386,7 +7466,7 @@ Object.assign(ACTIONS, {
     admSave(); toast(`已设为管理员：${esc(uname(uid))} · ${ADM_ROLES[role][0]}`, 'green'); rerender(); userSheet(uid); },
   'us-staff-go': () => { closeSheet(); admTab('staff'); },
   // 代金券：表单在「代金券」页签或用户弹窗里（.vc-f），按钮所在的那一份表单为准
-  'us-vc': b => { if (!admGuard('vouchers')) return; const uid = b.dataset.id; sheet(`<h3>发代金券给 ${esc(uname(uid))}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">现在余额 ${yuan2(vcBal(uid))}；会通过「CTRL Z 官方」通知他。</p>${vcForm(uid)}`); },
+  'us-vc': b => { if (!admGuard('vouchers')) return; const uid = b.dataset.id; sheet(`<h3>发代金券给 ${esc(uname(uid))}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">现在能用的券 ${vcCount(uid)} 张；会通过「CTRL Z 官方」通知他。</p>${vcForm(uid)}`); },
   'vc-send': b => { if (!admGuard('vouchers')) return; const f = b.closest('.vc-f'), to = $('.vcTo', f), amt = r2(+$('.vcAmt', f).value), days = +$('.vcExp', f).value, note = $('.vcNote', f).value.trim();
     const names = to.value.split(/[,，、\s]+/).filter(Boolean), uids = names.map(findUid);
     if (!names.length){ fxPop(to.type === 'hidden' ? f : to, 'fx-shake', 300); toast('填一下发给谁', 'orange', 'x'); return; }
@@ -7394,12 +7474,12 @@ Object.assign(ACTIONS, {
     if (!(amt >= 1 && amt <= VC_MAX)){ fxPop($('.vcAmt', f), 'fx-shake', 300); toast(`面额要在 ¥1 到 ${yuan2(VC_MAX)} 之间`, 'orange', 'x'); return; }
     const me = admMe(), exp = days ? Date.now() + days*864e5 : 0, list = [...new Set(uids)];
     list.forEach(uid => { ADM.vouchers.push({id:'vc' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), uid, amt, exp, note, by:me.name, ts:Date.now(), off:0});
-      notify(uid, '你收到一张代金券', `${yuan2(amt)}${exp ? `，${fmtDay(exp)} 前有效` : '，长期有效'}。买商品时自动抵扣，可以分几次用完。${note ? '说明：' + note : ''}`, {act:'wallet'}); });
+      notify(uid, '你收到一张代金券', `${yuan2(amt)}${exp ? `，${fmtDay(exp)} 前有效` : '，长期有效'}。买商品时可以用，每张只能用一次：一次用完，没抵扣完的部分作废，不找零。${note ? '说明：' + note : ''}`, {act:'wallet'}); });
     admLog('发代金券', list.map(u => '@' + uname(u)).join('、'), `${yuan2(amt)} × ${list.length}${note ? ' · ' + note : ''}`); admSave();
     toast(`已发出 ${list.length} 张 ${yuan2(amt)} 代金券`, 'pink'); const one = to.type === 'hidden' && list[0]; if (one){ closeSheet(); rerender(); userSheet(one); } else rerender(); },
-  'vc-off': b => { if (!admGuard('vouchers')) return; const v = ADM.vouchers.find(x => x.id === b.dataset.id); if (!v || vcSt(v)[0] !== '可用') return; const left = vcLeft(v);
-    v.off = Date.now(); notify(v.uid, '代金券已撤回', `面额 ${yuan2(v.amt)} 的代金券已被平台撤回，剩余的 ${yuan2(left)} 不能再用。已经用掉的部分不受影响。如有疑问可以回复这条通知。`);
-    admLog('撤回代金券', '@' + uname(v.uid), `面额 ${yuan2(v.amt)}，作废剩余 ${yuan2(left)}`); admSave(); toast('已撤回', 'orange'); rerender(); },
+  'vc-off': b => { if (!admGuard('vouchers')) return; const v = ADM.vouchers.find(x => x.id === b.dataset.id); if (!v || vcSt(v)[0] !== '可用') return;
+    v.off = Date.now(); notify(v.uid, '代金券已撤回', `面额 ${yuan2(v.amt)} 的代金券已被平台撤回，不能再用了。如有疑问可以回复这条通知。`);
+    admLog('撤回代金券', '@' + uname(v.uid), `面额 ${yuan2(v.amt)}`); admSave(); toast('已撤回', 'orange'); rerender(); },
   'us-inv': b => { if (!admGuard('invites')) return; const uid = b.dataset.id, code = invIssue(uid); admSave(); toast(`已发给 ${esc(uname(uid))}：${code}`, 'pink'); rerender(); userSheet(uid); }
 });
 /* 头像审核：沿用原来的通过 / 驳回，补上原因、通知和日志 */
@@ -7701,7 +7781,7 @@ Object.assign(ACTIONS, {
   'ann-x': b => { const s = store.get('annSeen', []); s.push(b.dataset.id); store.set('annSeen', s); const el = b.closest('.ann'); if (el && !reduced()){ el.animate([{opacity:1, transform:'none'}, {opacity:0, transform:'translateY(-8px) scale(.98)'}], {duration:200, easing:'ease-in'}).onfinish = () => rerender(); } else rerender(); },
   sysbox: () => { const L = ADM.inbox[ME] || [];
     sheet(`<h3>CTRL Z 官方</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">审核结果、处罚、结算和平台通知。对处理有异议可以直接回复申诉。</p>
-      <div class="sysbox">${L.map(m => `<div class="sysm ${m.read ? '' : 'new'}"><b>${esc(m.title)}</b><p>${esc(m.text)}</p>${m.act === 'counter' && !m.done ? `<button class="pill sm lt" data-act="counter" data-id="${m.rp}" style="align-self:flex-start">我没有侵权，提交反通知</button>` : ''}${m.act === 'wallet' ? `<a class="pill sm lt" href="#me-wallet" style="align-self:flex-start">查看余额</a>` : ''}<time>${fmtDay(m.ts)} ${fmtDT(m.ts).slice(6)}</time></div>`).join('') || '<div class="rnone">还没有通知</div>'}</div>
+      <div class="sysbox">${L.map(m => `<div class="sysm ${m.read ? '' : 'new'}"><b>${esc(m.title)}</b><p>${esc(m.text)}</p>${m.act === 'counter' && !m.done ? `<button class="pill sm lt" data-act="counter" data-id="${m.rp}" style="align-self:flex-start">我没有侵权，提交反通知</button>` : ''}${m.act === 'wallet' ? `<a class="pill sm lt" href="#me-wallet" style="align-self:flex-start">查看代金券</a>` : ''}<time>${fmtDay(m.ts)} ${fmtDT(m.ts).slice(6)}</time></div>`).join('') || '<div class="rnone">还没有通知</div>'}</div>
       <label class="ad-lab">回复 / 申诉</label><textarea class="inp" id="sysR" placeholder="说明情况，客服会在 1 个工作日内处理"></textarea><button class="pill" data-act="sys-reply" style="align-self:flex-start">发送</button>`);
     L.forEach(m => m.read = true); admSave(); msgBadge(); const r = $('.m-list .sysrow .bdg'); r && r.remove(); },
   'sys-reply': () => { const v = $('#sysR').value.trim(); if (!v){ fxPop($('#sysR'), 'fx-shake', 300); return; }
@@ -7984,15 +8064,8 @@ function setExtra(){ const cl = closingOf(ME);
     ${apiBox()}
     <div class="box"><div class="box-h"><h3>关于</h3></div><div class="box-b set-l">${DOC_ORD.map(k => `<a class="set-r" href="#doc-${k}">${DOCS[k].t}<span class="mut2">›</span></a>`).join('')}</div></div>`; }
 const MESUB = {
-  /* 余额：代金券余额 + 每张券 + 抵扣记录 */
-  wallet: () => { if (API.on()) return liveWalletView(); const V = vcOf(ME).slice().sort((a, b) => (vcSt(a)[0] === '可用' ? 0 : 1) - (vcSt(b)[0] === '可用' ? 0 : 1) || b.ts - a.ts), bal = vcBal(ME);
-    const soon = r2(vcLive(ME).filter(v => v.exp && v.exp - Date.now() < 7*864e5).reduce((a, v) => a + vcLeft(v), 0));
-    const U = ADM.vuse.filter(u => u.uid === ME).sort((a, b) => b.ts - a.ts);
-    return `<div class="box wal-h"><span class="lab">代金券余额</span><b class="x num">${yuan2(bal)}</b><span class="mut2">买商品时自动抵扣，可以分几次用完 · 不能提现，也不能转给别人</span>${soon ? `<span class="tag c-orange">${yuan2(soon)} 在 7 天内到期</span>` : ''}${bal > 0 ? `<a class="pill" href="#shop" style="align-self:flex-start">去逛逛</a>` : ''}</div>
-    <div class="box"><div class="box-h"><h3>我的代金券</h3></div><div class="box-b set-l">${V.map(v => { const [st, c] = vcSt(v), left = vcLeft(v);
-      return `<div class="set-r vc-r ${st === '可用' ? '' : 'dim'}"><span class="vc-a"><b class="num">${yuan2(Math.max(0, left))}</b><i>面额 ${yuan2(v.amt)}</i></span><span class="vc-m"><b>${esc(v.note || 'CTRL Z 代金券')}</b><span class="mut2">${v.exp ? fmtDay(v.exp) + ' 到期' : '长期有效'} · ${fmtDay(v.ts)} 收到</span></span>${stTag(st, c)}</div>`; }).join('') || '<div class="rnone">还没有代金券</div>'}</div></div>
-    <div class="box"><div class="box-h"><h3>使用记录</h3></div><div class="box-b set-l">${U.map(u => { const o = STATE.orders.find(x => x.no === u.no), p = o && P(o.pid), back = rfOf(u.no)?.st === '已退款';
-      return `<div class="set-r ${back ? 'dim' : ''}"><span><b>${p ? esc(p.title) : esc(u.no)}</b><span class="mut2" style="display:block;font-size:12px">${fmtDT(u.ts)} · ${u.no}${back ? ' · 已退款，退回余额' : ''}</span></span><b class="num" style="color:${back ? 'var(--ink-3)' : 'var(--pink)'}">−${yuan2(u.amt)}</b></div>`; }).join('') || '<div class="rnone">还没用过</div>'}</div></div>`; },
+  /* 代金券：能用几张 + 规则（每张只能用一次）+ 每张券 + 使用记录。原型和后端共用 walletView */
+  wallet: () => walletView(),
   blocks: () => { const L = [...STATE.blocks]; return `<p class="mut" style="font-size:14px;margin:0 0 14px">被拉黑的人看不到你的消息入口，你也不会再看到 TA 的帖子和评论。</p>
     <div class="box"><div class="box-b set-l">${L.map(uid => `<div class="set-r"><span class="ad-u">${uav(uid, 'sm')}<b>${esc(uname(uid))}</b></span><button class="pill sm lt" data-act="blk" data-id="${esc(uid)}">解除</button></div>`).join('') || '<div class="rnone">黑名单是空的</div>'}</div></div>`; },
   close: () => { const cl = closingOf(ME), ck = closeChecks(), ok = ck.every(c => c[0]);
@@ -8022,7 +8095,7 @@ Object.assign(ACTIONS, {
       <button class="pill lg" data-act="do-refund" data-no="${o.no}">${fast ? '确认退款' : '提交申请'}</button>`); },
   'do-refund': b => { const o = STATE.orders.find(x => x.no === b.dataset.no), p = P(o.pid), n = STATE.dlc[o.pid] || 0, fast = !n && (Date.now() - ordTs(o))/864e5 <= 7, x = $('#rfX').value.trim();
     if (!fast && !x){ fxPop($('#rfX'), 'fx-shake', 300); $('#rfX').focus(); return; }
-    const cash = r2(o.price - (o.vc || 0)), vcTxt = o.vc ? `代金券 ${yuan2(o.vc)} 退回你的余额` : '';   // 只退实付的现金；券抵扣的部分自动回到原来那张券上
+    const cash = r2(o.price - (o.vc || 0)), vcTxt = o.vc ? '用掉的代金券会恢复，可以再用一次' : '';   // 只退实付的现金；券抵扣的部分自动回到原来那张券上
     const r = {no:o.no, pid:o.pid, item:p.title, amt:cash, vc:o.vc || 0, buyer:ME, reason:($('#rfR .on')?.textContent || '其他') + (x ? '：' + x : ''), dl:n ? `已下载 ${n} 次` : '未下载', ts:Date.now(), st:fast ? '已退款' : '待处理', auto:fast};
     REFUNDS.unshift(r); if (fast){ ADM.lst[o.no] = 'refund'; notify(ME, '退款成功', `「${p.title}」${cash > 0 ? `的 ${yuan2(cash)} 已原路退回，1–3 个工作日到账${vcTxt ? '；' + vcTxt : ''}` : '：' + vcTxt}。`); } else ADM.lst[o.no] = 'refunding';
     admSave(); refundSync(); closeSheet(); toast(fast ? '已退款，原路退回' : '已提交，平台会在 1 个工作日内处理', fast ? 'green' : 'orange', fast ? 'check' : undefined); badge(); rerender(); },
@@ -8702,7 +8775,7 @@ function meHead(){
     <div class="mh-q">
       <a class="mqc mqc-prod" href="#seller-products"><span class="g c-pink">${GLYPH.sample}</span><span><b>我的产品</b><span>${STATE.seller ? nProd + ' 件在售 · 上架新作品' : '开店需要邀请码'}</span></span></a>
       <a class="mqc mqc-lib" href="#me-lib"><span class="g c-blue">${IC.dl}</span><span><b>已购资源</b><span>${owned} 件可下载${STATE.libNew ? ` · <em>${STATE.libNew} 件新到</em>` : ''}</span></span></a>
-      <a class="mqc mqc-wal" href="#me-wallet"><span class="g c-yellow"><b class="x" style="font-size:19px;line-height:1">¥</b></span><span><b>余额</b><span>代金券 ${yuan2(vcBal(ME))}</span></span></a>
+      <a class="mqc mqc-wal" href="#me-wallet"><span class="g c-yellow"><b class="x" style="font-size:19px;line-height:1">¥</b></span><span><b>代金券</b><span>${vcCount(ME) ? vcCount(ME) + ' 张能用' : '没有能用的券'}</span></span></a>
     </div></div>`;
 }
 function meTabBody(t){
@@ -8738,7 +8811,7 @@ Object.assign(ACTIONS, {
   'me-menu': () => {
     closeSheet(); const r = STATE.role, g = r === 'guest';   // 首页左上角也能打开；未登录时顶部换成登录入口，不显示账号相关项
     $('#layer').innerHTML = `<div class="sov drw-ov" data-ov><nav class="drw" aria-label="更多">${g ? `<div class="drw-u"><button class="pill" data-act="login">登录 / 注册</button></div>` : `<div class="drw-u">${av(ME, 'md')}<b>${esc(USERS[ME].name)}</b></div>
-      <a href="#me-edit">${RIC.pen}编辑资料</a><a href="#me-orders">${IC.dl}订单</a><a href="#me-wallet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M16 14.5h2"/></svg>余额</a><a href="#me-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2-1.2L14.2 3h-4.4l-.4 2.6a7 7 0 00-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 000 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 002 1.2l.4 2.6h4.4l.4-2.6a7 7 0 002-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>设置</a>
+      <a href="#me-edit">${RIC.pen}编辑资料</a><a href="#me-orders">${IC.dl}订单</a><a href="#me-wallet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18M16 14.5h2"/></svg>代金券</a><a href="#me-settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2-1.2L14.2 3h-4.4l-.4 2.6a7 7 0 00-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 000 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 002 1.2l.4 2.6h4.4l.4-2.6a7 7 0 002-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>设置</a>
       ${API.on() && LIVE.staffEmail ? `<button class="drw-sw" data-act="adm-login">${SHIELD}进入后台</button>` : ''}<a href="#seller"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 9l1.5-5h13L20 9"/><path d="M4 9a2.7 2.7 0 005.33 0 2.7 2.7 0 005.34 0A2.7 2.7 0 0020 9"/><path d="M5 11.5V20h14v-8.5"/><path d="M10 20v-5h4v5"/></svg>工作室</a>`}
       <button class="drw-sw" data-act="vislab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M4 12h3l2-5 3 10 2-6 2 3h4"/></svg>可视化实验室</button><button class="drw-sw drw-thm" data-act="theme">${isDark() ? IC.sun : IC.moon}${isDark() ? '浅色模式' : '深色模式'}</button>${g ? '' : `<button class="drw-sw" data-act="switch-acc">${IC.user}切换账号</button><button class="drw-out" data-act="logout">${IC.back}退出登录</button>`}
       ${protoOn() ? `<div class="drw-f"><span class="lab">原型 · 切换身份（演示模式）</span><div class="roles">${Object.entries(ROLE_NAME).map(([k, l]) => `<button class="${r === k ? 'on' : ''}" data-act="role" data-v="${k}">${l}</button>`).join('')}</div>${STATE.seller ? '<button class="more" data-act="unseller">撤回卖家资格</button>' : ''}</div>` : ''}</nav></div>`;
@@ -9230,7 +9303,7 @@ function themeFx(apply, el){
 addEventListener('pointerdown', () => { if (THX.t){ try { THX.t.skipTransition(); } catch(e){} } }, {capture:true, passive:true});   // 点一下直接看结果，不让过场挡操作
 
 /* ---------- 手机顶栏：一级页只留 Logo + 搜索；二级页 = 返回 + 页面名 ---------- */
-const ME_SUB_T = {lib:'已购资源', orders:'订单', settings:'设置', edit:'编辑资料', blocks:'黑名单', close:'注销账号', wallet:'余额'};
+const ME_SUB_T = {lib:'已购资源', orders:'订单', settings:'设置', edit:'编辑资料', blocks:'黑名单', close:'注销账号', wallet:'代金券'};
 function pageTitle(){
   const [r, ...a] = (location.hash || '#home').slice(1).split('-'); const arg = a.join('-');
   if (r === 'item'){ const p = P(arg); return p ? {t:p.title, late:true} : null; }
@@ -10146,7 +10219,7 @@ const apiBox = () => `<div class="box"><div class="box-h"><h3>原型 · 数据�
   : `<div class="set-r"><span>现在用的是浏览器里的示例数据</span><button class="pill sm" data-act="api-set">连接后端</button></div>`}</div></div>`;
 
 /* ================= 商城接后端（第 2 阶段） =================
-   连着后端时：商品、开店、上架、下单付款（代金券）、已购下载、退款、余额都读写后端；
+   连着后端时：商品、开店、上架、下单付款（代金券）、已购下载、退款、代金券都读写后端；
    后台的待审核、订单流水、退款、代金券、邀请码、主页下架也走后端。金额：后端是「分」，页面里是「元」（f2y / y2f）。
    做法和帖子一样：把后端数据灌进原型的 PRODUCTS / STATE.orders / SELLER_PRODUCTS / SELLER_ORDERS / REVIEW，页面代码基本不用改 */
 const f2y = f => Math.round(f || 0) / 100, y2f = y => Math.round(+y * 100);
@@ -10793,13 +10866,14 @@ wrapAct('buy0', async (orig, b, e) => { const pr = P(b.dataset.id); if (!pr?.liv
   if (pr.price > 0) return orig(b, e);   // 付费的照常打开付款面板
   try { liveApplyOrder(await API.req('POST', '/orders', {productId:pr.id})); STATE.libNew++; badge(); toast('已放进你的资源库', 'green'); rerender(); } catch(err){ apiFail(err); } });
 wrapAct('do-pay', async (orig, b) => { const pr = P(b.dataset.id); if (!pr?.live) return orig(b);
-  const sh = $('#layer .sheet'), ded = vcDed(pr), cash = r2(pr.price - ded);
+  const sh = $('#layer .sheet'), ded = vcDed(pr), cash = r2(pr.price - ded), v = vcSel(pr);
+  if (vcWasteOf(pr) > 0 && !UI.vcOk) return;   // 会作废的券必须先确认（后端也会拦：没带 confirmWaste 就报 voucher_waste）
   sh.innerHTML = `<div class="done"><div class="ring-p" id="rp" style="--p:35"></div><b style="font-size:18px">${cash > 0 ? `正在等待${UI.pay}…` : '正在用代金券支付…'}</b></div>`;
-  try { const o = await API.req('POST', '/orders', {productId:pr.id, useVoucher:UI.vcUse !== false, payMethod:PAY_M[UI.pay] || 'wechat'});
+  try { const o = await API.req('POST', '/orders', {productId:pr.id, payMethod:PAY_M[UI.pay] || 'wechat', ...(v ? {useVoucher:true, voucherId:v.id, confirmWaste:true} : {useVoucher:false})});
     if (o.status !== 'paid') throw new Error('付款没有完成，请重试');
     liveApplyOrder(o); try { LSHOP.wallet = await API.req('GET', '/me/wallet'); } catch(e){}
     paidUI(pr, sh); }
-  catch(err){ closeSheet(); apiFail(err); } });
+  catch(err){ closeSheet(); apiFail(err); if (/^voucher_/.test(err.code || '')) try { LSHOP.wallet = await API.req('GET', '/me/wallet'); } catch(e){} } });
 /* —— 下载：拿 15 分钟的签名地址直接下载 —— */
 wrapAct('dl', async (orig, b) => { const id = b.dataset.id, pr = P(id); if (!pr?.live) return orig(b);
   const o = STATE.orders.find(x => x.pid === id && x.live && x.st !== '已退款'); if (!o){ toast('购买后才能下载', 'orange', 'lock'); return; }
@@ -10813,17 +10887,21 @@ wrapAct('do-refund', async (orig, b) => { const o = STATE.orders.find(x => x.no 
   try { const r = await API.req('POST', `/orders/${o.id}/refund`, {reason}); closeSheet(); toast(r.fast ? '已退款，原路退回' : '已提交，平台会在 1 个工作日内处理', r.fast ? 'green' : 'orange', r.fast ? 'check' : undefined); await liveShop(); await liveMine(); rerender(); }
   catch(e){ apiFail(e); } });
 
-/* —— 余额页（后端） —— */
-function liveWalletView(){
-  const w = LSHOP.wallet; if (!w){ if (!LSHOP.wTry){ LSHOP.wTry = true; liveMine().then(rerender); } return '<div class="box"><div class="box-b mut">正在读取…</div></div>'; }
-  const S = {active:['可用', 'green'], used_up:['已用完', ''], expired:['已过期', ''], revoked:['已撤回', '']}, bal = f2y(w.balance);
-  const V = w.vouchers.slice().sort((a, b) => (a.status === 'active' ? 0 : 1) - (b.status === 'active' ? 0 : 1) || +new Date(b.createdAt) - +new Date(a.createdAt));
-  const soon = f2y(w.vouchers.filter(v => v.status === 'active' && v.expiresAt && +new Date(v.expiresAt) - Date.now() < 7*864e5).reduce((a, v) => a + v.left, 0));
-  return `<div class="box wal-h"><span class="lab">代金券余额</span><b class="x num">${yuan2(bal)}</b><span class="mut2">买商品时自动抵扣，可以分几次用完 · 不能提现，也不能转给别人</span>${soon ? `<span class="tag c-orange">${yuan2(soon)} 在 7 天内到期</span>` : ''}${bal > 0 ? `<a class="pill" href="#shop" style="align-self:flex-start">去逛逛</a>` : ''}</div>
-    <div class="box"><div class="box-h"><h3>我的代金券</h3></div><div class="box-b set-l">${V.map(v => { const [st, c] = S[v.status] || [v.status, ''];
-      return `<div class="set-r vc-r ${v.status === 'active' ? '' : 'dim'}"><span class="vc-a"><b class="num">${yuan2(f2y(v.left))}</b><i>面额 ${yuan2(f2y(v.amount))}</i></span><span class="vc-m"><b>${esc(v.note || 'CTRL Z 代金券')}</b><span class="mut2">${v.expiresAt ? fmtDay(+new Date(v.expiresAt)) + ' 到期' : '长期有效'} · ${fmtDay(+new Date(v.createdAt))} 收到</span></span>${stTag(st, c)}</div>`; }).join('') || '<div class="rnone">还没有代金券</div>'}</div></div>
-    <div class="box"><div class="box-h"><h3>使用记录</h3></div><div class="box-b set-l">${w.uses.map(u => `<div class="set-r ${u.refunded ? 'dim' : ''}"><span><b>${esc(u.title)}</b><span class="mut2" style="display:block;font-size:12px">${fmtDT(+new Date(u.createdAt))} · ${u.orderNo}${u.refunded ? ' · 已退款，退回余额' : ''}</span></span><b class="num" style="color:${u.refunded ? 'var(--ink-3)' : 'var(--pink)'}">−${yuan2(f2y(u.amount))}</b></div>`).join('') || '<div class="rnone">还没用过</div>'}</div></div>`;
+/* —— 「我 › 代金券」（原型和后端共用；数据统一走 vcItems） —— */
+function walletView(){
+  if (API.on() && !LSHOP.wallet){ if (!LSHOP.wTry){ LSHOP.wTry = true; liveMine().then(rerender); } return '<div class="box"><div class="box-b mut">正在读取…</div></div>'; }
+  const on = v => v.st[0] === '可用', V = vcItems(ME).sort((a, b) => (on(a) ? 0 : 1) - (on(b) ? 0 : 1) || (on(a) ? (a.exp || 9e15) - (b.exp || 9e15) : b.ts - a.ts));
+  const n = V.filter(on).length, soon = V.filter(v => on(v) && v.exp && v.exp - Date.now() < 7*864e5).length;
+  const U = API.on() ? (LSHOP.wallet.uses || []).map(u => ({title:u.title, no:u.orderNo, ded:f2y(u.amount), waste:f2y(u.face - u.amount), back:u.refunded, ts:+new Date(u.createdAt)}))
+    : ADM.vuse.filter(u => u.uid === ME).map(u => { const v = ADM.vouchers.find(x => x.id === u.vid), o = STATE.orders.find(x => x.no === u.no), p = o && P(o.pid);
+      return {title:p ? p.title : u.no, no:u.no, ded:u.amt, waste:v ? r2(v.amt - u.amt) : 0, back:rfOf(u.no)?.st === '已退款', ts:u.ts}; }).sort((a, b) => b.ts - a.ts);
+  return `<div class="box wal-h"><span class="lab">代金券</span><b class="x num">${n}<small>张能用</small></b>
+    <div class="vc-rule"><span class="vc-rule-i" aria-hidden="true">1×</span><span><b>每张券只能用一次</b>用在一单上就整张用掉，没抵扣完的部分作废，不找零、不能留到下次；一单只能用一张。</span></div>
+    <span class="mut2">退款后用掉的券会恢复（有效期不变）· 不能提现，也不能转给别人</span>${soon ? `<span class="tag c-orange">${soon} 张在 7 天内到期</span>` : ''}${n ? `<a class="pill" href="#shop" style="align-self:flex-start">去逛逛</a>` : ''}</div>
+    <div class="box"><div class="box-h"><h3>我的代金券</h3></div><div class="box-b set-l">${V.map(v => `<div class="set-r vc-r ${on(v) ? '' : 'dim'}"><span class="vc-a"><b class="num">${yuan2(v.amt)}</b><i>${on(v) ? '只能用一次' : '面额'}</i></span><span class="vc-m"><b>${esc(v.note || 'CTRL Z 代金券')}</b><span class="mut2">${v.exp ? fmtDay(v.exp) + ' 到期' : '长期有效'} · ${fmtDay(v.ts)} 收到</span>${v.use ? `<span class="mut2">用在「${esc(v.use.title)}」：抵扣 ${yuan2(v.use.ded)}${v.use.waste > 0 ? `，作废 ${yuan2(v.use.waste)}` : ''}</span>` : ''}</span>${stTag(...v.st)}</div>`).join('') || '<div class="rnone">还没有代金券</div>'}</div></div>
+    <div class="box"><div class="box-h"><h3>使用记录</h3></div><div class="box-b set-l">${U.map(u => `<div class="set-r ${u.back ? 'dim' : ''}"><span><b>${esc(u.title)}</b><span class="mut2" style="display:block;font-size:12px">${fmtDT(u.ts)} · ${esc(u.no)}${u.back ? ' · 已退款，券已恢复' : u.waste > 0 ? ` · 作废 ${yuan2(u.waste)}` : ''}</span></span><b class="num" style="color:${u.back ? 'var(--ink-3)' : 'var(--pink)'}">−${yuan2(u.ded)}</b></div>`).join('') || '<div class="rnone">还没用过</div>'}</div></div>`;
 }
+const liveWalletView = walletView;
 
 /* ================= 后台 · 商城（后端） ================= */
 async function ladmUsersQuiet(){ if (LADM.users) return; try { (LADM.users = (await STAFF.req('GET', '/admin/users?limit=50')).items).forEach(u => apiUser(u)); LADM.uq = ''; } catch(e){} }
@@ -10892,12 +10970,12 @@ Object.assign(ACTIONS, {
 });
 
 function liveVouchersView(){ const d = LADM.vouchers; if (!d){ ladmShop('vouchers'); return ladmWait('代金券', '读取中'); }
-  const S = {active:['可用', 'green'], used_up:['已用完', ''], expired:['已过期', ''], revoked:['已撤回', '']};
-  return `${adH('代金券', `发给用户买商品用：可以拆开分几次用，付款时先用快过期的；不能提现、不能转让。券抵扣的部分由平台承担，卖家照原价结算。单张最多 ${yuan2(VC_MAX)}`)}
-  <div class="box"><div class="box-b"><div class="ad-kv"><span>已发放<b>${yuan2(f2y(d.sum.issued))}</b></span><span>已抵扣<b>${yuan2(f2y(d.sum.used))}</b></span><span>未使用<b>${yuan2(f2y(d.sum.unused))}</b></span><span>过期 / 撤回作废<b>${yuan2(f2y(d.sum.void))}</b></span></div></div></div>
+  const S = VC_ST;
+  return `${adH('代金券', `发给用户买商品用：每张只能用一次，一单只能用一张，用在一单上就整张用掉，没抵扣完的部分作废、不找零；不能提现、不能转让。券抵扣的部分由平台承担，卖家照原价结算。单张最多 ${yuan2(VC_MAX)}`)}
+  <div class="box"><div class="box-b"><div class="ad-kv"><span>已发放<b>${yuan2(f2y(d.sum.issued))}</b></span><span>已抵扣<b>${yuan2(f2y(d.sum.used))}</b></span><span>用剩作废<b>${yuan2(f2y(d.sum.wasted || 0))}</b></span><span>未使用<b>${yuan2(f2y(d.sum.unused))}</b></span><span>过期 / 撤回作废<b>${yuan2(f2y(d.sum.void))}</b></span></div></div></div>
   <div class="box" style="margin-top:12px">${vcForm('')}</div>
-  <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>用户</th><th class="r">面额</th><th class="r">剩余</th><th>有效期</th><th>状态</th><th>说明</th><th>发放</th><th></th></tr></thead><tbody>${d.items.map(v => `<tr>
-    <td><span class="ad-u">${uav(v.user.id)}<span><b>${esc(v.user.name)}</b><i>@${esc(v.user.handle)}</i></span></span></td><td class="r n">${yuan2(f2y(v.amount))}</td><td class="r n">${yuan2(f2y(v.left))}</td>
+  <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>用户</th><th class="r">面额</th><th class="r">抵扣</th><th>有效期</th><th>状态</th><th>说明</th><th>发放</th><th></th></tr></thead><tbody>${d.items.map(v => `<tr>
+    <td><span class="ad-u">${uav(v.user.id)}<span><b>${esc(v.user.name)}</b><i>@${esc(v.user.handle)}</i></span></span></td><td class="r n">${yuan2(f2y(v.amount))}</td><td class="r n">${v.status === 'used_up' ? yuan2(f2y(v.deducted || 0)) : '—'}</td>
     <td class="mut2 n">${v.expiresAt ? fmtDay(+new Date(v.expiresAt)) : '长期'}</td><td>${stTag(...(S[v.status] || [v.status, '']))}</td><td class="mut2">${esc(v.note || '—')}</td><td class="mut2">${esc(v.by)} ${fmtDT(+new Date(v.createdAt)).slice(0, 5)}</td>
     <td class="r">${v.status === 'active' ? `<button class="pill sm lt" data-act="lvc-off" data-id="${v.id}">撤回</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="8" class="mut">还没有发过代金券</td></tr>'}</tbody></table></div></div>`; }
 wrapAct('vc-send', async (orig, b) => { if (STATE.role !== 'admin') return orig(b); if (!admGuard('vouchers')) return;
