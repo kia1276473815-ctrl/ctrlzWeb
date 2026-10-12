@@ -336,8 +336,8 @@ main{min-height:80vh}
 .roles{grid-template-columns:repeat(3,1fr)!important}
 
 /* ===== 帖子卡 ===== */
-.mason{column-count:4;column-gap:18px}
-.mason > *{break-inside:avoid;margin-bottom:26px}
+.mason,.mason-sk{column-count:4;column-gap:18px}
+.mason > *,.mason-sk > *{break-inside:avoid;margin-bottom:26px}
 /* 卡片整体参与分栏，避免封面和字体重排时被挤入超出容器的额外一列。 */
 .mason > .card{display:inline-block;width:100%;vertical-align:top}
 .card{display:block;cursor:pointer}
@@ -478,7 +478,7 @@ main{min-height:80vh}
 @media (hover:hover) and (pointer:fine){.cat:hover svg.sh{transform:rotate(-6deg) translateY(-3px)}}
 .cat .cn{line-height:1.3;word-break:keep-all}
 .cat:not(.all){min-height:184px}   /* 留出插画的位置：标题在上、插画在右侧中间、说明文字在底部整行 */
-.grid-p{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:30px 18px}
+.grid-p,.grid-sk{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:30px 18px}
 .slv{display:flex;flex-direction:column;gap:12px;cursor:pointer}
 .slv .cv{position:relative;aspect-ratio:1;border-radius:14px;overflow:hidden;background:var(--c)}
 .slv .cv > img,.slv .cv > canvas{width:100%;height:100%;object-fit:cover;transition:transform .35s var(--ease)}
@@ -820,7 +820,7 @@ footer .x span{color:var(--pink)}
 footer p{font-size:13px;color:var(--ink-3);text-align:right;line-height:1.8}
 
 /* ===== 响应式 ===== */
-@media (max-width:1240px){ .mason{column-count:3} .sbtn{min-width:0} .sbtn .t{display:none} .sbtn kbd{display:none} .sbtn{padding:0;width:40px;justify-content:center} }
+@media (max-width:1240px){ .mason,.mason-sk{column-count:3} .sbtn{min-width:0} .sbtn .t{display:none} .sbtn kbd{display:none} .sbtn{padding:0;width:40px;justify-content:center} }
 @media (max-width:1020px){
   .pp{grid-template-columns:1fr}
   .info{position:static}
@@ -849,15 +849,15 @@ footer p{font-size:13px;color:var(--ink-3);text-align:right;line-height:1.8}
   .tb .plus{align-self:center}
   .tb .plus span{width:48px;height:36px;border-radius:12px;background:var(--pink);color:var(--ink);display:grid;place-items:center}
   .tb .plus svg{width:20px;height:20px}
-  .mason{column-count:2;column-gap:10px}
-  .mason > *{margin-bottom:18px}
+  .mason,.mason-sk{column-count:2;column-gap:10px}
+  .mason > *,.mason-sk > *{margin-bottom:18px}
   .card h3{font-size:14px}
   .card .meta{font-size:11.5px}
 
   .qcv{min-height:180px;padding:14px}
   .qcv .q{font-size:64px}
   .qcv p{font-size:14.5px}
-  .grid-p{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 10px}
+  .grid-p,.grid-sk{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 10px}
   .slv h3{font-size:14px}
   .price{font-size:17px}
   .slv .pv .pbtn{width:40px;height:40px}
@@ -1031,8 +1031,8 @@ canvas[data-wave]:focus-visible{box-shadow:0 0 0 2px var(--on)}
   .wm{font-size:22px}
 }
 @media (max-width:339px){
-  .mason{column-count:1}
-  .grid-p{grid-template-columns:minmax(0,1fr)}
+  .mason,.mason-sk{column-count:1}
+  .grid-p,.grid-sk{grid-template-columns:minmax(0,1fr)}
   .buybar{gap:8px}
   .buybar .price{font-size:20px}
 }
@@ -1192,6 +1192,14 @@ canvas[data-wave]:focus-visible{box-shadow:0 0 0 2px var(--on)}
 .request-note{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:24px 8px;color:var(--ink-2);font-size:14px;line-height:1.5;text-align:center}
 .request-note span{overflow-wrap:anywhere;max-width:100%}
 .feed-state:empty{display:none}
+/* 加载占位（苹果：先显示点东西）：和真实卡片同形状，数据一到就被替换 */
+.sk-card{display:flex;flex-direction:column;gap:8px}
+.sk-cv{width:100%;border-radius:16px;background:var(--rule)}
+.sk-ln{height:12px;width:80%;border-radius:6px;background:var(--rule)}
+.sk-ln.s{width:45%}
+.sk-list .sk-cv,.sk-list .sk-ln{animation:skPulse 1.1s ease-in-out infinite alternate}
+.sk-list .sk-card:nth-child(2n) .sk-cv,.sk-list .sk-card:nth-child(2n) .sk-ln{animation-delay:-.4s}
+@keyframes skPulse{from{opacity:.55}to{opacity:1}}
 .ht-t button.on::after{content:"";position:absolute;left:50%;bottom:-4px;width:20px;height:3px;margin-left:-10px;border-radius:2px;background:var(--pink)}
 .sugg{margin:4px 0 18px}
 .sugg .lab{display:block;margin-bottom:10px}
@@ -5641,7 +5649,7 @@ function ovSync(){ const count = overlayNodes().length, open = count > 0;
 new MutationObserver(ovSync).observe($('#layer'), {childList:true});
 new MutationObserver(ovSync).observe(document.body, {childList:true});
 /* 网址没变的后退（关弹层那一条）不会触发 hashchange，在这里处理 */
-addEventListener('popstate', e => { VT.ua = e.hasUAVisualTransition ? performance.now() : 0; const st = history.state; if (!st || st.ctrlz == null || curH() !== HST.stk[HST.d]) return;
+addEventListener('popstate', e => { if (typeof VT !== 'undefined') VT.ua = e?.hasUAVisualTransition ? performance.now() : 0; const st = history.state; if (!st || st.ctrlz == null || curH() !== HST.stk[HST.d]) return;
   HST.d = st.ctrlz; HST.stk[HST.d] = curH(); const want = Math.min(st.ov || 0, overlayNodes().length); HST.ovN = want; HST.ov = want > 0;
   while (overlayNodes().length > want) closeTopOverlay();
   if (HST.pend){ const p = HST.pend; HST.pend = null; navReplace(p); }
@@ -6763,6 +6771,12 @@ function shopStatusHtml(){
   if (!s || s.status === 'pending' || s.status === 'refreshing') return `<div class="request-note" role="status">${PRODUCTS.length ? '正在更新资源…' : '正在读取资源…'}</div>`;
   if (s.status === 'error') return `<div class="request-note" role="status"><span>${esc(s.error || '资源读取失败，请重试')}</span><button class="pill sm lt" data-act="shop-retry">重试</button></div>`; return '';
 }
+/* 加载占位：首页瀑布流 8 张高低不一的卡片，商城 6 张方形商品卡（aria-hidden：读屏只读上面的「正在读取…」） */
+const SK_H = [1.25, .8, 1.4, 1, 1.15, .9, 1.3, .85];
+const skCard = h => `<div class="sk-card"><div class="sk-cv" style="aspect-ratio:1/${h}"></div><div class="sk-ln"></div><div class="sk-ln s"></div></div>`;
+const skMason = () => `<div class="mason-sk sk-list" aria-hidden="true">${SK_H.map(skCard).join('')}</div>`;
+const skGrid = () => `<div class="grid-sk sk-list" aria-hidden="true">${SK_H.slice(0, 6).map(() => skCard(1)).join('')}</div>`;
+const shopSk = () => API.on() && !PRODUCTS.length && LSHOP.feed?.status !== 'error' && LSHOP.feed?.status !== 'ready' ? skGrid() : '';   // 商城首次读取中
 function shopEmptyHtml(){
   const s = UI.shop;
   // 等待和失败有独立状态；只有服务器确实返回空列表才显示空资源。
@@ -6793,7 +6807,7 @@ ROUTES.shop = arg => {
     <span style="width:1px;background:var(--rule);margin:4px 6px;flex:none"></span>
     ${[['all','不限价'],['free','免费'],['lt50','50 以下'],['50','50–100'],['gt100','100 以上']].map(([k,l]) => `<button class="chip ${s.price===k?'on':''}" aria-pressed="${s.price===k}" data-act="sf" data-k="price" data-v="${k}">${l}</button>`).join('')}
   </div></div>
-  <div style="margin-top:22px"><div class="shop-state">${shopStatusHtml()}</div>${list.length ? `<div class="grid-p">${list.map(sleeve).join('')}</div>` : shopEmptyHtml()}</div></div>`;
+  <div style="margin-top:22px"><div class="shop-state">${shopStatusHtml()}</div>${list.length ? `<div class="grid-p">${list.map(sleeve).join('')}</div>` : (shopEmptyHtml() || shopSk())}</div></div>`;
 };
 ACTIONS.sf0 = b => { UI.shop[b.dataset.k] = b.dataset.v; if (b.dataset.k === 'cat') UI.shop.sub = 'all'; if (!CUR.key.startsWith('shop|')) go('shop'); else {
     // 从「#shop-分类」链接进来时，网址里带着分类，每次重绘都会把分类改回网址里那个 → 点别的分类没反应。
@@ -7900,7 +7914,7 @@ ROUTES.home = () => {
   return `<div class="wrap home">
     <div class="htabs"><button class="rl-ic dk ht-l pg-only" data-act="me-menu" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><span class="ht-no" aria-hidden="true">${ISSUE_NO}<i>今日</i></span><div class="ht-t" role="tablist" aria-label="首页信息流"><button role="tab" aria-selected="${tab === 'fol'}" tabindex="${tab === 'fol' ? 0 : -1}" class="${tab === 'fol' ? 'on' : ''}" data-act="htab" data-v="fol">关注</button><button role="tab" aria-selected="${tab === 'rec'}" tabindex="${tab === 'rec' ? 0 : -1}" class="${tab === 'rec' ? 'on' : ''}" data-act="htab" data-v="rec">推荐</button></div><button class="rl-ic dk ht-r pg-only" data-act="search" aria-label="搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div>
     <div class="hfeed">${annBar()}${tab === 'rec' && !STATE.settings.pers ? `<p class="pers-off">已关闭个性化推荐 · 按发布时间排列 <a href="#me-settings">设置</a></p>` : ''}${tab === 'fol' ? `<div class="sugg"><span class="lab">${list.length ? '还可以关注' : '先关注几位创作者'}</span><div class="sugg-r">${sugg.map(u => `<div class="sg ${ucls(u.id)}"><a data-go="user-${u.id}">${av(u.id, 'md')}<b>${esc(u.name)}</b><span>${esc(u.role.split(' · ')[0])}</span></a><button class="pill sm" data-act="follow" data-id="${u.id}">关注</button></div>`).join('')}</div></div>` : ''}
-    <div class="feed-state">${feedStatusHtml()}</div>${list.length ? `<div class="mason">${list.map(postCard).join('')}</div>` : API.on() && LIVE.feed?.status !== 'ready' ? '' : `<div class="empty"><div class="x">空</div><span>${tab === 'fol' ? '关注的人还没有发东西' : '还没有人发东西，来发第一条吧'}</span>${tab === 'fol' ? '' : '<button class="pill" data-act="compose">发布</button>'}</div>`}</div>
+    <div class="feed-state">${feedStatusHtml()}</div>${list.length ? `<div class="mason">${list.map(postCard).join('')}</div>` : API.on() && LIVE.feed?.status !== 'ready' ? (LIVE.feed?.status === 'error' ? '' : skMason()) : `<div class="empty"><div class="x">空</div><span>${tab === 'fol' ? '关注的人还没有发东西' : '还没有人发东西，来发第一条吧'}</span>${tab === 'fol' ? '' : '<button class="pill" data-act="compose">发布</button>'}</div>`}</div>
   </div>`;
 };
 ROUTES.feed = ROUTES.home;
@@ -9676,8 +9690,8 @@ addEventListener('scroll', () => { if (!ttScroll.r) ttScroll.r = requestAnimatio
 document.addEventListener('rendered', syncTitle);
 
 /* ---------- 弹层：手机上可以按住往下拖走（抽屉往左拖），点遮罩 / ✕ / Esc 也会滑出去而不是瞬间消失 ---------- */
-function dismissSheet(sh, v = 0){
-  sh = sh || $('#vlov .sheet') || $('#layer .sheet, #layer .drw'); const fin = () => { if (sh && sh.closest('#vlov')) vlClose(); else closeSheet(); }; if (!sh || reduced()){ fin(); return; }
+function dismissSheet(sh, v = 0, instant = false){
+  sh = sh || $('#vlov .sheet') || $('#layer .sheet, #layer .drw'); const fin = () => { if (sh && sh.closest('#vlov')) vlClose(); else closeSheet(instant ? {instant:true} : undefined); }; if (!sh || reduced() || instant){ fin(); return; }
   if (!sh.closest('#vlov')){ closeSheet({v}); return; }
   if (sh.dataset.out) return; sh.dataset.out = 1;
   const drw = sh.classList.contains('drw'), mob = isMob(), ov = sh.closest('.sov');
@@ -10186,7 +10200,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.defaultPrevented || e.isComposing || e.keyCode === 229) return;
-  if (e.key === 'Escape'){ const top = topOverlay(); if (top){ e.preventDefault(); if (top.kind === 'search') closeSearch(); else { const el = top.el.querySelector('.sheet,.drw'); if (el?.closest('#vlov')) vlClose(); else closeSheet({instant:true}); /* 键盘操作瞬间完成，不播动画 */ } } else $('#menu')?.remove(); }
+  if (e.key === 'Escape'){ const top = topOverlay(); if (top){ e.preventDefault(); if (top.kind === 'search') closeSearch(); else dismissSheet(top.el.querySelector('.sheet,.drw'), 0, true); /* 键盘操作瞬间完成，不播动画 */ } else $('#menu')?.remove(); }
   if ((e.key === '/' || (e.key === 'k' && (e.metaKey || e.ctrlKey))) && !e.target.closest('input,textarea') && !$('#srch')){ e.preventDefault(); openSearch(); }
 });
 
@@ -12564,6 +12578,7 @@ function patchMoreList(k, changed = new Set()){
     area = $('#app .page > .wrap'); box = area?.querySelector(':scope > .mason'); empty = area?.querySelector(':scope > .empty'); cls = 'mason'; make = postCard; prefix = 'p-'; }
   else return false;
   if (!area) return false;
+  if (list.length) $$('.sk-list', area).forEach(el => el.remove());   // 数据到了，拿掉加载占位
   if (k === 'home' && UI.homeTab === 'fol'){ const sugg = $('.sugg',area), row = sugg && $('.sugg-r',sugg), label = sugg && $('.lab',sugg);
     if (label) label.textContent = list.length ? '还可以关注' : '先关注几位创作者';
     if (row && !$$('.sg',row).some(el => el._followLeaving)){ const left = row.scrollLeft, users = Object.values(USERS).filter(u => u.id !== ME && !STATE.follows.has(u.id) && !blocked(u.id) && (!API.on() || LIVE.u.has(u.id)));
