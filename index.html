@@ -12542,7 +12542,7 @@ ACTIONS['lrp-cgo'] = async b => { b.disabled = true;
 /* 商品上传新版本：真的传文件，先进审核，通过后服务器通知买过的人 */
 const SVF = {file:null};
 wrapAct('sp-ver', (orig, b, e) => { orig(b, e); const p = P(b.dataset.id); if (!p?.live) return; SVF.file = null;
-  const d = $('#layer .sp-drop'); if (d){ d.querySelector('span').textContent = 'ZIP / WAV / 工程文件，最大 500MB'; d.insertAdjacentHTML('afterend', '<input type="file" id="svF" hidden>');
+  const d = $('#layer .sp-drop'); if (d){ d.querySelector('span').textContent = 'ZIP / WAV / 工程文件，最大 200MB'; d.insertAdjacentHTML('afterend', '<input type="file" id="svF" hidden>');
     $('#svF').addEventListener('change', ev => { const f = ev.target.files?.[0]; if (!f) return; SVF.file = f; d.classList.add('on'); d.innerHTML = `<b>${IC.check} 已选好 ${esc(f.name)}</b><span>${fmtSize(f.size)}</span>`; }); }
   $('#layer .sheet p.mut').insertAdjacentHTML('beforeend', '新版本要先通过平台审核，审核期间买家下载的还是现在的版本。'); });
 wrapAct('sp-file', (orig, b, e) => { const f = $('#svF'); if (!f) return orig(b, e); f.click(); });
