@@ -3771,7 +3771,11 @@ function sheetGhost(ov, v){
   const oc = ov.querySelectorAll('canvas'), gc = g.querySelectorAll('canvas'); oc.forEach((c, i) => { try { gc[i].getContext('2d')?.drawImage(c, 0, 0); } catch(e){} });   // 画布复制不出内容，补画一帧
   const gs = g.querySelector('.sheet, .drw'), drw = gs.classList.contains('drw'), mob = isMob(), from = getComputedStyle(sh).transform, f0 = from === 'none' ? 'none' : from, bg = getComputedStyle(ov).backgroundColor;
   gs.style.animation = 'none'; gs.style.transform = f0 === 'none' ? '' : f0; const sc = sh.scrollTop;
-  document.body.appendChild(g); gs.scrollTop = sc; g._t = performance.now(); SHEET_GHOSTS.add(g);
+  document.body.appendChild(g); gs.scrollTop = sc;
+  // 影子沿用每个滚动容器的位置，分享页签和长表单退出时不会跳回第一页或顶部。
+  const original = ov.querySelectorAll('*'), copies = g.querySelectorAll('*');
+  original.forEach((el, i) => { if (el.scrollTop || el.scrollLeft){ const copy = copies[i]; copy.style.scrollBehavior = 'auto'; copy.style.scrollSnapType = 'none'; copy.scrollTop = el.scrollTop; copy.scrollLeft = el.scrollLeft; } });
+  g._t = performance.now(); SHEET_GHOSTS.add(g);
   const to = drw ? 'translateX(-102%)' : mob ? 'translateY(104%)' : 'translateY(14px) scale(.98)';
   const moved = f0 === 'none' ? 0 : Math.abs(drw ? new DOMMatrix(f0).m41 : new DOMMatrix(f0).m42), left = Math.max(40, (drw ? sh.offsetWidth * 1.02 : sh.offsetHeight * 1.04) - moved);
   const dur = mob && v > 0 ? clamp(left / v * 1.6, 140, 260) : 240;   // 甩得快就走得快（抽屉曲线起步斜率约 1.6 倍平均速度）
@@ -4805,8 +4809,9 @@ function mountBanner(root){
   onClean(loopAdd(t => {
     if (!visible(cv)) return; const dt = Math.min(50, t - last || 16); last = t;
     const r = fitCanvas(cv, IS_MOBILE ? 1.25 : 1.75); const {w, h, dpr} = r; const CW = w/dpr, CH = h/dpr;
+    if (!(CW > 0 && CH > 0)) return;   // 切页或隐藏时观察者可能先读到零尺寸，不把它传进场景几何。
     if (CW !== B.CW || CH !== B.CH){ B.CW = CW; B.CH = CH; B.F = frame(CW, CH); B.resized = true; } else B.resized = false;
-    const F = B.F; B.W = F.w; B.H = F.h; B.m = Math.min(F.w, F.h); B.full = {x:-F.x, y:-F.y, w:CW, h:CH};
+    const F = B.F; if (!(F.w > 0 && F.h > 0)) return; B.W = F.w; B.H = F.h; B.m = Math.min(F.w, F.h); B.full = {x:-F.x, y:-F.y, w:CW, h:CH};
     readAudio(t); B.bg = isDark() ? (SLIDES[B.i].bgd || '#151518') : (SLIDES[B.i].bg || PAPER);
     const paused = B.ptr.in || B.ptr.down || (GEN.on && GEN.owner === 'home') || B.trans || STATE.settings.rm || MQ.rm.matches
       || performance.now() - (B.play || -1e9) < IDLE || scene(B.i).busy?.();   // 刚玩过 / 场景里还有东西在动（样品包炸出的小球）
@@ -5622,26 +5627,45 @@ function syncInteraction(kind,id,feedback=false){
    · 页面里的「返回 / 关闭」按钮：上一条历史就是要回去的页面 → 真正后退；否则原地替换，不在历史里越堆越多
    · 弹层（底部面板、侧边菜单、搜索）打开时也占一条历史，所以返回手势先关弹层，而不是直接离开页面
    每条历史在 state.ctrlz 里记下自己的层数，后退 / 前进 / 刷新后都据此知道自己在第几层 */
-const HST = {d:0, stk:['#home'], pend:null, after:null, repl:false, ov:false, ovN:0};
+const HST = {d:0, stk:[], pend:null, after:null, repl:false, replState:null, docBack:false, ov:false, ovN:0};
 const routeOf = h => (String(h || '').replace(/^#/, '').split('-')[0]) || 'home';
 const isRootH = h => !isOverlay(h) && !parentOf('#' + String(h || '').replace(/^#/, ''));
 const curH = () => location.hash || '#home';
-function navReplace(h){ h = '#' + String(h).replace(/^#/, ''); if (h === curH()) return; HST.repl = true; location.replace(h); }
+/* 每条历史带上已有路径：刷新后仍知道协议从哪里打开，也保留其它历史状态。 */
+function historySnapshot(extra, base = history.state){ return {...(base || {}), ctrlz:HST.d, ctrlzStack:HST.stk.slice(0, HST.d + 1), ...extra}; }
+function historyRestore(st, h){ HST.d = st.ctrlz; if (Array.isArray(st.ctrlzStack)) HST.stk = st.ctrlzStack.slice(0, HST.d + 1); HST.stk[HST.d] = h;
+  const r = routeOf(HST.stk[0]); if (['home','shop','msg','me'].includes(r)) UI.lastTab = r; }
+/* 协议是一组页内页签；旧历史缺上一级时停止推断，不能越过空洞把默认根页当入口。 */
+function docEntry(h){ const key = '#' + String(h).replace(/^#/, ''), at = HST.stk.lastIndexOf(key, HST.d);
+  for (let i = at - 1; i >= 0; i--){ const from = HST.stk[i]; if (!from) return null; if (routeOf(from) !== 'doc') return from; } return null; }
+function docParent(h){ const from = docEntry(h); if (from) return from.replace(/^#/, '');
+  return UI.lastTab === 'me' ? 'me-settings' : (UI.lastTab || 'home'); }
+/* 旧协议页刷新后只能由浏览器找回入口；连续旧协议 / 同网址弹层一并退过，不重画中间页。 */
+function docBackStep(){ if (!HST.docBack) return false; if (routeOf(curH()) === 'doc' && HST.d > 0){ history.back(); return true; } HST.docBack = false; return false; }
+function navReplace(h){ h = '#' + String(h).replace(/^#/, ''); if (h === curH()) return; HST.replState = history.state; HST.repl = true; location.replace(h); }
 /* 退回到第 k 层；落地那一层不是 h 的话再原地换成 h（中间那一下不渲染） */
 function navBackTo(k, h){ h = '#' + String(h).replace(/^#/, ''); if (k >= HST.d){ navReplace(h); return; } HST.pend = h; history.go(k - HST.d); }
 /* 回上一层 */
 function navUp(h){ h = '#' + String(h).replace(/^#/, ''); const prev = HST.stk[HST.d - 1];
-  if (HST.d > 0 && prev && (prev === h || routeOf(prev) === routeOf(h))) navBackTo(HST.d - 1, h); else navReplace(h); }
+  if (HST.docBack) return;
+  if (routeOf(curH()) === 'doc' && HST.d > 0 && !docEntry(curH())){ HST.docBack = true; history.back(); return; }
+  if (routeOf(curH()) === 'doc'){ const at = HST.stk.slice(0, HST.d).lastIndexOf(h); if (at >= 0){ navBackTo(at, h); return; } }
+  // 回到一级页签时退到第 0 层，不能把「我」留在旧设置页的子层里。
+  if (isRootH(h)){ navTab(h); return; }
+  // 黑名单 / 注销的直达链接只垫了「我」：先在当前层换成设置，不把底层「我」替换掉。
+  if (HST.d > 0 && prev && (prev === h || (h !== '#me-settings' && routeOf(prev) === routeOf(h)))) navBackTo(HST.d - 1, h); else navReplace(h); }
 /* 切到页签：四个页签都在第 0 层 —— 从子页面切过去会先退回第 0 层再原地换成目标页签 */
 function navTab(h){ h = '#' + String(h).replace(/^#/, ''); if (HST.d === 0) navReplace(h); else navBackTo(0, h); }
 /* 子页面所属的页签（一直往上找到没有上一级的那一页）；帖子 / 视频浮层算在首页下面 */
 function rootOf(h){ if (/^#?(post|v)-/.test(h)) return '#home'; let x = h, p, n = 0; while ((p = parentOf(x)) && n++ < 6) x = '#' + p; return x; }
 /* 启动：刷新时沿用这条历史记下的层数；直接打开子页面的链接时，在它下面垫一层它所属的页签，返回就先回那个页签 */
 function initHistory(){ const st = history.state, h = curH();
-  if (st && st.ctrlz != null){ HST.d = st.ctrlz; HST.stk[HST.d] = h; return; }
-  const root = rootOf(h); HST.stk = [root];
-  if (root === h){ history.replaceState({ctrlz:0}, ''); return; }
-  history.replaceState({ctrlz:0}, '', root); history.pushState({ctrlz:1}, '', h); HST.d = 1; HST.stk = [root, h]; }
+  if (st && st.ctrlz != null){ historyRestore(st, h); history.replaceState(historySnapshot(), ''); return; }
+  const root = rootOf(h); HST.d = 0; HST.stk = [root];
+  const r = routeOf(root); if (['home','shop','msg','me'].includes(r)) UI.lastTab = r;
+  history.replaceState(historySnapshot(), '', root);
+  if (root === h) return;
+  HST.d = 1; HST.stk = [root, h]; history.pushState(historySnapshot(), '', h); }
 /* 弹层占一条历史：打开时压入一条同网址的历史；点关闭 → 顺手退掉这条；按返回 → 退掉这条并关闭弹层 */
 function overlayNodes(){ return [{kind:'layer', el:$('#layer').firstElementChild}, {kind:'search', el:$('#srch')}, {kind:'vlab', el:$('#vlov .sov')}].filter(x => x.el); }
 function topOverlay(){ return overlayNodes().sort((a,b) => {
@@ -5654,14 +5678,15 @@ function closeOverlays(){ vlClose(); closeSearch(); closeSheet(); }
 function ovSync(){ const count = overlayNodes().length, open = count > 0;
   if (!open) $$('[data-act="compose"].fx-open').forEach(x => x.classList.remove('fx-open'));   // 发布面板关了，× 转回 +
   const old = HST.ovN; HST.ovN = count; HST.ov = open;
-  if (count > old){ for (let n = old + 1; n <= count; n++){ HST.d++; HST.stk.length = HST.d; HST.stk[HST.d] = curH(); history.pushState({ctrlz:HST.d, ov:n}, ''); } }
+  if (count > old){ for (let n = old + 1; n <= count; n++){ HST.d++; HST.stk.length = HST.d; HST.stk[HST.d] = curH(); history.pushState(historySnapshot({ov:n}), ''); } }
   else if (count < old) history.go(count - old); }
 new MutationObserver(ovSync).observe($('#layer'), {childList:true});
 new MutationObserver(ovSync).observe(document.body, {childList:true});
 /* 网址没变的后退（关弹层那一条）不会触发 hashchange，在这里处理 */
 addEventListener('popstate', e => { if (typeof VT !== 'undefined') VT.ua = e?.hasUAVisualTransition ? performance.now() : 0; const st = history.state; if (!st || st.ctrlz == null || curH() !== HST.stk[HST.d]) return;
-  HST.d = st.ctrlz; HST.stk[HST.d] = curH(); const want = Math.min(st.ov || 0, overlayNodes().length); HST.ovN = want; HST.ov = want > 0;
+  historyRestore(st, curH()); const want = Math.min(st.ov || 0, overlayNodes().length); HST.ovN = want; HST.ov = want > 0;
   while (overlayNodes().length > want) closeTopOverlay();
+  if (docBackStep()) return;
   if (HST.pend){ const p = HST.pend; HST.pend = null; navReplace(p); }
   else if (HST.after){ const a = HST.after; HST.after = null; go(a); } });
 /* 位置记忆：离开一个页面时记下它的滚动位置；后退或从导航页签切回来时恢复，普通前进到新页面从顶部开始 */
@@ -5671,11 +5696,13 @@ const SCROLLS = {}, PSCROLLS = {}, NAVX = {back:false, tab:false};
 const scrollKey = h => /^#shop(-|$)/.test(h || '') ? `#shop:${UI.shop.cat}:${UI.shop.sub || 'all'}` : h;
 function restoreScroll(y){ const go = () => scrollTo(0, Math.min(y, document.documentElement.scrollHeight - innerHeight)); go(); requestAnimationFrame(() => requestAnimationFrame(go)); } // 先同步滚一次（页面切换动画拍快照时就在原位），两帧后再校正
 function postScroller(){ const p = $('#post .post'); if (!p) return null; return getComputedStyle(p).overflowY === 'auto' ? p : $('#post .scroll'); }
-addEventListener('hashchange', () => { const h = curH(), st = history.state;
+addEventListener('hashchange', () => { const h = curH(), st = history.state, replaced = HST.repl ? HST.replState : null;
   let back = false;
-  if (st && st.ctrlz != null){ back = st.ctrlz < HST.d; HST.d = st.ctrlz; }   // 后退 / 前进到一条已有的历史
-  else { if (!HST.repl){ HST.d++; HST.stk.length = HST.d; } history.replaceState({ctrlz:HST.d}, ''); }   // 新压入（或原地替换）的历史
+  if (st && st.ctrlz != null){ back = st.ctrlz < HST.d; historyRestore(st, h); }   // 后退 / 前进到一条已有的历史
+  else { if (!HST.repl){ HST.d++; HST.stk.length = HST.d; } }   // 新压入（或原地替换）的历史
   HST.repl = false; HST.stk[HST.d] = h;
+  history.replaceState(historySnapshot(undefined, replaced || history.state), ''); HST.replState = null;
+  if (docBackStep()) return;
   if (HST.pend){ const p = HST.pend; HST.pend = null; if (p !== h){ navReplace(p); return; } }
   if (HST.ov){ HST.ov = false; HST.ovN = 0; closeOverlays(); }
   SCROLLS[scrollKey(CUR.hash)] = scrollY; if (CUR.post){ const sc = postScroller(); if (sc) PSCROLLS[CUR.post] = sc.scrollTop; }
@@ -5690,10 +5717,11 @@ function parentOf(h){
   if (r === 'item'){ const p = P(arg); return p ? 'shop-' + p.cat + (p.sub ? '-' + p.sub : '') : 'shop'; }
   if (r === 'msg') return arg ? 'msg' : null;
   if (r === 'user') return arg === ME ? 'me' : (UI.lastTab || 'home');
+  if (r === 'me' && ['blocks','close'].includes(arg)) return 'me-settings';
   if (r === 'me') return arg && !['works','cmts','favs','hist'].includes(arg) ? 'me' : null;
   if (r === 'seller') return arg === 'upload' ? 'seller-products' : 'me';
   if (r === 'admin') return 'me';
-  if (r === 'doc') return UI.lastTab === 'me' ? 'me-settings' : (UI.lastTab || 'home');
+  if (r === 'doc') return docParent(h);
   if (r === 'creators' || r === 'feed') return 'home';
   return null;
 }
@@ -8451,7 +8479,7 @@ Object.entries(MINE.ed).forEach(([id, e]) => { const p = POSTS.find(x => x.id ==
 /* —— 删掉的评论（自己的）：和后台下架一样在所有地方过滤 —— */
 STATE.cdel = new Set(store.get('cdel', []));
 const cmtMine = c => STATE.role === 'user' && c.u === ME;
-const cmtCtl = (pid, c) => { const k = cmtKey(pid, c); return cmtMine(c) ? `<button data-act="cmt-del" data-p="${pid}" data-k="${esc(k)}">删除</button>` : STATE.role === 'user' ? `<button data-act="report" data-k="cmt" data-p="${pid}" data-id="${esc(k)}">举报</button>` : ''; };
+const cmtCtl = (pid, c) => { if (POST(pid)?.live && (!c.id || c.sendState)) return ''; const k = cmtKey(pid, c); return cmtMine(c) ? `<button data-act="cmt-del" data-p="${pid}" data-k="${esc(k)}">删除</button>` : STATE.role === 'user' ? `<button data-act="report" data-k="cmt" data-p="${pid}" data-id="${esc(k)}">举报</button>` : ''; };
 
 /* —— 卖家改自己的商品：价格 / 标题 / 介绍 / 上下架 / 新版本（PE 存本地） —— */
 const PE = store.get('pe', {});
@@ -8531,12 +8559,12 @@ Object.assign(ACTIONS, {
     if (CUR.post === id) ACTIONS.pclose(); toast('已删除', 'blue'); setTimeout(rerender, 60); },
   // 评论：本人删除 / 他人举报
   'cmt-del': b => { const pid = b.dataset.p, k = b.dataset.k; if (CDEL_PEND.has(k)) return;
-    const c = (COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || []).find(c => cmtKey(pid, c) === k); if (!c || !cmtMine(c)) return;
+    const c = (COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || []).find(c => cmtKey(pid, c) === k); if (!c || !cmtMine(c) || POST(pid)?.live && (!c.id || c.sendState)) return;
     const redraw = () => { if (RL.on && RL.cm && reelCur()?.id === pid && typeof openReelCm === 'function') openReelCm(); else if (CUR.post === pid) renderPost(pid); else if (UI.meTab === 'cmts') patchMyComments(); };
     const item = {pid, id:c.id, scope:cdelScope(), timer:0, sent:false}; CDEL_PEND.set(k, item);
     item.timer = setTimeout(() => cdelCommit(k, item), 5000); redraw();   // 只用本轮待删记录隐藏，不写持久删除标记
     toast('评论已删除', 'blue', 'check', {undo:() => { if (CDEL_PEND.get(k) !== item || item.sent) return; const current = cdelScope() === item.scope; cdelFinish(k, item); if (current) redraw(); }}); },
-  'cmt-dgo': b => { const pid = b.dataset.p, k = b.dataset.k; STATE.cdel.add(k); store.set('cdel', [...STATE.cdel]); const p = POST(pid); if (p && p.cmts > 0) p.cmts--; if (!b.dataset.quiet){ closeSheet(); toast('评论已删除', 'blue'); }
+  'cmt-dgo': b => { const pid = b.dataset.p, k = b.dataset.k, c = (COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || []).find(c => b.dataset.cid ? c.id === b.dataset.cid : cmtKey(pid, c) === k); STATE.cdel.add(k); store.set('cdel', [...STATE.cdel]); const p = POST(pid); if (p && p.cmts > 0 && c && !c.review && c._counted !== false) p.cmts--; if (!b.dataset.quiet){ closeSheet(); toast('评论已删除', 'blue'); }
     if (RL.on && RL.cm && reelCur()?.id === pid && typeof openReelCm === 'function') openReelCm(); else if (CUR.post === pid) renderPost(pid); else if (UI.meTab === 'cmts') patchMyComments(); },
   // 卖家商品管理
   'sp-manage': b => { const p = P(b.dataset.id); if (!p || p.seller !== ME) return;
@@ -9073,14 +9101,20 @@ function myCmtState(){
   if (MY_CMTS.state?.scope !== scope){ MY_CMTS.state?.controller?.abort(); MY_CMTS.state = {scope,rows:[],count:null,next:null,status:'idle',loaded:false,task:null,controller:null,lastRead:0,more:false}; }
   return MY_CMTS.state;
 }
-function myCmtInvalidate(){ MY_CMTS.state?.controller?.abort(); MY_CMTS.state = null; }
+function myCmtInvalidate(removed){
+  const old = MY_CMTS.state; old?.controller?.abort(); if (!old) return;
+  const rows = removed ? old.rows.filter(({p,c}) => p.id !== removed.pid || c.id !== removed.cid) : old.rows;
+  // 保留其它评论；替换状态对象让旧读取失效，在当前评论页主动补一次读取。
+  const next = MY_CMTS.state = {...old,rows,count:old.count == null ? null : Math.max(0,old.count - (old.rows.length - rows.length)),loaded:false,status:'idle',lastRead:0,task:null,controller:null};
+  if (CUR.key?.startsWith('me|') && UI.meTab === 'cmts') queueMicrotask(() => { if (MY_CMTS.state === next && CUR.key?.startsWith('me|') && UI.meTab === 'cmts' && myCmtState() === next) void loadMyComments(false,true); });
+}
 function myComments(){
-  if (liveUser()) return myCmtState().rows.filter(({p,c}) => !blocked(p.author) && !STATE.cdel.has(cmtKey(p.id,c)));
-  const out = []; POSTS.forEach(p => { (COMMENTS[p.id] || []).concat(UI.newCmts[p.id] || []).filter(c => p.live && c.id || !ADM.taken.cmt[cmtKey(p.id, c)]).forEach(c => { if (c.u === ME) out.push({p, c}); }); }); return out.reverse();
+  if (liveUser()) return myCmtState().rows.filter(({p,c}) => !blocked(p.author) && !(typeof CDEL_PEND !== 'undefined' && CDEL_PEND.get(cmtKey(p.id,c))?.scope === cdelScope()) && (p.live && c.id || !STATE.cdel.has(cmtKey(p.id,c))));
+  const out = []; POSTS.forEach(p => { cmtsOf(p.id).forEach(c => { if (c.u === ME) out.push({p, c}); }); }); return out.reverse();
 }
 function myCmtStatusHtml(){
   const s = myCmtState(); if (!s) return '';
-  if (s.status === 'idle' || s.status === 'pending') return `<div class="request-note" role="status">${s.more ? '正在读取更多评论…' : s.loaded ? '正在更新评论…' : '正在读取我的评论…'}</div>`;
+  if (s.status === 'idle' || s.status === 'pending') return `<div class="request-note" role="status">${s.more ? '正在读取更多评论…' : s.loaded || s.rows.length ? '正在更新评论…' : '正在读取我的评论…'}</div>`;
   return s.status === 'error' ? `<div class="request-note" role="status"><span>${s.rows.length ? '我的评论更新失败，已有内容已保留' : '我的评论读取失败，请重试'}</span><button class="pill sm lt" data-act="my-cmt-retry">重试</button></div>` : '';
 }
 // 只更新评论列表和总数，不重建个人名片、其它页签或正在播放的封面。
@@ -10494,7 +10528,9 @@ function apiPost(p){
   apiUser(p.author);
   const s = p.style || {}, id = p.id, liked = !!p.liked, body = String(p.body || '').split(/\n+/).filter(Boolean), t = +new Date(p.createdAt);
   liked ? STATE.liked.add(id) : STATE.liked.delete(id);
-  const o = {id, author:p.author.id, title:p.title, ex:body[0] || p.title, tags:p.tags || [], likes:p.likeCount - (liked ? 1 : 0), favs:0, cmts:p.commentCount, time:ago(t), ts:t,
+  // 权威计数回写带版本，删除失败不能把旧回滚叠到刚读回的服务器计数上。
+  const cmtsRev = apiPost.cmtsRev = (apiPost.cmtsRev || 0) + 1;
+  const o = {id, author:p.author.id, title:p.title, ex:body[0] || p.title, tags:p.tags || [], likes:p.likeCount - (liked ? 1 : 0), favs:0, cmts:p.commentCount, cmtsRev, time:ago(t), ts:t,
     attach:[], seed:hash(id) % 50, qn:s.qn || id.slice(-3).toUpperCase(), solved:false, h:s.h || 1, word:s.word || 'SOUND', edited:p.edited, live:true, review:p.status === 'review'};
   const imgs = (p.media || []).filter(m => m.kind === 'image' && m.url).map(m => m.url);
   if (p.type === 'image' && imgs.length) Object.assign(o, {type:'image', img:imgs[0], imgs, h:s.h || 1});
@@ -10747,13 +10783,13 @@ wrapAct('cmt-dgo', async (orig, b, e) => {
   if (cdelScope() !== scope){ if (item) cdelFinish(k, item); return; }
   const c = (COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || []).find(x => b.dataset.cid ? x.id === b.dataset.cid : cmtKey(pid, x) === k);
   if (!c || !cmtMine(c)){ if (item) cdelFinish(k, item); return; }
-  const p = POST(pid), before = p?.cmts || 0; orig(b, e);
+  const p = POST(pid), before = p?.cmts || 0, countRev = p?.cmtsRev; orig(b, e);
   if (!c.id || !p?.live || !liveUser()){ if (item){ clearTimeout(item.timer); CDEL_PEND.delete(k); } return; }
   const removed = Math.max(0, before - (p.cmts || 0)), current = () => cdelScope() === scope && liveUser();
   try { await API.req('DELETE', `/comments/${encodeURIComponent(c.id)}`, undefined, true, {keepalive:b.dataset.keepalive === '1'}); if (!current()) return;
     for (const list of [COMMENTS[pid], UI.newCmts[pid]]) if (list) for (let i = list.length - 1; i >= 0; i--) if (list[i].id === c.id) list.splice(i, 1);
-    myCmtInvalidate();
-  } catch(err){ if (!current()) return; if (POST(pid) === p) p.cmts += removed; apiFail(err); }
+    myCmtInvalidate({pid,cid:c.id});
+  } catch(err){ if (!current()) return; if (POST(pid) === p && p.cmtsRev === countRev) p.cmts += removed; apiFail(err); }
   finally { if (item) cdelFinish(k, item); else STATE.cdel.delete(k); if (current()){ store.set('cdel', [...STATE.cdel]); cmtPaint(pid); patchMyComments(); } }
 });
 /* 发帖：声音 / 可视化帖子把音频真的传上去（浏览器认不出的格式转成 WAV），封面样式和时长放在 style 里 */
@@ -10992,7 +11028,7 @@ const apiOrder = o => (apiUser(o.seller), {id:o.id, no:o.no, pid:o.productId, ti
 function liveApplyOrder(o){ STATE.orders = [apiOrder(o), ...STATE.orders.filter(x => x.id !== o.id)]; STATE.owned.add(o.productId); LSHOP.library?.set(o.productId,{productId:o.productId,orderId:o.id,downloads:o.downloads}); const p = P(o.productId); if (p) p.sales++; }
 
 /* —— 读取 —— */
-function syncShopState(){ const el = $('#app .shop-state'); if (el){ el.innerHTML = shopStatusHtml(); if (['ready','error'].includes(LSHOP.feed?.status)) $$('.sk-list', el.parentElement).forEach(n => n.remove()); } }
+function syncShopState(){ const el = $('#app .shop-state'); if (el){ el.innerHTML = shopStatusHtml(); const area = el.parentElement; if (['ready','error'].includes(LSHOP.feed?.status)) $$('.sk-list', area).forEach(n => n.remove()); else if (area && !PRODUCTS.length && !$('.sk-list,.grid-p,.empty', area)) area.insertAdjacentHTML('beforeend',shopSk()); } }
 async function liveShop(){
   const state = LSHOP.feed ||= {seq:0}, seq = ++state.seq, base = API.base, me = ME;
   const current = () => LSHOP.feed === state && state.seq === seq && base === API.base && me === ME;

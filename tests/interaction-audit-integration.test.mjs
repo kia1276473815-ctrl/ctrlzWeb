@@ -88,7 +88,7 @@ test('原型的无 ID 评论延迟提交仍保留持久删除标记和计数，�
 test('后台重新读取空商城、失败商城和失败首页都清理加载占位，pending 保留占位', () => {
   for (const kind of ['shop', 'feed']) for (const status of ['ready', 'error']){
     let removed = 0; const parent = {}, note = {parentElement:parent, innerHTML:''};
-    const ctx = vm.createContext({LIVE:{feed:{status:'pending'}}, LSHOP:{feed:{status:'pending'}}, $:() => note,
+    const ctx = vm.createContext({LIVE:{feed:{status:'pending'}}, LSHOP:{feed:{status:'pending'}}, PRODUCTS:[], $:() => note,
       $$:(selector, owner) => { assert.equal(selector, '.sk-list'); assert.equal(owner, parent); return [{remove:() => removed++}]; }, feedStatusHtml:() => 'feed', shopStatusHtml:() => 'shop'});
     vm.runInContext(line(kind === 'shop' ? 'function syncShopState()' : 'function syncFeedState()'), ctx);
     const sync = vm.runInContext(kind === 'shop' ? 'syncShopState' : 'syncFeedState', ctx); sync(); assert.equal(removed, 0);
