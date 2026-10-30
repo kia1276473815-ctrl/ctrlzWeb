@@ -29,7 +29,7 @@ function comments({temporary = false, sendState = '', review = false, counted, a
     STATE:{role:'user', cdel:new Set(), blocks:new Set(), liked:new Set()},
     COMMENTS:{p:temporary ? [other] : [first, other], _default:[]}, ADM:{taken:{cmt:{}}}, ME:'me',
     CUR:{post:activeMine ? null : 'p', key:activeMine ? 'me|cmts' : 'post|p'}, RL:{on:false, cm:false},
-    LIVE:{pend:{}}, BODY:{}, TRACKS:{}, POSTS:[post],
+    LIVE:{pend:{}}, BODY:{}, TRACKS:{}, POSTS:[post], TC_PALS:{},
     API:{base:'https://fixture.invalid', epoch:1, on:() => true, req:async (...args) => { requests.push({me:ctx.ME, args}); if (realRead && args[0] === 'GET'){ const read = defer(); reads.push(read); return read.promise; } return pending.promise; }},
     POST:id => id === 'p' ? post : null, hash:t => t, esc:t => t, ago:() => '刚刚', apiUser:() => {}, cmtLikeHydrate:c => c, blocked:() => false,
     liveUser:() => ctx.STATE.role === 'user' && !!ctx.API.base,

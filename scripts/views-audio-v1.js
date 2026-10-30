@@ -31,8 +31,8 @@ function idleLoop(cv, tick){
     document.addEventListener('gen', sync); onClean(() => document.removeEventListener('gen', sync)); sync();
   });
   return `<div class="stage grain"><div class="stage-h"><span class="x">${esc(pr.en)}</span><span class="tag k">敲一下</span></div>
-    <div class="wbox"><canvas id="pvWave"></canvas><span class="nm" id="padName">${pr.pads[0][0]}</span></div>
-    <div class="pads">${pr.pads.map(([n], i) => `<button class="pad ${i===0?'sel':''}" data-i="${i}" aria-label="${n}"><b>${n}</b><kbd>${KEYS[i]}</kbd></button>`).join('')}</div>
+    <div class="wbox"><canvas id="pvWave"></canvas><span class="nm" id="padName">${esc(pr.pads[0][0])}</span></div>
+    <div class="pads">${pr.pads.map(([n], i) => `<button class="pad ${i===0?'sel':''}" data-i="${i}" aria-label="${esc(n)}"><b>${esc(n)}</b><kbd>${KEYS[i]}</kbd></button>`).join('')}</div>
     <div class="stage-f"><button class="pill lt" data-act="pv-loop">${IC.loop}演示循环</button><span style="font-size:12.5px;font-weight:600">${esc(pr.count)}</span></div></div>`;
 },
 "pvPreset":function(pr){

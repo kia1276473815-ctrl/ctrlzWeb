@@ -65,6 +65,12 @@ test('上传三个阶段使用120秒期限，并透传调用方取消',async()=>
   await r.ctx.liveUpload({type:'image/png',size:4},'dm_image',undefined,{signal:ctrl.signal});assert.deepEqual(r.delays,[120000,120000,120000]);assert.equal(calls.length,3);
   assert.equal(calls[1][1].method,'PUT');assert(calls.every(([,init])=>init.signal));
 });
+test('大文件直传的时限按大小算，其它两步还是120秒',async()=>{
+  const r=requests(async url=>url.endsWith('/uploads')?response(200,{id:'u',uploadUrl:'https://upload',headers:{}}):response());
+  vm.runInContext(section('const PROD_MIME =','async function liveEnsureUpload('),r.ctx);
+  await r.ctx.liveUpload({type:'application/zip',size:200*1024*1024},'product_file');
+  assert.deepEqual(r.delays,[120000,200*1024*1024/(96*1024)*1000,120000]);   // 200MB 按 96KB/s 算，真实 1Mbps（约 119KB/s）能传完
+});
 test('后台请求断网保留后台会话，迟到401不清掉新后台账号',async()=>{
   const wait=defer(),r=requests(async()=>wait.promise);r.ctx.API=r.api;let dropped=0;
   vm.runInContext(section('const STAFF =','STAFF.load();'),r.ctx);const staff=vm.runInContext('STAFF',r.ctx);staff.tok='old-staff';staff.base=r.api.base;staff.drop=()=>dropped++;

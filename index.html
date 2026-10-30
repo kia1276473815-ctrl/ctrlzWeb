@@ -1460,6 +1460,7 @@ body.reels-open .totop{display:none}
 .cf-bud .inp{font:900 30px/1 var(--f-b);font-stretch:110%;height:58px;padding:0;background:transparent;font-variant-numeric:tabular-nums}
 .cf-hint{font-size:12.5px;color:var(--ink-3);min-height:18px}
 .cf-hint.warn{color:var(--orange)} .cf-hint.ok{color:var(--green)}
+.plain-note{margin:0 0 4px;padding:10px 12px;border-radius:12px;background:var(--orange-t);color:var(--ink);font-size:13px;line-height:1.5}
 .cf-split{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;font-size:14px}
 .cf-split input{width:100%;accent-color:var(--ink)}
 .cf-send{flex:none;display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 20px calc(14px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule);background:var(--card)}
@@ -2725,7 +2726,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 .ad-sub{font:800 15px/1.3 var(--f-b);margin:14px 0 0}
 .ad-params .ad-site .inp{width:min(320px,58%)}
 .prof + .ann, .ann + .utabs{margin-top:14px}
-#pyF{display:contents}   /* 让里面的输入框直接参与面板的间距 */
+#pyF{display:contents} #pyF > *{flex-shrink:0}   /* 让里面的输入框直接参与面板的间距 */
 .box-b > .ad-lab{margin:0 0 10px}
 .cv-f[hidden]{display:none}
 @media (max-width:760px){   /* 手机上清单表格改成一条一卡，不横向滚动 */
@@ -3887,7 +3888,7 @@ function setRole(r, silent){
   const b = $('#meBtn');
   b.style.color = ''; if (r === 'guest'){ b.className = 'av'; b.style.background = 'var(--card)'; b.style.color = 'var(--ink)'; b.style.boxShadow = 'inset 0 0 0 1px var(--rule)';   /* 游客图标画在卡片色上：字色跟着深浅色走（.av 默认是固定深色，深色模式下看不见） */ b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1.2-3.8 4-5.5 7.5-5.5s6.3 1.7 7.5 5.5"/></svg>'; }
   else if (r === 'admin'){ b.className = 'av c-orange'; b.style.background = ''; b.style.boxShadow = ''; b.textContent = 'AZ'; }
-  else { b.className = 'av ' + ucls(ME); b.style.background = ''; b.style.boxShadow = ''; if (AVIMG[ME]) b.innerHTML = `<img src="${AVIMG[ME]}" alt="">`; else b.textContent = avIni(USERS[ME]); }
+  else { b.className = 'av ' + ucls(ME); b.style.background = ''; b.style.boxShadow = ''; if (AVIMG[ME]) b.innerHTML = `<img src="${esc(AVIMG[ME])}" alt="">`; else b.textContent = avIni(USERS[ME]); }
   badge();
   if (!silent){ toast(`现在以「${ROLE_NAME[r]}」身份浏览`, 'blue'); rerender(); }
 }
@@ -5532,7 +5533,7 @@ function drawTpl(g, w, h, look, t, L){
 let CLEAN = [], MOUNTS = [], PCLEAN = [];
 const onMount = f => MOUNTS.push(f), onClean = f => CLEAN.push(f);
 /* 路由代码使用原生经典脚本，保留共享状态和无构建部署；失败可重试。 */
-const BUNDLES = {admin:{src:'scripts/views-admin-v1.js?v=20261012-voucher'},audio:{src:'scripts/views-audio-v1.js?v=20261030-perf'},docs:{src:'scripts/docs-v1.js?v=20261012-voucher'}};
+const BUNDLES = {admin:{src:'scripts/views-admin-v1.js?v=20261030-sec'},audio:{src:'scripts/views-audio-v1.js?v=20261030-sec'},docs:{src:'scripts/docs-v1.js?v=20261012-voucher'}};
 let liveRefreshFrame = 0;
 function scheduleLiveRefresh(){ if (liveRefreshFrame) return; liveRefreshFrame = requestAnimationFrame(() => { liveRefreshFrame = 0; rerender(); }); }
 function loadBundle(name){ const state = BUNDLES[name]; if (state.ready) return Promise.resolve(); if (state.task) return state.task;
@@ -5544,7 +5545,7 @@ function loadBundle(name){ const state = BUNDLES[name]; if (state.ready) return 
     document.head.appendChild(script); }); return state.task; }
 function lazyView(bundle,key,args){ if (BUNDLES[bundle].ready) return window.CtrlzViews[bundle][key](...args); if (!BUNDLES[bundle].error) loadBundle(bundle).catch(() => {});
   return `<div class="empty" data-bundle-view="${bundle}">${BUNDLES[bundle].error ? `<button class="pill lt" data-act="bundle-retry" data-v="${bundle}">重试</button>` : `<i class="spin"></i><span>${bundle === 'audio' ? '正在加载试听…' : '正在加载…'}</span>`}</div>`; }
-const ROUTES = {}, ACTIONS = {};
+const ROUTES = Object.create(null), ACTIONS = {};   // 路由名来自网址：ROUTES 不能带原型，不然 #constructor-<html> 查到内置函数，链接里的内容会原样写进页面
 ACTIONS['bundle-retry'] = b => { loadBundle(b.dataset.v).catch(() => {}); };
 const UI = {
   feed:{type:'all', cat:'all', tag:null, sort:'new'},
@@ -5553,7 +5554,8 @@ const UI = {
   up:{tpl:'sample', cat:'sample', title:'城市噪声', en:'CITY NOISE', price:58, file:false, look:{tpl:'orbit', pal:'pb'}}, onboard:1, newCmts:{}
 };
 const CUR = {key:null, hash:'#home', post:null};
-function parseHash(){ const h = decodeURIComponent(location.hash.slice(1).split('?')[0]) || 'home'; const i = h.indexOf('-'); return i < 0 ? {r:h, arg:''} : {r:h.slice(0,i), arg:h.slice(i+1)}; }
+/* 网址里的 % 写错了不能让整页白掉 */
+function parseHash(){ let h; try { h = decodeURIComponent(location.hash.slice(1).split('?')[0]) || 'home'; } catch { h = 'home'; } const i = h.indexOf('-'); return i < 0 ? {r:h, arg:''} : {r:h.slice(0,i), arg:h.slice(i+1)}; }
 function go(h){ h = String(h).replace(/^#/, '');
   if (HST.ov){ HST.after = h; closeOverlays(); return; }   // 先关弹层（退掉它那条历史），再去目标页
   if (location.hash.slice(1) === h) render(true); else if (isRootH(h)) navTab(h); else location.hash = h; }
@@ -5797,7 +5799,7 @@ ACTIONS.totop = () => { const s = CUR.post ? postScroller() : null; (s || window
 const ucls = uid => 'c-' + (USERS[uid]?.c || 'orange');
 /* 头像里的字：存着的缩写缺了 / 不像缩写（比如 "undefined"）/ 超过 2 个字，就按名字现算（nameIni 一定是 1–2 个字），不会溢出头像 */
 const avIni = u => { const i = u?.ini; return typeof i === 'string' && i && i !== 'undefined' && [...i].length <= 2 ? i : nameIni(u?.name); };
-function av(uid, cls=''){ const u = USERS[uid]; if (!u) return `<span class="av c-orange ${cls}">AZ</span>`; const img = AVIMG[uid]; return `<span class="av ${ucls(uid)} ${cls}">${img ? `<img src="${img}" alt="">` : esc(avIni(u))}</span>`; }
+function av(uid, cls=''){ const u = USERS[uid]; if (!u) return `<span class="av c-orange ${cls}">AZ</span>`; const img = AVIMG[uid]; return `<span class="av ${ucls(uid)} ${cls}">${img ? `<img src="${esc(img)}" alt="">` : esc(avIni(u))}</span>`; }
 /* ================= 头像：自己画（马上生效）/ 上传照片（管理员审核通过后才换上） ================= */
 const AVIMG = store.get('avImgs', {});   // 已生效的头像 {用户: 图片}
 const AVQ = store.get('avq', []);        // 待审核的上传头像 [{id, uid, img, time}]
@@ -5810,7 +5812,7 @@ Object.assign(ACTIONS, {
   'av-edit': () => { if (needLogin()) return; const pend = AVQ.find(q => q.uid === ME), rej = AVREJ[ME]; if (rej){ delete AVREJ[ME]; avSave(); }
     sheet(`<h3>更换头像</h3>
       ${rej ? `<div class="avs-note">上次上传的头像没有通过审核，换一张试试</div>` : ''}
-      ${pend ? `<div class="avs-pend"><img src="${pend.img}" alt=""><div style="min-width:0;flex:1"><b>上传的头像审核中</b><span>管理员通过后自动换上 · ${esc(pend.time)}</span></div><button class="pill sm lt" data-act="av-cancel">撤回</button></div>` : ''}
+      ${pend ? `<div class="avs-pend"><img src="${esc(pend.img)}" alt=""><div style="min-width:0;flex:1"><b>上传的头像审核中</b><span>管理员通过后自动换上 · ${esc(pend.time)}</span></div><button class="pill sm lt" data-act="av-cancel">撤回</button></div>` : ''}
       <div class="avs-opts">
         <button class="avs-o" data-act="av-draw"><span class="g c-pink">${RIC.pen}</span><b>拼一个头像</b><span>用几何图形拼 · 马上生效</span></button>
         <label class="avs-o"><input type="file" accept="image/*" id="avFile" hidden><span class="g c-blue">${IC.up}</span><b>上传照片</b><span>需要管理员审核</span></label>
@@ -5944,12 +5946,12 @@ document.addEventListener('error', e => { const el = e.target, id = el.dataset?.
 function postCard(p, i, list){
   const u = USERS[p.author]; let cv = '';
   if (p.type === 'image' && p.tcover) cv = `<div class="cv">${textCover(p)}</div>`;
-  else if (p.type === 'image' && p.img) cv = `<div class="cv"><img src="${p.img}" alt=""${pimgAttr(p, i, list)} style="aspect-ratio:1/${p.h || 1};object-fit:cover">${p.imgs && p.imgs.length > 1 ? `<span class="tag k" style="position:absolute;right:10px;top:10px">1/${p.imgs.length}</span>` : ''}</div>`;
+  else if (p.type === 'image' && p.img) cv = `<div class="cv"><img src="${esc(p.img)}" alt=""${pimgAttr(p, i, list)} style="aspect-ratio:1/${+p.h > 0 ? +p.h : 1};object-fit:cover">${p.imgs && p.imgs.length > 1 ? `<span class="tag k" style="position:absolute;right:10px;top:10px">1/${p.imgs.length}</span>` : ''}</div>`;
   else if (p.type === 'image') cv = `<div class="cv"><img src="${cover(p.cover, hash(p.id) % 50, 480, Math.round(480*(p.h||1)))}" alt="" width="480" height="${Math.round(480*(p.h||1))}"></div>`;
   else if (p.type === 'video' && p.vis) cv = `<div class="cv vcard" data-qbox="v:${p.id}"><img src="${cover({...p.vis, txt:p.title}, 1, 480, 600)}" alt="" width="480" height="600">${p.id === 'draft' ? `<span class="pv"><button class="pbtn" data-act="qplay" data-id="v:draft" aria-label="试听预览">${IC.play}</button></span>` : `<span class="vbadge">${IC.play}${p.dur}</span>`}</div>`;
   else if (p.type === 'video') cv = `<div class="cv vcard ${p.failed ? 'failed' : ''}"><img src="${cover(p.cover, hash(p.id) % 50, 480, Math.round(480*Math.max(1.15, p.h||1)))}" alt="" width="480" height="${Math.round(480*Math.max(1.15, p.h||1))}">${p.failed ? '<span class="vgone">视频已失效</span>' : `<span class="vbadge">${IC.play}${p.dur}</span>`}</div>`;
   else if (p.type === 'audio'){ const pr = p.attach[0] && P(p.attach[0]); cv = `<div class="cv grain"><div class="acv"><div class="row"><span class="tag k">声音 · <span data-wt="${p.id}">${p.dur}</span></span></div><canvas data-wave="${p.id}" data-seed="${p.seed}" tabindex="0" role="slider" aria-label="播放进度"></canvas><div class="row"><span class="t">${esc(pr ? pr.en.split(' ')[0] : (p.word || 'SOUND'))}</span><button class="pbtn" data-act="aplay" data-id="${p.id}" aria-label="试听">${IC.play}</button></div></div></div>`; }
-  else { const s = isSolved(p); cv = `<div class="cv grain"><div class="qcv"><div style="display:flex;justify-content:space-between;align-items:flex-start"><span class="q">?</span>${s ? '<span class="stamp">SOLVED<small>已解决</small></span>' : `<span class="tag k">Q.${p.qn}</span>`}</div><p>${esc(p.ex)}</p></div></div>`; }
+  else { const s = isSolved(p); cv = `<div class="cv grain"><div class="qcv"><div style="display:flex;justify-content:space-between;align-items:flex-start"><span class="q">?</span>${s ? '<span class="stamp">SOLVED<small>已解决</small></span>' : `<span class="tag k">Q.${esc(p.qn)}</span>`}</div><p>${esc(p.ex)}</p></div></div>`; }
   const onCv = p.attach.length && (p.type === 'image' || p.type === 'video') && !p.failed && cv && attachChip(p.attach[0]);   // 图片 / 视频封面：商品条做成毛玻璃压在封面下沿
   if (onCv) cv = cv.replace(/^<div class="cv/, '<div class="cv has-att').replace(/<\/div>$/, onCv + '</div>');
   return `<article class="card ${postCls(p)} ${p.tcover && p.type === 'image' ? 'tpost' : ''}" data-t="${p.type}" data-go="${p.failed ? 'post-' + p.id : postHref(p)}" data-flip="p-${p.id}">${modBtn(p)}${cv}<div class="bd">${p.review ? '<span class="tag c-yellow pend-t">审核中</span>' : ''}<h3>${esc(p.title)}</h3>${p.attach.length && !onCv ? attachChip(p.attach[0]) : ''}<div class="meta"><a class="who" data-go="user-${u.id}">${av(u.id,'sm')}<span>${esc(u.name)}</span></a>${likeBtn(p)}</div></div></article>`;
@@ -6748,13 +6750,13 @@ function renderPost(id, fresh){
   const cm = cmtsOf(p.id);
   let media = '';
   if (p.type === 'image' && p.tcover) media = textCover(p, 'post');
-  else if (p.type === 'image' && p.img) media = `<img src="${p.img}" alt=""${p.live ? ` data-pimg="${p.id}"` : ''}>${p.imgs && p.imgs.length > 1 ? `<span class="tag k" style="position:absolute;right:16px;bottom:16px;z-index:2">共 ${p.imgs.length} 张</span>` : ''}`;
+  else if (p.type === 'image' && p.img) media = `<img src="${esc(p.img)}" alt=""${p.live ? ` data-pimg="${p.id}"` : ''}>${p.imgs && p.imgs.length > 1 ? `<span class="tag k" style="position:absolute;right:16px;bottom:16px;z-index:2">共 ${p.imgs.length} 张</span>` : ''}`;
   else if (p.type === 'image') media = `<img src="${cover(p.cover, hash(p.id)%50, 1000, Math.round(1000*(p.h||1)))}" alt="">`;
   if (p.type === 'video' && p.vis) media = `<div data-qbox="v:${p.id}" style="position:absolute;inset:0"><img src="${cover({...p.vis, txt:p.title}, 1, 960, 960)}" alt="" style="width:100%;height:100%;object-fit:cover"><span class="pv"><button class="pbtn" data-act="qplay" data-id="v:${p.id}" aria-label="播放">${IC.play}</button></span></div>`;
-  else   if (p.type === 'video') media = `<div data-vbox="${p.id}" style="width:100%;position:relative"><img src="${cover(p.cover, hash(p.id)%50, 960, 560)}" alt="" style="width:100%"><span class="plat" style="position:absolute;left:14px;bottom:14px;font:700 11px/1 var(--f-b);padding:6px 9px;border-radius:999px;background:var(--paper);color:var(--ink)">${p.plat}</span><span class="pv big"><button class="pbtn" data-act="vplay" data-id="${p.id}" aria-label="播放">${IC.play}</button></span></div>`;
+  else   if (p.type === 'video') media = `<div data-vbox="${p.id}" style="width:100%;position:relative"><img src="${cover(p.cover, hash(p.id)%50, 960, 560)}" alt="" style="width:100%"><span class="plat" style="position:absolute;left:14px;bottom:14px;font:700 11px/1 var(--f-b);padding:6px 9px;border-radius:999px;background:var(--paper);color:var(--ink)">${esc(p.plat)}</span><span class="pv big"><button class="pbtn" data-act="vplay" data-id="${p.id}" aria-label="播放">${IC.play}</button></span></div>`;
   if (p.type === 'audio'){ const pr = p.attach[0] && P(p.attach[0]); media = `<div class="grain" style="position:absolute;inset:0;padding:clamp(18px,3vw,36px);display:flex;flex-direction:column;justify-content:space-between"><span class="tag k" style="align-self:flex-start;position:relative;z-index:2">声音 · <span data-wt="${p.id}">${p.dur}</span></span><canvas data-wave="${p.id}" data-seed="${p.seed}" data-bars="72" tabindex="0" role="slider" aria-label="播放进度" style="width:100%;height:34%;position:relative;z-index:2"></canvas><div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;position:relative;z-index:2"><span class="x" style="font-size:clamp(44px,6vw,92px);mix-blend-mode:multiply">${esc(pr ? pr.en : 'SOUND')}</span><button class="pbtn" data-act="aplay" data-id="${p.id}" style="width:76px;height:76px" aria-label="播放">${IC.play}</button></div></div>`; }
   if (p.type === 'question') media = `<div class="grain" style="position:absolute;inset:0;padding:clamp(18px,3vw,36px);display:flex;flex-direction:column;justify-content:space-between"><span class="x" style="font-size:clamp(130px,18vw,240px);line-height:.8;mix-blend-mode:multiply;position:relative;z-index:2">?</span>
-    <div style="position:relative;z-index:2;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap"><span class="x" style="font-size:clamp(34px,4vw,56px)">Q.${p.qn}</span>
+    <div style="position:relative;z-index:2;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap"><span class="x" style="font-size:clamp(34px,4vw,56px)">Q.${esc(p.qn)}</span>
     ${solved ? `<button class="stamp big ${UI.justStamped ? 'pop' : ''}" ${isAuthor ? 'data-act="solve"' : ''} data-id="${p.id}" title="${isAuthor ? '再点一次可撤销' : ''}">SOLVED<small>已解决</small></button>` : isAuthor ? `<button class="pill lg" data-act="solve" data-id="${p.id}" style="background:var(--green);color:var(--ink)">${IC.check}盖章：已解决</button>` : `<span style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;padding:10px 16px;border-radius:999px;border:2px dashed var(--ink)">等 ${esc(u.name)} 盖章</span>`}</div></div>`;
   UI.justStamped = false;
   const idx = POSTS.findIndex(x => x.id === p.id), prev = POSTS[idx-1], next = POSTS[idx+1];
@@ -7230,13 +7232,13 @@ function uploadView(){
       <div class="fl full"><label for="up-d">介绍</label><textarea class="inp" id="up-d" data-up="desc" rows="3" placeholder="里面有什么、怎么用、适合什么风格">${esc(U.desc || '')}</textarea></div></div>`, !!U.title],
     ['封面', `<div class="cvp">${visQuick(U.look.tpl).map(k => [k, COVER_TPLS[k]]).map(([k,n]) => `<button class="${U.look.tpl===k?'on':''}" data-act="up-look" data-k="tpl" data-v="${k}" aria-label="${n}"><img src="${cover({tpl:k, pal:U.look.pal, txt:U.en}, 1, 160, 160)}" alt="" width="160" height="160"><span>${n}</span></button>`).join('')}<button class="cvp-all" data-act="up-vlab"><b>${Object.keys(VIS).length}</b><span>全部模板</span></button></div>
       <div class="palp" style="margin-top:12px">${Object.entries(COVER_PALS).map(([k,p]) => `<button class="${U.look.pal===k?'on':''}" data-act="up-look" data-k="pal" data-v="${k}"><i style="background:${INK[p.a]}"></i><i style="background:${INK[p.b]}"></i>${p.n}</button>`).join('')}</div>`, true],
-    ['文件', `<div class="drop ${U.file ? 'ok' : ''}" data-act="up-file">${U.file ? IC.check : IC.up}<b>${U.file ? (U.fileName ? esc(U.fileName) + ' · ' + fmtSize(U.fileSize) : 'CITY_NOISE.zip · 612 MB') : '把文件拖进来，或点这里'}</b><span>${U.file ? '校验通过' : '.zip / .wav / .vital / .tox / .toe / .amxd / .maxpat / .pd / .mov'}</span></div>`, U.file],
+    ['文件', U.uploading ? `<div class="drop" data-act="up-file"><div class="ring-p" style="--p:45;width:56px;height:56px"></div><b>上传中…</b><span>${esc(U.uploading.name)}</span></div>` : `<div class="drop ${U.file ? 'ok' : ''}" data-act="up-file">${U.file ? IC.check : IC.up}<b>${U.file ? (U.fileName ? esc(U.fileName) + ' · ' + fmtSize(U.fileSize) : 'CITY_NOISE.zip · 612 MB') : '把文件拖进来，或点这里'}</b><span>${U.file ? '校验通过' : '.zip / .wav / .vital / .tox / .toe / .amxd / .maxpat / .pd / .mov'}</span></div>`, U.file && !U.uploading],
     ['怎么试听', `<div class="tplp">${[['sample','敲打','16 个 pad','pink','<svg viewBox="0 0 60 40"><g fill="#141418"><rect x="2" y="2" width="12" height="16" rx="3"/><rect x="17" y="2" width="12" height="16" rx="3"/><rect x="32" y="2" width="12" height="16" rx="3"/><rect x="47" y="2" width="12" height="16" rx="3"/><rect x="2" y="22" width="12" height="16" rx="3"/><rect x="17" y="22" width="12" height="16" rx="3"/><rect x="32" y="22" width="12" height="16" rx="3"/><rect x="47" y="22" width="12" height="16" rx="3"/></g></svg>'],['preset','弹奏','XY 板 + 键盘','blue','<svg viewBox="0 0 60 40"><rect x="2" y="2" width="56" height="20" rx="3" fill="#fff"/><circle cx="38" cy="10" r="5" fill="#141418"/><g fill="#141418"><rect x="2" y="26" width="5" height="12"/><rect x="10" y="26" width="5" height="12"/><rect x="26" y="26" width="5" height="12"/><rect x="34" y="26" width="5" height="12"/><rect x="42" y="26" width="5" height="12"/></g></svg>'],['video','视频','12 秒循环','orange','<svg viewBox="0 0 60 40"><rect x="2" y="2" width="56" height="30" rx="3" fill="#141418"/><path d="M26 10l10 7-10 7z" fill="#fff"/><rect x="2" y="35" width="30" height="3" rx="1.5" fill="#141418"/></svg>']].map(([k,l,s,cc,svg]) => `<button class="c-${cc} ${U.tpl===k?'on':''}" data-act="up-set" data-k="tpl" data-v="${k}"><span class="ic">${svg}</span><b>${l}</b><span class="mut2" style="font-size:12px">${s}</span></button>`).join('')}</div>`, true],
     ['来源与授权', declStep(U), !!(U.decl && U.decl.orig)]
   ];
   if (API.on()) steps[3][1] += upPreviewBox(U);
   return `<div class="up"><div class="stepper">${steps.map(([h, inner, ok], i) => `<div class="step ${ok ? 'ok' : ''}"><span class="no">${ok ? IC.check.replace('<svg','<svg width="16" height="16"') : i+1}</span><div style="min-width:0"><h4>${h}</h4>${inner}</div></div>`).join('')}
-    <button class="pill lg" data-act="up-submit" ${U.file ? '' : 'disabled'} style="align-self:flex-start">${U.file ? (U.editId ? '重新提交审核' : '提交审核') : '还差文件'}</button></div>
+    <button class="pill lg" data-act="up-submit" ${U.file && !U.uploading ? '' : 'disabled'} style="align-self:flex-start">${U.uploading ? '文件上传中…' : U.file ? (U.editId ? '重新提交审核' : '提交审核') : '还差文件'}</button></div>
     <div class="stk-hd" style="position:sticky;top:calc(var(--hdy) + 20px)"><span class="lab" style="display:block;margin-bottom:10px">买家会看到</span>
       <article class="slv c-${c.c}"><div class="cv" data-qbox="upload"><img src="${fakeCover}" alt="" width="480" height="480"><span class="pv"><button class="pbtn" data-act="qplay" data-id="upload" aria-label="试听封面">${IC.play}</button></span></div><div class="bd"><div class="en"><span class="dot"></span><span id="pv-en">${esc(U.en)}</span></div><h3 id="pv-t">${esc(U.title)}</h3><div class="ft"><span class="price" id="pv-p">¥${U.price}</span><span class="by">${av(ME,'sm')}<span>${esc(USERS[ME].name)}</span></span></div></div></article>
       <p class="mut2" style="font-size:12.5px;margin-top:12px">${COVER_TPLS[U.look.tpl]} · ${COVER_PALS[U.look.pal].n} · 试听方式：${({sample:'敲打 16 个 pad', preset:'XY 板 + 键盘弹奏', video:'12 秒视频循环'})[U.tpl]}</p></div></div>`;
@@ -7455,7 +7457,7 @@ function rvDetail(r){
       ${r.flags.length ? `<div class="flags">${r.flags.map(f => `<span class="flag ${/^⚠|^未|敏感/.test(f) ? 'w' : ''}">${esc(f.replace('⚠ ', ''))}</span>`).join('')}</div>` : ''}</div></div>
     ${r.st === '待补充' ? `<p class="ad-warn y">已要求补充：${esc(r.ask || '')}</p>` : ''}
     <section class="rv-s"><h4>内容</h4>${r.kind === '商品' ? `${r.fileUrl ? `<a class="pill sm lt" href="${esc(r.fileUrl)}" target="_blank" rel="noopener" style="align-self:flex-start">${IC.dl}下载交付文件检查</a>` : ''}<div class="ad-kv col">${kv('文件', esc(r.files || ''))}${kv('试听方式', esc(r.tpl || ''))}</div>${r.desc ? `<p class="rv-p">${esc(r.desc)}</p>` : '<p class="mut2">没有填介绍</p>'}`
-      : p ? `${body.map(t => `<p class="rv-p">${esc(t)}</p>`).join('')}${imgs.length ? `<div class="rv-imgs">${imgs.map(s => `<img src="${esc(s)}" alt="">`).join('')}</div>` : ''}${media.map(m => `<${m.kind} controls preload="none" ${m.kind === 'video' ? 'playsinline ' : ''}src="${esc(m.url)}" aria-label="${m.kind === 'audio' ? '待审核音频' : '待审核视频'}" style="width:100%;max-width:100%"></${m.kind}>`).join('')}${p.tags?.length ? `<p class="mut2">${p.tags.map(t => '#' + esc(t)).join(' ')}</p>` : ''}${r.lp ? (r.lp.link ? `<p class="mut2" style="word-break:break-all">外链：<a href="${esc(r.lp.link)}" target="_blank" rel="noopener noreferrer">${esc(r.lp.link)}</a></p>` : '') : `<button class="pill sm lt" data-act="mod-open" data-id="${p.id}" style="align-self:flex-start">打开原帖</button>`}`
+      : p ? `${body.map(t => `<p class="rv-p">${esc(t)}</p>`).join('')}${imgs.length ? `<div class="rv-imgs">${imgs.map(s => `<img src="${esc(s)}" alt="">`).join('')}</div>` : ''}${media.map(m => `<${m.kind} controls preload="none" ${m.kind === 'video' ? 'playsinline ' : ''}src="${esc(m.url)}" aria-label="${m.kind === 'audio' ? '待审核音频' : '待审核视频'}" style="width:100%;max-width:100%"></${m.kind}>`).join('')}${p.tags?.length ? `<p class="mut2">${p.tags.map(t => '#' + esc(t)).join(' ')}</p>` : ''}${r.lp ? (r.lp.link ? `<p class="mut2" style="word-break:break-all">外链：${/^https?:\/\//i.test(r.lp.link) ? `<a href="${esc(r.lp.link)}" target="_blank" rel="noopener noreferrer">${esc(r.lp.link)}</a>` : esc(r.lp.link)}</p>` : '') : `<button class="pill sm lt" data-act="mod-open" data-id="${p.id}" style="align-self:flex-start">打开原帖</button>`}`
       : r.lk === 'cmt' ? `<p class="rv-p">${esc(r.text)}</p><p class="mut2">评论在帖子「${esc(r.postTitle)}」下</p>` : '<p class="mut2">原帖已经不在了</p>'}</section>
     ${r.kind === '商品' ? `<section class="rv-s"><h4>来源与授权</h4>
       ${r.lic ? `<div class="lic">${r.lic.map(x => `<span>${IC.check.replace('<svg', '<svg width="13" height="13"')}${esc(x)}</span>`).join('')}<span class="no">转售原文件</span></div>` : ''}
@@ -7982,7 +7984,7 @@ const durSec = d => { const m = String(d || '').match(/(\d+):(\d+)/); return m ?
 const ago = ts => { const s = (Date.now() - ts)/1000; if (s < 60) return '刚刚'; if (s < 3600) return Math.floor(s/60) + ' 分钟前'; if (s < 86400) return Math.floor(s/3600) + ' 小时前'; if (s < 172800) return '昨天'; const d = new Date(ts); return (d.getMonth() + 1) + '-' + d.getDate(); };
 const thumbOf = p => p.tcover ? null : p.img ? p.img : p.vis ? cover({...p.vis, txt:p.title}, 1, 240, 240) : p.type === 'audio' ? cover('wave', p.seed || 1, 240, 240) : p.type === 'question' ? null : cover(p.cover, hash(p.id) % 50, 240, Math.round(240*(p.h || 1)));
 // 小缩略图：有图用图，没图（文字 / 提问）用一块带字的色块
-function miniThumb(p, cls=''){ const s = thumbOf(p); if (s) return `<img class="${cls}" src="${s}" alt="">`; const P = TC_PALS[p.tcover?.pal || (p.type === 'question' ? 'yellow' : 'paper')]; return `<span class="mth ${cls}" style="background:${P[0]};color:#141418">${p.type === 'question' ? '?' : esc((p.title || '').slice(0, 6))}</span>`; }
+function miniThumb(p, cls=''){ const s = thumbOf(p); if (s) return `<img class="${cls}" src="${esc(s)}" alt="">`; const P = TC_PALS[p.tcover?.pal || (p.type === 'question' ? 'yellow' : 'paper')]; return `<span class="mth ${cls}" style="background:${P[0]};color:#141418">${p.type === 'question' ? '?' : esc((p.title || '').slice(0, 6))}</span>`; }
 /* 声音流：声音帖和音频可视化帖（都有真实音频）；外链视频按普通帖子打开 */
 const inStream = p => !!p && !p.failed && (p.type === 'audio' || (p.type === 'video' && !!p.vis));
 const postHref = p => (inStream(p) ? 'v-' : 'post-') + p.id;
@@ -8296,7 +8298,7 @@ Object.assign(ACTIONS, {
     REPORTS.unshift({id:'rp' + Date.now().toString(36), kind:'user', ref:ME, reason:'用户申诉：' + v, who:ME, time:fmtDT(Date.now()).slice(0, 5), st:'待处理', appeal:true}); admSave(); closeSheet(); toast('已发送，客服会尽快处理'); },
   /* 入驻申请：只保存打码后的实名信息（原型）；正式版走实名认证接口 */
   'apply-open': () => { if (needLogin()) return; if (ADM.apps.some(a => a.uid === ME && a.st === '待审核')){ toast('申请已提交，正在审核', 'blue'); return; }
-    sheet(`<h3>申请入驻</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">平台只做原创资源交易。审核通过后会通过「CTRL Z 官方」发给你邀请码。</p>
+    sheet(`<h3>申请入驻</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">平台只做原创资源交易。审核通过后会通过「CTRL Z 官方」发给你邀请码。</p>${plainNote()}
       <label class="ad-lab">真实姓名</label><input class="inp" id="apN" autocomplete="name" placeholder="仅用于实名认证，不会公开">
       <label class="ad-lab">身份证号</label><input class="inp" id="apI" inputmode="numeric" placeholder="18 位">
       <label class="ad-lab">手机号</label><input class="inp" id="apP" inputmode="tel" placeholder="11 位">
@@ -8406,11 +8408,13 @@ function exportMine(){ const a = ACC.list.find(x => x.id === ME) || {}, u = USER
 /* —— 收款账户：户名需和实名一致；只保存打码后的信息（原型），正式版走支付渠道的绑卡 / 授权接口 —— */
 const PAYEE_K = {alipay:['支付宝', 'blue'], wechat:['微信零钱', 'green'], bank:['银行卡', 'ink']};
 const payeeLine = uid => { const p = ADM.payee[uid]; return p ? `${PAYEE_K[p.kind][0]} · ${esc(p.acct)}${p.bank ? ' · ' + esc(p.bank) : ''}` : ''; };
+/* 测试服只有 http：填证件号、卡号之前提醒一句，上 https 以后自动不显示 */
+function plainNote(){ return location.protocol === 'http:' ? '<p class="plain-note">测试环境走明文传输，请不要填写真实的证件号和银行卡号</p>' : ''; }
 function payeeBox(){ const p = ADM.payee[ME], mine = ADM.payouts.flatMap(b => b.rows.filter(r => r.seller === ME).map(r => ({...r, month:b.month}))).reverse();
   return `<div class="box"><div class="box-h"><h3>收款与结算</h3><span class="tag c-yellow">每月结算</span></div><div class="box-b pay-b">
     ${p ? `<div class="pay-a"><span class="pay-i c-${PAYEE_K[p.kind][1]}">${p.kind === 'bank' ? '卡' : p.kind === 'alipay' ? '支' : '微'}</span><span><b>${PAYEE_K[p.kind][0]}</b><i>${esc(p.name)} · ${esc(p.acct)}${p.bank ? ' · ' + esc(p.bank) : ''}</i></span><button class="pill sm lt" data-act="payee">更换</button></div>`
       : `<div class="ann warn pay-w"><span class="ann-i">${IC.x}</span><span class="ann-t"><b>还没绑定收款账户</b><span>月底结算会打不出去，户名要和实名认证一致</span></span><button class="pill sm" data-act="payee">去绑定</button></div>`}
-    ${mine.length ? `<div class="tw"><table class="t"><thead><tr><th>结算月</th><th class="r">金额</th><th>状态</th></tr></thead><tbody>${mine.map(r => `<tr><td class="n">${r.month}</td><td class="r n">${yuan2(r.net)}</td><td>${stTag(r.st, {待打款:'yellow', 已打款:'green', 打款失败:'orange'}[r.st])}${r.txn ? ` <span class="mut2 n" style="font-size:11.5px">${r.txn}</span>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<p class="mut2" style="font-size:13px;margin:0">平台生成结算单后，结算记录会出现在这里，打款结果也会通过「CTRL Z 官方」通知你。</p>'}
+    ${mine.length ? `<div class="tw"><table class="t"><thead><tr><th>结算月</th><th class="r">金额</th><th>状态</th></tr></thead><tbody>${mine.map(r => `<tr><td class="n">${r.month}</td><td class="r n">${yuan2(r.net)}</td><td>${stTag(r.st, {待打款:'yellow', 已打款:'green', 打款失败:'orange'}[r.st])}${r.txn ? ` <span class="mut2 n" style="font-size:11.5px">${esc(r.txn)}</span>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<p class="mut2" style="font-size:13px;margin:0">平台生成结算单后，结算记录会出现在这里，打款结果也会通过「CTRL Z 官方」通知你。</p>'}
   </div></div>`; }
 
 /* —— 设置里新增的几块 —— */
@@ -8476,7 +8480,7 @@ Object.assign(ACTIONS, {
     admSave(); refundSync(); closeSheet(); toast(fast ? '已退款，原路退回' : '已提交，平台会在 1 个工作日内处理', fast ? 'green' : 'orange', fast ? 'check' : undefined); badge(); rerender(); },
   // 收款账户
   payee: () => { const p = ADM.payee[ME], k0 = p?.kind || 'alipay';
-    sheet(`<h3>${p ? '更换' : '绑定'}收款账户</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">户名必须和实名认证一致，结算款每月打到这里。</p>
+    sheet(`<h3>${p ? '更换' : '绑定'}收款账户</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">户名必须和实名认证一致，结算款每月打到这里。</p>${plainNote()}
       <div class="seg ad-seg" id="pyK">${Object.entries(PAYEE_K).map(([k, [n]]) => `<button class="${k === k0 ? 'on' : ''}" data-act="py-k" data-v="${k}">${n}</button>`).join('')}</div>
       <label class="ad-lab" for="pyN">户名（真实姓名）</label><input class="inp" id="pyN" autocomplete="name">
       <div id="pyF"></div>
@@ -8723,7 +8727,7 @@ function bubble(m, uid){
   if (m.rc) return `<div class="msep">${m.me ? '你' : esc(uname(uid))}撤回了一条消息</div>`;
   let inner = '';
   if (m.t === 'text') inner = `<div class="bub">${esc(m.text)}</div>`;
-  else if (m.t === 'img') inner = `<div class="bimg"><img src="${m.url || cover(m.cover || 'rings', 3, 360, 440)}" alt=""></div>`;
+  else if (m.t === 'img') inner = `<div class="bimg"><img src="${esc(m.url || cover(m.cover || 'rings', 3, 360, 440))}" alt=""></div>`;
   else if (m.t === 'post'){ const p = POST(m.ref); inner = p ? `<a class="bcard" data-go="${postHref(p)}"><span class="bcv">${miniThumb(p)}${inStream(p) ? `<i class="bplay">${IC.play}</i>` : ''}</span><b>${esc(p.title)}</b><span class="by">${av(p.author, 'sm')}${esc(USERS[p.author].name)}</span></a>` : `<div class="bub">[帖子已删除]</div>`; }
   else if (m.t === 'co'){ const o = CO_BY(m.ref); if (o) return `<div class="msg ${m.me ? 'me' : ''} co-m">${m.me ? '' : msgAv(uid)}${coCard(o, m.v)}</div>`; }
   else if (m.t === 'cosys') return `<div class="msep co-sys"><span>${esc(m.text)}</span></div>`;
@@ -10370,9 +10374,18 @@ const API = {
   base: '', tok: null, _ref: null, epoch:0,
   init(){
     const q = new URLSearchParams(location.search).get('api'), served = document.querySelector('meta[name="ctrlz-api"]')?.content === 'self';
-    const want = q !== null ? (q.trim() === 'self' ? location.origin : q.trim().replace(/\/+$/, '')) : served ? location.origin : null;   // 网页是 ctrlz-server 给的：一直连它自己（不会掉回本地模拟）
+    /* 网页是 ctrlz-server 给的：一直连它自己（不会掉回本地模拟）。?api= 指向别的地方一律不认，不然一条链接就能让这次输入的密码、
+       动态口令都发到别人的服务器，还能回伪造的内容。
+       · 留空（?api=）只有本机测试才切回本地模拟：在线上它会把人悄悄登出、换成示例数据
+       · 路径不规范（/%2Findex.html 这种）的页面不算静态页：服务器漏了标记也不能认
+       · GitHub Pages 这种纯静态页才需要指定后端，第一次换到新地址要本人确认 */
+    const asked = q === null ? null : q.trim() === 'self' ? location.origin : q.trim().replace(/\/+$/, ''), plain = !/%|\/\//.test(location.pathname), loopback = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+    const foreign = asked === null || asked === location.origin ? false : asked === '' ? (served && !loopback) || !plain
+      : served || !plain || (asked !== store.get('apiBase', '') && !confirm(`这个链接要把网站连到 ${asked}。账号、密码都会发给那台服务器，不是你自己的服务器请点取消。`));
+    const want = asked !== null && !foreign ? asked : served ? location.origin : null;
     if (want !== null && want !== store.get('apiBase', '')){ try{sessionStorage.removeItem('ctrlz2.staff');}catch(_){} store.set('apiBase', want); store.set('apiTok', null); }   // 换服务同时清除旧后台会话，不能向新服务发送旧令牌。
     if (q !== null) history.replaceState(history.state, '', location.pathname + location.hash);
+    if (foreign) setTimeout(() => toast('链接里带的服务器地址不可信，已忽略', 'orange', 'x'), 1200);
     this.base = store.get('apiBase', ''); this.tok = store.get('apiTok', null);
     const proto = document.querySelector('#ftProto'); if (proto) proto.hidden = this.on();
     /* 网页和接口同域（服务器自己提供网页）时，refresh token 只放在服务器设的 httpOnly cookie 里，本地不存（脚本被注入也偷不走长期令牌） */
@@ -10603,22 +10616,25 @@ function apiUser(u, extra = {}){
 }
 function apiPost(p){
   apiUser(p.author);
-  const s = p.style || {}, id = p.id, liked = !!p.liked, body = String(p.body || '').split(/\n+/).filter(Boolean), t = +new Date(p.createdAt);
+  /* 帖子样式进页面前在这里收窄：后端校验过，但老数据、伪造的接口响应不一定干净，后面的页面代码会把 qn、plat、h 拼进 HTML。
+     查表用 has，不用 map[k]：constructor 这类名字查出来是函数，后面 .map 直接报错，整页白掉 */
+  const s = p.style && typeof p.style === 'object' ? p.style : {}, has = (m, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(m, k), h = +s.h >= .3 && +s.h <= 3 ? +s.h : 1;
+  const id = p.id, liked = !!p.liked, body = String(p.body || '').split(/\n+/).filter(Boolean), t = +new Date(p.createdAt);
   liked ? STATE.liked.add(id) : STATE.liked.delete(id);
   // 权威计数回写带版本，删除失败不能把旧回滚叠到刚读回的服务器计数上。
   const cmtsRev = apiPost.cmtsRev = (apiPost.cmtsRev || 0) + 1;
   const o = {id, author:p.author.id, title:p.title, ex:body[0] || p.title, tags:p.tags || [], likes:p.likeCount - (liked ? 1 : 0), favs:0, cmts:p.commentCount, cmtsRev, time:ago(t), ts:t,
-    attach:[], seed:hash(id) % 50, qn:s.qn || id.slice(-3).toUpperCase(), solved:false, h:s.h || 1, word:s.word || 'SOUND', edited:p.edited, live:true, review:p.status === 'review'};
+    attach:[], seed:hash(id) % 50, qn:/^[A-Za-z0-9]{1,6}$/.test(s.qn) ? s.qn : id.slice(-3).toUpperCase(), solved:false, h, word:s.word || 'SOUND', edited:p.edited, live:true, review:p.status === 'review'};
   const imgs = (p.media || []).filter(m => m.kind === 'image' && m.url).map(m => m.url);
-  if (p.type === 'image' && imgs.length) Object.assign(o, {type:'image', img:imgs[0], imgs, h:s.h || 1});
+  if (p.type === 'image' && imgs.length) Object.assign(o, {type:'image', img:imgs[0], imgs, h});
   else if (p.type === 'question') o.type = 'question';
-  else if (p.type === 'video' && s.url) Object.assign(o, {type:'video', plat:s.plat || '', url:s.url, cover:s.cover || 'wave', dur:'--:--'});
+  else if (p.type === 'video' && s.url && typeof s.url === 'string') Object.assign(o, {type:'video', plat:['BILIBILI', 'YOUTUBE', 'VIMEO'].includes(s.plat) ? s.plat : '', url:s.url, cover:has(COVER_PAL, s.cover) || has(COVER_TPLS, s.cover) ? s.cover : 'wave', dur:'--:--'});
   else if (p.type === 'audio'){ const au = (p.media || []).find(m => m.kind === 'audio' && m.url), v = s.vis && typeof s.vis === 'object' ? s.vis : null;
-    Object.assign(o, v ? {type:'video', vis:{tpl:VIS[v.tpl] || COVER_TPLS[v.tpl] ? v.tpl : 'dots', pal:COVER_PALS[v.pal] ? v.pal : 'pb'}, h:1} : {type:'audio', cover:COVER_TPLS[s.cover] ? s.cover : 'wave'},
+    Object.assign(o, v ? {type:'video', vis:{tpl:has(VIS, v.tpl) || has(COVER_TPLS, v.tpl) ? v.tpl : 'dots', pal:has(COVER_PALS, v.pal) ? v.pal : 'pb'}, h:1} : {type:'audio', cover:has(COVER_TPLS, s.cover) ? s.cover : 'wave'},
       {dur:fmtT(au?.audioMeta?.duration || +s.dur || 0), adur:au?.audioMeta?.duration || +s.dur || 0, aurl:au ? au.url : null, audioAt:Date.now()});
     const meta = au?.audioMeta, key = 'post:' + id; if (meta && Array.isArray(meta.peaks)){ const tr = TRACKS[key] || {}; Object.assign(tr,{dur:meta.duration,bpm:120,events:[],peaks:Float32Array.from(meta.peaks),born:0}); TRACKS[key] = tr; }
   }   // 波形元数据独立读取；播放由 HTMLMediaElement 按需流式解码。
-  else Object.assign(o, {type:'image', tcover:{pal:s.pal || 'paper'}});   // 文字帖按文字卡显示
+  else Object.assign(o, {type:'image', tcover:{pal:has(TC_PALS, s.pal) ? s.pal : 'paper'}});   // 文字帖按文字卡显示
   BODY[id] = body.length ? body : [p.title];
   COMMENTS[id] ||= [];   // 不让真实帖子用上原型的示例评论
   if (o.review) LIVE.pend[id] = o; else delete LIVE.pend[id];   // 先审后发：审核中的只有作者自己看得到
@@ -11191,7 +11207,8 @@ const PROD_MIME = /^(application\/(zip|x-zip-compressed|octet-stream)|audio\/(wa
 async function liveUpload(file, purpose, audioMeta, options = {}){
   const mime = purpose === 'product_file' ? (PROD_MIME.test(file.type) ? file.type : 'application/octet-stream') : (file.type || 'application/octet-stream');
   const opts = {timeoutMs:120000, ...options}, up = await API.req('POST', '/uploads', {purpose, mime, size:file.size}, true, opts);
-  const put = await requestFetch(up.uploadUrl, {method:'PUT', headers:up.headers, body:file}, opts);
+  /* 直传时限按文件大小算，再小也给够 opts.timeoutMs。这是硬上限，按 96KB/s 留余量：真实 1Mbps 扣掉协议开销约 119KB/s。以前一律 2 分钟，手机上超过 30MB 就传不完 */
+  const put = await requestFetch(up.uploadUrl, {method:'PUT', headers:up.headers, body:file}, {...opts, timeoutMs:Math.max(opts.timeoutMs, file.size / (96 * 1024) * 1000)});
   if (!put.ok) throw new Error('文件上传失败，请重试'); await API.req('POST', `/uploads/${encodeURIComponent(up.id)}/complete`, audioMeta ? {audioMeta} : undefined, true, opts); return up;
 }
 async function liveEnsureUpload(id){
@@ -12074,9 +12091,14 @@ wrapAct('agree-go', async (orig, b) => { if (!liveUser()) return orig(b); const 
   try { LSHOP.seller = await API.req('POST', '/me/agreements', {docs:LSHOP.seller?.needs?.length ? LSHOP.seller.needs : ['seller', 'license']}); toast('已确认', 'green'); rerender(); } catch(e){ apiFail(e); } });
 
 /* —— 上架：交付文件、授权文件真的上传；提交 / 重新提交走后端 —— */
+/* 大文件能传二三十分钟：这期间表单会重画，也可能改去编辑别的商品。上传中的状态放在 UI.up 里，结果只写回发起这次上传时的那份表单；点撤销可以中止 */
 wrapAct('up-file', (orig, b) => { if (!liveUser()) return orig(b);
-  pickAny(async f => { const d = $('[data-act="up-file"]'); if (d) d.innerHTML = `<div class="ring-p" style="--p:45;width:56px;height:56px"></div><b>上传中…</b><span>${esc(f.name)}</span>`;
-    try { const up = await liveUpload(f, 'product_file'); Object.assign(UI.up, {file:true, fileId:up.id, fileName:f.name, fileSize:f.size}); } catch(e){ apiFail(e); } rerender(); }); });
+  if (UI.up.uploading){ toast('文件还在上传，点撤销可以取消', 'orange', 'x', {undo:() => UI.up.uploading?.ctrl.abort()}); return; }
+  pickAny(async f => { if (UI.up.uploading) return;
+    const t = UI.up.uploading = {name:f.name, ctrl:new AbortController()}; rerender();
+    try { const up = await liveUpload(f, 'product_file', undefined, {signal:t.ctrl.signal}); if (UI.up.uploading === t) Object.assign(UI.up, {file:true, fileId:up.id, fileName:f.name, fileSize:f.size}); }
+    catch(e){ if (UI.up.uploading === t) apiFail(e); }
+    if (UI.up.uploading === t){ UI.up.uploading = null; rerender(); } }); });
 wrapAct('dc-doc', (orig, b) => { if (!liveUser()) return orig(b);
   pickFile(async (name, f) => { const t = declOf(UI.up).third[+b.dataset.i]; try { const up = await liveUpload(f, 'license_doc'); t.doc = name; t.docKey = up.key; } catch(e){ apiFail(e); } rerender(); }); });
 wrapAct('dc-vdoc', (orig, b) => { if (!liveUser()) return orig(b);
@@ -12085,6 +12107,7 @@ wrapAct('up-submit', async (orig, b) => { if (!liveUser()) return orig(b);
   if (!canSpeak()) return;
   if (agreeNeed(ME)){ toast('先在工作室顶部确认新版《卖家服务协议》', 'orange', 'x'); scrollTo({top:0, behavior:'smooth'}); return; }
   const U = UI.up, d = declOf(U), err = declErr(d), edit = U.editId;
+  if (U.uploading){ toast('文件还在上传，传完再提交', 'orange', 'x'); return; }
   if (err){ const o = $('.dcl'); o?.scrollIntoView({block:'center', behavior:'smooth'}); o && fxPop(o, 'fx-shake', 300); toast(esc(err), 'orange', 'x'); return; }
   if (!edit && !U.fileId){ toast('先上传交付文件', 'orange', 'x'); return; }
   if (!String(U.title || '').trim()){ toast('填一下名字', 'orange', 'x'); return; }
@@ -12103,6 +12126,7 @@ wrapAct('up-submit', async (orig, b) => { if (!liveUser()) return orig(b);
 ACTIONS['sp-redo'] = async b => { let p = LSHOP.mine[b.dataset.id]; if (!p) return; b.disabled = true;
   try { p = await API.req('GET', `/products/${encodeURIComponent(p.id)}`); LSHOP.mine[p.id] = p; apiProduct(p); } catch(e){ b.disabled = false; apiFail(e); return; }
   const d = p.decl || {};
+  UI.up.uploading?.ctrl.abort(); UI.up.uploading = null;   // 表单要换成这个商品了，之前没传完的不再要
   Object.assign(UI.up, {editId:p.id, title:p.title, en:p.en, cat:CATS[p.cat] ? p.cat : 'sample', price:f2y(p.price), desc:p.desc, look:{tpl:p.cover?.tpl || 'orbit', pal:p.cover?.pal || 'pb'}, tpl:p.tpl || UI.up.tpl,
     file:true, fileId:null, fileName:p.fileName, fileSize:p.fileSize, preview:p.preview ? pveState(p.preview) : null,
     decl:{src:Object.fromEntries((d.src || ['own']).map(k => [k, true])), third:(d.third || []).map(t => ({n:t.n, lic:t.lic, link:t.link || '', doc:t.docName || (t.docKey ? '授权文件' : ''), docKey:t.docKey})),
@@ -12856,9 +12880,10 @@ wrapAct('sp-vgo', async (orig, b) => { const p = P(b.dataset.id); if (!p?.live) 
   if (!v || v === p.ver){ fxPop($('#svV'), 'fx-shake', 300); toast('版本号要和现在的不一样', 'orange', 'x'); return; }
   if (n.length < 2){ fxPop($('#svN'), 'fx-shake', 300); return; }
   b.disabled = true; b.textContent = '正在上传…';
-  try { const up = await liveUpload(SVF.file, 'product_file');
-    const r = await API.req('POST', `/products/${encodeURIComponent(p.id)}/version`, {uploadId:up.id, fileName:SVF.file.name.slice(0, 120), ver:v, note:n});
-    p.pendingVer = r.pendingVer; p.status = r.status; SVF.file = null; closeSheet(); toast(`${v} 已提交审核，通过后会通知买过的人`, 'green', 'check'); await liveMine(); rerender(); }
+  const file = SVF.file, sh = b.closest('.sheet');   // 上传这段时间面板可能关掉、又给别的商品打开
+  try { const up = await liveUpload(file, 'product_file');
+    const r = await API.req('POST', `/products/${encodeURIComponent(p.id)}/version`, {uploadId:up.id, fileName:file.name.slice(0, 120), ver:v, note:n});
+    p.pendingVer = r.pendingVer; p.status = r.status; if (SVF.file === file) SVF.file = null; if (sh?.isConnected) closeSheet(); toast(`${v} 已提交审核，通过后会通知买过的人`, 'green', 'check'); await liveMine(); rerender(); }
   catch(e){ b.disabled = false; b.textContent = '发布新版本'; apiFail(e); } });
 
 /* 通知开关存服务器（换设备也在） */
