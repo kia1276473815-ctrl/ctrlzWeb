@@ -28,7 +28,7 @@ function realm(extra={}){
 function content(r){r.load(section('async function adminLoadContent(','{ const ct0 = ADMV.content;'));}
 function invalidation(r){r.load(section('function adminContentChanged(','async function adminLoadContent('));}
 function announcement(r){r.load(section('const ANN_WRITES=','/* ================= 站内信：'));}
-function moderation(r){r.load(section('const MOD_WRITES=','/* ================= 合作接后端'));return r.changed.find(([name])=>name==='mod-do')[1];}
+function moderation(r){r.load(section('const MOD_WRITES=','/* ================= 敏感词、注销检查'));return r.changed.find(([name])=>name==='mod-do')[1];}
 function recipients(r){r.load(section('async function adminRecipient(','async function ladmShop('));}
 
 test('内容读取拒绝未授权身份，运营不可读商品审核接口',async()=>{

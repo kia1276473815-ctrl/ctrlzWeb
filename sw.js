@@ -6,7 +6,7 @@
    更新 vendor 里的文件时请改文件名（例如加版本号），否则老用户会先用到一次旧缓存；顺手把 ASSETS 升一级，老文件才会被清掉 */
 const V = 'ctrlz-static-v8', ASSETS = 'ctrlz-assets-v1';
 const STATIC = /\/(fonts|icons|vendor)\/|\.(woff2|ttf|png|jpg|svg|webmanifest)$/, ASSET = /\/(fonts|vendor)\//;
-const PRECACHE = ['./','./scripts/audio-cache.js?v=20261011','./scripts/dm-outbox.js','./scripts/harmony-loader.js?v=20261012','./scripts/views-admin-v1.js?v=20261030-sec','./scripts/views-audio-v1.js?v=20261030-sec','./scripts/docs-v1.js?v=20261012-voucher'];
+const PRECACHE = ['./','./scripts/audio-cache.js?v=20261011','./scripts/dm-outbox.js','./scripts/harmony-loader.js?v=20261012','./scripts/views-admin-v1.js?v=20261030-2','./scripts/views-audio-v1.js?v=20261030-sec','./scripts/docs-v1.js?v=20261030-2'];
 function cachedResponse(res){
   // 直接交还原响应，保留 URL/type 等浏览器元数据及安全头；重建导航响应会影响隔离策略。
   return res || Response.error();

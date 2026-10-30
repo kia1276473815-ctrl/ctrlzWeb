@@ -11,9 +11,9 @@ const order=(id,extra={})=>({id,no:'NO-'+id,productId:'product-'+id,title:'历�
 function accountRealm(overrides={}){
   const products={},actions={},stored=new Map();let uuid=0;
   const ctx=vm.createContext({console,Date,Map,Set,Promise,ME:'me',liveUser:()=>true,STATE:{role:'user',orders:[],owned:new Set(),dlc:{},seller:false},
-    LSHOP:{ordersNext:'cursor1',salesNext:null,library:new Map(),libraryTried:new Set()},LCO:{next:null},SELLER_ORDERS:[],CUR:{key:'me|orders'},
+    LSHOP:{ordersNext:'cursor1',salesNext:null,library:new Map(),libraryTried:new Set()},SELLER_ORDERS:[],CUR:{key:'me|orders'},
     API:{req:async()=>({items:[],next:null})},apiUser:u=>u || {id:'unknown'},f2y:n=>(n||0)/100,ymdhm:x=>x || '',PAY_N:{wechat:'微信支付'},
-    P:id=>products[id],apiProduct:p=>products[p.id]=p,apiFail:e=>{throw e;},coMapCard(){},CO_BY(){},coMap(){},ROUTES:{me:()=>'<div></div>',seller:()=>'<div></div></div></div>'},
+    P:id=>products[id],apiProduct:p=>products[p.id]=p,apiFail:e=>{throw e;},ROUTES:{me:()=>'<div></div>',seller:()=>'<div></div></div></div>'},
     ACTIONS:{},wrapAct:(name,fn)=>actions[name]=fn,onMount(){},liveReset(){},meLegacy:()=>'<div></div>',$:()=>null,$$:()=>[],fitText(){},
     document:{createElement:()=>({content:{querySelector:()=>null,querySelectorAll:()=>[]}}),dispatchEvent(){}},Event:class{},
     esc:x=>String(x??''),uname:x=>x,yuan2:x=>String(x),crypto:{randomUUID:()=> 'uuid-'+(++uuid)},
@@ -108,10 +108,13 @@ test('付款切换代金券或作废确认状态使用独立提交键，同券�
   const noVoucher=ctx.orderAttempt(product,{productId:product.id,useVoucher:false,payMethod:'wechat'});assert.notEqual(noVoucher.body.requestKey,first.body.requestKey);
 });
 
-test('合作单局部补页处理全部列表，保留已有节点并追加历史，不误用单个$元素',()=>{
-  const old1={children:[{dataset:{co:'a'}}],appendChild(e){this.children.push(e);},querySelector:()=>null},old2={children:[{dataset:{co:'b'}}],appendChild(e){this.children.push(e);},querySelector:()=>null};
-  const original=old1.children[0],fresh=[{children:[{dataset:{co:'a'}},{dataset:{co:'c'}}]},{children:[{dataset:{co:'b'}},{dataset:{co:'d'}}]}];
-  const {ctx}=accountRealm({CUR:{key:'seller|collab'},$$:selector=>selector==='#app .co-list'?[old1,old2]:[],$:selector=>selector==='#app .co-list'?old1:null,
-    document:{createElement:()=>({content:{querySelectorAll:()=>fresh}}),dispatchEvent(){}}});
-  ctx.patchAccountPage('collabs');assert.equal(old1.children[0],original);assert.deepEqual(old1.children.map(e=>e.dataset.co),['a','c']);assert.deepEqual(old2.children.map(e=>e.dataset.co),['b','d']);
+test('旧链接 #seller-collab、#seller-settle 落到概览：有销售列表和加载更多，补页也生效',()=>{
+  for(const arg of ['collab','settle']){
+    const seen=[],body={children:[{dataset:{no:'old'}}],appendChild(e){this.children.push(e);},querySelector:()=>null},fresh={children:[{dataset:{no:'old'}},{dataset:{no:'new'}}]};
+    const {ctx}=accountRealm({STATE:{role:'user',orders:[],owned:new Set(),dlc:{},seller:true},LSHOP:{ordersNext:null,salesNext:'cursor1',library:new Map(),libraryTried:new Set()},CUR:{key:'seller|'+arg},
+      ROUTES:{me:()=>'<div></div>',seller:a=>{seen.push(a);return '<div></div></div></div>';}},$:selector=>selector==='#app [data-sales] tbody'?body:null,
+      document:{createElement:()=>({content:{querySelector:()=>fresh}}),dispatchEvent(){}}});
+    const html=ctx.ROUTES.seller(arg);assert.deepEqual(seen,['overview'],arg);assert.match(html,/data-sales/,arg);assert.match(html,/data-page="sales"/,arg);
+    ctx.patchAccountPage('sales');assert.deepEqual(body.children.map(e=>e.dataset.no),['old','new'],arg);
+  }
 });

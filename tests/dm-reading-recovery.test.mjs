@@ -10,7 +10,7 @@ const message=(id,extra={})=>({id,from:'peer',to:'me',kind:'text',body:id,create
 const page=(items,extra={})=>({peer:{id:'peer'},items,blocked:{byMe:false,byThem:false},nextBefore:null,nextSince:'sync-1',hasMore:false,...extra});
 function realm(overrides={}){
   const calls=[],products=new Map(),ctx=vm.createContext({console,Date,Map,Set,Promise,ME:'me',DELC:{},CHATS:{},CHAT_UNREAD:{peer:3},CUR:{key:'msg|peer'},document:{hidden:false},STATE:{role:'user'},LIVE:{u:new Set(['peer'])},POSTS:[],
-    API:{on:()=>true,req:async(method,path)=>{calls.push({method,path});return page([]);}},coTxt:x=>x,apiUser(){},dmAcknowledge(){},dmOutboxReset(){},
+    API:{on:()=>true,req:async(method,path)=>{calls.push({method,path});return page([]);}},apiUser(){},dmAcknowledge(){},dmOutboxReset(){},
     apiPost:p=>p,apiProduct:p=>{products.set(p.id,p);return p;},P:id=>products.get(id),POST:id=>ctx.POSTS.find(p=>p.id===id),...overrides});
   vm.runInContext(section('const LDM =','{ const body0 = convBody;'),ctx);return {ctx,calls,products};
 }
@@ -74,18 +74,18 @@ test('分享补读换账号后迟到结果不能写入新账号或负缓存',asy
   for(const fail of [false,true]){let finish;const r=realm({API:{on:()=>true,req:()=>new Promise((res,rej)=>finish=fail?rej:res)}});const task=r.ctx.dmRefs([{t:'post',ref:'old-post'}]);r.ctx.ME='new';finish(fail?Object.assign(Error('gone'),{status:404}):{id:'old-post'});await task;assert.equal(r.ctx.POSTS.length,0);assert.equal(vm.runInContext('LDM.miss.size',r.ctx),0);}
 });
 test('本人已确认的文字/图片/帖子/商品分享两分钟内均有撤回入口',()=>{
-  const ctx=vm.createContext({Date,RC_MS:120000,esc:String,POST:()=>null,P:()=>null,USERS:{},msgAv:()=>'',CO_BY:()=>null});vm.runInContext(section('function bubble(m, uid){','function convBody(uid){'),ctx);
+  const ctx=vm.createContext({Date,RC_MS:120000,esc:String,POST:()=>null,P:()=>null,USERS:{},msgAv:()=>''});vm.runInContext(section('function bubble(m, uid){','function convBody(uid){'),ctx);
   for(const t of ['text','img','post','prod']){const html=ctx.bubble({me:true,t,text:'x',ref:'ref',url:'/fixture.png',ts:Date.now()},'peer');assert(html.includes('data-act="msg-rc"'),t);}
 });
 test('未知类型的私信显示占位：不当成商品预览、不留空气泡、没有撤回入口',()=>{
-  const ctx=vm.createContext({Date,RC_MS:120000,esc:String,POST:()=>null,P:()=>null,USERS:{},msgAv:()=>'',CO_BY:()=>null});vm.runInContext(section('function msgPreview(m){','\n')+section('function bubble(m, uid){','function convBody(uid){'),ctx);
+  const ctx=vm.createContext({Date,RC_MS:120000,esc:String,POST:()=>null,P:()=>null,USERS:{},msgAv:()=>''});vm.runInContext(section('function msgPreview(m){','\n')+section('function bubble(m, uid){','function convBody(uid){'),ctx);
   const m={me:true,t:'other',text:'{a} 旧模板',ts:Date.now()},html=ctx.bubble(m,'peer');assert(html.includes('[暂不支持的消息]'));assert(!html.includes('{a}'));assert(!html.includes('data-act="msg-rc"'));assert.equal(ctx.msgPreview(m),'我：[暂不支持的消息]');
 });
 test('dmMap 把不认识的消息类型归成 other，已知类型不变',()=>{
-  const map=vm.runInContext('dmMap',realm().ctx);for(const kind of ['future',undefined,'constructor'])assert.equal(map(message('a',{kind})).t,'other');
+  const map=vm.runInContext('dmMap',realm().ctx);for(const kind of ['future',undefined,'constructor','co','cosys'])assert.equal(map(message('a',{kind})).t,'other');
   for(const [kind,t] of [['text','text'],['image','img'],['post','post'],['prod','prod']])assert.equal(map(message('b',{kind})).t,t);
 });
-test('合作记录、他人、待发送、已撤回或超过两分钟的消息不出现撤回入口',()=>{
-  const ctx=vm.createContext({Date,RC_MS:120000,esc:String,POST:()=>null,P:()=>null,USERS:{},msgAv:()=>'',CO_BY:()=>null,uname:()=>''});vm.runInContext(section('function bubble(m, uid){','function convBody(uid){'),ctx);
-  const base={me:true,t:'post',ref:'ref',text:'x',ts:Date.now()};for(const extra of [{t:'co'},{t:'cosys'},{me:false},{pend:true},{rc:true},{ts:Date.now()-120001}])assert(!ctx.bubble({...base,...extra},'peer').includes('data-act="msg-rc"'));
+test('未知类型、他人、待发送、已撤回或超过两分钟的消息不出现撤回入口',()=>{
+  const ctx=vm.createContext({Date,RC_MS:120000,esc:String,POST:()=>null,P:()=>null,USERS:{},msgAv:()=>'',uname:()=>''});vm.runInContext(section('function bubble(m, uid){','function convBody(uid){'),ctx);
+  const base={me:true,t:'post',ref:'ref',text:'x',ts:Date.now()};for(const extra of [{t:'other'},{me:false},{pend:true},{rc:true},{ts:Date.now()-120001}])assert(!ctx.bubble({...base,...extra},'peer').includes('data-act="msg-rc"'));
 });

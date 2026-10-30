@@ -10,7 +10,6 @@ async (page) => {
     {name:'account-orders',route:'me-orders',selector:'.msub tbody [data-no]',mock:true},
     {name:'order-details',route:'me-orders',selector:'#layer .sheet',mock:true,sheet:true},
     {name:'seller-sales',route:'seller-overview',selector:'[data-sales] tbody [data-no]',mock:true},
-    {name:'seller-collabs',route:'seller-collab',selector:'.co-list [data-co]',mock:true},
     {name:'dm-conversation',route:'msg-merc',selector:'#cvB [data-dm]',mock:true},
     {name:'audio-sample-p1',route:'item-p1',selector:'.pp',bundle:'audio'},
     {name:'audio-preset-p3',route:'item-p3',selector:'.pp',bundle:'audio'},
@@ -73,16 +72,10 @@ async (page) => {
         voucherAmount:i===1?1500:0,payMethod:i===6?'free':i%2?'alipay':'wechat',status:i===4?'refunded':'paid',
         createdAt:iso,paidAt:iso,seller:users.nova,downloads:i,product:null}));
       const fullOrder={...orderCards[0],licenseNo:'CZ-LIC-20261010-RAIN-NIGHT-ARCHIVE',downloads:3,refund:null};
-      const rep={avg:4.8,n:16,done:24,ontime:.96,reply:'通常 2 小时内',tags:[['沟通顺畅',11]],reviews:[]};
-      const coCards=Array.from({length:6},(_,i)=>({id:'layout-collab-'+i,no:'CO20261010-'+(1001+i),
-        from:users[i<3?'merc':'rin'],to:users[i<3?'rin':'nova'],svc:['mix','sfx','arr'][i%3],
-        title:['单曲混音与母带交付','独立游戏界面声音设计 · 24 个交互音效','雨夜城市采样编曲合作'][i%3],
-        budget:120000+i*15000,price:120000+i*15000,due:'2026-10-28',status:['sent','paid','done'][i%3],
-        v:1,rev:0,stage:0,createdAt:iso,paidAt:i%3?iso:null,doneAt:i%3===2?iso:null,delivAt:null}));
       const monthly=Array.from({length:6},(_,i)=>({month:'2026-'+String(i+5).padStart(2,'0'),gross:340000+i*71345,
         net:327760+i*68000,fee:2040+i*420,platformFee:10200+i*2100,paidCount:24+i*9,refundCount:i%3}));
-      window.__layoutFixtures={calls,unknown,orderCards,fullOrder,fullProduct,coCards,apiBase:'layout-fixture:',
-        enterMock(){API.base=this.apiBase;STATE.role='user';STATE.seller=true;LCO.at=Infinity;LBIZ.at=Infinity;},
+      window.__layoutFixtures={calls,unknown,orderCards,fullOrder,fullProduct,apiBase:'layout-fixture:',
+        enterMock(){API.base=this.apiBase;STATE.role='user';STATE.seller=true;LBIZ.at=Infinity;},
         resetOrders(){STATE.orders=this.orderCards.map(apiOrder);const at=PRODUCTS.findIndex(x=>x.id===this.fullProduct.id);if(at>=0)PRODUCTS.splice(at,1);}};
       API.req=async(method,path)=>{
         calls.push({method,path});
@@ -90,9 +83,6 @@ async (page) => {
         const key=path.split('?')[0];
         if(key==='/orders/layout-order-0')return structuredClone(fullOrder);
         if(key==='/products/'+fullProduct.id)return structuredClone(fullProduct);
-        if(key==='/me/collab-cards')return {items:structuredClone(coCards),next:'layout-co-next'};
-        if(key==='/me/collab-stats')return {todo:3,held:326500,got:420000};
-        if(key.startsWith('/users/') && key.endsWith('/collab'))return {rep:{...rep,tags:[{t:'沟通顺畅',n:11}]},svcs:[]};
         if(key==='/me/seller-app')return {app:null};
         if(key==='/me/invoices')return {items:[]};
         if(key==='/me/payee')return {payee:{kind:'alipay',name:'林某某',acct:'ri***@example.com'},payouts:[]};
@@ -100,15 +90,14 @@ async (page) => {
         if(key==='/dm/threads')return {items:[]};
         unknown.push({method,path});throw Error('未配置的布局 GET fixture：'+path);
       };
-      names.forEach(id=>{apiUser(users[id]);LCO.rep[id]=structuredClone(rep);});
+      names.forEach(id=>apiUser(users[id]));
       ME='rin';STATE.seller=true;STATE.owned=new Set([...PRODUCTS.map(p=>p.id),'layout-missing-owned']);
       LSHOP.library=new Map([...STATE.owned].map((id,i)=>[id,{productId:id,orderId:'layout-library-order-'+i,downloads:0}]));
       LSHOP.libraryTried=new Set(['layout-missing-owned']);LSHOP.ordersNext='layout-orders-next';LSHOP.salesNext='layout-sales-next';
       LSHOP.seller={seller:true,needs:[],agreements:{seller:{version:'v1'},license:{version:'v1'}}};LSHOP.wallet={balance:250000};
       LSHOP.stats={currentMonth:monthly.at(-1),monthly,views30d:5210,previousViews30d:4431,conversion:.066,estimatedFees:true};
-      LCO.next='layout-co-next';LCO.stats={todo:3,held:326500,got:420000};LCO.at=Infinity;LBIZ.at=Infinity;LBIZ.inv=[];
+      LBIZ.at=Infinity;LBIZ.inv=[];
       ADM.payee[ME]={kind:'alipay',name:'林某某',acct:'ri***@example.com'};ADM.payouts=[];
-      CO.orders.splice(0);coCards.forEach(coMapCard);
       SELLER_ORDERS.splice(0,...orderCards.map((o,i)=>apiSale({...o,buyer:users[['merc','ash','mio'][i%3]]})));
       CHATS.merc=Array.from({length:12},(_,i)=>({id:'layout-dm-'+i,ts:now-(12-i)*60000,me:i%2===1,
         t:i===3?'img':i===7?'prod':'text',ref:i===7?'p3':undefined,

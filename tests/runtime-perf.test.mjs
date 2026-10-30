@@ -127,11 +127,11 @@ function dmList(key){
   const reqs=[];const ctx=vm.createContext({Date,CUR:{key},LDM:{listAt:Date.now(),unread:2},API:{req:async(m,p)=>{reqs.push(p);return {count:ctx.count};}},count:2});
   vm.runInContext(section('async function dmNeedList(){','function dmStart(){'),ctx);return {ctx,reqs};
 }
-test('私信轮询：别的页面只问未读数，不变不拉列表；变了、满 30 秒、在私信页或合作页才拉',async()=>{
+test('私信轮询：别的页面只问未读数，不变不拉列表；变了、满 30 秒或在私信页才拉',async()=>{
   const a=dmList('home|');assert.equal(await a.ctx.dmNeedList(),false);assert.deepEqual(a.reqs,['/dm/unread']);
   a.ctx.count=3;assert.equal(await a.ctx.dmNeedList(),true);a.ctx.count=1;assert.equal(await a.ctx.dmNeedList(),true,'减少也要拉（别的设备读了）');
   a.ctx.count=2;a.ctx.LDM.listAt=Date.now()-30000;assert.equal(await a.ctx.dmNeedList(),true,'兜底');
-  for(const key of ['msg|','msg|u','seller|collab']){const b=dmList(key);assert.equal(await b.ctx.dmNeedList(),true);assert.deepEqual(b.reqs,[]);}
+  for(const key of ['msg|','msg|u']){const b=dmList(key);assert.equal(await b.ctx.dmNeedList(),true);assert.deepEqual(b.reqs,[]);}
   const first=dmList('home|');first.ctx.LDM.listAt=0;assert.equal(await first.ctx.dmNeedList(),true);assert.deepEqual(first.reqs,[]);
 });
 test('从别的页面进私信立即补读；软重绘不循环',async()=>{

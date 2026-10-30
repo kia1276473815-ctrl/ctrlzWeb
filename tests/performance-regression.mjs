@@ -259,7 +259,7 @@ test('moreLoad 正常走局部补页，导航改变时旧响应不重画当前�
 
 const dmRealm = overrides => {
   const ctx=realm({ME:'me',DELC:{},CHATS:{},CHAT_UNREAD:{},CUR:{key:'msg|peer'},API:{on:()=>true},STATE:{role:'user'},LIVE:{u:new Set(['peer'])},
-    apiUser(){},coTxt:x=>x,dmAcknowledge(){},dmOutboxReset(){},...overrides});
+    apiUser(){},dmAcknowledge(){},dmOutboxReset(){},...overrides});
   vm.runInContext(section('const LDM =','{ const body0 = convBody;'),ctx);
   return ctx;
 };

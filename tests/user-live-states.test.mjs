@@ -120,8 +120,8 @@ test('海报：连着后端时示例商品不显示示例价，改去分类页�
 });
 
 test('开店海报的抽成跟着参数变，后台改过的文案不动',()=>{
-  const ctx=vm.createContext({ADM:{params:{plat:.05,coFee:0,coRev:2,coAuto:7}},SLIDES0:[{scene:'stamp',sub:'平台只收 3%，每月结算'}],SLIDES:[{scene:'stamp',sub:'平台只收 3%，每月结算'}]});
-  vm.runInContext('let PLAT,CO_FEE,CO_FREE_REV,CO_AUTO_DAYS;'+section('function applyParams(){','applyParams();'),ctx);
+  const ctx=vm.createContext({ADM:{params:{plat:.05}},SLIDES0:[{scene:'stamp',sub:'平台只收 3%，每月结算'}],SLIDES:[{scene:'stamp',sub:'平台只收 3%，每月结算'}]});
+  vm.runInContext('let PLAT;'+section('function applyParams(){','applyParams();'),ctx);
   ctx.applyParams();assert.equal(ctx.SLIDES[0].sub,'平台只收 5%，每月结算');assert.equal(ctx.SLIDES0[0].sub,'平台只收 5%，每月结算');
   ctx.SLIDES[0].sub='运营写的';ctx.ADM.params.plat=.1;ctx.applyParams();assert.equal(ctx.SLIDES[0].sub,'运营写的');
 });
