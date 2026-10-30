@@ -8299,8 +8299,8 @@ function footLegal(){ const el = $('#ftLegal'); if (!el) return; const s = ADM.s
 footLegal();
 
 /* —— 协议与规则（草案：上线前必须请律师按公司实际情况审定） —— */
-const DOC_D = '2026 年 10 月 8 日';
-const DOCS = new Proxy({terms:{t:'用户协议'},privacy:{t:'隐私政策'},collect:{t:'个人信息收集清单'},share:{t:'第三方信息共享清单'},rules:{t:'社区规范'},copyright:{t:'版权投诉指引'},refund:{t:'退款规则'},seller:{t:'卖家服务协议',v:'2026.10-1',get sum(){ return [
+const DOC_D = '2026 年 10 月 31 日';
+const DOCS = new Proxy({terms:{t:'用户协议'},privacy:{t:'隐私政策'},collect:{t:'个人信息收集清单'},share:{t:'第三方信息共享清单'},rules:{t:'社区规范'},copyright:{t:'版权投诉指引'},refund:{t:'退款规则'},seller:{t:'卖家服务协议',v:'2026.10-2',get sum(){ return [
     '你上架的东西必须是你自己做的，或者你有权再授权给别人；上架时如实填写来源，用到第三方素材的附上授权文件。',
     `平台收成交价 ${+(PLAT*100).toFixed(2)}% 的技术服务费，加上支付通道手续费；每月结算一次。代金券、平台优惠的部分由平台补给你，你按原价结算。`,
     '买家按《素材使用许可》使用你的素材。已经卖出去的授权不能收回，也不能用版权指纹系统（Content ID 等）去认领买家的作品。',
@@ -11714,9 +11714,9 @@ Object.assign(ACTIONS, {
   'us-msg': b => { if (!admGuard('notice', 'notify.send')) return; const uid = b.dataset.id; closeSheet(); UI.smTo = uid; UI.smMode = 'one'; admTab('notice'); }
 });
 
-/* ================= 查看私信记录（处理纠纷 / 举报 / 申诉时）：要写理由，后端记进操作日志 ================= */
+/* ================= 查看私信记录（处理举报 / 申诉 / 核实交易问题时）：要写理由，后端记进操作日志 ================= */
 function dmViewSheet(a, b, preset = ''){
-  sheet(`<h3>查看私信记录</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">${esc(uname(a))} 和 ${esc(uname(b))} 之间的私信。查看会记进操作日志（谁、什么时候、为什么看），只在处理纠纷、举报、申诉时使用。</p>
+  sheet(`<h3>查看私信记录</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">${esc(uname(a))} 和 ${esc(uname(b))} 之间的私信。查看会记进操作日志（谁、什么时候、为什么看），只在处理举报、用户申诉或核实交易问题时使用。</p>
     <label class="ad-lab">为什么要看</label><div class="ad-rs" id="dvR">${['处理举报', '用户申诉', '核实交易'].map((x, i) => `<button class="pill lt ${(preset ? x === preset.split('：')[0] : !i) ? 'on' : ''}" data-act="rs-pick">${x}</button>`).join('')}</div>
     <input class="inp" id="dvX" placeholder="补充（可选），例如订单号 / 举报编号" value="${esc(preset.split('：')[1] || '')}">
     <button class="pill lg" data-act="dv-go" data-a="${esc(a)}" data-b="${esc(b)}">查看记录</button><div id="dvLog"></div>`); }
