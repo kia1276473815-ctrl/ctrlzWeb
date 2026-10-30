@@ -8275,7 +8275,7 @@ Object.assign(ACTIONS, {
 /* ================= 私信 ================= */
 const unreadTotal = () => (ntOn('dm') ? Object.entries(CHAT_UNREAD).reduce((a, [k, b]) => a + (blocked(k) ? 0 : b), 0) : 0) + Object.entries(NOTE_NEW).reduce((a, [k, b]) => a + (ntOn(k) ? b : 0), 0) + (STATE.role === 'user' ? inboxUnread() : 0);
 function msgBadge(){ const n = unreadTotal(); $$('[data-r="msg"]').forEach(b => { let d = b.querySelector('.bdg'); if (n > 0){ if (!d){ d = document.createElement('span'); d.className = 'bdg'; b.appendChild(d); } d.textContent = n > 99 ? '99+' : n; } else d && d.remove(); }); }
-function msgPreview(m){ if (!m) return ''; const who = m.me ? '我：' : ''; return who + (m.t === 'text' ? m.text : m.t === 'img' ? '[图片]' : m.t === 'post' ? '[帖子] ' + (POST(m.ref)?.title || '') : m.t === 'co' ? '[合作邀约] ' + (CO_BY(m.ref)?.title || '') : m.t === 'cosys' ? m.text : '[商品] ' + (P(m.ref)?.title || '')); }
+function msgPreview(m){ if (!m) return ''; const who = m.me ? '我：' : ''; return who + (m.t === 'text' ? m.text : m.t === 'img' ? '[图片]' : m.t === 'post' ? '[帖子] ' + (POST(m.ref)?.title || '') : m.t === 'co' ? '[合作邀约] ' + (CO_BY(m.ref)?.title || '') : m.t === 'cosys' ? m.text : m.t === 'prod' ? '[商品] ' + (P(m.ref)?.title || '') : '[暂不支持的消息]'); }
 
 /* ================= 用户端：和后台联动的部分 =================
    官方通知（私信列表最上面）、首页公告条、账号受限提示、没有邀请码时申请入驻 */
@@ -8732,7 +8732,8 @@ function bubble(m, uid){
   else if (m.t === 'co'){ const o = CO_BY(m.ref); if (o) return `<div class="msg ${m.me ? 'me' : ''} co-m">${m.me ? '' : msgAv(uid)}${coCard(o, m.v)}</div>`; }
   else if (m.t === 'cosys') return `<div class="msep co-sys"><span>${esc(m.text)}</span></div>`;
   else if (m.t === 'prod'){ const p = P(m.ref); inner = p ? `<a class="bcard prod c-${CATS[p.cat].c}" data-go="item-${p.id}"><span class="bcv"><img src="${cover(p.cover, hash(p.id) % 50, 300, 300)}" alt=""></span><b>${esc(p.title)}</b><span class="by"><i class="dot"></i>${esc(p.kind)}<em>${p.price ? yuan(p.price) : '免费'}</em></span></a>` : ''; }
-  const rc = m.me && !m.pend && m.t !== 'co' && m.t !== 'cosys' && Date.now() - m.ts < RC_MS ? `<button class="bub-rc" data-act="msg-rc" data-u="${uid}" data-ts="${m.ts}">撤回</button>` : '';
+  if (!inner && m.t !== 'prod') inner = `<div class="bub">[暂不支持的消息]</div>`;   // 未知类型（比如已下线功能留下的旧消息）显示占位，不留空气泡；商品是补读期间暂时为空，不算
+  const rc = m.me && !m.pend && ['text', 'img', 'post', 'prod'].includes(m.t) && Date.now() - m.ts < RC_MS ? `<button class="bub-rc" data-act="msg-rc" data-u="${uid}" data-ts="${m.ts}">撤回</button>` : '';
   const pending = m.outbox ? `<span class="dm-send-state" role="status">${m.state === 'sending' ? '正在发送…' : esc(m.error || '未发送，内容已保存在此设备')}</span>${m.state !== 'sending' ? `<span class="dm-send-actions"><button data-act="dm-retry" data-id="${esc(m.clientMessageId)}">重试</button><button data-act="dm-edit" data-id="${esc(m.clientMessageId)}">${m.t === 'img' ? '更换图片' : '编辑'}</button><button data-act="dm-remove" data-id="${esc(m.clientMessageId)}">移除</button></span>` : ''}` : '';
   return `<div class="msg ${m.me ? 'me' : ''} ${m.outbox ? 'dm-pending' : ''}">${m.me ? '' : msgAv(uid)}${inner}${rc}${pending}</div>`;
 }
@@ -11363,7 +11364,9 @@ function dmReset(){ LDM.epoch++; clearInterval(LDM.timer); LDM.timer = 0; LDM.bu
   ['full','loading','look','miss','history'].forEach(k => LDM[k].clear()); LDM.inflight.clear();
   ['last','sig','since','before','blk'].forEach(k => LDM[k] = {}); LDM.side = ''; refill(CHATS, {}); refill(CHAT_UNREAD, {}); }
 API.sessionReset = dmReset;
-const dmMap = m => ({id:m.id, clientMessageId:m.clientMessageId || null, me:m.from === ME, t:m.kind === 'image' ? 'img' : m.kind, text:m.kind === 'cosys' ? coTxt(m.body, m.from, m.to) : m.body, v:m.kind === 'co' ? +m.body : undefined, url:m.url || undefined, ref:m.ref || undefined, ts:+new Date(m.createdAt), rc:m.recalled, read:m.read});
+/* 私信类型只认这几种，其它一律归成 other：列表和气泡显示占位，也没有撤回入口 */
+const DM_KINDS = new Set(['text', 'image', 'post', 'prod', 'co', 'cosys']);
+const dmMap = m => ({id:m.id, clientMessageId:m.clientMessageId || null, me:m.from === ME, t:m.kind === 'image' ? 'img' : DM_KINDS.has(m.kind) ? m.kind : 'other', text:m.kind === 'cosys' ? coTxt(m.body, m.from, m.to) : m.body, v:m.kind === 'co' ? +m.body : undefined, url:m.url || undefined, ref:m.ref || undefined, ts:+new Date(m.createdAt), rc:m.recalled, read:m.read});
 const dmLive = uid => API.on() && STATE.role === 'user' && LIVE.u.has(uid);
 const dmCut = (uid, ts) => DELC[uid] && ts <= DELC[uid];   // 自己删过聊天记录：删之前的不再显示
 /* 分享来的帖子 / 商品本地没有：去后端取一次 */
@@ -12585,8 +12588,8 @@ const LCLOSE = {v:null, at:0, busy:false};
 const LBIZ = {inv:[], app:undefined, at:0};
 const PAY_ST = {pending:'待打款', paid:'已打款', failed:'打款失败'};
 /* 参数和主体备案 */
-function bizCfg(){ const k = LIVE.cfg; if (!k?.collab) return;
-  ADM.params = {plat:k.plat ?? ADM.params.plat, coFee:k.collab.fee, coRev:k.collab.freeRev, coAuto:k.collab.autoDays}; applyParams();
+function bizCfg(){ const k = LIVE.cfg; if (!k) return;
+  ADM.params = {...ADM.params, plat:k.plat ?? ADM.params.plat, ...(k.collab ? {coFee:k.collab.fee, coRev:k.collab.freeRev, coAuto:k.collab.autoDays} : {})}; applyParams();
   if (k.legal) Object.assign(ADM.site, k.legal); footLegal(); }
 { const boot4 = liveBoot; liveBoot = async function(){ await boot4(); bizCfg(); if (liveUser()) bizMine(); }; }
 { const after5 = liveAfterLogin; liveAfterLogin = async function(){ await after5(); bizMine(); }; }

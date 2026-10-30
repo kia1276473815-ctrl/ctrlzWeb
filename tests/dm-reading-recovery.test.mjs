@@ -77,6 +77,14 @@ test('本人已确认的文字/图片/帖子/商品分享两分钟内均有撤�
   const ctx=vm.createContext({Date,RC_MS:120000,esc:String,POST:()=>null,P:()=>null,USERS:{},msgAv:()=>'',CO_BY:()=>null});vm.runInContext(section('function bubble(m, uid){','function convBody(uid){'),ctx);
   for(const t of ['text','img','post','prod']){const html=ctx.bubble({me:true,t,text:'x',ref:'ref',url:'/fixture.png',ts:Date.now()},'peer');assert(html.includes('data-act="msg-rc"'),t);}
 });
+test('未知类型的私信显示占位：不当成商品预览、不留空气泡、没有撤回入口',()=>{
+  const ctx=vm.createContext({Date,RC_MS:120000,esc:String,POST:()=>null,P:()=>null,USERS:{},msgAv:()=>'',CO_BY:()=>null});vm.runInContext(section('function msgPreview(m){','\n')+section('function bubble(m, uid){','function convBody(uid){'),ctx);
+  const m={me:true,t:'other',text:'{a} 旧模板',ts:Date.now()},html=ctx.bubble(m,'peer');assert(html.includes('[暂不支持的消息]'));assert(!html.includes('{a}'));assert(!html.includes('data-act="msg-rc"'));assert.equal(ctx.msgPreview(m),'我：[暂不支持的消息]');
+});
+test('dmMap 把不认识的消息类型归成 other，已知类型不变',()=>{
+  const map=vm.runInContext('dmMap',realm().ctx);for(const kind of ['future',undefined,'constructor'])assert.equal(map(message('a',{kind})).t,'other');
+  for(const [kind,t] of [['text','text'],['image','img'],['post','post'],['prod','prod']])assert.equal(map(message('b',{kind})).t,t);
+});
 test('合作记录、他人、待发送、已撤回或超过两分钟的消息不出现撤回入口',()=>{
   const ctx=vm.createContext({Date,RC_MS:120000,esc:String,POST:()=>null,P:()=>null,USERS:{},msgAv:()=>'',CO_BY:()=>null,uname:()=>''});vm.runInContext(section('function bubble(m, uid){','function convBody(uid){'),ctx);
   const base={me:true,t:'post',ref:'ref',text:'x',ts:Date.now()};for(const extra of [{t:'co'},{t:'cosys'},{me:false},{pend:true},{rc:true},{ts:Date.now()-120001}])assert(!ctx.bubble({...base,...extra},'peer').includes('data-act="msg-rc"'));
