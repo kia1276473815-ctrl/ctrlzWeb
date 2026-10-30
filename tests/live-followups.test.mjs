@@ -156,16 +156,20 @@ test('操作日志换成员：旧行和筛选条留着；切回已读到的成�
   reqs[0].resolve({items:[{id:'a2',staffName:'甲',action:'新行',targetId:'y',createdAt:'2026-10-02'}],next:null});await tick();assert.equal(a.ctx.LADM.audit[0].id,'a1','迟到的结果不覆盖');assert.equal(a.ctx.LADM.lgv,'all');
   a.ctx.UI.adf.lg='s1';a.ctx.ADMV.audit();assert.equal(reqs.length,2);reqs[1].resolve({items:[{id:'a2',staffName:'甲',action:'新行',targetId:'y',createdAt:'2026-10-02'}],next:null});await tick();assert.match(a.ctx.ADMV.audit(),/新行/);
 });
-test('「已被别人处理」：举报、头像回 400 handled，裁决回 400 bad_state，都按服务器状态刷新这一行',async()=>{
+test('「已被别人处理」：举报、头像回 400 handled，都按服务器状态刷新这一行',async()=>{
   const run=async(load,act,err,check)=>{let done=0,quiet=0;const fails=[],ctx=vm.createContext({console,Promise,Map,Set,UI:{},ACTIONS:{},LADM:{rpv:'open'},STAFF:{req:async()=>{throw err;}},staffSession:()=>()=>true,admGuard:()=>true,admMe:()=>({name:'值'}),apiFail:e=>fails.push(e),ladmDone:()=>done++,ladmQuiet:()=>quiet++,toast(){},closeSheet(){},fxPop(){},
-      $:()=>({value:'说明',dataset:{v:'release'},focus(){}}),CO_BY:()=>({id:'c',live:true}),y2f:x=>x,sheet(){},rsnSheet(){},wrapAct:(n,fn)=>{ctx.ACTIONS[n]=b=>fn(()=>{},b);}});
+      $:()=>({value:'说明',dataset:{v:'release'},focus(){}}),sheet(){},rsnSheet(){},wrapAct:(n,fn)=>{ctx.ACTIONS[n]=b=>fn(()=>{},b);}});
     load(ctx);await act(ctx);assert.equal(fails.length,1);check(done,quiet);};
-  const handled=Object.assign(new Error('这条已经处理过了'),{status:400,code:'handled'}),state=Object.assign(new Error('这单已完成原裁决'),{status:400,code:'bad_state'}),other=Object.assign(new Error('说明太长'),{status:400,code:'bad_request'});
-  const lrp=ctx=>vm.runInContext(section('const lrpDone =','/* ================= 操作日志'),ctx),av=ctx=>vm.runInContext(section('ACTIONS.lavq =','/* —— 收藏 —— */'),ctx),dp=ctx=>vm.runInContext(section("wrapAct('dp-go',",'/* ================= 敏感词'),ctx);
+  const handled=Object.assign(new Error('这条已经处理过了'),{status:400,code:'handled'}),other=Object.assign(new Error('说明太长'),{status:400,code:'bad_request'});
+  const lrp=ctx=>vm.runInContext(section('const lrpDone =','/* ================= 操作日志'),ctx),av=ctx=>vm.runInContext(section('ACTIONS.lavq =','/* —— 收藏 —— */'),ctx);
   const b=(v='1')=>({dataset:{id:'x',v},disabled:false,isConnected:true});
   await run(lrp,ctx=>ctx.ACTIONS['lrp-go'](b('resolved')),handled,done=>assert.equal(done,1));await run(lrp,ctx=>ctx.ACTIONS['lrp-go'](b('resolved')),other,done=>assert.equal(done,0));
   await run(av,async ctx=>{ctx.ACTIONS.lavq(b());await tick();},handled,done=>assert.equal(done,1));
-  await run(dp,ctx=>ctx.ACTIONS['dp-go'](b()),state,(done,quiet)=>{assert.equal(done,1);assert.equal(quiet,1);});await run(dp,ctx=>ctx.ACTIONS['dp-go'](b()),other,done=>assert.equal(done,0));
+});
+test('合作纠纷删干净：页签、权限和 disputeSheet 的包装都不留；流水里后端还没停发的状态不让页面报错',()=>{
+  assert.doesNotMatch(source,/disputeSheet|ADMV\.disputes|disputesAll|dp-(?:open|k|go)|collab\.manage/);
+  const ctx=vm.createContext({esc:String});vm.runInContext(section('const LST =','function ledger'),ctx);
+  assert.deepEqual([...vm.runInContext("lstOf('paid')",ctx)],['已支付','green']);assert.deepEqual([...vm.runInContext("lstOf('held')",ctx)],['held','']);
 });
 test('搜索词截断落在 emoji 中间：不留半个字符，encodeURIComponent 不抛错，长度仍不超过后端上限',()=>{
   const ctx=vm.createContext({UI:{adq:{content:'a'.repeat(39)+'😀'},adf:{}}});vm.runInContext(section('function adminContentQuery(kind){',"ACTIONS['lct-more']"),ctx);

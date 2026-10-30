@@ -2318,7 +2318,7 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 @media (max-width:760px) and (max-height:430px), (max-height:430px) and (min-aspect-ratio:3/2){ @media (max-width:760px){ :root{--tbcap:48px;--tbgap:8px} .tb-blob{top:4px;bottom:4px} } }
 
 /* ---- 后台 · 海报编辑器：左边海报列表，右边编辑（预览 / 文案 / 外观 / 声音） ---- */
-.pe [hidden],.smp[hidden],.lu-p[hidden],#opDirty[hidden],.dv-in [hidden],[data-act="dv-go"][hidden]{display:none!important}   /* 这些地方的 display:flex 会盖掉 hidden 属性 */
+.pe [hidden],.smp[hidden],.lu-p[hidden],#opDirty[hidden],[data-act="dv-go"][hidden]{display:none!important}   /* 这些地方的 display:flex 会盖掉 hidden 属性 */
 .pe{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr);gap:16px;align-items:start;margin-bottom:28px}
 .pe-list{display:flex;flex-direction:column;gap:6px;position:sticky;top:12px}
 .pe-it{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:6px;padding:6px 8px 6px 6px;border-radius:14px;background:var(--card);box-shadow:inset 0 0 0 1.5px transparent;transition:box-shadow .15s}
@@ -2386,7 +2386,6 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 .smp-x{width:26px;height:26px;border-radius:50%;display:grid;place-items:center}
 .smp-x svg{width:14px;height:14px}
 /* ---- 查看私信记录 ---- */
-.dv-in{display:flex;flex-direction:column;gap:8px;margin:8px 0}
 .dv-log{display:flex;flex-direction:column;gap:10px;max-height:52vh;overflow:auto;padding:12px;border-radius:14px;background:var(--paper)}
 .dv-m{display:flex;flex-direction:column;gap:3px;max-width:86%;font-size:14px;line-height:1.5}
 .dv-m.b{align-self:flex-end;text-align:right}
@@ -2617,10 +2616,6 @@ html.rm .fx-em *{animation:none}
 .ad-rs{display:flex;flex-direction:column;gap:8px}
 .ad-rs .pill{justify-content:flex-start;height:auto;min-height:44px;padding:10px 16px;text-align:left;white-space:normal;line-height:1.4}
 .ad-rs .pill.on{box-shadow:inset 0 0 0 2px var(--ink)}
-.ad-log{display:flex;flex-direction:column;gap:8px;max-height:min(40vh,320px);overflow:auto;padding:12px;border-radius:14px;background:var(--paper)}
-.ad-log div{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;font-size:13px} .ad-log time{color:var(--ink-3);font-variant-numeric:tabular-nums}
-.ad-log .sys span{font-weight:600}
-.ad-part input{width:100%}
 .ad-form{padding:18px;display:flex;flex-direction:column;gap:12px}
 .ad-f2{display:flex;flex-direction:column;gap:12px}
 .ad-chips{display:flex;gap:6px;flex-wrap:wrap}
@@ -7356,7 +7351,6 @@ const ADM_TABS = [
   ['content', '内容', '用户与内容', ['super', 'mod']],
   ['orders', '订单流水', '交易', ['super', 'cs', 'fin']],
   ['refunds', '退款', '交易', ['super', 'cs', 'fin']],
-  ['disputes', '合作纠纷', '交易', ['super', 'cs']],
   ['payout', '结算打款', '交易', ['super', 'fin']],
   ['vouchers', '代金券', '交易', ['super']],
   ['notice', '公告与站内信', '运营', ['super', 'ops', 'cs']],
@@ -7369,7 +7363,7 @@ const ADM_TABS = [
 ];
 // 当前后台账号：连着后端时就是登录的后台账号（角色以后端为准）；纯原型演示用本地的成员列表
 const admMe = () => API.on() ? (STAFF.me || {id:'-', name:'未登录', role:'none', on:false}) : ADM.staff.find(s => s.id === ADM.me && s.on) || ADM.staff.find(s => s.on) || ADM.staff[0];
-const ADM_TAB_PERMS = {review:'content.act', avatars:'content.act', reports:'reports.manage', apply:'apply.manage', users:'users.read', content:'content.read', orders:'orders.read', refunds:'refunds.manage', disputes:'collab.manage', payout:'payout.manage', vouchers:'vouchers.manage', notice:'notify.send', ops:'site.manage', words:'words.manage', invites:'invites.manage', staff:'staff.manage', params:'params.manage', audit:'audit.read', invoice:'invoice.manage', feedback:'feedback.manage'};
+const ADM_TAB_PERMS = {review:'content.act', avatars:'content.act', reports:'reports.manage', apply:'apply.manage', users:'users.read', content:'content.read', orders:'orders.read', refunds:'refunds.manage', payout:'payout.manage', vouchers:'vouchers.manage', notice:'notify.send', ops:'site.manage', words:'words.manage', invites:'invites.manage', staff:'staff.manage', params:'params.manage', audit:'audit.read', invoice:'invoice.manage', feedback:'feedback.manage'};
 const ADM_PERM_ROLES = {'users.read':['super','mod','cs','fin'], 'users.act':['super','mod','cs'], 'content.read':['super','mod','cs','ops'], 'content.act':['super','mod'], 'notify.send':['super','cs','ops'], 'notify.broadcast':['super','ops'], 'orders.read':['super','cs','fin'], 'dm.read':['super','mod','cs'], 'staff.manage':['super']};
 function staffCan(perm){
   if (API.on()) return !!STAFF.validated && !!STAFF.me && Array.isArray(STAFF.perms) && STAFF.perms.includes(perm);
@@ -7407,8 +7401,9 @@ function csvDownload(name, rows){
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([s], {type:'text/csv;charset=utf-8'})); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }
 
-/* —— 交易流水（原型）：按商品销量生成确定的示例订单 + 真实发生的购买 / 店铺订单 / 合作订单。接后端后直接换成订单表查询 —— */
-const LST = {paid:['已支付', 'green'], refund:['已退款', ''], refunding:['退款中', 'orange'], held:['托管中', 'blue'], released:['已放款', 'green'], dispute:['纠纷中', 'orange']};
+/* —— 交易流水（原型）：按商品销量生成确定的示例订单 + 真实发生的购买 / 店铺订单。接后端后直接换成订单表查询 —— */
+const LST = {paid:['已支付', 'green'], refund:['已退款', ''], refunding:['退款中', 'orange']};
+const lstOf = st => LST[st] || [esc(st), ''];   // 没登记的状态显示原值，不让页面报错（后端可能还会返回别的状态）
 function ledger(){
   if (API.on()) return [];   // 连着后端：示例订单不掺进来；后台「订单流水」读 /admin/orders
   const L = [], R = rng(20261008), DAY = 864e5, now = NOW0, ymd = ts => { const d = new Date(ts); return '' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()); };
@@ -7418,20 +7413,17 @@ function ledger(){
   SELLER_ORDERS.forEach(o => { const m = o.no.match(/CZ(\d{4})(\d\d)(\d\d)-(\d\d)(\d\d)/); L.push({no:o.no, type:'prod', ref:'p2', title:P('p2').title, buyer:o.buyer, seller:'rin', amt:o.amt, pay:o.pay, ts:m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5]).getTime() : now, st:o.st === 'refund' ? 'refund' : 'paid'}); });
   STATE.orders.forEach(o => { const pr = P(o.pid); if (!pr || !o.price || L.some(x => x.no === o.no)) return; L.push({no:o.no, type:'prod', ref:o.pid, title:pr.title, buyer:ME, seller:pr.seller, amt:o.price, vc:o.vc || 0, pay:o.pay, ts:Date.parse(String(o.time).replace(' ', 'T')) || now, st:o.st === '已退款' ? 'refund' : 'paid'}); });
   REFUNDS.forEach(r => { if (L.some(x => x.no === r.no)) return; const pr = PRODUCTS.find(p => p.title === r.item); L.push({no:r.no, type:'prod', ref:pr?.id, title:r.item, buyer:r.buyer, seller:pr?.seller || 'ash', amt:r.amt, pay:'微信支付', ts:now - 6*DAY, st:r.st === '已退款' ? 'refund' : 'refunding'}); });
-  CO.orders.forEach(o => { if (o.price == null || !o.paidAt) return;
-    L.push({no:'CO' + ymd(o.paidAt) + '-' + o.id.toUpperCase(), type:'co', ref:o.id, title:o.title, buyer:o.from, seller:o.to, amt:o.price, pay:o.pay || '微信支付', ts:o.paidAt,
-      st:{paid:'held', delivered:'held', revising:'held', done:'released', dispute:'dispute', refunded:'refund'}[o.st] || 'held', part:o.ruling?.refund || 0}); });
   L.forEach(x => { if (ADM.lst[x.no]) x.st = ADM.lst[x.no]; });
   return L.sort((a, b) => b.ts - a.ts);
 }
 const monthOf = ts => { const d = new Date(ts); return d.getFullYear() + '-' + pad2(d.getMonth() + 1); };
-/* 结算：某个月里每个卖家应得 = 商品成交 − 支付手续费 − 平台抽成 + 已放款的合作金额 − 合作服务费（部分退款的合作只算放给创作者的部分） */
+/* 结算：某个月里每个卖家应得 = 商品成交 − 支付手续费 − 平台抽成 */
 function payoutRows(month){
   const M = {};
-  ledger().forEach(x => { if (monthOf(x.ts) !== month) return; const r = M[x.seller] ||= {seller:x.seller, n:0, gross:0, fee:0, plat:0, co:0, coFee:0};
+  ledger().forEach(x => { if (monthOf(x.ts) !== month) return; const r = M[x.seller] ||= {seller:x.seller, n:0, gross:0, fee:0, plat:0};
     if (x.type === 'prod' && x.st === 'paid'){ r.n++; r.gross += x.amt; r.fee += (x.amt - (x.vc || 0))*(FEE[x.pay] || .006); r.plat += x.amt*PLAT; }   // 券抵扣的部分没走支付通道，不收手续费；卖家照原价结算
-    if (x.type === 'co' && x.st === 'released'){ const amt = x.amt - (x.part || 0); r.n++; r.co += amt; r.coFee += amt*CO_FEE; } });
-  return Object.values(M).map(r => ({...r, net:r.gross - r.fee - r.plat + r.co - r.coFee})).filter(r => r.n).sort((a, b) => b.net - a.net);
+  });
+  return Object.values(M).map(r => ({...r, net:r.gross - r.fee - r.plat})).filter(r => r.n).sort((a, b) => b.net - a.net);
 }
 
 /* —— 各页签 —— */
@@ -7537,7 +7529,7 @@ function userSheet(uid){
       <button class="pill sm lt" data-act="us-msg" data-id="${esc(uid)}">发站内信</button></div>
     ${usPerm(uid)}
     ${a.warns.length ? `<label class="ad-lab">警告记录</label><div class="ad-mini">${a.warns.map(w => `<span>${fmtDT(w.ts)} · ${esc(w.reason)}</span>`).join('')}</div>` : ''}
-    <label class="ad-lab">最近订单</label><div class="ad-mini">${L.slice(0, 6).map(x => `<span>${fmtDT(x.ts)} · ${x.buyer === uid ? '买' : '卖'} · ${esc(x.title)} · ${yuan2(x.amt)} · ${LST[x.st][0]}</span>`).join('') || '<span>没有订单</span>'}</div></div>`);
+    <label class="ad-lab">最近订单</label><div class="ad-mini">${L.slice(0, 6).map(x => `<span>${fmtDT(x.ts)} · ${x.buyer === uid ? '买' : '卖'} · ${esc(x.title)} · ${yuan2(x.amt)} · ${lstOf(x.st)[0]}</span>`).join('') || '<span>没有订单</span>'}</div></div>`);
 }
 
 /* 内容：已发布的帖子 / 商品 / 评论，下架和恢复 */
@@ -7550,17 +7542,6 @@ ADMV.orders = (...args) => lazyView('admin',"orders",args);
 
 /* 退款 */
 ADMV.refunds = (...args) => lazyView('admin',"refunds",args);
-
-/* 合作纠纷：看订单记录 → 裁决（全额放款 / 部分退款 / 全额退款） */
-ADMV.disputes = (...args) => lazyView('admin',"disputes",args);
-function disputeSheet(id){ const o = CO_BY(id); if (!o) return; const open = o.st === 'dispute';
-  sheet(`<h3>${esc(o.title)}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">委托方 @${esc(uname(o.from))} · 创作者 @${esc(uname(o.to))} · 托管 ${yuan2(o.price)} · 修改 ${o.rev || 0}/${CO_FREE_REV} 次</p>
-    <div class="ad-log">${o.log.map(e => `<div class="${e.k === 'sys' ? 'sys' : ''}"><time>${fmtDT(e.ts)}</time><span>${e.k === 'card' ? `${esc(uname(e.by))} 发出 / 更新了邀约（第 ${e.v} 版）` : esc(e.text)}</span></div>`).join('')}</div>
-    ${open ? `<label class="ad-lab">裁决</label><div class="seg ad-seg" id="dpK">${[['release', '全额放款给创作者'], ['part', '部分退款'], ['refund', '全额退给委托方']].map(([v, l], i) => `<button class="${i ? '' : 'on'}" data-act="dp-k" data-v="${v}">${l}</button>`).join('')}</div>
-    <div id="dpPart" class="ad-part" hidden><label class="ad-lab">退给委托方 <b id="dpAmtL">${yuan2(o.price/2)}</b></label><input type="range" id="dpAmt" min="0" max="${o.price}" step="10" value="${o.price/2}"></div>
-    <label class="ad-lab">裁决说明（双方都能看到）</label><textarea class="inp" id="dpWhy" placeholder="例如：交付物与约定的 16:9 规格不符，按完成度退一半"></textarea>
-    <button class="pill lg" data-act="dp-go" data-id="${o.id}">确认裁决</button>` : `<p class="ad-warn y">已裁决：${esc(o.ruling.text)}</p>`}`, d => { const r = $('#dpAmt', d); r && r.addEventListener('input', () => { $('#dpAmtL', d).textContent = yuan2(+r.value); }); });
-}
 
 /* 结算打款 */
 ADMV.payout = (...args) => lazyView('admin',"payout",args);
@@ -7602,7 +7583,7 @@ ROUTES.admin = arg => {
     : gate('管理', '管理后台要连上后端、用后台账号登录才能进入。', protoOn() ? `<button class="pill lg" data-act="adm-login">演示：以管理员身份查看</button>` : '');
   const me = admMe(), tabs = ADM_TABS.filter(t => admCan(t[0]));
   let t = UI.adminTab; if (!tabs.some(x => x[0] === t)) t = UI.adminTab = tabs[0][0];
-  const cnt = API.on() ? admCnt() : {review:REVIEW.length, avatars:AVQ.length, reports:REPORTS.filter(r => r.st === '待处理').length, apply:ADM.apps.filter(a => a.st === '待审核').length, refunds:REFUNDS.filter(r => r.st === '待处理').length, disputes:CO.orders.filter(o => o.st === 'dispute').length};
+  const cnt = API.on() ? admCnt() : {review:REVIEW.length, avatars:AVQ.length, reports:REPORTS.filter(r => r.st === '待处理').length, apply:ADM.apps.filter(a => a.st === '待审核').length, refunds:REFUNDS.filter(r => r.st === '待处理').length};
   if (t === 'review') onMount(() => { const kd = e => { if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.isComposing || e.target.isContentEditable || e.target.closest('input,textarea,select') || !REVIEW.length || $('#layer .sheet')) return; /* Ctrl / Cmd + A 全选、按住不放、输入法组字都不算 */ if (e.key.toLowerCase() === 'a') ACTIONS['rv-ok'](); if (e.key.toLowerCase() === 'r') ACTIONS['rv-no'](); }; document.addEventListener('keydown', kd); onClean(() => document.removeEventListener('keydown', kd)); });
   let g0 = '';
   const nav = tabs.map(([k, l, g]) => { const head = g !== g0 ? `<span class="ad-g">${g}</span>` : ''; g0 = g; return head + `<button class="${t === k ? 'on' : ''}" data-act="atab" data-v="${k}">${l}${cnt[k] ? `<span class="n">${cnt[k]}</span>` : ''}</button>`; }).join('');
@@ -7858,30 +7839,19 @@ Object.assign(ACTIONS, {
   // 订单
   'od-more': () => { UI.adn = (UI.adn || 30) + 30; rerender(); },
   'od-csv': () => { const q = fq('orders'), f = UI.adf?.ot || 'all', s = UI.adf?.os || 'all'; const L = ledger().filter(x => (f === 'all' || x.type === f) && (s === 'all' || x.st === s) && (!q || (x.no + x.title + uname(x.buyer) + uname(x.seller)).toLowerCase().includes(q)));
-    csvDownload(`ctrlz-orders-${fmtDay(Date.now())}.csv`, [['订单号', '类型', '内容', '买家', '卖家', '金额', '渠道', '状态', '时间'], ...L.map(x => [x.no, x.type === 'co' ? '合作' : '商品', x.title, uname(x.buyer), uname(x.seller), x.amt.toFixed(2), x.pay, LST[x.st][0], fmtDay(x.ts) + ' ' + fmtDT(x.ts).slice(6)])]); admLog('导出订单', `${L.length} 条`); },
+    csvDownload(`ctrlz-orders-${fmtDay(Date.now())}.csv`, [['订单号', '类型', '内容', '买家', '卖家', '金额', '渠道', '状态', '时间'], ...L.map(x => [x.no, '商品', x.title, uname(x.buyer), uname(x.seller), x.amt.toFixed(2), x.pay, lstOf(x.st)[0], fmtDay(x.ts) + ' ' + fmtDT(x.ts).slice(6)])]); admLog('导出订单', `${L.length} 条`); },
   'od-open': b => { const x = ledger().find(o => o.no === b.dataset.no); if (!x) return;
-    sheet(`<h3>${x.no}</h3><div class="ad-kv col"><span>内容<b>${esc(x.title)}</b></span><span>类型<b>${x.type === 'co' ? '合作订单' : '商品'}</b></span><span>买家<b>${esc(uname(x.buyer))}</b></span><span>卖家<b>${esc(uname(x.seller))}</b></span><span>金额<b>${yuan2(x.amt)}</b></span><span>渠道<b>${x.pay}</b></span><span>状态<b>${LST[x.st][0]}</b></span><span>时间<b>${fmtDay(x.ts)} ${fmtDT(x.ts).slice(6)}</b></span></div>
-      <div class="ad-acts">${x.type === 'co' ? `<button class="pill sm lt" data-act="dp-open" data-id="${x.ref}">看合作记录</button>` : ''}<button class="pill sm lt" data-act="us-open" data-id="${esc(x.buyer)}">管理买家</button><button class="pill sm lt" data-act="us-open" data-id="${esc(x.seller)}">管理卖家</button></div>`); },
+    sheet(`<h3>${x.no}</h3><div class="ad-kv col"><span>内容<b>${esc(x.title)}</b></span><span>类型<b>商品</b></span><span>买家<b>${esc(uname(x.buyer))}</b></span><span>卖家<b>${esc(uname(x.seller))}</b></span><span>金额<b>${yuan2(x.amt)}</b></span><span>渠道<b>${x.pay}</b></span><span>状态<b>${lstOf(x.st)[0]}</b></span><span>时间<b>${fmtDay(x.ts)} ${fmtDT(x.ts).slice(6)}</b></span></div>
+      <div class="ad-acts"><button class="pill sm lt" data-act="us-open" data-id="${esc(x.buyer)}">管理买家</button><button class="pill sm lt" data-act="us-open" data-id="${esc(x.seller)}">管理卖家</button></div>`); },
   // 退款
   'rf-do': b => { if (!admGuard('refunds')) return; const r = REFUNDS.find(x => x.no === b.dataset.no); if (!r) return; const ok = b.dataset.v === 'ok';
     r.st = ok ? '已退款' : '已拒绝'; ADM.lst[r.no] = ok ? 'refund' : 'paid'; refundSync(); admLog(ok ? '同意退款' : '拒绝退款', `${r.no} ${r.item}`, yuan2(r.amt));
     notify(r.buyer, ok ? '退款已同意' : '退款申请没有通过', ok ? `「${r.item}」${r.amt > 0 ? `的 ${yuan2(r.amt)} 会原路退回，1–3 个工作日到账${r.vc ? `；代金券抵扣的 ${yuan2(r.vc)} 不退（券用过就作废）` : ''}` : `：代金券抵扣的 ${yuan2(r.vc || 0)} 不退（券用过就作废）`}。` : `「${r.item}」${r.dl === '未下载' ? '' : r.dl + '，'}按《退款规则》不支持退款。如果文件有问题可以联系卖家，或回复这条通知说明。`);
     admSave(); toast(r.st, ok ? 'green' : 'orange', ok ? 'check' : 'x'); rerender(); },
-  // 纠纷
-  'dp-open': b => disputeSheet(b.dataset.id),
-  'dp-k': b => { $$('#dpK button').forEach(x => x.classList.toggle('on', x === b)); $('#dpPart').hidden = b.dataset.v !== 'part'; },
-  'dp-go': b => { if (!admGuard('disputes')) return; const o = CO_BY(b.dataset.id); if (!o) return; const k = $('#dpK .on')?.dataset.v || 'release', why = $('#dpWhy').value.trim();
-    if (!why){ fxPop($('#dpWhy'), 'fx-shake', 300); $('#dpWhy').focus(); return; }
-    const refund = k === 'refund' ? o.price : k === 'part' ? Math.round(+$('#dpAmt').value*100)/100 : 0;
-    if (k === 'part' && !(refund > 0 && refund < o.price)){ fxPop($('#dpAmt'), 'fx-shake', 300); toast(`退款金额要在 0 和 ${yuan2(o.price)} 之间`, 'orange', 'x'); return; }
-    const text = k === 'release' ? `全额放款给创作者（${yuan2(o.price)}）` : k === 'refund' ? `全额退给委托方（${yuan2(o.price)}）` : `退给委托方 ${yuan2(refund)}，放款给创作者 ${yuan2(o.price - refund)}`;
-    o.ruling = {k, refund, text:text + ' · ' + why, by:admMe().name, ts:Date.now()}; o.st = k === 'refund' ? 'refunded' : 'done'; o.doneAt = Date.now();
-    coSys(o, '平台裁决：' + text + '。说明：' + why); coSave(); admLog('纠纷裁决', `合作「${o.title}」`, text);
-    [o.from, o.to].forEach(u => notify(u, '合作纠纷已裁决', `「${o.title}」：${text}。说明：${why}`)); closeSheet(); toast('已裁决', 'green'); rerender(); },
   // 结算
   'po-gen': b => { if (!admGuard('payout')) return; const m = b.dataset.v, rows = payoutRows(m); if (!rows.length) return;
     ADM.payouts.push({id:'po' + Date.now().toString(36), month:m, ts:Date.now(), rows:rows.map(r => ({seller:r.seller, net:+r.net.toFixed(2), st:'待打款'}))}); admLog('生成结算单', m, `${rows.length} 位创作者`);
-    rows.forEach(r => notify(r.seller, `${m} 结算单已生成`, `本月应结 ${yuan2(r.net)}（已扣手续费、平台抽成和合作服务费），打款后会再通知你。`)); admSave(); toast('结算单已生成', 'blue'); rerender(); },
+    rows.forEach(r => notify(r.seller, `${m} 结算单已生成`, `本月应结 ${yuan2(r.net)}（已扣手续费和平台抽成），打款后会再通知你。`)); admSave(); toast('结算单已生成', 'blue'); rerender(); },
   'po-pay': b => { if (!admGuard('payout')) return; const bt = ADM.payouts.find(x => x.id === b.dataset.b), r = bt?.rows.find(x => x.seller === b.dataset.id); if (!r) return;
     if (!ADM.payee[r.seller]){ notify(r.seller, '请绑定收款账户', `${bt.month} 结算 ${yuan2(r.net)} 等你绑定收款账户后打款：工作室 › 概览 › 收款与结算。`); toast('对方还没绑定收款账户，已提醒', 'orange', 'x'); return; }
     r.st = '已打款'; r.txn = 'TXN' + Date.now().toString().slice(-10); r.ts = Date.now(); admLog('标记已打款', `${bt.month} @${uname(r.seller)}`, `${yuan2(r.net)} · ${r.txn}`);
@@ -10515,7 +10485,7 @@ async function ladmLoad(k, more = false){
 }
 // 用户列表筛选（和后端 filter 一致；原型的「被警告过」后端没有，不放）
 const ladmUsF = () => ['creator', 'limited'].includes(UI.adf?.us) ? UI.adf.us : 'all';
-const LADM_TITLES = {'人员与权限':'staff','用户':'users','看板':'dash','举报':'reports','操作日志':'audit','头像审核':'avatars','头像':'avatars','待审核':'review','订单流水':'orders','退款':'refunds','代金券':'vouchers','邀请码':'invites','合作纠纷':'disputes','敏感词':'words','入驻申请':'apply','发票':'invoice','结算打款':'payout','内容':'content','反馈与报错':'feedback'};
+const LADM_TITLES = {'人员与权限':'staff','用户':'users','看板':'dash','举报':'reports','操作日志':'audit','头像审核':'avatars','头像':'avatars','待审核':'review','订单流水':'orders','退款':'refunds','代金券':'vouchers','邀请码':'invites','敏感词':'words','入驻申请':'apply','发票':'invoice','结算打款':'payout','内容':'content','反馈与报错':'feedback'};
 const ladmWait = (title, sub, key = LADM_TITLES[title]) => adH(title, sub) + `<div class="box"><div class="box-b mut" role="status">${key && LADM.errors[key] ? `${esc(LADM.errors[key]?.message ?? LADM.errors[key])}<button class="pill sm lt" style="margin-left:10px" data-act="ladm-retry" data-v="${esc(key)}">重试</button>` : '正在读取…'}</div></div>`;
 ACTIONS['ladm-retry'] = b => { const k = b.dataset.v; if (!admGuard(k === 'backups' ? 'params' : k)) return; delete LADM.errors[k]; delete LADM.reads[k]; delete LADM.requests[k]; LADM.busy[k] = false; LADM[k] = null; rerender(); };
 // 一次性凭据：只显示这一次（复制按钮不把密码弹在提示里）
@@ -11747,26 +11717,21 @@ Object.assign(ACTIONS, {
 /* ================= 查看私信记录（处理纠纷 / 举报 / 申诉时）：要写理由，后端记进操作日志 ================= */
 function dmViewSheet(a, b, preset = ''){
   sheet(`<h3>查看私信记录</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">${esc(uname(a))} 和 ${esc(uname(b))} 之间的私信。查看会记进操作日志（谁、什么时候、为什么看），只在处理纠纷、举报、申诉时使用。</p>
-    <label class="ad-lab">为什么要看</label><div class="ad-rs" id="dvR">${['处理合作纠纷', '处理举报', '用户申诉', '核实交易'].map((x, i) => `<button class="pill lt ${(preset ? x === preset.split('：')[0] : !i) ? 'on' : ''}" data-act="rs-pick">${x}</button>`).join('')}</div>
+    <label class="ad-lab">为什么要看</label><div class="ad-rs" id="dvR">${['处理举报', '用户申诉', '核实交易'].map((x, i) => `<button class="pill lt ${(preset ? x === preset.split('：')[0] : !i) ? 'on' : ''}" data-act="rs-pick">${x}</button>`).join('')}</div>
     <input class="inp" id="dvX" placeholder="补充（可选），例如订单号 / 举报编号" value="${esc(preset.split('：')[1] || '')}">
     <button class="pill lg" data-act="dv-go" data-a="${esc(a)}" data-b="${esc(b)}">查看记录</button><div id="dvLog"></div>`); }
-const dvBody = (m, other) => m.kind === 'co' ? `[合作邀约 · 第 ${esc(m.body)} 版] ${esc(CO_BY(m.ref)?.title || '')}` : m.kind === 'cosys' ? `<em>${esc(coTxt(m.body, m.from, other))}</em>` : m.kind === 'image' ? (m.url ? `<a href="${esc(m.url)}" target="_blank" rel="noopener"><img src="${esc(m.url)}" alt="图片" class="dv-img"></a>` : '[图片]')
+const dvBody = m => m.kind === 'image' ? (m.url ? `<a href="${esc(m.url)}" target="_blank" rel="noopener"><img src="${esc(m.url)}" alt="图片" class="dv-img"></a>` : '[图片]')
   : m.kind === 'post' ? `[分享的帖子] <a data-go="post-${esc(m.ref)}">${esc(POST(m.ref)?.title || m.ref)}</a>` : m.kind === 'prod' ? `[分享的商品] <a data-go="item-${esc(m.ref)}">${esc(P(m.ref)?.title || m.ref)}</a>` : esc(m.body);
 ACTIONS['dv-go'] = async b => { const a = b.dataset.a, c = b.dataset.b, why = ($('#dvR .on')?.textContent || '处理举报') + ($('#dvX').value.trim() ? '：' + $('#dvX').value.trim() : '');
   if (!API.on()){   // 原型：只有自己参与的会话有数据
     const other = a === ME ? c : c === ME ? a : null, L = other ? CHATS[other] || [] : null;
-    $('#dvLog').innerHTML = L ? `<div class="dv-log">${L.map(m => `<div class="dv-m ${m.me ? 'b' : 'a'}"><span class="dv-w">${esc(uname(m.me ? ME : other))} · ${fmtDT(m.ts)}</span><span>${m.rc ? '<em>（已撤回）</em>' : m.t === 'text' ? esc(m.text) : '[' + ({img:'图片', post:'帖子', prod:'商品', co:'合作邀约', cosys:'系统'}[m.t] || m.t) + ']'}</span></div>`).join('') || '<p class="mut2">没有私信</p>'}</div>` : '<p class="ad-warn y">原型里只有你自己参与的会话数据。连上后端后可以看任意两个人的记录。</p>'; return; }
+    $('#dvLog').innerHTML = L ? `<div class="dv-log">${L.map(m => `<div class="dv-m ${m.me ? 'b' : 'a'}"><span class="dv-w">${esc(uname(m.me ? ME : other))} · ${fmtDT(m.ts)}</span><span>${m.rc ? '<em>（已撤回）</em>' : m.t === 'text' ? esc(m.text) : '[' + ({img:'图片', post:'帖子', prod:'商品'}[m.t] || m.t) + ']'}</span></div>`).join('') || '<p class="mut2">没有私信</p>'}</div>` : '<p class="ad-warn y">原型里只有你自己参与的会话数据。连上后端后可以看任意两个人的记录。</p>'; return; }
   if(!staffCan('dm.read') || b.disabled)return;const current=staffSession(),panel=b.closest('.sheet'),log=$('#dvLog',panel);b.disabled = true;
   const ref = ($('#dvX').value.match(/rp_[a-z0-9]+/i) || [])[0];   // 补充里写了举报编号就带上，后端会核对它和这两个人有关
   try { const r = await STAFF.req('POST', '/admin/dm', {a, b:c, reason:why, ...(ref ? {ref} : {})});if(!current() || $('#layer .sheet')!==panel || !log?.isConnected)return;apiUser(r.a); apiUser(r.b);
-    b.hidden = true; log.innerHTML = `<p class="mut2" style="margin:10px 0 6px">共 ${r.items.length} 条 · 理由「${esc(why)}」已记进操作日志</p><div class="dv-log">${r.items.map(m => `<div class="dv-m ${m.from === a ? 'a' : 'b'}"><span class="dv-w">${esc(m.from === a ? r.a.name : r.b.name)} · ${fmtDT(+new Date(m.createdAt))}${m.read ? ' · 已读' : ''}</span><span>${m.recalled ? '<em>（已撤回，原文）</em>' : ''}${dvBody(m, m.from === a ? c : a)}</span></div>`).join('') || '<p class="mut2">这两个人之间没有私信</p>'}</div>`; }
+    b.hidden = true; log.innerHTML = `<p class="mut2" style="margin:10px 0 6px">共 ${r.items.length} 条 · 理由「${esc(why)}」已记进操作日志</p><div class="dv-log">${r.items.map(m => `<div class="dv-m ${m.from === a ? 'a' : 'b'}"><span class="dv-w">${esc(m.from === a ? r.a.name : r.b.name)} · ${fmtDT(+new Date(m.createdAt))}${m.read ? ' · 已读' : ''}</span><span>${m.recalled ? '<em>（已撤回，原文）</em>' : ''}${dvBody(m)}</span></div>`).join('') || '<p class="mut2">这两个人之间没有私信</p>'}</div>`; }
   catch(e){if(current() && panel?.isConnected && e.code!=='cancel')apiFail(e);}finally{if(b.isConnected)b.disabled=false;} };
 ACTIONS['dv-open'] = b => dmViewSheet(b.dataset.a, b.dataset.b, b.dataset.why || '');
-
-/* 合作纠纷：裁决面板里加上双方的私信记录 */
-{ const ds0 = disputeSheet;
-  disputeSheet = function(id){ ds0(id); const o = CO_BY(id), log = $('#layer .sheet .ad-log'); if (!o || !log) return;
-    log.insertAdjacentHTML('afterend', `<div class="dv-in"><span class="ad-lab">双方私信</span><button class="pill sm lt" data-act="dv-open" data-a="${esc(o.from)}" data-b="${esc(o.to)}" data-why="处理合作纠纷：${esc(o.title)}">查看 ${esc(uname(o.from))} 和 ${esc(uname(o.to))} 的私信</button></div>`); }; }
 
 /* ================= 用户全貌（连着后端时） ================= */
 const LU = {id:null, mark:null};
@@ -12408,8 +12373,7 @@ wrapAct('mod-do', async (orig, b) => { const p = POST(b.dataset.id); if (!p?.liv
    · 订单存在服务器（/collabs），CO.orders 里放的是服务器的订单（coMap 换成原型的样子，o.live = true），页面代码不用改
    · 每一步在两人私信里有一条：co = 邀约卡片（body = 卡片版本），cosys = 状态说明（{a} 做事的人，{b} 另一方，coTxt 按看的人换成「你」或名字）
    · 按钮的做法：先调接口，成功了再跑原来的操作（动效、关面板），最后用服务器的订单覆盖本地、重读私信；对方的回应不再模拟（coSim 对真实订单不动）
-   · 主页「合作」：业务和好评度读 /users/{id}/collab（USVC / LCO.rep）；自己的业务设置 PUT /me/collab/svcs
-   · 后台「合作纠纷」读 /admin/collabs，裁决 /admin/collabs/{id}/rule */
+   · 主页「合作」：业务和好评度读 /users/{id}/collab（USVC / LCO.rep）；自己的业务设置 PUT /me/collab/svcs */
 const LCO = {rep:{}, busy:{}, seen:{}, at:0, next:null, stats:null};
 function coTxt(t, a, b){ return String(t || '').replace(/( ?)\{([ab])\}( ?)/g, (m, s1, k, s2) => { const x = k === 'a' ? a : b; return x === ME ? '你' : s1 + uname(x) + s2; }); }
 const coT = v => v ? +new Date(v) : undefined;
@@ -12538,21 +12502,6 @@ function coSvcSave(){ clearTimeout(coSvcT); LCO.svcDirty = true; coSvcT = setTim
 wrapAct('co-svc', (orig, b, e) => { orig(b, e); if (liveUser()) coSvcSave(); });
 wrapAct('co-psave', (orig, b, e) => { orig(b, e); if (liveUser()) coSvcSave(); });
 
-/* 后台「合作纠纷」 */
-{ const dp0 = ADMV.disputes;
-  ADMV.disputes = () => { if (!API.on()) return dp0();
-    // 先读平台介入中的（只有这几单，快），已裁决的历史（最近 200 单）回来后再补上；待处理的不会被历史挤掉
-    if (!LADM.disputes){ LADM.disputesAll = null; delete LADM.errors.disputesAll; delete LADM.reads.disputesAll; LADM.busy.disputesAll = false;
-      ladmGet('disputes', '/admin/collabs?view=dispute', r => r.items.map(s => coMap(s).id)); return ladmWait('合作纠纷', '读取中'); }
-    if (!LADM.disputesAll) ladmGet('disputesAll', '/admin/collabs?view=all', r => r.items.map(s => coMap(s).id));
-    return dp0(); }; }
-wrapAct('dp-go', async (orig, b) => { const o = CO_BY(b.dataset.id); if (!o?.live) return orig(b); if (!admGuard('disputes')) return;
-  const k = $('#dpK .on')?.dataset.v || 'release', note = $('#dpWhy').value.trim(); if (!note){ fxPop($('#dpWhy'), 'fx-shake', 300); $('#dpWhy').focus(); return; }
-  if (b.disabled) return; b.disabled = true; const current = staffSession();
-  try { await STAFF.req('POST', `/admin/collabs/${encodeURIComponent(o.id)}/rule`, {kind:k === 'part' ? 'partial' : k, refund:k === 'part' ? y2f(+$('#dpAmt').value) : 0, note}); if (!current()) return;
-    closeSheet(); toast('已裁决，已通知双方', 'green', 'check'); ladmQuiet('disputesAll'); ladmDone('disputes'); }   // 列表留着，两份都静默重读（重读会把这单换成服务器上的状态）
-  catch(e){ b.disabled = false; if (!current() || e.code === 'cancel') return; apiFail(e); if (e.status === 409 || e.code === 'bad_state'){ ladmQuiet('disputesAll'); ladmDone('disputes'); } } });
-
 /* ================= 敏感词、注销检查（连着后端时） =================
    · 敏感词以服务器为准：后台「敏感词」读写 /admin/words，「试一下」问服务器；用户端不再用本地的示例词拦（censor 返回空，由服务器判断）
    · 注销前的检查读 /me/close/checks（服务器也会再查一遍） */
@@ -12675,7 +12624,7 @@ const LLEDGER = {v:null, at:0, busy:false, mark:null, error:null};
   ledger = function(){ if (!API.on()) return lg0();
     if (!staffCan('orders.read')) return [];
     if (!LLEDGER.busy && Date.now() - LLEDGER.at > 15000){ LLEDGER.busy = true; LLEDGER.at = Date.now(); const mark = LLEDGER.mark = {}, current = staffSession();
-      STAFF.req('GET', '/admin/ledger?days=120').then(r => { if (!current() || LLEDGER.mark !== mark) return; Object.values(r.users).forEach(u => apiUser(u)); LLEDGER.error = null; LLEDGER.v = r.items.map(x => ({...x, amt:f2y(x.amt), vc:f2y(x.vc), part:f2y(x.part), ts:+new Date(x.ts)})); if (CUR.key?.startsWith('admin')) rerender(); })
+      STAFF.req('GET', '/admin/ledger?days=120').then(r => { if (!current() || LLEDGER.mark !== mark) return; Object.values(r.users).forEach(u => apiUser(u)); LLEDGER.error = null; LLEDGER.v = r.items.map(x => ({...x, amt:f2y(x.amt), vc:f2y(x.vc), ts:+new Date(x.ts)})); if (CUR.key?.startsWith('admin')) rerender(); })
         .catch(e => { if (current() && LLEDGER.mark === mark){ LLEDGER.error = e.code === 'cancel' ? null : e.message || '读取失败，请重试'; if (LLEDGER.error && CUR.key?.startsWith('admin')) rerender(); } })   /* 看板上显示错误和「重试」 */.finally(() => { if (current() && LLEDGER.mark === mark) LLEDGER.busy = false; }); }
     return LLEDGER.v || []; }; }
 { const ds0 = ADMV.dash;
@@ -12683,18 +12632,16 @@ const LLEDGER = {v:null, at:0, busy:false, mark:null, error:null};
     if (!LADM.dash){ ladmGet('dash', '/admin/stats', r => r); return ladmWait('看板', '读取中'); }
     const S = LADM.dash, L = ledger(), mon = monthOf(Date.now()), ML = L.filter(x => monthOf(x.ts) === mon), C = ADMCNT.v || admCnt();
     const gmv = ML.filter(x => x.st !== 'refund').reduce((a, x) => a + x.amt, 0);
-    const rev = ML.reduce((a, x) => a + (x.type === 'prod' && x.st === 'paid' ? x.amt*PLAT : x.type === 'co' && x.st === 'released' ? (x.amt - (x.part || 0))*CO_FEE : 0), 0);
-    const held = L.filter(x => x.st === 'held' || x.st === 'dispute').reduce((a, x) => a + x.amt, 0);
-    const todo = [['review', '待审核'], ['avatars', '头像'], ['reports', '举报'], ['apply', '入驻'], ['refunds', '退款'], ['disputes', '纠纷'], ['invoice', '发票']].filter(t => admCan(t[0])).map(([k, l]) => [k, l, C[k] || 0]);
+    const rev = ML.reduce((a, x) => a + (x.type === 'prod' && x.st === 'paid' ? x.amt*PLAT : 0), 0);
+    const todo = [['review', '待审核'], ['avatars', '头像'], ['reports', '举报'], ['apply', '入驻'], ['refunds', '退款'], ['invoice', '发票']].filter(t => admCan(t[0])).map(([k, l]) => [k, l, C[k] || 0]);
     const body = ds0(), i = body.indexOf('<div class="ad-grid2">');
     // 流水还没读到 / 读失败时不显示 ¥0.00（会像真的零成交）：金额写「—」，第一格说明正在读取或给「重试」
     const lok = !!LLEDGER.v, money = v => admCan('orders') && lok ? yuan2(v) : '—';
     const ldNote = LLEDGER.error ? `${esc(LLEDGER.error)} <button class="pill sm lt" data-act="lld-retry">重试</button>` : '读取中…';
     return `${adH('看板', `${mon} · 数据来自服务器的订单流水`)}
-    <div class="kpis"><div class="kpi"><span class="lab">本月成交额</span><b class="num">${money(gmv)}</b><span class="d">${!admCan('orders') ? '财务 / 客服可见' : lok ? ML.length + ' 笔订单' : ldNote}</span></div>
-      <div class="kpi"><span class="lab">平台收入</span><b class="num">${money(rev)}</b><span class="d">商品 ${+(PLAT*100).toFixed(1)}% · 合作 ${+(CO_FEE*100).toFixed(1)}%</span></div>
-      <div class="kpi"><span class="lab">用户 / 创作者</span><b class="num">${S.users} / ${S.creators}</b><span class="d">今天新增 ${S.newToday} · 在售商品 ${S.onSale}</span></div>
-      <div class="kpi"><span class="lab">托管中的合作款</span><b class="num">${money(held)}</b><span class="d">纠纷 ${C.disputes || 0} 单</span></div></div>
+    <div class="kpis k3"><div class="kpi"><span class="lab">本月成交额</span><b class="num">${money(gmv)}</b><span class="d">${!admCan('orders') ? '财务 / 客服可见' : lok ? ML.length + ' 笔订单' : ldNote}</span></div>
+      <div class="kpi"><span class="lab">平台收入</span><b class="num">${money(rev)}</b><span class="d">商品 ${+(PLAT*100).toFixed(1)}%</span></div>
+      <div class="kpi"><span class="lab">用户 / 创作者</span><b class="num">${S.users} / ${S.creators}</b><span class="d">今天新增 ${S.newToday} · 在售商品 ${S.onSale}</span></div></div>
     ${todo.length ? `<div class="ad-todo">${todo.map(([k, l, n]) => `<button data-act="atab" data-v="${k}" class="${n ? 'on' : ''}"><b class="num">${n}</b><span>${l}</span></button>`).join('')}</div>` : ''}
     ${admCan('orders') && i >= 0 ? body.slice(i) : ''}`; }; }
 ACTIONS['lld-retry'] = () => { LLEDGER.at = 0; LLEDGER.error = null; rerender(); };
@@ -12793,10 +12740,10 @@ RJ_REASON.payout = ['收款账户信息有误', '收款账户已注销 / 冻结'
     const D = LADM.payout, m = D.month, rows = D.rows.map(r => { apiUser(r.seller); return r; }), Y = f => yuan2(f2y(f));
     const sum = k => rows.reduce((a, r) => a + r[k], 0);
     return `${adH('结算打款', '按订单流水自动计算；生成结算单后金额就定下来，线下打款后填流水号，结果会通知创作者', adSeg('pm', D.months.map(x => [x, x]), m))}
-    <div class="kpis"><div class="kpi"><span class="lab">商品成交</span><b class="num">${Y(sum('gross'))}</b><span class="d">${sum('n')} 单 · 合作放款 ${Y(sum('co'))}</span></div><div class="kpi"><span class="lab">平台收入</span><b class="num">${Y(sum('plat') + sum('coFee'))}</b><span class="d">抽成 ${Y(sum('plat'))} · 合作 ${Y(sum('coFee'))}</span></div><div class="kpi"><span class="lab">支付手续费</span><b class="num">${Y(sum('fee'))}</b><span class="d">卖家承担</span></div><div class="kpi"><span class="lab">应打给创作者</span><b class="num">${Y(sum('net'))}</b><span class="d">${rows.length} 位创作者</span></div></div>
-    <div class="box"><div class="box-h"><h3>${m} · 按创作者</h3>${D.generated ? stTag('结算单已生成', 'green') : rows.length ? `<button class="pill sm" data-act="lpo-gen" data-v="${m}">生成结算单</button>` : ''}</div><div class="tw"><table class="t"><thead><tr><th>创作者</th><th class="r">单数</th><th class="r">商品成交</th><th class="r">手续费</th><th class="r">抽成</th><th class="r">合作放款</th><th class="r">服务费</th><th class="r">应打款</th>${D.generated ? '<th>状态</th><th></th>' : ''}</tr></thead>
-      <tbody>${rows.map(r => `<tr><td><span class="ad-u">${uav(r.seller.id)}<span><b>${esc(r.seller.name)}</b><i>${r.payee ? esc(`${PAYEE_K[r.payee.kind]?.[0] || r.payee.kind} · ${r.payee.name}${r.payee.acct ? ' · ' + r.payee.acct : ''}`) : '<span style="color:var(--orange)">未绑定收款账户</span>'}</i></span></span></td><td class="r n">${r.n}</td><td class="r n">${Y(r.gross)}</td><td class="r n neg">−${Y(r.fee)}</td><td class="r n neg">−${Y(r.plat)}</td><td class="r n">${Y(r.co)}</td><td class="r n neg">−${Y(r.coFee)}</td><td class="r n"><b>${Y(r.net)}</b></td>
-        ${D.generated ? `<td>${stTag(PAY_ST[r.status] || r.status, {pending:'yellow', paid:'green', failed:'orange'}[r.status])}${r.txn ? `<br><span class="mut2 n" style="font-size:11.5px">${esc(r.txn)}</span>` : r.reason ? `<br><span class="mut2" style="font-size:11.5px">${esc(r.reason)}</span>` : ''}</td><td class="r">${r.status !== 'paid' ? `<button class="pill sm" data-act="lpo-pay" data-id="${r.id}">标记已打款</button> <button class="pill sm lt" data-act="lpo-fail" data-id="${r.id}">失败</button>` : ''}</td>` : ''}</tr>`).join('') || `<tr><td colspan="8" class="mut">这个月没有可结算的订单</td></tr>`}</tbody></table></div></div>
+    <div class="kpis"><div class="kpi"><span class="lab">商品成交</span><b class="num">${Y(sum('gross'))}</b><span class="d">${sum('n')} 单</span></div><div class="kpi"><span class="lab">平台收入</span><b class="num">${Y(sum('plat'))}</b><span class="d">商品抽成</span></div><div class="kpi"><span class="lab">支付手续费</span><b class="num">${Y(sum('fee'))}</b><span class="d">卖家承担</span></div><div class="kpi"><span class="lab">应打给创作者</span><b class="num">${Y(sum('net'))}</b><span class="d">${rows.length} 位创作者</span></div></div>
+    <div class="box"><div class="box-h"><h3>${m} · 按创作者</h3>${D.generated ? stTag('结算单已生成', 'green') : rows.length ? `<button class="pill sm" data-act="lpo-gen" data-v="${m}">生成结算单</button>` : ''}</div><div class="tw"><table class="t"><thead><tr><th>创作者</th><th class="r">单数</th><th class="r">商品成交</th><th class="r">手续费</th><th class="r">抽成</th><th class="r">应打款</th>${D.generated ? '<th>状态</th><th></th>' : ''}</tr></thead>
+      <tbody>${rows.map(r => `<tr><td><span class="ad-u">${uav(r.seller.id)}<span><b>${esc(r.seller.name)}</b><i>${r.payee ? esc(`${PAYEE_K[r.payee.kind]?.[0] || r.payee.kind} · ${r.payee.name}${r.payee.acct ? ' · ' + r.payee.acct : ''}`) : '<span style="color:var(--orange)">未绑定收款账户</span>'}</i></span></span></td><td class="r n">${r.n}</td><td class="r n">${Y(r.gross)}</td><td class="r n neg">−${Y(r.fee)}</td><td class="r n neg">−${Y(r.plat)}</td><td class="r n"><b>${Y(r.net)}</b></td>
+        ${D.generated ? `<td>${stTag(PAY_ST[r.status] || r.status, {pending:'yellow', paid:'green', failed:'orange'}[r.status])}${r.txn ? `<br><span class="mut2 n" style="font-size:11.5px">${esc(r.txn)}</span>` : r.reason ? `<br><span class="mut2" style="font-size:11.5px">${esc(r.reason)}</span>` : ''}</td><td class="r">${r.status !== 'paid' ? `<button class="pill sm" data-act="lpo-pay" data-id="${r.id}">标记已打款</button> <button class="pill sm lt" data-act="lpo-fail" data-id="${r.id}">失败</button>` : ''}</td>` : ''}</tr>`).join('') || `<tr><td colspan="6" class="mut">这个月没有可结算的订单</td></tr>`}</tbody></table></div></div>
     <p class="mut2" style="font-size:12.5px;margin-top:10px">⚠️ 现在只记录打款状态；接入真实支付后，打款走支付渠道的分账 / 结算接口（微信支付电商收付通、支付宝直付通等）。</p>`; }; }
 // 标记打款 / 失败：这一行先改成结果，再静默重读（列表不清空）
 const poDone = (id, fix) => ladmDone('payout', D => ({...D, rows:D.rows.map(r => r.id === id ? {...r, ...fix} : r)}));
@@ -12896,14 +12843,14 @@ wrapAct('nt', (orig, b, e) => { orig(b, e); if (liveUser()) API.req('PATCH', '/m
 /* 涉税信息报送（季度）：结算打款页上导出 */
 const taxQs = () => { const d = new Date(), out = []; let y = d.getFullYear(), q = Math.floor(d.getMonth() / 3) + 1; for (let i = 0; i < 6; i++){ out.push(`${y}-Q${q}`); if (--q < 1){ q = 4; y--; } } return out; };
 ACTIONS['tax-open'] = () => { if (!admGuard('payout')) return;
-  sheet(`<h3>导出涉税信息（季度）</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">按《互联网平台企业涉税信息报送规定》（国务院令第 810 号），平台要按季度报送经营者的身份和收入信息。这里按经营者汇总商品收入、退款、合作收入、平台抽成和服务费，导出给财务报送。导出会记进操作日志。</p>
+  sheet(`<h3>导出涉税信息（季度）</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">按《互联网平台企业涉税信息报送规定》（国务院令第 810 号），平台要按季度报送经营者的身份和收入信息。这里按经营者汇总商品收入、退款、平台抽成和支付手续费，导出给财务报送。导出会记进操作日志。</p>
     <div class="seg ad-seg" id="taxQ">${taxQs().map((q, i) => `<button class="${i ? '' : 'on'}" data-act="tax-q" data-v="${q}">${q.replace('-', ' ')}</button>`).join('')}</div>
     <div id="taxR" class="mut2" style="font-size:13px"></div><button class="pill lg" data-act="tax-go">生成</button>`); };
 ACTIONS['tax-q'] = b => { $$('#taxQ button').forEach(x => x.classList.toggle('on', x === b)); $('#taxR').textContent = ''; const g = $('[data-act="tax-dl"]'); if (g){ g.dataset.act = 'tax-go'; g.textContent = '生成'; } };
 ACTIONS['tax-go'] = async b => { const q = $('#taxQ .on').dataset.v; b.disabled = true;
   try { const r = await STAFF.req('GET', '/admin/tax?quarter=' + q), Y = f => (f/100).toFixed(2);
-    LADM.tax = [['季度', '经营者', 'ID', '用户名', '实名（打码）', '证件（打码）', '订单数', '商品收入', '退款', '合作收入', '平台抽成', '合作服务费', '支付手续费', '应结净收入'],
-      ...r.rows.map(x => [q, x.seller.name, x.seller.id, x.username || '', x.real || '未入驻实名', x.idno || '', x.n, Y(x.gross), Y(x.refund), Y(x.co), Y(x.plat), Y(x.coFee), Y(x.fee), Y(x.net)])];
+    LADM.tax = [['季度', '经营者', 'ID', '用户名', '实名（打码）', '证件（打码）', '订单数', '商品收入', '退款', '平台抽成', '支付手续费', '应结净收入'],
+      ...r.rows.map(x => [q, x.seller.name, x.seller.id, x.username || '', x.real || '未入驻实名', x.idno || '', x.n, Y(x.gross), Y(x.refund), Y(x.plat), Y(x.fee), Y(x.net)])];
     $('#taxR').textContent = `${q}：${r.rows.length} 位经营者`; b.disabled = false; b.dataset.act = 'tax-dl'; b.textContent = '下载 CSV'; }
   catch(e){ b.disabled = false; apiFail(e); } };
 ACTIONS['tax-dl'] = () => { if (LADM.tax) csvDownload(`ctrlz-tax-${$('#taxQ .on').dataset.v}.csv`, LADM.tax); };
@@ -13213,7 +13160,6 @@ ACTIONS['cf-stg'] = b => { CF.stg = +b.dataset.v; $$('[data-act="cf-stg"]').forE
     h = h.replace(`担保付款 ${cny(o.price)}`, `付第 ${n} 段 ${cny(coDue(o))}`); if (!last) h = h.replace('>确认验收<', `>验收第 ${n} 段<`); return h; }; }
 { const cv0 = coView; coView = function(o){ coSwap(o, () => cv0(o)); if (!o?.stages?.length) return;
     $('#layer .sheet .co-f.full')?.insertAdjacentHTML('afterend', `<div class="co-stg">${o.stages.map((g, i) => `<div class="${g.doneAt ? 'done' : i === o.stage && !['done', 'refunded'].includes(o.st) ? 'on' : ''}"><b>${i + 1}. ${esc(g.t)}</b><span class="num">${cny(g.amount)}</span><i>${g.doneAt ? (g.refund ? `裁决 · 退回 ${cny(g.refund)}` : '已验收放款') : i === o.stage && !['done', 'refunded'].includes(o.st) ? CO_ST[o.st]?.[1] || '' : i > o.stage && !['done', 'refunded'].includes(o.st) ? '未开始' : '不再进行'}</i></div>`).join('')}</div>`); }; }
-{ const ds1 = disputeSheet; disputeSheet = function(id){ const o = CO_BY(id); return coSwap(o, () => ds1(id)); }; }
 /* 付款面板、验收面板按这一段的金额画；不是最后一段的验收不弹「完成」和评价 */
 wrapAct('co-a', (orig, b, e) => { const o = CO_BY(b.dataset.id), a = b.dataset.a; if (!o?.live || !o.stages?.length || !['pay', 'confirm'].includes(a)) return orig(b, e); coSwap(o, () => orig(b, e)); });
 wrapAct('co-do', async (orig, b, e) => { const o = CO_BY(b.dataset.id); if (!o?.live || !o.stages?.length || b.dataset.a !== 'confirm' || o.stage >= o.stages.length - 1) return orig(b, e);
