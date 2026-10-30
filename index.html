@@ -1191,7 +1191,7 @@ canvas[data-wave]:focus-visible{box-shadow:0 0 0 2px var(--on)}
 .ht-t button.on{color:var(--ink)}
 .request-note{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:24px 8px;color:var(--ink-2);font-size:14px;line-height:1.5;text-align:center}
 .request-note span{overflow-wrap:anywhere;max-width:100%}
-.feed-state:empty{display:none}
+.feed-state:empty,.fol-state:empty{display:none}
 /* 加载占位（苹果：先显示点东西）：和真实卡片同形状，数据一到就被替换 */
 .sk-card{display:flex;flex-direction:column;gap:8px}
 .sk-cv{width:100%;border-radius:16px;background:var(--rule)}
@@ -2404,7 +2404,7 @@ html.rm .empty .x,html.rm .toast i,html.rm .bdg,html.rm .drw > *{animation:none}
 @media (max-width:420px){ #luS .lu-kv span{padding:7px 8px;font-size:11px} #luS .lu-kv b{font-size:14px} }
 .lu-tabs{margin-top:6px;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap}
 .lu-tabs::-webkit-scrollbar{display:none}
-.lu-p{display:flex;flex-direction:column;gap:10px}
+.lu-p{display:flex;flex-direction:column;gap:10px} .lu-perm{display:contents}
 .lu-p .ad-mini a{color:var(--ink-2);text-decoration:underline;text-underline-offset:2px}
 .lu-dm{display:flex;flex-direction:column;gap:8px}
 .lu-dmr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px}
@@ -3375,10 +3375,13 @@ const NOISE = (() => { const c = document.createElement('canvas'); c.width = c.h
   const m = g.createImageData(160,160); for (let i=0;i<m.data.length;i+=4){ m.data[i]=m.data[i+1]=m.data[i+2]=0; m.data[i+3] = Math.random() < .16 ? 40 + Math.random()*90 : 255; } g.putImageData(m,0,0); document.documentElement.style.setProperty('--stamp', `url(${c.toDataURL()})`); })();
 function grainify(g, w, h, a=.9){ g.save(); g.globalCompositeOperation = 'multiply'; g.globalAlpha = a; g.fillStyle = g._grain || (g._grain = g.createPattern(NOISE, 'repeat')); g.fillRect(0,0,w,h); g.restore(); }
 function halftone(g, x0, y0, w, h, step, f, color){ g.fillStyle = color; for (let y=y0; y<y0+h; y+=step) for (let x=x0 + ((y/step)%2 ? step/2 : 0); x<x0+w; x+=step){ const v = f(x, y); if (v <= .02) continue; g.beginPath(); g.arc(x, y, step*.55*Math.sqrt(Math.min(1,v)), 0, Math.PI*2); g.fill(); } }
-const COVERS = new AudioResources.ByteCache(8*1024*1024, 48);
+// 一页商城（60 件）加相邻页面的各种尺寸都放得下，顺序重绘不再整页未命中；base64 在 V8 里是单字节字符串，按长度计费
+const COVERS = new AudioResources.ByteCache(((navigator.deviceMemory || 4) < 4 ? 12 : 24)*1024*1024, 200);
+// 字体到位后只重画写了字的封面（对象样式都带 txt、crt、type），其余封面和字体无关，留着不用重画
+function coverFontDrop(){ [...COVERS.values.keys()].forEach(k => { if (/^(L|crt|type)/.test(k)) COVERS.delete(k); }); }
 const COVER_PAL = {wave:['blue','pink'], drum:['pink','blue'], particles:['blue','pink'], grid:['blue','yellow'], bars:['pink','blue'], crt:['pink','blue'], metal:['blue','yellow'], fog:['pink','blue'], rings:['violet','orange'], topo:['green','pink'], type:['orange','blue']};
 function cover(style, seed=1, w=480, h=480){
-  if (typeof style === 'object'){ const key = 'L' + style.tpl + style.pal + (style.txt || '') + (style.seed || '') + w + 'x' + h; if (COVERS.has(key)) return COVERS.get(key); const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); drawCover(g, w, h, style, 0, null); grainify(g, w, h, .75); const url = c.toDataURL('image/jpeg', .86); COVERS.set(key, url, url.length*2); return url; }
+  if (typeof style === 'object'){ const key = 'L' + style.tpl + style.pal + (style.txt || '') + (style.seed || '') + w + 'x' + h; if (COVERS.has(key)) return COVERS.get(key); const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); drawCover(g, w, h, style, 0, null); grainify(g, w, h, .75); const url = c.toDataURL('image/jpeg', .86); COVERS.set(key, url, url.length); return url; }
   const key = style + seed + 'x' + w + 'x' + h; if (COVERS.has(key)) return COVERS.get(key);
   const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
   const R = rng(hash(style) + seed*977); const [a, b] = (COVER_PAL[style] || ['pink','blue']).map(k => INK[k]); const m = Math.min(w, h);
@@ -3427,7 +3430,7 @@ function cover(style, seed=1, w=480, h=480){
     g.strokeStyle = INK.ink; g.lineWidth = 3; g.beginPath(); g.moveTo(w*.8, h*.12); g.lineTo(w*.8, h*.28); g.moveTo(w*.72, h*.2); g.lineTo(w*.88, h*.2); g.stroke();
   }
   g.globalCompositeOperation = 'source-over'; grainify(g, w, h, .75);
-  const url = c.toDataURL('image/jpeg', .86); COVERS.set(key, url, url.length*2); return url;
+  const url = c.toDataURL('image/jpeg', .86); COVERS.set(key, url, url.length); return url;
 }
 
 /* ================= 音频引擎（实时合成） ================= */
@@ -3683,8 +3686,8 @@ function _frame(t){ _raf = 0; if (!document.hidden) LOOPS.forEach(f => { try { f
 document.addEventListener('visibilitychange', () => { if (document.hidden){ cancelAnimationFrame(_raf); _raf = 0; } else if (LOOPS.size && !_raf) _raf = requestAnimationFrame(_frame); });
 /* 性能：画布尺寸 / 是否在屏幕里，交给 ResizeObserver / IntersectionObserver 记住，动画循环里不再每帧量位置（每次量都可能强制重排）。
    第一次调用还是当场量一次，之后用观察者给的值；页面重绘后清掉已经不在页面上的 */
-const OBS = {set: new Set(), ro: new ResizeObserver(es => es.forEach(e => { const b = e.contentBoxSize?.[0]; e.target._sz = b ? {width: b.inlineSize, height: b.blockSize} : e.contentRect; })),
-  io: new IntersectionObserver(es => es.forEach(e => { const r = e.boundingClientRect; e.target._vi = e.isIntersecting || (r.bottom > 0 && r.top < innerHeight && r.width > 0); }))};
+const OBS = {set: new Set(), ro: new ResizeObserver(es => es.forEach(e => { const b = e.contentBoxSize?.[0]; e.target._sz = b ? {width: b.inlineSize, height: b.blockSize} : e.contentRect; e.target._onObs?.(); })),
+  io: new IntersectionObserver(es => es.forEach(e => { const r = e.boundingClientRect; e.target._vi = e.isIntersecting || (r.bottom > 0 && r.top < innerHeight && r.width > 0); e.target._onObs?.(); }))};
 const obsAdd = el => { if (OBS.set.has(el)) return; OBS.set.add(el); OBS.ro.observe(el); OBS.io.observe(el); };
 document.addEventListener('rendered', () => OBS.set.forEach(el => { if (!el.isConnected){ OBS.ro.unobserve(el); OBS.io.unobserve(el); OBS.set.delete(el); } }));
 function fitCanvas(cv, maxDpr){ let r = cv._sz; if (!r){ r = cv.getBoundingClientRect(); obsAdd(cv); } const dpr = Math.min(window.devicePixelRatio || 1, maxDpr || (IS_MOBILE ? 1.5 : 2)); const w = Math.max(1, Math.round(r.width*dpr)), h = Math.max(1, Math.round(r.height*dpr)); if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; } return {w, h, dpr}; }
@@ -3982,11 +3985,13 @@ function drawVis(kind, g, w, h, t, o={}){
   if (!B) grainify(g, w, h, .7);
 }
 function makeVidLoop(cv, kind, st){
-  const g = cv.getContext('2d');
+  const g = cv.getContext('2d'); let drawn = '', ab = null;
   return t => {
     if (!visible(cv)) return; const {w, h, dpr} = fitCanvas(cv, IS_MOBILE ? 1 : 1.5);
-    if (st.playing && !STATE.settings.rm) st.time = (st.time + (t - (st.last || t))/1000) % st.len; st.last = t;
-    if (st.ab){ drawVis(kind, g, w, h, st.time, {seed:st.seed, dpr, variant:'A'}); const sx = Math.max(1, Math.round(w*st.split)); const img = g.getImageData(0,0,sx,h); drawVis(kind, g, w, h, st.time, {seed:st.seed, dpr, variant:'B'}); g.putImageData(img, 0, 0); }
+    const run = st.playing && !STATE.settings.rm; if (run) st.time = (st.time + (t - (st.last || t))/1000) % st.len; st.last = t;   // st.last 每帧都记，恢复播放时时间码才不会跳
+    if (run) drawn = ''; else { const key = [st.time,st.ab,st.split,st.variant,w,h,dpr,isDark()].join('|'); if (key === drawn) return; drawn = key; }   // 暂停时画面不变：同一时间点画出来一样，不重画也不写时间码
+    if (st.ab){ ab ||= document.createElement('canvas'); if (ab.width !== w || ab.height !== h){ ab.width = w; ab.height = h; }   // 左 A 右 B：A 画在离屏画布上贴回来，不做像素回读；不用裁剪，圆弧跨过裁剪线时抗锯齿会变
+      drawVis(kind, ab.getContext('2d'), w, h, st.time, {seed:st.seed, dpr, variant:'A'}); drawVis(kind, g, w, h, st.time, {seed:st.seed, dpr, variant:'B'}); const sx = Math.max(1, Math.round(w*st.split)); g.drawImage(ab, 0, 0, sx, h, 0, 0, sx, h); }
     else drawVis(kind, g, w, h, st.time, {seed:st.seed, dpr, variant:st.variant});
     st.onFrame && st.onFrame();
   };
@@ -4035,6 +4040,12 @@ const SLIDES = [
   {scene:'stamp',   c:'yellow', kicker:'受邀创作者', title:'开你的店', sub:'平台只收 3%，每月结算', cta:['我有邀请码','seller'], bg:'#FFF1A8', bgd:'#29240F'}
 ];
 const SCENES = {};
+/* 海报按钮的去处和价格：连着后端时，默认海报指向的示例商品（item-p1 / p3 / p5）在服务器上不存在，
+   就不显示示例价格，按钮改去这类商品的分类页（文字不变）；运营在编辑器里改成真实商品后照常显示 */
+const SLIDE_CAT = {field:'shop-td', drums:'shop-sample', strings:'shop-preset'};
+function slideCta(s){ const link = s.cta[1], m = /^item-(.+)$/.exec(link || '');
+  if (!m || !API.on() || P(m[1]) || !SLIDES0.some(x => x.cta[1] === link)) return [link, s.price];
+  return [SLIDE_CAT[s.scene] || 'shop', null]; }
 const ripple = (arr, x, y, r0, c, life=1) => arr.push({x, y, r:r0, v:2.4, life, c});
 function drawRipples(g, arr, dt){ for (let i = arr.length - 1; i >= 0; i--){ const r = arr[i]; r.life -= dt/900; r.r += r.v*dt/16; if (r.life <= 0){ arr.splice(i,1); continue; } g.strokeStyle = r.c; g.globalAlpha = Math.max(0, r.life)*.9; g.lineWidth = 2 + r.life*4; g.beginPath(); g.arc(r.x, r.y, r.r, 0, Math.PI*2); g.stroke(); g.globalAlpha = 1; } }
 
@@ -4749,7 +4760,7 @@ function mountBanner(root){
   const setText = dir => {
     const s = SLIDES[B.i];
     psPreload(B.i);
-    txt.innerHTML = `<span class="bt lab" style="--d:0">${s.kicker}</span><h2 class="bt x" style="--d:1">${s.title}</h2><p class="bt" style="--d:2">${s.sub}</p><div class="bt row" style="--d:3"><a class="pill lg" href="#${s.cta[1]}">${s.cta[0]}${s.price ? `<span style="opacity:.55;font-weight:500">¥${s.price}</span>` : ''}${IC.arrow}</a></div>`;
+    txt.innerHTML = `<span class="bt lab" style="--d:0">${s.kicker}</span><h2 class="bt x" style="--d:1">${s.title}</h2><p class="bt" style="--d:2">${s.sub}</p><div class="bt row" style="--d:3"><a class="pill lg" href="#${slideCta(s)[0]}">${s.cta[0]}${slideCta(s)[1] ? `<span style="opacity:.55;font-weight:500">¥${slideCta(s)[1]}</span>` : ''}${IC.arrow}</a></div>`;
     txt.style.setProperty('--dx', (dir || 0)*48 + 'px'); txt.classList.toggle('anim', !!dir);
     $$('.bn-seg button', box).forEach((b, k) => { b.classList.toggle('on', k === B.i); b.style.setProperty('--p', k < B.i ? 1 : 0); });
     $('.bn-cnt', box).innerHTML = `<b>${pad2(B.i + 1)}</b> / ${pad2(SLIDES.length)}`;
@@ -5006,16 +5017,23 @@ function steps(o, T, live, warm, fn){ if (!live){ if (!o.warmed){ for (let i = 0
 const rot = (p, ay, ax) => { const cy = Math.cos(ay), sy = Math.sin(ay), cx = Math.cos(ax), sx = Math.sin(ax); const x = p[0]*cy + p[2]*sy, z = -p[0]*sy + p[2]*cy; return [x, p[1]*cx - z*sx, p[1]*sx + z*cx]; };
 
 /* 重力：手机上用陀螺仪（设备方向）算出屏幕平面内的重力方向，物理类模板都按它下落；电脑上始终朝下 */
-const GRAV = {x:0, y:1, on:false, asked:false, tx:0, ty:1};
-function gravOn(){ if (GRAV.asked) return; GRAV.asked = true;
-  addEventListener('deviceorientation', e => { if (e.beta == null || e.gamma == null) return; GRAV.on = true;
-    const b = e.beta*Math.PI/180, gm = e.gamma*Math.PI/180; let x = Math.cos(b)*Math.sin(gm), y = Math.sin(b);
-    const a = ((screen.orientation && screen.orientation.angle) || window.orientation || 0)*Math.PI/180; GRAV.tx = x*Math.cos(a) + y*Math.sin(a); GRAV.ty = -x*Math.sin(a) + y*Math.cos(a); }); }
+const GRAV = {x:0, y:1, on:false, asked:false, tx:0, ty:1, live:false, users:0, until:0, timer:0};
+function gravEv(e){ if (e.beta == null || e.gamma == null) return; GRAV.on = true;
+  const b = e.beta*Math.PI/180, gm = e.gamma*Math.PI/180; let x = Math.cos(b)*Math.sin(gm), y = Math.sin(b);
+  const a = ((screen.orientation && screen.orientation.angle) || window.orientation || 0)*Math.PI/180; GRAV.tx = x*Math.cos(a) + y*Math.sin(a); GRAV.ty = -x*Math.sin(a) + y*Math.cos(a); }
+/* 传感器只在有人用时开着：物理画面和输入框小球靠 gravTick(true) 续约，分类卡用 gravNeed / gravDone 计数；都不用了 1.5 秒后摘掉监听。
+   asked 仍表示「已经允许读陀螺仪」（iOS 授权只问一次），重新挂上不会再弹窗；GRAV.on / tx / ty 留着最后的值 */
+function gravSync(){ const now = performance.now(), left = GRAV.users > 0 ? Infinity : GRAV.until - now, want = GRAV.asked && left > 0;
+  if (want !== GRAV.live){ GRAV.live = want; if (want) addEventListener('deviceorientation', gravEv); else removeEventListener('deviceorientation', gravEv); }
+  clearTimeout(GRAV.timer); GRAV.timer = want && left !== Infinity ? setTimeout(gravSync, left + 50) : 0; }
+function gravNeed(){ GRAV.users++; gravSync(); }
+function gravDone(){ GRAV.users--; GRAV.until = performance.now() + 1500; gravSync(); }
+function gravOn(){ if (GRAV.asked) return; GRAV.asked = true; gravSync(); }
 function gravAsk(){ const D = window.DeviceOrientationEvent; if (!D || GRAV.asked) return; if (typeof D.requestPermission === 'function') D.requestPermission().then(r => { if (r === 'granted'){ GRAV.asked = false; gravOn(); } }).catch(() => {}); else gravOn(); }
 if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission !== 'function' && IS_MOBILE) gravOn();
 /* iOS 需要用户点一下才能读陀螺仪：物理类画面正在播放时，第一次点屏幕就顺手请求 */
 addEventListener('pointerup', () => { if (!GRAV.asked && performance.now() - (GRAV.physT || -1e9) < 1500) gravAsk(); }, true);
-function gravTick(live){ if (live) GRAV.physT = performance.now(); const k = GRAV.on ? .15 : 1; GRAV.x += ((GRAV.on ? GRAV.tx : 0) - GRAV.x)*k; GRAV.y += ((GRAV.on ? GRAV.ty : 1) - GRAV.y)*k; }
+function gravTick(live){ if (live){ GRAV.physT = performance.now(); GRAV.until = GRAV.physT + 1500; if (GRAV.asked && !GRAV.live) gravSync(); } const k = GRAV.on ? .15 : 1; GRAV.x += ((GRAV.on ? GRAV.tx : 0) - GRAV.x)*k; GRAV.y += ((GRAV.on ? GRAV.ty : 1) - GRAV.y)*k; }
 
 const VIS = {};
 const V = (k, n, grp, d) => { VIS[k] = {n, grp, d: grp === 'phys' ? (g, w, h, c) => { gravTick(c.live); d(g, w, h, c); } : d}; };
@@ -5514,7 +5532,7 @@ function drawTpl(g, w, h, look, t, L){
 let CLEAN = [], MOUNTS = [], PCLEAN = [];
 const onMount = f => MOUNTS.push(f), onClean = f => CLEAN.push(f);
 /* 路由代码使用原生经典脚本，保留共享状态和无构建部署；失败可重试。 */
-const BUNDLES = {admin:{src:'scripts/views-admin-v1.js?v=20261012-voucher'},audio:{src:'scripts/views-audio-v1.js'},docs:{src:'scripts/docs-v1.js?v=20261012-voucher'}};
+const BUNDLES = {admin:{src:'scripts/views-admin-v1.js?v=20261012-voucher'},audio:{src:'scripts/views-audio-v1.js?v=20261030-perf'},docs:{src:'scripts/docs-v1.js?v=20261012-voucher'}};
 let liveRefreshFrame = 0;
 function scheduleLiveRefresh(){ if (liveRefreshFrame) return; liveRefreshFrame = requestAnimationFrame(() => { liveRefreshFrame = 0; rerender(); }); }
 function loadBundle(name){ const state = BUNDLES[name]; if (state.ready) return Promise.resolve(); if (state.task) return state.task;
@@ -5543,6 +5561,8 @@ function render(force){
   const {r, arg} = parseHash();
   if(r==='post' || r==='v') commentRouteRestore(arg);
   if (r === 'v' && POST(arg) && !inStream(POST(arg))){ navReplace('#post-' + arg + commentRouteSuffix(arg)); return; }
+  // 连着后端、信息流已到但没有这一条：先单独拉（openPost 的包装），到了再进视频流；信息流还在读时等它
+  if (r === 'v' && API.on() && !POST(arg) && LIVE.contentReady){ if (!CUR.key) renderBase('home', ''); openPost(arg); return; }
   if (r === 'v' || (r === 'post' && inStream(POST(arg)))){ if (!CUR.key) renderBase('home', ''); if (CUR.post) closePostLayer(); openReels(arg); return; }
   if (RL.on) closeReels();
   if (r === 'post'){ if (!CUR.key) renderBase('home', ''); openPost(arg); return; }
@@ -5571,6 +5591,7 @@ function patchMsgPage(app, html){
   page.classList.remove('in'); return true;
 }
 function renderBase(r, arg, soft){
+  const focused = document.activeElement, adq = soft && focused?.dataset?.adq, sel = adq ? [focused.selectionStart, focused.selectionEnd] : null;   // 后台搜索框：防抖重绘、服务器结果回来的重绘都要保住焦点和光标，不然手机键盘会收起，后面打的字落空
   CLEAN.forEach(f => { try { f(); } catch(e){} }); CLEAN = []; MOUNTS = [];
   if (!soft && GEN.owner === 'home') GEN.stop();
   const fn = ROUTES[r] || ROUTES.home; const y = scrollY;
@@ -5587,6 +5608,7 @@ function renderBase(r, arg, soft){
   NAVX.back = NAVX.tab = false; fabUpdate(); revealActive(app);
   $('#hdBack').hidden = !parentOf(CUR.hash) || r === 'msg'; $('#hd').classList.toggle('has-back', !$('#hdBack').hidden); $('#hd').classList.toggle('me-sub', r === 'me'); document.dispatchEvent(new Event('rendered'));
   $('footer').hidden = r === 'post';
+  if (adq){ const n = $(`[data-adq="${adq}"]`, app); if (n){ n.focus({preventScroll:true}); n.setSelectionRange(...sel); } }
 }
 /* 横向滚动的页签 / 筛选条：重绘后把选中项滚到可见处，避免选中项藏在屏幕外 */
 function revealActive(root){ $$('.on', root).forEach(el => { const par = el.parentElement; if (!par || par.scrollWidth <= par.clientWidth + 2 || !/(auto|scroll)/.test(getComputedStyle(par).overflowX)) return;
@@ -5614,7 +5636,8 @@ function syncInteraction(kind,id,feedback=false){
     else if (kind === 'fav'){ b.style.color = on ? 'var(--blue)' : ''; b.innerHTML = on ? IC.saveF : IC.save; }
     else { b.classList.toggle('lt',on); b.innerHTML = on ? b.dataset.followOn || '已关注' : b.dataset.followOff || '关注'; }
     b.setAttribute('aria-pressed',String(on)); });
-  if (kind === 'follow'){ const u = USERS[id], count = $(`[data-act="u-list"][data-id="${id}"][data-v="fans"] b`); if (count && u){ count.dataset.roll = u.fans; count.textContent = u.fans; }
+  if (kind === 'follow'){ $$(`.rl-fo[data-id="${id}"]`).forEach(x => { x.classList.toggle('on',on); x.textContent = on ? '已关注' : '关注'; });   // 视频流的关注按钮（data-act 是 rl-follow）
+    const u = USERS[id], count = $(`[data-act="u-list"][data-id="${id}"][data-v="fans"] b`); if (count && u){ count.dataset.roll = u.fans; count.textContent = u.fans; }
     const mine = $('.mh-st [data-act="me-list"][data-v="follow"] b'); if (mine){ mine.dataset.roll = USERS[ME].follow + STATE.follows.size; mine.textContent = mine.dataset.roll; }
     if (CUR.key === 'home|' && UI.homeTab === 'fol') patchMoreList('home'); }
   if (kind === 'fav'){ const count = $('[data-act="me-tab"][data-v="favs"] i'); if (count) count.textContent = STATE.favs.size;
@@ -5627,7 +5650,7 @@ function syncInteraction(kind,id,feedback=false){
    · 页面里的「返回 / 关闭」按钮：上一条历史就是要回去的页面 → 真正后退；否则原地替换，不在历史里越堆越多
    · 弹层（底部面板、侧边菜单、搜索）打开时也占一条历史，所以返回手势先关弹层，而不是直接离开页面
    每条历史在 state.ctrlz 里记下自己的层数，后退 / 前进 / 刷新后都据此知道自己在第几层 */
-const HST = {d:0, stk:[], pend:null, after:null, repl:false, replState:null, docBack:false, ov:false, ovN:0};
+const HST = {d:0, stk:[], pend:null, after:null, repl:false, replState:null, docBack:false, ov:false, ovN:0, keep:null, skipH:null, then:null};
 const routeOf = h => (String(h || '').replace(/^#/, '').split('-')[0]) || 'home';
 const isRootH = h => !isOverlay(h) && !parentOf('#' + String(h || '').replace(/^#/, ''));
 const curH = () => location.hash || '#home';
@@ -5667,28 +5690,34 @@ function initHistory(){ const st = history.state, h = curH();
   if (root === h) return;
   HST.d = 1; HST.stk = [root, h]; history.pushState(historySnapshot(), '', h); }
 /* 弹层占一条历史：打开时压入一条同网址的历史；点关闭 → 顺手退掉这条；按返回 → 退掉这条并关闭弹层 */
-function overlayNodes(){ return [{kind:'layer', el:$('#layer').firstElementChild}, {kind:'search', el:$('#srch')}, {kind:'vlab', el:$('#vlov .sov')}].filter(x => x.el); }
+function overlayNodes(){ return [{kind:'layer', el:$('#layer').firstElementChild}, {kind:'search', el:$('#srch')}, {kind:'vlab', el:$('#vlov .sov')}, {kind:'rlcm', el:$('#reels .rl-cm.on')}].filter(x => x.el); }
 function topOverlay(){ return overlayNodes().sort((a,b) => {
   const z = x => typeof getComputedStyle === 'function' ? parseFloat(getComputedStyle(x.el).zIndex) || 0 : 0;
   const d = z(a) - z(b); if (d) return d;
   const order = a.el.compareDocumentPosition?.(b.el) || 0; return order & 4 ? -1 : order & 2 ? 1 : 0;
 }).at(-1); }
-function closeTopOverlay(){ const top = topOverlay(); if (top?.kind === 'vlab') vlClose(); else if (top?.kind === 'search') closeSearch(); else closeSheet(); }
-function closeOverlays(){ vlClose(); closeSearch(); closeSheet(); }
+function closeTopOverlay(){ const top = topOverlay(); if (top?.kind === 'vlab') vlClose(); else if (top?.kind === 'search') closeSearch(); else if (top?.kind === 'rlcm') closeReelCm(); else closeSheet(); }
+function closeOverlays(){ vlClose(); closeSearch(); closeSheet(); if ($('#reels .rl-cm.on')) closeReelCm(); }
 function ovSync(){ const count = overlayNodes().length, open = count > 0;
   if (!open) $$('[data-act="compose"].fx-open').forEach(x => x.classList.remove('fx-open'));   // 发布面板关了，× 转回 +
   const old = HST.ovN; HST.ovN = count; HST.ov = open;
   if (count > old){ for (let n = old + 1; n <= count; n++){ HST.d++; HST.stk.length = HST.d; HST.stk[HST.d] = curH(); history.pushState(historySnapshot({ov:n}), ''); } }
   else if (count < old) history.go(count - old); }
+/* 视频流评论面板只是切换类名，观察不到：开关时手动同步。程序关掉（收起 / Esc / 换一条 / 离开）时退掉它那条历史，
+   落回下面那条后沿用评论那条现在的网址（换了一条、改了 ?comment= 都不丢），不当成换页 */
+function reelCmSync(){ if (HST.ovN > overlayNodes().length) HST.keep = curH(); ovSync(); }
 new MutationObserver(ovSync).observe($('#layer'), {childList:true});
 new MutationObserver(ovSync).observe(document.body, {childList:true});
 /* 网址没变的后退（关弹层那一条）不会触发 hashchange，在这里处理 */
-addEventListener('popstate', e => { if (typeof VT !== 'undefined') VT.ua = e?.hasUAVisualTransition ? performance.now() : 0; const st = history.state; if (!st || st.ctrlz == null || curH() !== HST.stk[HST.d]) return;
+addEventListener('popstate', e => { if (typeof VT !== 'undefined') VT.ua = e?.hasUAVisualTransition ? performance.now() : 0; const st = history.state; HST.skipH = null;
+  if (HST.keep){ const k = HST.keep; HST.keep = null; if (st && st.ctrlz != null && st.ctrlz < HST.d && curH() !== k){ HST.skipH = k; history.replaceState(st, '', k); } }   // 见 reelCmSync：随后那次 hashchange 不换页
+  if (!st || st.ctrlz == null || curH() !== HST.stk[HST.d]) return;
   historyRestore(st, curH()); const want = Math.min(st.ov || 0, overlayNodes().length); HST.ovN = want; HST.ov = want > 0;
   while (overlayNodes().length > want) closeTopOverlay();
   if (docBackStep()) return;
   if (HST.pend){ const p = HST.pend; HST.pend = null; navReplace(p); }
-  else if (HST.after){ const a = HST.after; HST.after = null; go(a); } });
+  else if (HST.after){ const a = HST.after; HST.after = null; go(a); }
+  else if (HST.then){ const f = HST.then; HST.then = null; f(); } });
 /* 位置记忆：离开一个页面时记下它的滚动位置；后退或从导航页签切回来时恢复，普通前进到新页面从顶部开始 */
 try { history.scrollRestoration = 'manual'; } catch(e){}
 const SCROLLS = {}, PSCROLLS = {}, NAVX = {back:false, tab:false};
@@ -5696,7 +5725,8 @@ const SCROLLS = {}, PSCROLLS = {}, NAVX = {back:false, tab:false};
 const scrollKey = h => /^#shop(-|$)/.test(h || '') ? `#shop:${UI.shop.cat}:${UI.shop.sub || 'all'}` : h;
 function restoreScroll(y){ const go = () => scrollTo(0, Math.min(y, document.documentElement.scrollHeight - innerHeight)); go(); requestAnimationFrame(() => requestAnimationFrame(go)); } // 先同步滚一次（页面切换动画拍快照时就在原位），两帧后再校正
 function postScroller(){ const p = $('#post .post'); if (!p) return null; return getComputedStyle(p).overflowY === 'auto' ? p : $('#post .scroll'); }
-addEventListener('hashchange', () => { const h = curH(), st = history.state, replaced = HST.repl ? HST.replState : null;
+addEventListener('hashchange', () => { if (HST.skipH){ const s = HST.skipH; HST.skipH = null; if (curH() === s) return; }
+  const h = curH(), st = history.state, replaced = HST.repl ? HST.replState : null;
   let back = false;
   if (st && st.ctrlz != null){ back = st.ctrlz < HST.d; historyRestore(st, h); }   // 后退 / 前进到一条已有的历史
   else { if (!HST.repl){ HST.d++; HST.stk.length = HST.d; } }   // 新压入（或原地替换）的历史
@@ -5900,10 +5930,21 @@ function textCover(p, where='card'){
   const t = (p.title || '').trim(), mk = firstPunct(t + '\n' + (p.ex || '')), P = TC_PALS[p.tcover.pal] || TC_PALS.paper;
   return `<div class="tcv ${where}" style="--tbg:${P[0]};--tac:${INK[P[1]]};--k:${tcK([...t].length)}">${mk ? `<span class="tq" aria-hidden="true">${mk}</span>` : ''}<p>${esc(t)}</p><span class="tcb">${esc(USERS[p.author].name)}</span></div>`;
 }
-function postCard(p){
+/* 帖子配图是后端原图（没有缩略图），屏幕外的滚到附近才下载。
+   首屏（瀑布流是 CSS 分栏、竖着排，每栏开头几张）和已经显示过的照常立即加载、同步解码，重绘时不闪 */
+const PIMG = {seen:new Set(), tried:new Map()};
+function pimgAttr(p, i, list){ if (!p.live) return '';
+  const cols = innerWidth > 1240 ? 4 : innerWidth > 760 ? 3 : innerWidth >= 340 ? 2 : 1, per = Math.ceil((list?.length || 1)/cols);
+  return ` data-pimg="${p.id}"` + (i == null || PIMG.seen.has(p.id) || i % per < 3 ? '' : ' loading="lazy" decoding="async"'); }
+document.addEventListener('load', e => { const id = e.target.dataset?.pimg; if (id) PIMG.seen.add(id); }, true);
+// 签名地址 15 分钟过期，懒加载的图可能过期后才请求：重取一次帖子换新地址再试（和音频同样的做法），12 分钟内同一帖不重复取
+document.addEventListener('error', e => { const el = e.target, id = el.dataset?.pimg, p = id && POST(id); if (!p?.live || !API.on() || el._resigned) return; el._resigned = true;
+  let t = PIMG.tried.get(id); if (!t || Date.now() - t.at > 12*60e3) PIMG.tried.set(id, t = {at:Date.now(), task:API.req('GET', `/posts/${encodeURIComponent(id)}`).then(data => Object.assign(p, apiPost(data)))});
+  t.task.then(() => { if (el.isConnected && p.img && el.getAttribute('src') !== p.img) el.src = p.img; }).catch(() => {}); }, true);
+function postCard(p, i, list){
   const u = USERS[p.author]; let cv = '';
   if (p.type === 'image' && p.tcover) cv = `<div class="cv">${textCover(p)}</div>`;
-  else if (p.type === 'image' && p.img) cv = `<div class="cv"><img src="${p.img}" alt="" style="aspect-ratio:1/${p.h || 1};object-fit:cover">${p.imgs && p.imgs.length > 1 ? `<span class="tag k" style="position:absolute;right:10px;top:10px">1/${p.imgs.length}</span>` : ''}</div>`;
+  else if (p.type === 'image' && p.img) cv = `<div class="cv"><img src="${p.img}" alt=""${pimgAttr(p, i, list)} style="aspect-ratio:1/${p.h || 1};object-fit:cover">${p.imgs && p.imgs.length > 1 ? `<span class="tag k" style="position:absolute;right:10px;top:10px">1/${p.imgs.length}</span>` : ''}</div>`;
   else if (p.type === 'image') cv = `<div class="cv"><img src="${cover(p.cover, hash(p.id) % 50, 480, Math.round(480*(p.h||1)))}" alt="" width="480" height="${Math.round(480*(p.h||1))}"></div>`;
   else if (p.type === 'video' && p.vis) cv = `<div class="cv vcard" data-qbox="v:${p.id}"><img src="${cover({...p.vis, txt:p.title}, 1, 480, 600)}" alt="" width="480" height="600">${p.id === 'draft' ? `<span class="pv"><button class="pbtn" data-act="qplay" data-id="v:draft" aria-label="试听预览">${IC.play}</button></span>` : `<span class="vbadge">${IC.play}${p.dur}</span>`}</div>`;
   else if (p.type === 'video') cv = `<div class="cv vcard ${p.failed ? 'failed' : ''}"><img src="${cover(p.cover, hash(p.id) % 50, 480, Math.round(480*Math.max(1.15, p.h||1)))}" alt="" width="480" height="${Math.round(480*Math.max(1.15, p.h||1))}">${p.failed ? '<span class="vgone">视频已失效</span>' : `<span class="vbadge">${IC.play}${p.dur}</span>`}</div>`;
@@ -5913,11 +5954,13 @@ function postCard(p){
   if (onCv) cv = cv.replace(/^<div class="cv/, '<div class="cv has-att').replace(/<\/div>$/, onCv + '</div>');
   return `<article class="card ${postCls(p)} ${p.tcover && p.type === 'image' ? 'tpost' : ''}" data-t="${p.type}" data-go="${p.failed ? 'post-' + p.id : postHref(p)}" data-flip="p-${p.id}">${modBtn(p)}${cv}<div class="bd">${p.review ? '<span class="tag c-yellow pend-t">审核中</span>' : ''}<h3>${esc(p.title)}</h3>${p.attach.length && !onCv ? attachChip(p.attach[0]) : ''}<div class="meta"><a class="who" data-go="user-${u.id}">${av(u.id,'sm')}<span>${esc(u.name)}</span></a>${likeBtn(p)}</div></div></article>`;
 }
-function sleeve(pr){
+function sleeve(pr){ return sleeveHtml(pr, cover(pr.cover, hash(pr.id) % 50)); }
+const sleeveSig = pr => sleeveHtml(pr, JSON.stringify(pr.cover));   // 比较用的签名：内容和卡片一样，只是封面换成参数，不用真的画
+function sleeveHtml(pr, src){
   const u = USERS[pr.seller], c = CATS[pr.cat], own = STATE.owned.has(pr.id);
   const cp = COVER_PALS[pr.cover?.pal], gl = k => k === 'ink' ? INK.yellow : INK[k] || INK[c.c];   // 深色模式悬停的氛围光 = 封面两种主色
   return `<article class="slv c-${c.c}" data-go="item-${pr.id}" data-flip="i-${pr.id}">
-    <div class="cv" data-qbox="${pr.id}" style="--ga:${gl(cp ? cp.a : c.c)};--gb:${gl(cp ? cp.b : c.c)}"><img src="${cover(pr.cover, hash(pr.id) % 50)}" alt="" width="480" height="480">${own ? '<span class="own tag k">已拥有</span>' : pr.price === 0 ? '<span class="own tag" style="background:var(--paper);color:var(--ink)">免费</span>' : ''}<span class="pv"><button class="pbtn" data-act="qplay" data-id="${pr.id}" aria-label="试听 ${esc(pr.title)}">${IC.play}</button></span></div>
+    <div class="cv" data-qbox="${pr.id}" style="--ga:${gl(cp ? cp.a : c.c)};--gb:${gl(cp ? cp.b : c.c)}"><img src="${src}" alt="" width="480" height="480">${own ? '<span class="own tag k">已拥有</span>' : pr.price === 0 ? '<span class="own tag" style="background:var(--paper);color:var(--ink)">免费</span>' : ''}<span class="pv"><button class="pbtn" data-act="qplay" data-id="${pr.id}" aria-label="试听 ${esc(pr.title)}">${IC.play}</button></span></div>
     <div class="bd"><div class="en"><span class="dot"></span>${esc(pr.en)}</div><h3>${esc(pr.title)}</h3><div class="ft"><span class="price">${pr.price ? '¥' + pr.price : '免费'}${pr.orig ? `<s>¥${pr.orig}</s>` : ''}</span><a class="by" data-go="user-${u.id}">${av(u.id,'sm')}<span>${esc(u.name)}</span></a></div></div></article>`;
 }
 
@@ -6441,7 +6484,9 @@ const RUB = (() => {
   }
   return {host, light};
 })();
+let rubGone = null;   // 上一张分类卡的陀螺仪收尾：卡片被重绘掉就立刻断开，不等下一次传感器事件
 function catRub(){
+  rubGone?.();
   const card = $('.cats .cat.on'), svg = card && !card.classList.contains('all') && $('svg.sh', card);
   if (!svg || card._rub) return; card._rub = true; RUB.host(); svg.classList.add('rub');
   // 把插画整体包进一个 <g filter>：光照 / 投影在 viewBox 坐标里算，各尺寸一致；svg 本身只负责倾斜
@@ -6456,10 +6501,12 @@ function catRub(){
   card.addEventListener('pointerleave', () => aim(-.5, -.8));
   // 手机：陀螺仪倾斜手机，高光跟着跑（只在卡片在屏幕里时看）
   // 只在陀螺仪真的有变化、卡片在屏幕里时才更新（不常驻每帧循环）
-  if (IS_MOBILE){ let q = 0, vis = false; const io = new IntersectionObserver(es => { vis = es[0].isIntersecting; }); io.observe(svg);
-    const on = () => { if (q) return; q = requestAnimationFrame(() => { q = 0; if (!svg.isConnected){ removeEventListener('deviceorientation', on); io.disconnect(); return; } if (!GRAV.on || !vis) return;
-      const x = GRAV.tx*1.6 - .2, y = -(1 - GRAV.ty)*1.6 - .5; if (Math.abs(x - st.tx) + Math.abs(y - st.ty) > .03) aim(x, y); }); };
-    addEventListener('deviceorientation', on, {passive: true}); }
+  if (IS_MOBILE){ let q = 0, vis = false;
+    const look = () => { if (!GRAV.on) return; const x = GRAV.tx*1.6 - .2, y = -(1 - GRAV.ty)*1.6 - .5; if (Math.abs(x - st.tx) + Math.abs(y - st.ty) > .03) aim(x, y); };
+    const on = () => { if (q || !vis) return; q = requestAnimationFrame(() => { q = 0; if (vis) look(); }); };
+    const show = v => { if (v === vis) return; vis = v; if (v){ addEventListener('deviceorientation', on, {passive: true}); gravNeed(); look(); } else { removeEventListener('deviceorientation', on); gravDone(); } };
+    const io = new IntersectionObserver(es => show(es[0].isIntersecting)); io.observe(svg);
+    rubGone = () => { if (svg.isConnected) return; rubGone = null; io.disconnect(); show(false); }; }
 }
 document.addEventListener('rendered', catRub);
 
@@ -6528,7 +6575,7 @@ function playVideo(id, box){
   const b = box.querySelector('[data-act="vplay"]'); if (b){ b.dataset.act = 'vstop'; b.classList.add('on'); b.innerHTML = IC.pause; b.setAttribute('aria-label', '暂停'); }
   const st = {time:0, len:999, playing:true, seed:hash(id)%50};
   const kind = p.cover === 'metal' ? 'metal' : p.cover === 'particles' ? 'particles' : 'stage';
-  st.onFrame = () => { const tc = $('[data-vtc]', box); if (tc) tc.textContent = `${pad2(st.time/60|0)}:${pad2(st.time%60|0)} / ${p.dur}`; };
+  st.onFrame = () => { const tc = $('[data-vtc]', box), s = `${pad2(st.time/60|0)}:${pad2(st.time%60|0)} / ${p.dur}`; if (tc && tc.textContent !== s) tc.textContent = s; };
   GEN.start('video:' + id, {style: p.cover === 'metal' ? 'ambient' : 'stage', bpm: p.cover === 'metal' ? 70 : 118, seed:hash(id)%20}, {title:p.title, sub:p.plat + ' · ' + p.dur, c:postCls(p).slice(2), go:'post-' + id});
   const off = loopAdd(makeVidLoop(cv, kind, st)); box._off = off; VID.box = box; (CUR.post ? PCLEAN : CLEAN).push(() => { off(); if (VID.box === box) VID.box = null; if (GEN.owner === 'video:' + id) GEN.stop(); });
 }
@@ -6701,7 +6748,7 @@ function renderPost(id, fresh){
   const cm = cmtsOf(p.id);
   let media = '';
   if (p.type === 'image' && p.tcover) media = textCover(p, 'post');
-  else if (p.type === 'image' && p.img) media = `<img src="${p.img}" alt="">${p.imgs && p.imgs.length > 1 ? `<span class="tag k" style="position:absolute;right:16px;bottom:16px;z-index:2">共 ${p.imgs.length} 张</span>` : ''}`;
+  else if (p.type === 'image' && p.img) media = `<img src="${p.img}" alt=""${p.live ? ` data-pimg="${p.id}"` : ''}>${p.imgs && p.imgs.length > 1 ? `<span class="tag k" style="position:absolute;right:16px;bottom:16px;z-index:2">共 ${p.imgs.length} 张</span>` : ''}`;
   else if (p.type === 'image') media = `<img src="${cover(p.cover, hash(p.id)%50, 1000, Math.round(1000*(p.h||1)))}" alt="">`;
   if (p.type === 'video' && p.vis) media = `<div data-qbox="v:${p.id}" style="position:absolute;inset:0"><img src="${cover({...p.vis, txt:p.title}, 1, 960, 960)}" alt="" style="width:100%;height:100%;object-fit:cover"><span class="pv"><button class="pbtn" data-act="qplay" data-id="v:${p.id}" aria-label="播放">${IC.play}</button></span></div>`;
   else   if (p.type === 'video') media = `<div data-vbox="${p.id}" style="width:100%;position:relative"><img src="${cover(p.cover, hash(p.id)%50, 960, 560)}" alt="" style="width:100%"><span class="plat" style="position:absolute;left:14px;bottom:14px;font:700 11px/1 var(--f-b);padding:6px 9px;border-radius:999px;background:var(--paper);color:var(--ink)">${p.plat}</span><span class="pv big"><button class="pbtn" data-act="vplay" data-id="${p.id}" aria-label="播放">${IC.play}</button></span></div>`;
@@ -7053,7 +7100,7 @@ ROUTES.user = id => {
   ${bl ? `<div class="ann warn"><span class="ann-i">${IC.x}</span><span class="ann-t"><b>你已拉黑 TA</b><span>看不到 TA 的帖子和评论，也不能互发私信</span></span><button class="pill sm lt" data-act="blk" data-id="${u.id}">解除</button></div>` : ''}
   <div class="utabs"><button class="${tab==='works'?'on':''}" data-act="utab" data-v="works">作品 <i>${works.length}</i></button>${showShop ? `<button class="${tab==='shop'?'on':''}" data-act="utab" data-v="shop">店铺 <i>${shop.length}</i></button>` : ''}${svcs.length ? `<button class="${tab==='collab'?'on':''}" data-act="utab" data-v="collab">合作 <i>${svcs.length}</i></button>` : ''}</div>
   ${tab === 'collab' ? coProfile(u.id) : tab === 'works' ? (works.length ? `<div class="mason">${works.map(postCard).join('')}</div>` : '<div class="empty"><div class="x">空</div><span>还没有发布作品</span></div>')
-    : isMe && !STATE.seller ? `<div class="shopband grain c-yellow" style="align-items:center"><div style="position:relative;z-index:2"><div class="x">把你的作品<br>卖给同行</div><p style="margin-top:12px;font-size:15px;max-width:30ch">采样、预设、.tox、视觉循环都可以上架。平台只收 3%。</p></div><button class="pill lg" data-act="sell" style="position:relative;z-index:2">${IC.plus}上架作品</button></div>`
+    : isMe && !STATE.seller ? `<div class="shopband grain c-yellow" style="align-items:center"><div style="position:relative;z-index:2"><div class="x">把你的作品<br>卖给同行</div><p style="margin-top:12px;font-size:15px;max-width:30ch">采样、预设、.tox、视觉循环都可以上架。平台只收 ${+(PLAT*100).toFixed(1)}%。</p></div><button class="pill lg" data-act="sell" style="position:relative;z-index:2">${IC.plus}上架作品</button></div>`
     : `<div class="shopband grain"><div style="position:relative;z-index:2"><span class="lab" style="color:var(--ink)">受邀创作者店铺</span><div class="x" style="margin-top:8px">${esc(u.shop)}</div></div><div class="stats" style="position:relative;z-index:2"><div><b>${shop.length}</b><span style="color:var(--ink)">件资源</span></div><div><b data-roll="${shop.reduce((s,p) => s + p.sales, 0)}">0</b><span style="color:var(--ink)">次被拥有</span></div></div></div>${isMe ? `<div style="display:flex;justify-content:flex-end;margin:-10px 0 18px"><button class="pill" data-act="sell">${IC.plus}上架新资源</button></div>` : ''}<div class="grid-p">${shop.map(sleeve).join('')}</div>`}
   </div>`;
 };
@@ -7093,7 +7140,7 @@ ACTIONS['save-prof'] = () => { USERS[ME].name = $('#pf-n').value || USERS[ME].na
 /* ================= 工作室（卖家） ================= */
 const calcOrder = o => { if (o.st === 'refund') return {fee:0, plat:0, net:0}; const fee = (o.cash ?? o.amt)*(FEE[o.pay] ?? .006), plat = o.amt*PLAT; return {fee, plat, net:o.amt - fee - plat}; };
 function studioLiveOverview(){
-  const S = LSHOP.stats; if (!S) return `${payeeBox()}<div class="box"><div class="box-b mut">${LSHOP.statsError ? '暂时读不到销售统计' : '正在读取销售统计…'}${LSHOP.statsError ? '<button class="pill sm lt" data-act="studio-retry" style="margin-left:10px">重试</button>' : ''}</div></div>`;
+  const S = LSHOP.stats, bad = LSHOP.statsError || LSHOP.mineError; if (!S) return `${payeeBox()}<div class="box"><div class="box-b mut">${bad ? '暂时读不到销售统计' : '正在读取销售统计…'}${bad ? '<button class="pill sm lt" data-act="studio-retry" style="margin-left:10px">重试</button>' : ''}</div></div>`;
   const M = S.currentMonth, month = +M.month.slice(5), monthly = S.monthly, max = Math.max(1, ...monthly.map(m => f2y(m.gross)));
   const views = S.views30d, prev = S.previousViews30d, change = views != null && prev > 0 ? Math.round((views - prev)/prev*100) : null;
   return `${payeeBox()}<div class="kpis"><div class="kpi cc c-pink grain"><span class="lab" style="color:var(--on);position:relative;z-index:2">${month}月预计到手</span><b data-roll="${f2y(M.net)}" data-pre="¥" style="position:relative;z-index:2">${yuan2(f2y(M.net))}</b><span class="d" style="color:var(--on);position:relative;z-index:2">${S.estimatedFees ? '按现行示例费率估算，非已到账金额' : '已扣平台费与支付手续费'}</span></div>
@@ -7331,7 +7378,7 @@ const admCan = tab => API.on() && ADM_TAB_PERMS[tab] ? staffCan(ADM_TAB_PERMS[ta
 const admGuard = (tab, perm) => { if (admOn() && admCan(tab) && (!perm || staffCan(perm))) return true; toast('当前角色没有这个权限', 'orange', 'x'); return false; };
 const admUserCan = action => staffCan('users.act') && (!['ban7','ban0','verify'].includes(action) || ['super','mod'].includes(admMe().role));
 // 后台页签之间切换 = 页内页签：原地换网址、不新增返回记录、不播翻页动画（同 stab / doc-tab）
-const admTab = k => { const h = '#admin-' + k; if (curH() === h) return; UI.adminTab = k; if (typeof LADM !== 'undefined' && k !== 'users') LADM[k] = null;   // 接后端的页签：每次切过去都重新读
+const admTab = k => { const h = '#admin-' + k; if (curH() === h) return; UI.adminTab = k; if (typeof LADM !== 'undefined'){ if (k !== 'users'){ LADM[k] = null; delete LADM.errors[k]; if (k === 'params') delete LADM.errors.backups; } else { LADM.uq = null; delete LADM.errors.users; } }   // 接后端的页签：每次切过去都重新读，上次读失败的也重读（用户列表先留着旧的，读到再换；进行中的读取不打断，回来会自己填上）
   NAVX.inpage = true; navReplace(h); };
 // 按 ID 或昵称找用户（「@」可带可不带）；空串 → ''，找不到 → null
 const findUid = v => { v = String(v || '').trim().replace(/^@/, ''); if (!v) return ''; const all = allUids(), lv = v.toLowerCase(); return all.find(u => u === v) || all.find(u => uname(u).toLowerCase() === lv) || null; };
@@ -7465,12 +7512,13 @@ ADMV.users = (...args) => lazyView('admin',"users",args);
 /* 用户管理里的「后台与开店」：设为后台成员（超级管理员）、发绑定本人的开店邀请码（运营）；没有权限的部分不显示 */
 function usPerm(uid){
   const cS = admCan('staff'), cI = admCan('invites'), cV = admCan('vouchers'); if (!cS && !cI && !cV) return '';
-  const sf = ADM.staff.find(s => s.uid === uid), inv = INVITES.filter(i => i.uid === uid);
-  const lsf = API.on() && LADM.staff?.find(s => s.userId === uid);
+  const sf = ADM.staff.find(s => s.uid === uid), inv = API.on() ? [] : INVITES.filter(i => i.uid === uid);   // 连着后端时邀请码在「邀请码」页签看，不列本地示例
+  const lsf = API.on() && LADM.staff?.find(s => s.userId === uid);   // 连着后端：成员列表没读到之前不显示「开后台账号」，免得给已是成员的人重复开
+  const vn = API.on() ? LADM.uwallet?.[uid] : vcCount(uid);   // 能用的券：连着后端读 /admin/users/{id}/wallet（luSide）
   const staff = !cS ? '' : API.on() ? (lsf ? `<span class="tag c-${ADM_ROLES[lsf.role]?.[1] === 'ink' ? 'pink' : ADM_ROLES[lsf.role]?.[1] || 'pink'}">后台 · ${ADM_ROLES[lsf.role]?.[0] || lsf.role}</span><span class="mut2" style="font-size:12.5px">${esc(lsf.email)}</span>`
-      : `<button class="pill sm" data-act="lus-staff" data-id="${esc(uid)}">${IC.plus}给他开后台账号</button>`) : sf ? `<span class="tag c-${ADM_ROLES[sf.role][1] === 'ink' ? 'pink' : ADM_ROLES[sf.role][1]}">${sf.on ? '后台成员' : '已停用'} · ${ADM_ROLES[sf.role][0]}</span><button class="pill sm lt" data-act="us-staff-go">去人员与权限</button>`
+      : LADM.staff ? `<button class="pill sm" data-act="lus-staff" data-id="${esc(uid)}">${IC.plus}给他开后台账号</button>` : '') : sf ? `<span class="tag c-${ADM_ROLES[sf.role][1] === 'ink' ? 'pink' : ADM_ROLES[sf.role][1]}">${sf.on ? '后台成员' : '已停用'} · ${ADM_ROLES[sf.role][0]}</span><button class="pill sm lt" data-act="us-staff-go">去人员与权限</button>`
     : `<select class="inp ad-sel" id="usRole" aria-label="后台角色">${Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}" ${k === 'mod' ? 'selected' : ''}>${n}</option>`).join('')}</select><button class="pill sm" data-act="us-staff" data-id="${esc(uid)}">设为管理员</button>`;
-  return `<label class="ad-lab">后台、开店与代金券</label><div class="ad-acts">${staff}${cI ? `<button class="pill sm lt" data-act="us-inv" data-id="${esc(uid)}">${IC.plus}发开店邀请码</button>` : ''}${cV ? `<button class="pill sm lt" data-act="us-vc" data-id="${esc(uid)}">${IC.plus}发代金券<span class="mut2">（能用 ${vcCount(uid)} 张）</span></button>` : ''}</div>
+  return `<label class="ad-lab">后台、开店与代金券</label><div class="ad-acts">${staff}${cI ? `<button class="pill sm lt" data-act="us-inv" data-id="${esc(uid)}">${IC.plus}发开店邀请码</button>` : ''}${cV ? `<button class="pill sm lt" data-act="us-vc" data-id="${esc(uid)}">${IC.plus}发代金券${vn != null ? `<span class="mut2">（能用 ${vn} 张）</span>` : ''}</button>` : ''}</div>
     ${cI && inv.length ? `<div class="ad-mini">${inv.map(i => `<span>${i.code} · ${i.st === '已入驻' ? '已开店' : '未使用'} · ${esc(i.by)} ${i.time}</span>`).join('')}</div>` : ''}`;
 }
 function userSheet(uid){
@@ -7553,7 +7601,7 @@ ROUTES.admin = arg => {
   const me = admMe(), tabs = ADM_TABS.filter(t => admCan(t[0]));
   let t = UI.adminTab; if (!tabs.some(x => x[0] === t)) t = UI.adminTab = tabs[0][0];
   const cnt = API.on() ? admCnt() : {review:REVIEW.length, avatars:AVQ.length, reports:REPORTS.filter(r => r.st === '待处理').length, apply:ADM.apps.filter(a => a.st === '待审核').length, refunds:REFUNDS.filter(r => r.st === '待处理').length, disputes:CO.orders.filter(o => o.st === 'dispute').length};
-  if (t === 'review') onMount(() => { const kd = e => { if (e.target.closest('input,textarea,select') || !REVIEW.length || $('#layer .sheet')) return; if (e.key.toLowerCase() === 'a') ACTIONS['rv-ok'](); if (e.key.toLowerCase() === 'r') ACTIONS['rv-no'](); }; document.addEventListener('keydown', kd); onClean(() => document.removeEventListener('keydown', kd)); });
+  if (t === 'review') onMount(() => { const kd = e => { if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.isComposing || e.target.isContentEditable || e.target.closest('input,textarea,select') || !REVIEW.length || $('#layer .sheet')) return; /* Ctrl / Cmd + A 全选、按住不放、输入法组字都不算 */ if (e.key.toLowerCase() === 'a') ACTIONS['rv-ok'](); if (e.key.toLowerCase() === 'r') ACTIONS['rv-no'](); }; document.addEventListener('keydown', kd); onClean(() => document.removeEventListener('keydown', kd)); });
   let g0 = '';
   const nav = tabs.map(([k, l, g]) => { const head = g !== g0 ? `<span class="ad-g">${g}</span>` : ''; g0 = g; return head + `<button class="${t === k ? 'on' : ''}" data-act="atab" data-v="${k}">${l}${cnt[k] ? `<span class="n">${cnt[k]}</span>` : ''}</button>`; }).join('');
   return `<div class="wrap"><div class="ph ad-ph"><h1 class="x">管理<span class="s">admin</span></h1><div class="ad-who"><span class="tag c-${ADM_ROLES[me.role][1] === 'ink' ? 'pink' : ADM_ROLES[me.role][1]}">${ADM_ROLES[me.role][0]}</span>
@@ -7621,9 +7669,10 @@ function psPreload(i = UI.bi || 0){ if (document.hidden || navigator.connection?
 const PS_COLS = ['pink', 'blue', 'yellow', 'orange', 'green', 'violet'];
 const okRoute = r => /^[a-z0-9][a-z0-9_-]*$/i.test(String(r || ''));
 slidesConf = function(){ if (UI.opS) return UI.opS;   // 编辑中的草稿：一直是同一份（每次重建会让改动落到被丢掉的那份上）
+  // 价格没填：原型里用示例价格；连着后端时留空（示例价格对应的示例商品在服务器上不存在）
   const saved = ADM.slides || [];
   const one = (s0, c = {}) => ({scene:s0.scene, on:c.on ?? true, kicker:c.kicker ?? strip(s0.kicker), title:c.title ?? strip(s0.title), sub:c.sub ?? s0.sub, cta:c.cta ?? s0.cta[0],
-    link:okRoute(c.link) ? c.link : s0.cta[1], c:PS_COLS.includes(c.c) ? c.c : s0.c, price:c.price === undefined ? (s0.price ?? null) : c.price, bg:c.bg || '', bgd:c.bgd || '', samples:{...(c.samples || {})}});
+    link:okRoute(c.link) ? c.link : s0.cta[1], c:PS_COLS.includes(c.c) ? c.c : s0.c, price:c.price === undefined ? (API.on() ? null : s0.price ?? null) : c.price, bg:c.bg || '', bgd:c.bgd || '', samples:{...(c.samples || {})}});
   const base = saved.map(c => { const s0 = SLIDES0.find(s => s.scene === c.scene); return s0 && one(s0, c); }).filter(Boolean);
   SLIDES0.forEach(s => { if (!base.some(b => b.scene === s.scene)) base.push(one(s)); });
   return UI.opS = base; };
@@ -7885,7 +7934,7 @@ Object.assign(ACTIONS, {
     admSave(); toast(`已设为管理员：${esc(uname(uid))} · ${ADM_ROLES[role][0]}`, 'green'); rerender(); userSheet(uid); },
   'us-staff-go': () => { closeSheet(); admTab('staff'); },
   // 代金券：表单在「代金券」页签或用户弹窗里（.vc-f），按钮所在的那一份表单为准
-  'us-vc': b => { if (!admGuard('vouchers')) return; const uid = b.dataset.id; sheet(`<h3>发代金券给 ${esc(uname(uid))}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">现在能用的券 ${vcCount(uid)} 张；会通过「CTRL Z 官方」通知他。</p>${vcForm(uid)}`); },
+  'us-vc': b => { if (!admGuard('vouchers')) return; const uid = b.dataset.id; const vn = API.on() ? LADM.uwallet?.[uid] : vcCount(uid); sheet(`<h3>发代金券给 ${esc(uname(uid))}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">${vn != null ? `现在能用的券 ${vn} 张；` : ''}会通过「CTRL Z 官方」通知他。</p>${vcForm(uid)}`); },
   'vc-send': b => { if (!admGuard('vouchers')) return; const f = b.closest('.vc-f'), to = $('.vcTo', f), amt = r2(+$('.vcAmt', f).value), days = +$('.vcExp', f).value, note = $('.vcNote', f).value.trim();
     const names = to.value.split(/[,，、\s]+/).filter(Boolean), uids = names.map(findUid);
     if (!names.length){ fxPop(to.type === 'hidden' ? f : to, 'fx-shake', 300); toast('填一下发给谁', 'orange', 'x'); return; }
@@ -7917,13 +7966,13 @@ function takeDown(k, id, why, tell, extra, by = admMe()){
 }
 function annSheet(a){ sheet(`<h3>${a ? '编辑公告' : '新公告'}</h3><label class="ad-lab">标题</label><input class="inp" id="anT" maxlength="40" value="${esc(a?.title || '')}" placeholder="一句话说清楚" autofocus><label class="ad-lab">内容</label><textarea class="inp" id="anX" maxlength="300" placeholder="可选">${esc(a?.body || '')}</textarea>
   <label class="ad-lab">给谁看</label><div class="seg ad-seg" id="anA">${[['all', '所有人'], ['creators', '只给创作者']].map(([v, l]) => `<button class="${(a?.aud || 'all') === v ? 'on' : ''}" data-act="an-aud" data-v="${v}">${l}</button>`).join('')}</div><button class="pill lg" data-act="an-save" data-id="${a?.id || ''}">保存</button>`); }
-/* 搜索框：输入停一下再重绘，并把光标放回原处；后台下拉框（角色、当前账号） */
+/* 搜索框：输入停一下再重绘（renderBase 把焦点和光标放回原处）；后台下拉框（角色、当前账号） */
 document.addEventListener('input', e => { const i = e.target.closest?.('[data-adq]'); if (!i) return; const k = i.dataset.adq; (UI.adq ||= {})[k] = i.value; clearTimeout(i._t);
-  i._t = setTimeout(() => { const pos = i.selectionStart; UI.adn = 30; rerender(); const n = $(`[data-adq="${k}"]`); if (n){ n.focus(); n.setSelectionRange(pos, pos); } }, 260); });
+  i._t = setTimeout(() => { UI.adn = 30; rerender(); }, 260); });
 document.addEventListener('keydown', e => { if (e.key !== 'Enter') return; const i = e.target.closest?.('#wd-block, #wd-review'); if (i){ e.preventDefault(); ACTIONS['wd-add']({dataset:{lv:i.id.slice(3)}}); } });
 document.addEventListener('change', e => { const s = e.target.closest?.('[data-act-ch]'); if (!s) return; const a = s.dataset.actCh;
   if (a === 'adm-me'){ ADM.me = s.value; admSave(); toast(`已切换到 ${esc(admMe().name)} · ${ADM_ROLES[admMe().role][0]}`, 'blue'); rerender(); }
-  if (a === 'lsf-role'){ lsfPatch(s.dataset.id, {role:s.value}); return; }
+  if (a === 'lsf-role'){ lsfPatch(s.dataset.id, {role:s.value}, s); return; }
   if (a === 'sf-role'){ if (!admGuard('staff')) return; const st = ADM.staff.find(x => x.id === s.dataset.id); st.role = s.value; admLog('修改角色', st.name, ADM_ROLES[st.role][0]); admSave(); rerender(); } });
 /* 海报 / 分类的文字输入：边打边记到草稿里（保存后才生效） */
 document.addEventListener('input', e => { const i = e.target.closest?.('[data-op]'); if (!i) return; const k = i.dataset.op, idx = +i.dataset.i; if (k === 'cn'){ catsConf()[idx].cn = i.value; opDirty(); } });   // 海报字段见「海报编辑」
@@ -7943,16 +7992,17 @@ function addHist(k, id){ if (!STATE.hist) return; STATE.hist = STATE.hist.filter
 
 /* ================= 首页 ================= */
 ROUTES.home = () => {
-  const tab = UI.homeTab || 'rec';
-  let list = POSTS.filter(p => !p.failed && !blocked(p.author));
-  if (tab === 'fol') list = list.filter(p => STATE.follows.has(p.author));
+  const tab = UI.homeTab || 'rec', fl = tab === 'fol' && liveUser(), fols = fl && Array.isArray(LIVE.fol) && LIVE.folMe === ME;   // 连着后端且登录时「关注」读自己的关注流（LIVE.fol）
+  if (fl && !fols && !LIVE.folErr && !LIVE.folBusy) liveFol();
+  let list = (fl ? (fols ? LIVE.fol.map(id => POST(id)) : []) : POSTS).filter(p => p && !p.failed && !blocked(p.author) && (tab === 'fol' || !p.folOnly));   // 只在关注流里的帖子不混进「推荐」
+  if (tab === 'fol') list = list.filter(p => STATE.follows.has(p.author) || fl && !LIVE.folOff?.has(p.author));   // STATE.follows 最多只有最近关注的 50 人：服务器的关注流直接算数，只排除本地刚取关的
   else if (!STATE.settings.pers) list = byTime(list);   // 关闭个性化推荐：按发布时间
   const sugg = Object.values(USERS).filter(u => u.id !== ME && !STATE.follows.has(u.id) && !blocked(u.id) && (!API.on() || LIVE.u.has(u.id)));   // 真实后端时只推荐真实用户
   onMount(root => mountWaves(root));
   return `<div class="wrap home">
     <div class="htabs"><button class="rl-ic dk ht-l pg-only" data-act="me-menu" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button><span class="ht-no" aria-hidden="true">${ISSUE_NO}<i>今日</i></span><div class="ht-t" role="tablist" aria-label="首页信息流"><button role="tab" aria-selected="${tab === 'fol'}" tabindex="${tab === 'fol' ? 0 : -1}" class="${tab === 'fol' ? 'on' : ''}" data-act="htab" data-v="fol">关注</button><button role="tab" aria-selected="${tab === 'rec'}" tabindex="${tab === 'rec' ? 0 : -1}" class="${tab === 'rec' ? 'on' : ''}" data-act="htab" data-v="rec">推荐</button></div><button class="rl-ic dk ht-r pg-only" data-act="search" aria-label="搜索"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button></div>
-    <div class="hfeed">${annBar()}${tab === 'rec' && !STATE.settings.pers ? `<p class="pers-off">已关闭个性化推荐 · 按发布时间排列 <a href="#me-settings">设置</a></p>` : ''}${tab === 'fol' ? `<div class="sugg"><span class="lab">${list.length ? '还可以关注' : '先关注几位创作者'}</span><div class="sugg-r">${sugg.map(u => `<div class="sg ${ucls(u.id)}"><a data-go="user-${u.id}">${av(u.id, 'md')}<b>${esc(u.name)}</b><span>${esc(u.role.split(' · ')[0])}</span></a><button class="pill sm" data-act="follow" data-id="${u.id}">关注</button></div>`).join('')}</div></div>` : ''}
-    <div class="feed-state">${feedStatusHtml()}</div>${list.length ? `<div class="mason">${list.map(postCard).join('')}</div>` : API.on() && LIVE.feed?.status !== 'ready' ? (LIVE.feed?.status === 'error' ? '' : skMason()) : `<div class="empty"><div class="x">空</div><span>${tab === 'fol' ? '关注的人还没有发东西' : '还没有人发东西，来发第一条吧'}</span>${tab === 'fol' ? '' : '<button class="pill" data-act="compose">发布</button>'}</div>`}</div>
+    <div class="hfeed">${annBar()}${tab === 'rec' && !STATE.settings.pers ? `<p class="pers-off">已关闭个性化推荐 · 按发布时间排列 <a href="#me-settings">设置</a></p>` : ''}${tab === 'fol' ? `<div class="sugg"><span class="lab">${list.length || fl && !fols && STATE.follows.size ? '还可以关注' : '先关注几位创作者'}</span><div class="sugg-r">${sugg.map(u => `<div class="sg ${ucls(u.id)}"><a data-go="user-${u.id}">${av(u.id, 'md')}<b>${esc(u.name)}</b><span>${esc(u.role.split(' · ')[0])}</span></a><button class="pill sm" data-act="follow" data-id="${u.id}">关注</button></div>`).join('')}</div></div>` : ''}
+    ${fl ? `<div class="fol-state">${folStatusHtml()}</div>` : `<div class="feed-state">${feedStatusHtml()}</div>`}${list.length ? `<div class="mason">${list.map(postCard).join('')}</div>` : fl ? (!fols ? (LIVE.folErr ? '' : skMason()) : `<div class="empty"><div class="x">空</div><span>关注的人还没有发东西</span></div>`) : API.on() && LIVE.feed?.status !== 'ready' ? (LIVE.feed?.status === 'error' ? '' : skMason()) : `<div class="empty"><div class="x">空</div><span>${tab === 'fol' ? '关注的人还没有发东西' : '还没有人发东西，来发第一条吧'}</span>${tab === 'fol' ? '' : '<button class="pill" data-act="compose">发布</button>'}</div>`}</div>
   </div>`;
 };
 ROUTES.feed = ROUTES.home;
@@ -8107,7 +8157,10 @@ function syncReelPlayback(){ const st = RL.st; if (!RL.on || !st || (st.loading 
   if (st.p.live){ st.loading = (own && GEN.pending) || PEND.id === st.p.id; $(`.rl-s[data-k="${RL.i}"] .rl-vis`,RL.el)?.classList.toggle('ld',!!st.loading); } st.playing = on; reelPaused(!on); }
 document.addEventListener('gen', syncReelPlayback); document.addEventListener('audio-priority-change', syncReelPlayback);
 function heartAt(x, y){ const h = document.createElement('span'); h.className = 'rl-heart'; h.innerHTML = IC.heartF; h.style.left = x + 'px'; h.style.top = y + 'px'; h.style.setProperty('--r', (Math.random()*30 - 15) + 'deg'); RL.el.appendChild(h); setTimeout(() => h.remove(), 900); }
-function reelLike(force){ const p = reelCur(); if (!p || needLogin()) return; const on = force || !STATE.liked.has(p.id); on ? STATE.liked.add(p.id) : STATE.liked.delete(p.id); reelBar(); UI.dirty = true; if (on){ const b = $('[data-act="rl-like"]', RL.el); b.animate([{transform:'scale(1)'},{transform:'scale(1.35)'},{transform:'scale(1)'}], {duration:320, easing:'cubic-bezier(.3,1.5,.5,1)'}); } }
+function reelLike(force){ const p = reelCur(); if (!p || needLogin()) return; const was = STATE.liked.has(p.id), on = force || !was; on ? STATE.liked.add(p.id) : STATE.liked.delete(p.id); reelBar(); UI.dirty = true;
+  // 连着后端时提交（和首页点赞同一条串行队列，失败撤回由 sendInteraction 负责）
+  if (API.on() && was !== on && liveUser() && p.live) void sendInteraction('like', p.id, was, on, () => API.req(on ? 'PUT' : 'DELETE', `/posts/${p.id}/like`));
+  if (on){ const b = $('[data-act="rl-like"]', RL.el); b.animate([{transform:'scale(1)'},{transform:'scale(1.35)'},{transform:'scale(1)'}], {duration:320, easing:'cubic-bezier(.3,1.5,.5,1)'}); } }
 function bindReelGestures(el){
   const view = $('.rl-view', el), track = () => $('.rl-track', el);
   let d = null, tapT = 0, tapTimer = null, tapSt = null, tapNonce = 0;
@@ -8140,7 +8193,7 @@ function bindReelGestures(el){
   // 进度由底部波形负责（全站统一的波形擦洗：点选 / 拖动 / 左右键）
 }
 document.addEventListener('keydown', e => {
-  if (!RL.on || e.defaultPrevented || HST.ov || e.isComposing || e.keyCode === 229) return;
+  if (!RL.on || e.defaultPrevented || (HST.ov && topOverlay()?.kind !== 'rlcm') || e.isComposing || e.keyCode === 229) return;
   if (e.key === 'Escape'){ e.preventDefault(); if (RL.cm) closeReelCm(); else ACTIONS['rl-close'](); return; }
   if (e.target.closest('input,textarea,select,button,a[href],[contenteditable="true"],[role="button"],[role="tab"]')) return;
   if (e.key === 'ArrowDown' || e.key === 'j'){ e.preventDefault(); goReel(RL.i + 1); }
@@ -8157,16 +8210,16 @@ function openReelCm(focus){
   const keepTop=wasOpen && old?._draftKey===inputDraftKey('comment',p.id) ? $('.rl-cm-l',box)?.scrollTop || 0 : 0;
   const count=cmtsOf(p.id).filter(c=>c.sendState !== 'failed').length, n=p.live ? Math.max(p.cmts || 0,count) : count;
   box.innerHTML = `<div class="rl-cm-h"><b>评论 ${n}</b><button class="rl-ic dk" data-act="rl-cm-x" aria-label="收起">${IC.x}</button></div><div class="rl-cm-l">${reelCmList(p)}</div><div class="rl-cm-f"><input id="rlIn" placeholder="说点什么…" autocomplete="off" enterkeyhint="send"><button class="pill sm ic" data-act="rl-send" aria-label="发送">${IC.arrow}</button></div>`;
-  box.classList.add('on'); box.setAttribute('aria-hidden', 'false'); RL.el.classList.add('cm-on');
+  box.classList.add('on'); box.setAttribute('aria-hidden', 'false'); RL.el.classList.add('cm-on'); reelCmSync();
   const inp = $('#rlIn'); inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229){ e.preventDefault(); ACTIONS['rl-send'](); } }); inputDraftBind(inp,'comment',p.id,keepFocus);
   $('.rl-cm-l',box).scrollTop=keepTop;
   const fl = $('.cmt.flash', box); if (fl){ UI.flashCmt = null; setTimeout(() => { if(fl.isConnected && RL.cm && reelCur()?.id===p.id) fl.scrollIntoView({block:'center'}); }, 60); }
   if (focus) setTimeout(() => { if (inp.isConnected && RL.cm && reelCur()?.id === p.id) inp.focus(); }, 280);
 }
-function closeReelCm(){ if (!RL.el) return; inputDraftSave($('#rlIn',RL.el)); const box = $('.rl-cm', RL.el); RL.cm = false; box?.classList.remove('on'); box?.setAttribute('aria-hidden', 'true'); RL.el.classList.remove('cm-on'); }
+function closeReelCm(){ if (!RL.el) return; inputDraftSave($('#rlIn',RL.el)); const box = $('.rl-cm', RL.el), was = RL.cm; RL.cm = false; box?.classList.remove('on'); box?.setAttribute('aria-hidden', 'true'); RL.el.classList.remove('cm-on'); if (was) reelCmSync(); }
 Object.assign(ACTIONS, {
   'rl-more': b => b.classList.toggle('open'),
-  'rl-close': () => { closeReels(); navUp(CUR.hash); },
+  'rl-close': () => { if (RL.cm){ closeReelCm(); if (HST.keep){ HST.then = () => ACTIONS['rl-close'](); return; } } closeReels(); navUp(CUR.hash); },
   'rl-next': () => goReel(RL.i + 1), 'rl-prev': () => goReel(RL.i - 1),
   'rl-like': () => reelLike(),
   'rl-fav': () => { const p = reelCur(); if (!p || needLogin()) return; STATE.favs.has(p.id) ? STATE.favs.delete(p.id) : (STATE.favs.add(p.id), toast('已收藏', 'yellow')); reelBar(); UI.dirty = true; },
@@ -8663,7 +8716,7 @@ ADMV.invoice = () => { const f = UI.adf?.iv || 'todo', L = ADM.invoices.filter(v
 function msgList(sel){
   const ids = Object.keys(CHATS).filter(id => USERS[id] && !blocked(id)).sort((a, b) => lastTs(b) - lastTs(a));
   return `<div class="m-quick">${[['likes','喜欢','pink',IC.heartF],['fans','新粉丝','blue','<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.4-7 8-7s7 2.5 8 7z"/></svg>'],['at','回复与@','yellow',RIC.cm]].map(([k,l,c,ic]) => { const n = NOTE_NEW[k] || 0; return `<button class="mq c-${c} mq-${k} ${n ? 'live' : ''}" data-act="note" data-v="${k}" data-n="${n}" aria-label="${l}${n ? '，' + n + ' 条新的' : ''}"><span class="mq-h"><span class="g">${ic}</span><b>${l}</b></span><span class="mq-n">${n}</span></button>`; }).join('')}</div>
-  <div class="m-list">${STATE.role === 'user' ? sysRow() : ''}${ids.map(id => { const m = CHATS[id][CHATS[id].length - 1], u = USERS[id]; return `<a class="mrow ${sel === id ? 'on' : ''}" data-go="msg-${id}">${av(id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>${m ? esc(msgPreview(m)) : '还没有消息，打个招呼吧'}</span></span><span class="mr"><time>${m ? ago(m.ts) : ''}</time>${CHAT_UNREAD[id] ? `<i class="bdg">${CHAT_UNREAD[id]}</i>` : ''}</span></a>`; }).join('') || '<div class="rnone">还没有私信</div>'}</div>`;
+  <div class="m-list">${STATE.role === 'user' ? sysRow() : ''}${ids.map(id => { const m = CHATS[id][CHATS[id].length - 1], u = USERS[id]; return `<a class="mrow ${sel === id ? 'on' : ''}" data-go="msg-${id}">${av(id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>${m ? esc(msgPreview(m)) : '还没有消息，打个招呼吧'}</span></span><span class="mr"><time>${m ? ago(m.ts) : ''}</time>${CHAT_UNREAD[id] ? `<i class="bdg">${CHAT_UNREAD[id]}</i>` : ''}</span></a>`; }).join('') || (liveUser() && STATE.role === 'user' && LDM.listState !== 'ready' ? dmListNote() : '<div class="rnone">还没有私信</div>')}</div>`;
 }
 const msgAv = uid => `<a class="msg-av" data-go="user-${esc(uid)}" aria-label="${esc(uname(uid))} 的主页">${av(uid)}</a>`;   // 聊天里对方的头像：点了去主页
 function bubble(m, uid){
@@ -8759,7 +8812,10 @@ function noteSync(){ ['likes','fans','at'].forEach(k => { const q = $(`.mq-${k}`
 let CO_FEE = .05;            // ⚠️ 合作服务费比例（示例；后台「平台参数」可改）
 let CO_FREE_REV = 2;         // 免费修改次数
 let CO_AUTO_DAYS = 7;        // 交付后多少天不验收就自动确认
-function applyParams(){ PLAT = ADM.params.plat; CO_FEE = ADM.params.coFee; CO_FREE_REV = ADM.params.coRev; CO_AUTO_DAYS = ADM.params.coAuto; }
+function applyParams(){ PLAT = ADM.params.plat; CO_FEE = ADM.params.coFee; CO_FREE_REV = ADM.params.coRev; CO_AUTO_DAYS = ADM.params.coAuto;
+  // 开店海报的「平台只收 x%」跟着抽成变（后台海报里自己改过这句的不动）
+  const st = SLIDES0.find(s => s.scene === 'stamp'), sub = `平台只收 ${+(PLAT*100).toFixed(1)}%，每月结算`;
+  if (st && st.sub !== sub){ SLIDES.forEach(s => { if (s.scene === 'stamp' && s.sub === st.sub) s.sub = sub; }); st.sub = sub; } }
 applyParams();
 const SVC_DEF = {
   arr:   {n:'编曲', c:'pink',   ph:'比如：一首 lo-fi 单曲的完整编曲', f:[['style','风格','text','lo-fi / city pop / 氛围…'], ['bpm','BPM','num','90'], ['len','时长','one',['1 分钟内','1–3 分钟','3–5 分钟','5 分钟以上']]]},
@@ -9968,7 +10024,9 @@ function composeSheet(mode){
   const C = UI.cp = {mode:'post', imgs:[], ci:0, audio:null, link:'', pal:'paper', q:null, ttext:false, acov:'wave', vis:{tpl:'dots', pal:'pb'}, attach:new Set(), title:'', body:'', key:cpStoreKey(), restoring:true};
   delete TRACKS['post:draft'];
   sheet(`<div class="cp-top"><h3>发布</h3></div><div id="cpWrap"></div>`,
-    () => () => { if (GEN.owner?.endsWith('draft')) GEN.stop(); clearTimeout(C.saveTimer); cpSave(C); if (cpRender._wl){ cpRender._wl(); cpRender._wl = null; } });
+    () => () => { if (GEN.owner?.endsWith('draft')) GEN.stop(); clearTimeout(C.saveTimer); cpSave(C); if (cpRender._wl){ cpRender._wl(); cpRender._wl = null; }
+      // 草稿存的是 File，下次打开重新生成地址，这批可以放掉：等面板退场播完（影子还在显示），发布中的不动，原型发布后帖子还在用的也不动
+      setTimeout(() => { if (!C.busy) C.imgs.forEach(im => { if (!POSTS.some(p => p.img === im.url || p.imgs?.includes(im.url))) URL.revokeObjectURL(im.url); }); }, 1000); });
   $('#layer .sheet').classList.add('cp'); drawCompose(); cpRestore(C);
 }
 function drawCompose(){
@@ -9977,7 +10035,7 @@ function drawCompose(){
   if (C.mode === 'product'){
     w.innerHTML = STATE.seller
       ? `<div class="cp-prod">${[['sound','采样包作品','采样、合成器预设、Max / Pd 音频补丁','pink','sample'],['visual','视觉作品','视频循环、纹理、TD 工程、Jitter 补丁','orange','visual']].map(([k,t,d,c,g]) => `<button class="cp-pick c-${c}" data-act="cp-prod" data-v="${k}"><span class="g">${GLYPH[g]}</span><b>${t}</b><span>${d}</span>${IC.arrow}</button>`).join('')}</div>`
-      : `<div class="cp-inv"><span class="g">${GLYPH.sample}</span><b>开店需要邀请码</b><span>填一次就能一直卖东西，平台只收 3%</span>${inviteForm ? inviteForm('cp') : ''}</div>`;
+      : `<div class="cp-inv"><span class="g">${GLYPH.sample}</span><b>开店需要邀请码</b><span>填一次就能一直卖东西，平台只收 ${+(PLAT*100).toFixed(1)}%</span>${inviteForm ? inviteForm('cp') : ''}</div>`;
     return; }
   w.innerHTML = `<input class="inp cp-t" id="cTitle" placeholder="标题（不填就用第一句）" autocomplete="off">
     <textarea class="inp cp-b" id="cBody" placeholder="写点什么…"></textarea>
@@ -10244,7 +10302,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.defaultPrevented || e.isComposing || e.keyCode === 229) return;
-  if (e.key === 'Escape'){ const top = topOverlay(); if (top){ e.preventDefault(); if (top.kind === 'search') closeSearch(); else dismissSheet(top.el.querySelector('.sheet,.drw'), 0, true); /* 键盘操作瞬间完成，不播动画 */ } else $('#menu')?.remove(); }
+  if (e.key === 'Escape'){ const top = topOverlay(); if (top){ e.preventDefault(); if (top.kind === 'search') closeSearch(); else if (top.kind === 'rlcm') closeReelCm(); else dismissSheet(top.el.querySelector('.sheet,.drw'), 0, true); /* 键盘操作瞬间完成，不播动画 */ } else $('#menu')?.remove(); }
   if ((e.key === '/' || (e.key === 'k' && (e.metaKey || e.ctrlKey))) && !e.target.closest('input,textarea') && !$('#srch')){ e.preventDefault(); openSearch(); }
 });
 
@@ -10329,6 +10387,7 @@ const API = {
     return requestTask(async signal => {
       const send = async canRetry => {
         const current = () => { if (base !== this.base || epoch !== this.epoch) throw Object.assign(new Error('账号已切换'), {code:'cancel'}); }; current();
+        if (canRetry && token?.refresh && !path.startsWith('/auth/') && this.stale()){ await requestWait(this.refresh(), signal).catch(() => {}); current(); }   // 刷新失败照常发，由下面的 401 流程收尾
         const sentToken = this.tok, h = {}; if (body !== undefined) h['Content-Type'] = 'application/json'; if (sentToken?.access) h.Authorization = 'Bearer ' + sentToken.access;
         const res = await fetch(base + path, {method, headers:h, body:body === undefined ? undefined : JSON.stringify(body), signal, ...(options.keepalive === true ? {keepalive:true} : {})});
         current();
@@ -10342,11 +10401,15 @@ const API = {
       }; return send(retry);
     }, {timeoutMs:/^(GET|HEAD)$/i.test(method) ? 10000 : 30000, ...options});
   },
-  /* 同一时间只刷新一次（几个请求同时 401 时共用一次刷新） */
+  /* 帖子、商品这类接口令牌过期时不回 401，而是静默按游客返回（红心没了、拉黑的人又出现、个性化开关失效），所以发请求前先看一眼：
+     快过期（30 秒内）就先刷新。不是 JWT、解析不了时当作没过期，交给 401 流程；skew 是刷新时算出的本机时钟偏差，时钟不准也不会每个请求都刷新 */
+  claims(access){ try { return JSON.parse(atob(access.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); } catch(e){ return null; } },
+  stale(){ const c = this.claims(this.tok?.access); return !!c?.exp && Date.now() + (this.skew || 0) > (c.exp - 30) * 1000; },
+  /* 同一时间只刷新一次（几个请求同时过期 / 401 时共用一次刷新） */
   refresh(){ if (this._ref) return this._ref; const token = this.tok, base = this.base; if (!token?.refresh) return Promise.resolve(false);
     const task = (async () => {
       try { const r = await this.req('POST', '/auth/refresh', this.cookie ? {} : {refreshToken:token.refresh}, false, {timeoutMs:10000});
-        if (token !== this.tok || base !== this.base) throw Object.assign(new Error('账号已切换'), {code:'cancel'}); this.setTok({access:r.accessToken, refresh:r.refreshToken}, true); return true; }
+        if (token !== this.tok || base !== this.base) throw Object.assign(new Error('账号已切换'), {code:'cancel'}); this.setTok({access:r.accessToken, refresh:r.refreshToken}, true); const c = this.claims(r.accessToken); this.skew = c?.iat ? c.iat * 1000 - Date.now() : 0; return true; }
       catch(e){ if ((e.status === 401 || e.status === 403) && token === this.tok && base === this.base){ liveLoggedOut(); return false; } throw e; }
     })(); this._ref = task; task.finally(() => { if (this._ref === task) this._ref = null; }).catch(() => {}); return task;
   }
@@ -10426,13 +10489,20 @@ function admCnt(){
   if (!ADMCNT.busy && Date.now() - ADMCNT.at > 3000 && STAFF.validated){ ADMCNT.busy = true; ADMCNT.at = Date.now(); const mark = ADMCNT.mark = {}, current = staffSession();
     STAFF.req('GET', '/admin/counts').then(r => { if (!current() || ADMCNT.mark !== mark) return; const ch = JSON.stringify(r) !== JSON.stringify(ADMCNT.v); ADMCNT.v = r; if (ch && CUR.key?.startsWith('admin')) rerender(); }).catch(() => {}).finally(() => { if (current() && ADMCNT.mark === mark) ADMCNT.busy = false; }); }
   return ADMCNT.v; }
-async function ladmLoad(k){
+async function ladmLoad(k, more = false){
   if (k === 'staff') return ladmGet(k, '/admin/staff', r => r.items);
-  if (k === 'users'){ const q = fq('users'); if (LADM.requests.users?.q !== q){ delete LADM.errors.users; delete LADM.reads.users; LADM.busy.users = false; }
-    return ladmGet(k, '/admin/users?limit=50' + (q ? '&q=' + encodeURIComponent(q) : ''), r => { LADM.uq = q; r.items.forEach(u => apiUser(u)); return r.items; }, {q}); }
+  if (k === 'users'){ const q = fq('users'), f = ladmUsF(), cursor = more ? LADM.usersNext : null;
+    if (more && (!cursor || LADM.uq !== q || LADM.uf !== f)) return;
+    if (LADM.requests.users?.q !== q || LADM.requests.users?.f !== f){ delete LADM.errors.users; delete LADM.reads.users; LADM.busy.users = false; }
+    // 搜索词和筛选交给服务器；「加载更多」带 cursor 接着读，按 id 去重追加
+    return ladmGet(k, '/admin/users?limit=50' + (q ? '&q=' + encodeURIComponent(q) : '') + (f !== 'all' ? '&filter=' + f : '') + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''), r => {
+      const rows = new Map((cursor ? LADM.users || [] : []).map(u => [u.id, u])); r.items.forEach(u => { apiUser(u); rows.set(u.id, u); });
+      LADM.uq = q; LADM.uf = f; LADM.usersNext = r.next && r.next !== cursor ? r.next : null; return [...rows.values()]; }, {q, f, more:!!cursor}); }
 }
+// 用户列表筛选（和后端 filter 一致；原型的「被警告过」后端没有，不放）
+const ladmUsF = () => ['creator', 'limited'].includes(UI.adf?.us) ? UI.adf.us : 'all';
 const LADM_TITLES = {'人员与权限':'staff','用户':'users','看板':'dash','举报':'reports','操作日志':'audit','头像审核':'avatars','头像':'avatars','待审核':'review','订单流水':'orders','退款':'refunds','代金券':'vouchers','邀请码':'invites','合作纠纷':'disputes','敏感词':'words','入驻申请':'apply','发票':'invoice','结算打款':'payout','内容':'content','反馈与报错':'feedback'};
-const ladmWait = (title, sub, key = LADM_TITLES[title]) => adH(title, sub) + `<div class="box"><div class="box-b mut" role="status">${key && LADM.errors[key] ? `${esc(LADM.errors[key])}<button class="pill sm lt" style="margin-left:10px" data-act="ladm-retry" data-v="${esc(key)}">重试</button>` : '正在读取…'}</div></div>`;
+const ladmWait = (title, sub, key = LADM_TITLES[title]) => adH(title, sub) + `<div class="box"><div class="box-b mut" role="status">${key && LADM.errors[key] ? `${esc(LADM.errors[key]?.message ?? LADM.errors[key])}<button class="pill sm lt" style="margin-left:10px" data-act="ladm-retry" data-v="${esc(key)}">重试</button>` : '正在读取…'}</div></div>`;
 ACTIONS['ladm-retry'] = b => { const k = b.dataset.v; if (!admGuard(k === 'backups' ? 'params' : k)) return; delete LADM.errors[k]; delete LADM.reads[k]; delete LADM.requests[k]; LADM.busy[k] = false; LADM[k] = null; rerender(); };
 // 一次性凭据：只显示这一次（复制按钮不把密码弹在提示里）
 function credSheet(title, who, r){
@@ -10441,7 +10511,8 @@ function credSheet(title, who, r){
     <div class="cred">${rows.map(([k, v]) => `<div><span>${k}</span><code>${esc(v)}</code><button class="pill sm lt" data-act="cp-secret" data-v="${esc(v)}">复制</button></div>`).join('')}
     <div><span>绑定地址</span><code class="sm">${esc(r.totpUri)}</code><button class="pill sm lt" data-act="cp-secret" data-v="${esc(r.totpUri)}">复制</button></div></div>
     <button class="pill lg" data-act="cp-secret" data-v="${esc(rows.map(([k, v]) => k + '：' + v).join('\n') + '\n绑定地址：' + r.totpUri + '\n后台：' + location.origin + '/#admin')}">全部复制</button>`); }
-async function lsfPatch(id, body){ if (!admGuard('staff')) return; try { await STAFF.req('PATCH', '/admin/staff/' + encodeURIComponent(id), body); toast('已更新', 'green'); } catch(e){ apiFail(e); } ladmLoad('staff'); }
+async function lsfPatch(id, body, el){ if (!admGuard('staff') || el?.disabled) return; if (el) el.disabled = true;   // el：点的按钮 / 改的下拉框，请求没回来前锁住
+  try { await STAFF.req('PATCH', '/admin/staff/' + encodeURIComponent(id), body); toast('已更新', 'green'); } catch(e){ apiFail(e); } finally { if (el?.isConnected) el.disabled = false; } ladmLoad('staff'); }
 const roleOpts = sel => Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${n}</option>`).join('');
 function ladmStaffView(){
   if (!LADM.staff){ ladmLoad('staff'); return ladmWait('人员与权限', '后台成员（读取中）'); }
@@ -10455,16 +10526,22 @@ function ladmStaffView(){
     <td class="r">${s.id === me.id ? '' : `<button class="pill sm lt" data-act="lsf-on" data-id="${esc(s.id)}" data-v="${s.enabled ? 0 : 1}">${s.enabled ? '停用' : '启用'}</button>`}</td></tr>`).join('')}</tbody></table></div></div>`;
 }
 function ladmUsersView(){
-  if (!LADM.users || LADM.uq !== fq('users')){ ladmLoad('users'); if (!LADM.users) return ladmWait('用户', '读取中'); }
+  const f = ladmUsF();
+  if (!LADM.users || LADM.uq !== fq('users') || LADM.uf !== f){ ladmLoad('users'); if (!LADM.users) return ladmWait('用户', '读取中'); }
   const st = u => u.banned ? stTag('封禁', 'orange') : u.muted ? stTag('禁言', 'yellow') : u.status === 'closing' ? stTag('注销中', 'violet') : stTag('正常', 'green');
   return `${adH('用户', '后端里的真实账号；处置会通知本人并写进操作日志', `${adQ('users', '搜昵称、用户名或 ID')}${admCan('staff') ? `<button class="pill sm pk" data-act="lus-new">${IC.plus}新建账号</button>` : ''}`)}
+  <div class="ad-bar2">${adSeg('us', [['all', '全部'], ['creator', '创作者'], ['limited', '受限中']], f)}</div>
   <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>用户</th><th>身份</th><th>状态</th><th>注册时间</th><th></th></tr></thead><tbody>${LADM.users.map(u => `<tr>
     <td><span class="ad-u">${uav(u.id)}<span><b>${esc(u.name)}</b><i>${u.username ? '用户名 ' + esc(u.username) : '@' + esc(u.handle)}${u.verified ? ' · 已实名' : ''}</i></span></span></td><td class="mut2">${u.role === 'creator' ? '创作者' : '普通用户'}</td><td>${st(u)}</td>
-    <td class="mut2 n">${fmtDT(+new Date(u.createdAt))}</td><td class="r">${u.username && admCan('staff') ? `<button class="pill sm lt" data-act="lus-pw" data-id="${esc(u.id)}">重置密码</button> ` : ''}<button class="pill sm lt" data-act="us-open" data-id="${esc(u.id)}">管理</button></td></tr>`).join('') || '<tr><td colspan="5" class="mut">没找到</td></tr>'}</tbody></table></div></div>`;
+    <td class="mut2 n">${fmtDT(+new Date(u.createdAt))}</td><td class="r">${u.username && admCan('staff') ? `<button class="pill sm lt" data-act="lus-pw" data-id="${esc(u.id)}">重置密码</button> ` : ''}<button class="pill sm lt" data-act="us-open" data-id="${esc(u.id)}">管理</button></td></tr>`).join('') || '<tr><td colspan="5" class="mut">没找到</td></tr>'}</tbody></table></div></div>
+  ${LADM.errors.users ? `<p class="mut" role="status">${esc(LADM.errors.users)} <button class="pill sm lt" data-act="lus-retry">重试</button></p>` : LADM.usersNext ? `<button class="pill lt lg" data-act="lus-more" ${LADM.busy.users ? 'disabled aria-busy="true"' : ''}>${LADM.busy.users ? '读取中…' : '加载更多用户'}</button>` : ''}`;
 }
+ACTIONS['lus-more'] = () => ladmLoad('users', true);
+// 读失败后重试：续页失败就接着读那一页，刷新失败就重新读第一页
+ACTIONS['lus-retry'] = () => { const more = !!LADM.requests.users?.more && LADM.uq === fq('users') && LADM.uf === ladmUsF(); delete LADM.errors.users; delete LADM.reads.users; LADM.busy.users = false; rerender(); return ladmLoad('users', more); };
 Object.assign(ACTIONS, {
   'cp-secret': b => { const v = b.dataset.v, ok = () => toast('已复制', 'green', 'check'); try { navigator.clipboard.writeText(v).then(ok, () => fallbackCopy(v) ? ok() : toast('复制失败，请手动选中复制', 'orange')); } catch(e){ fallbackCopy(v) ? ok() : toast('复制失败，请手动选中复制', 'orange'); } },
-  'lsf-on': b => lsfPatch(b.dataset.id, {enabled:b.dataset.v === '1'}),
+  'lsf-on': b => lsfPatch(b.dataset.id, {enabled:b.dataset.v === '1'}, b),
   'lsf-new': () => { if (!admGuard('staff')) return; sheet(`<h3>加一个后台成员</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">只开后台账号。要同时给对方一个 App 账号，用「用户 › 新建账号」。</p>
     <label class="ad-lab" for="lsE">邮箱（登录用）</label><input class="inp" id="lsE" type="email" autocomplete="off"><label class="ad-lab" for="lsN">名字</label><input class="inp" id="lsN" maxlength="20">
     <label class="ad-lab" for="lsR">角色</label><select class="inp" id="lsR">${roleOpts('mod')}</select><button class="pill lg" data-act="lsf-go">添加</button>`); },
@@ -10659,16 +10736,45 @@ function feedStatusHtml(){
   if (s.status === 'error') return `<div class="request-note" role="status"><span>${esc(s.error || '作品读取失败，请重试')}</span><button class="pill sm lt" data-act="feed-retry">重试</button></div>`; return '';
 }
 function syncFeedState(){ const el = $('#app .feed-state'); if (el){ el.innerHTML = feedStatusHtml(); if (['ready','error'].includes(LIVE.feed?.status)) $$('.sk-list', el.parentElement).forEach(n => n.remove()); } }
+/* 首页「关注」（连着后端且登录时）：单独读 /posts?tab=following，顺序存在 LIVE.fol（帖子 id），游标 LIVE.fnext。
+   只出现在关注流里的帖子也放进 POSTS（POST(id) 能找到），但标 folOnly，「推荐」不显示 */
+function folStatusHtml(){
+  if (Array.isArray(LIVE.fol) && LIVE.folMe === ME) return '';
+  return LIVE.folErr ? `<div class="request-note" role="status"><span>${esc(LIVE.folErr)}</span><button class="pill sm lt" data-act="fol-retry">重试</button></div>` : '<div class="request-note" role="status">正在读取作品…</div>';
+}
+function folAdd(items){ items.forEach(x => { const p = apiPost(x); if (!POST(p.id)){ p.folOnly = true; POSTS.push(p); } if (!LIVE.fol.includes(p.id)) LIVE.fol.push(p.id); }); }
+async function liveFol(){
+  const seq = LIVE.folSeq = (LIVE.folSeq || 0) + 1, me = ME, base = API.base; LIVE.folBusy = seq; LIVE.folErr = null;
+  try { const r = await API.req('GET', '/posts?tab=following&limit=30'); if (seq !== LIVE.folSeq || me !== ME || base !== API.base) return;
+    if (LIVE.folMe !== me) LIVE.folOff?.clear(); LIVE.fol = []; LIVE.folMe = me; LIVE.fnext = r.next; folAdd(r.items);
+  } catch(e){ if (seq !== LIVE.folSeq) return; LIVE.folErr = e.message || '作品读取失败，请重试'; if (Array.isArray(LIVE.fol) && LIVE.folMe === ME) apiFail(e); }   // 已有列表时保留它，只提示
+  finally { if (LIVE.folBusy === seq) LIVE.folBusy = 0; }
+  if (CUR.key === 'home|' && !CUR.post && (UI.homeTab || 'rec') === 'fol'){ const st = $('#app .hfeed .fol-state');   // 不整页重画：推荐卡收起动画、横排滚动位置、页签滑入都要保住
+    if (!st) return void rerender();
+    st.innerHTML = folStatusHtml(); $$('.sk-list', st.parentElement).forEach(n => n.remove());
+    if (!patchMoreList('home')) return void rerender();
+    if (Array.isArray(LIVE.fol) && LIVE.folMe === ME && !$('.mason,.empty', st.parentElement)) st.insertAdjacentHTML('afterend', '<div class="empty"><div class="x">空</div><span>关注的人还没有发东西</span></div>'); }
+}
+/* 推荐流刷新、关注 / 取关、拉黑之后重读关注流：正在看「关注」就保留旧列表在后台重读，否则等下次打开再读 */
+function folReset(){ if (LIVE.fol === undefined && !LIVE.folBusy) return; LIVE.fnext = null; LIVE.folErr = null;
+  if (LIVE.folMe === ME && liveUser() && CUR.key === 'home|' && (UI.homeTab || 'rec') === 'fol') liveFol(); else { LIVE.fol = undefined; LIVE.folSeq = (LIVE.folSeq || 0) + 1; LIVE.folBusy = 0; }
+}
+ACTIONS['fol-retry'] = () => { LIVE.folErr = null; rerender(); };
 async function liveFeed(){
   const state = LIVE.feed ||= {seq:0}, seq = ++state.seq, base = API.base, me = ME; state.status = POSTS.length ? 'refreshing' : 'pending'; state.error = null; syncFeedState();
   try { const r = await API.req('GET', '/posts?tab=rec&limit=50'); if (LIVE.feed !== state || state.seq !== seq || base !== API.base || me !== ME) return;
-    const feed = r.items.map(apiPost), got = new Set(feed.map(p => p.id)); LIVE.next = r.next;
-    POSTS.splice(0, POSTS.length, ...Object.values(LIVE.pend).filter(p => p.author === ME && !got.has(p.id)), ...feed); state.status = 'ready';
+    const feed = r.items.map(apiPost), got = new Set(feed.map(p => p.id)), pend = Object.values(LIVE.pend).filter(p => p.author === ME && !got.has(p.id)); LIVE.next = r.next;
+    const open = CUR.key?.startsWith('user|') ? CUR.key.slice(5) : '';   // 正在看的主页：作品、读取状态、翻页游标都留着，不闪回「正在加载」，也不重复读
+    const fol = [...new Set([...(LIVE.fol || []).map(id => POST(id)), ...POSTS.filter(p => p.author === open)])].filter(p => p && !got.has(p.id) && !pend.some(x => x.id === p.id)); fol.forEach(p => p.folOnly = true);   // 关注流和当前主页的帖子留着（「推荐」不显示）
+    POSTS.splice(0, POSTS.length, ...pend, ...feed, ...fol); state.status = 'ready';
+    for (const o of [LIVE.prof ||= {}, LIVE.pnext ||= {}]) for (const id of Object.keys(o)) if (id !== open && LIVE.prof[id] !== 'loading') delete o[id];   // 其它主页的作品随 POSTS 换掉了，下次进去重新读第一页（还在读的回来后自己补上）
+    folReset();
     if (CUR.key === 'home|' && !CUR.post){ if ($('#app .mason')) patchMoreList('home'); else rerender(); }
   } catch(e){ if (LIVE.feed === state && state.seq === seq && base === API.base && me === ME){ state.status = 'error'; state.error = e.message; } throw e; }
   finally { if (LIVE.feed === state && state.seq === seq) syncFeedState(); }
 }
 ACTIONS['feed-retry'] = () => liveFeed().catch(apiFail);
+ACTIONS['prof-retry'] = b => { delete LIVE.prof[b.dataset.id]; rerender(); };   // 别人主页读取失败后重试
 async function liveMeExtras(){
   const [fo, bl, nt, prof, mine] = await Promise.all([API.req('GET', `/users/${ME}/following?limit=50`), API.req('GET', '/me/blocks'), API.req('GET', '/notifications?limit=50'), API.req('GET', `/users/${ME}`),
     API.req('GET', `/posts?author=${encodeURIComponent(ME)}&limit=50`)]);
@@ -10704,11 +10810,13 @@ async function liveBoot(){
       API.setTok({access:r.accessToken, refresh:r.refreshToken}); toast(r.isNew ? '欢迎来到 CTRL Z' : `欢迎回来，${esc(r.user.name)}`, 'pink', 'check');
       if (r.needsPhone) setTimeout(() => ACTIONS['live-bind'](), 600);
     }
+    const shopFirst = /^(shop|item)\|/.test(CUR.key || ''), first = shopFirst ? liveShop : liveFeed, later = shopFirst ? liveFeed : liveShop, epoch = API.epoch, me0 = ME;
+    // 当前页面一到就显示，其它板块不占首屏关键路径；失败分别处理。内容不等账号，和 /me、后台校验同时发出（令牌过期时 API.req 先共用一次刷新再发，不会拿到游客结果）。
+    let background = later().catch(apiFail), content = first(); content.catch(() => {});
     if (API.tok){ try { liveMe(await API.req('GET', '/me')); } catch(e){ apiFail(e); } }   // 账号读取失败不阻塞公开信息流，网络波动也不退出已有会话。
     if (STAFF.tok && await STAFF.check() && !liveUser() && /^#admin/.test(location.hash)) setRole('admin', true);   // 刷新后台页面：会话还有效就留在后台（用 App 账号进的后台，身份还是本人）
-    const shopFirst = /^(shop|item)\|/.test(CUR.key || ''), first = shopFirst ? liveShop : liveFeed, later = shopFirst ? liveFeed : liveShop;
-    // 当前页面一到就显示，其它板块不占首屏关键路径；失败分别处理。
-    const background = later().catch(apiFail); await first(); LIVE.contentReady = true; document.dispatchEvent(new Event('live-content-ready')); rerender();
+    if (epoch !== API.epoch || me0 !== ME){ background = later().catch(apiFail); content = first(); }   // 账号变了或登录过期：先发的请求已作废（liveFeed / liveShop 的守卫会丢弃），按现在的身份重读
+    await content; LIVE.contentReady = true; document.dispatchEvent(new Event('live-content-ready')); rerender();
     await Promise.all([background, ...(liveUser() ? [liveMeExtras(), liveMine(), liveFavs(), coBoot()] : [])]);
   } catch(e){ if (LIVE.feed.status === 'pending'){ LIVE.feed.status = 'error'; LIVE.feed.error = e.message; syncFeedState(); } apiFail(e); }
   if (!LIVE.contentReady){ LIVE.contentReady = true; document.dispatchEvent(new Event('live-content-ready')); }
@@ -10723,10 +10831,11 @@ async function sendInteraction(kind,id,was,now,perform){
   const key = ME + ':' + kind + ':' + id, current = accountSession(); let entry = INTERACTIONS.get(key);
   if (!entry){ entry = {confirmed:was,seq:0,tail:Promise.resolve()}; INTERACTIONS.set(key,entry); }
   const seq = ++entry.seq, set = STATE[kind === 'like' ? 'liked' : kind === 'fav' ? 'favs' : 'follows'];
+  if (kind === 'follow' && !now) (LIVE.folOff ||= new Set()).add(id);   // 刚取关的作者马上从关注流里拿掉，不等重读
   const task = entry.tail.catch(() => {}).then(async () => { if (!current()) return; const r = await perform(); if (!current()) return;
     if (kind === 'like' && POST(id)) POST(id).likes = r.likeCount - (now ? 1 : 0);
     if (kind === 'follow' && USERS[id] && entry.confirmed !== now) USERS[id].fans = Math.max(0,(USERS[id].fans || 0) + (now ? 1 : -1));
-    entry.confirmed = now; syncInteraction(kind,id);
+    entry.confirmed = now; syncInteraction(kind,id); if (kind === 'follow') folReset();   // 关注 / 取关后重读关注流
   }); entry.tail = task;
   try { await task; } catch(e){ if (current() && entry.seq === seq){ entry.confirmed ? set.add(id) : set.delete(id); apiFail(e); syncInteraction(kind,id); } }
   finally { if (entry.seq === seq && INTERACTIONS.get(key) === entry) INTERACTIONS.delete(key); }
@@ -10777,6 +10886,12 @@ wrapAct('cmt', (orig, b, e) => { const pid = b.dataset.id, n = (UI.newCmts[pid] 
 wrapAct('rl-send', (orig, b, e) => { const pid = reelCur()?.id, n = (UI.newCmts[pid] || []).length; orig(b, e); pid && liveCmtSent(pid, n); });
 wrapAct('clike',(orig,b,e)=>cmtLikeToggle(b,orig,e));
 wrapAct('rl-cl',(orig,b,e)=>cmtLikeToggle(b,orig,e));
+wrapAct('rl-fav', async (orig, b, e) => { const id = reelCur()?.id, was = STATE.favs.has(id); orig(b, e); const now = STATE.favs.has(id);
+  if (!id || was === now || !liveUser() || !POST(id)?.live) return;
+  await sendInteraction('fav',id,was,now,() => API.req(now ? 'PUT' : 'DELETE', `/me/favs/post/${encodeURIComponent(id)}`)); });
+wrapAct('rl-follow', async (orig, b, e) => { const id = b.dataset.id, was = STATE.follows.has(id); orig(b, e); const now = STATE.follows.has(id);
+  if (was === now || !liveUser() || !LIVE.u.has(id)) return;
+  await sendInteraction('follow',id,was,now,() => API.req(now ? 'PUT' : 'DELETE', `/users/${id}/follow`)); });
 wrapAct('at-like',(orig,b,e)=>cmtNoticeLike(b,orig,e));
 wrapAct('cmt-dgo', async (orig, b, e) => {
   const pid = b.dataset.p, k = b.dataset.k, item = b.cdel, scope = item?.scope || cdelScope();
@@ -10882,7 +10997,8 @@ wrapAct('export-me', async orig => {
 wrapAct('close-go', async (orig, b, e) => {
   if (!liveUser()) return orig(b, e);
   if ($('#clIn')?.value.trim() !== '注销') return orig(b, e);   // 让原来的校验去提示
-  try { await API.req('POST', '/me/close'); orig(b, e); } catch(err){ apiFail(err); }
+  if (b.disabled) return; b.disabled = true;   // 提交中再点不重复请求
+  try { await API.req('POST', '/me/close'); orig(b, e); } catch(err){ apiFail(err); } finally { if (b.isConnected) b.disabled = false; }
 });
 wrapAct('close-undo', async (orig, b, e) => { if (!liveUser()) return orig(b, e); try { await API.req('DELETE', '/me/close'); orig(b, e); } catch(err){ apiFail(err); } });
 /* 登录设备 / 换绑手机号：直接用后端的数据 */
@@ -10896,9 +11012,10 @@ wrapAct('acc-kick', async (orig, b) => { if (!liveUser()) return orig(b); try { 
 wrapAct('acc-code', async (orig, b) => {
   if (!liveUser()) return orig(b);
   const n = $('#apN2').value.trim(); if (!/^1\d{10}$/.test(n)){ fxPop($('#apN2'), 'fx-shake', 300); toast('手机号格式不对', 'orange', 'x'); return; }
+  if (b.disabled) return; b.disabled = true;   // 请求期间先锁住，连点不重复发短信
   try { const r = await API.req('POST', '/auth/sms/send', {phone:n, purpose:LIVE.bind ? 'bind' : 'change_phone'}); AUTH.pnum = n; AUTH.via = 'phone'; if (r.devCode) smsShow(r.devCode);
-    b.disabled = true; let s = 60; b.textContent = s + ' 秒'; const iv = setInterval(() => { s--; if (!b.isConnected || s <= 0){ clearInterval(iv); b.disabled = false; b.textContent = '重新发送'; return; } b.textContent = s + ' 秒'; }, 1000);
-  } catch(err){ apiFail(err); }
+    let s = 60; b.textContent = s + ' 秒'; const iv = setInterval(() => { s--; if (!b.isConnected || s <= 0){ clearInterval(iv); b.disabled = false; b.textContent = '重新发送'; return; } b.textContent = s + ' 秒'; }, 1000);
+  } catch(err){ b.disabled = false; apiFail(err); }
 });
 wrapAct('acc-pgo', async (orig, b) => {
   if (!liveUser()) return orig(b);
@@ -10958,21 +11075,23 @@ wrapAct('au-3p', async (orig, b) => {
     return id;
   };
 }
-async function liveAfterLogin(){ try { liveMe(await API.req('GET', '/me')); await Promise.all([liveFeed(),liveMeExtras(),liveShop(),liveMine(),liveFavs(),coBoot()]); } catch(e){ apiFail(e); } scheduleLiveRefresh(); msgBadge(); }
+async function liveAfterLogin(){ try { liveMe(await API.req('GET', '/me')); const open = CUR.key?.startsWith('user|') ? CUR.key.slice(5) : ''; if (LIVE.prof[open] === 'ok') LIVE.prof[open] = 'stale';   // 在别人主页上登录：换了身份，这一页后台重读
+    await Promise.all([liveFeed(),liveMeExtras(),liveShop(),liveMine(),liveFavs(),coBoot()]); if (LIVE.prof[open] === 'stale' && CUR.key === 'user|' + open) rerender(); } catch(e){ apiFail(e); } scheduleLiveRefresh(); msgBadge(); }
 
 /* 别人的主页、帖子评论：第一次打开时从后端拉 */
 { const userRoute0 = ROUTES.user;
   ROUTES.user = id => {
-    if (API.on() && id && id !== ME && !LIVE.prof[id]){
-      LIVE.prof[id] = 'loading';
+    if (API.on() && id && id !== ME && (!LIVE.prof[id] || LIVE.prof[id] === 'stale')){
+      const quiet = !!LIVE.prof[id]; LIVE.prof[id] = quiet ? 'ok' : 'loading';   // stale：已经显示着（刚登录，要换成本人看到的关注状态），后台重读，不退回「正在加载」
       Promise.all([API.req('GET', `/users/${id}`), API.req('GET', `/posts?author=${encodeURIComponent(id)}&limit=50`)]).then(([u, ps]) => {
         apiUser(u, {fans:u.followers, follow:u.following}); u.isFollowing ? STATE.follows.add(u.id) : STATE.follows.delete(u.id);
         ps.items.forEach(p => { const np = apiPost(p); if (!POSTS.some(x => x.id === np.id)) POSTS.push(np); }); (LIVE.pnext ||= {})[id] = ps.next;
         LIVE.prof[id] = 'ok'; rerender();
-      }).catch(e => { LIVE.prof[id] = 'missing'; if (e.status !== 404) apiFail(e); rerender(); });
-      return `<div class="wrap msub"><div class="empty miss"><div class="x">···</div><span>正在加载</span></div></div>`;
+      }).catch(e => { const gone = e.status === 404 || e.code === 'not_found'; LIVE.prof[id] = gone ? 'missing' : quiet ? 'ok' : 'error'; if (!gone) apiFail(e); rerender(); });   // 网络错误不当成「用户不存在」
+      if (!quiet) return `<div class="wrap msub"><div class="empty miss"><div class="x">···</div><span>正在加载</span></div></div>`;
     }
     if (API.on() && LIVE.prof[id] === 'loading') return `<div class="wrap msub"><div class="empty miss"><div class="x">···</div><span>正在加载</span></div></div>`;
+    if (API.on() && LIVE.prof[id] === 'error') return `<div class="wrap msub"><div class="request-note" role="status"><span>主页读取失败，请重试</span><button class="pill sm lt" data-act="prof-retry" data-id="${esc(id)}">重试</button></div></div>`;
     return userRoute0(id);
   };
   const open0 = openPost;
@@ -10997,7 +11116,7 @@ ACTIONS['api-go'] = async () => { const u = $('#apiU').value.trim().replace(/\/+
 ACTIONS['api-off'] = () => { try{sessionStorage.removeItem('ctrlz2.staff');}catch(_){} store.set('apiBase', ''); store.set('apiTok', null); location.reload(); };
 const apiBox = () => `<div class="box"><div class="box-h"><h3>原型 · 数据来源</h3><span class="tag ${API.on() ? 'c-green' : 'k'}">${API.on() ? '真实后端' : '本地模拟'}</span></div><div class="box-b set-l">
   ${API.on() ? `<div class="set-r"><span>后端地址<span class="mut2" style="display:block;font-size:12.5px;word-break:break-all">${esc(API.base)}</span></span>${document.querySelector('meta[name="ctrlz-api"]') ? '' : '<button class="pill sm lt" data-act="api-off">切回本地模拟</button>'}</div>
-    <p class="mut2" style="font-size:12.5px;margin:6px 0 0">已接通：用户名密码登录、信息流、帖子（含声音 / 可视化）、评论、点赞、关注、拉黑、私信、官方通知、设置、商城、管理后台。合作仍是本地模拟。</p>`
+    <p class="mut2" style="font-size:12.5px;margin:6px 0 0">已接通：用户名密码登录、信息流、帖子（含声音 / 可视化）、评论、点赞、关注、拉黑、私信、官方通知、设置、商城、合作、管理后台。</p>`
   : `<div class="set-r"><span>现在用的是浏览器里的示例数据</span><button class="pill sm" data-act="api-set">连接后端</button></div>`}</div></div>`;
 
 /* ================= 商城接后端（第 2 阶段） =================
@@ -11010,7 +11129,7 @@ const SP_ST = {review:'审核中', need_info:'待补充', on_sale:'已上架', r
 const fmtSize = n => n >= 1e9 ? (n/1e9).toFixed(1) + ' GB' : n >= 1e6 ? (n/1e6).toFixed(1) + ' MB' : n >= 1e3 ? Math.round(n/1e3) + ' KB' : (n || 0) + ' B';
 const LSHOP = {wallet:null, seller:null, mine:{}, wTry:false, stats:null, statsError:false};
 const ymdhm = iso => { const d = new Date(iso); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`; };
-function liveShopReset(){ PRODUCTS.splice(0); SELLER_PRODUCTS.splice(0); SELLER_ORDERS.splice(0); STATE.orders = []; STATE.owned = new Set(); MONTHLY.forEach(m => m[1] = 0); LSHOP.stats = null; LSHOP.statsError = false; LSHOP.next = null; LSHOP.feed = {status:'pending',error:null,seq:0}; }
+function liveShopReset(){ PRODUCTS.splice(0); SELLER_PRODUCTS.splice(0); SELLER_ORDERS.splice(0); STATE.orders = []; STATE.owned = new Set(); MONTHLY.forEach(m => m[1] = 0); LSHOP.stats = null; LSHOP.statsError = false; LSHOP.mineError = false; LSHOP.one = {}; LSHOP.next = null; LSHOP.feed = {status:'pending',error:null,seq:0}; }
 
 /* —— 后端数据 → 原型的数据结构 —— */
 function apiProduct(p){
@@ -11034,9 +11153,11 @@ async function liveShop(){
   const current = () => LSHOP.feed === state && state.seq === seq && base === API.base && me === ME;
   state.status = PRODUCTS.length ? 'refreshing' : 'pending'; state.error = null; syncShopState();
   try { const r = await API.req('GET', '/products'); if (!current()) return;
-    const before = CUR.key?.startsWith('shop|') ? new Map(PRODUCTS.map(p => [p.id,sleeve(p)])) : null;
-    const products = r.items.map(apiProduct); PRODUCTS.splice(0, PRODUCTS.length, ...products); LSHOP.next = r.next; state.status = 'ready';
-    if (CUR.key?.startsWith('shop|')){ const changed = new Set(products.filter(p => before.has(p.id) && before.get(p.id) !== sleeve(p)).map(p => p.id));
+    const before = CUR.key?.startsWith('shop|') ? new Map(PRODUCTS.map(p => [p.id,sleeveSig(p)])) : null;
+    const products = r.items.map(apiProduct), got = new Set(products.map(p => p.id));
+    const keep = PRODUCTS.filter(p => !got.has(p.id) && (LSHOP.one?.[p.id] === 'ok' || CUR.key === 'item|' + p.id));   // 单独取来的商品（直达链接）和正打开的商品留着，不被第一页冲掉
+    PRODUCTS.splice(0, PRODUCTS.length, ...products, ...keep); LSHOP.next = r.next; state.status = 'ready';
+    if (CUR.key?.startsWith('shop|')){ const changed = new Set(products.filter(p => before.has(p.id) && before.get(p.id) !== sleeveSig(p)).map(p => p.id));
       if ($('#app .grid-p') || $('#app .shop-state')) patchMoreList('shop',changed); else rerender(); }
   } catch(e){ if (current()){ state.status = 'error'; state.error = e.message; apiFail(e); } }
   finally { if (current()) syncShopState(); }
@@ -11046,7 +11167,7 @@ async function liveMine(){
   if (!liveUser()) return; const current = accountSession();
   try {
     const [s, od, w, library] = await Promise.all([API.req('GET', '/me/seller'), API.req('GET', '/me/order-cards?limit=50'), API.req('GET', '/me/wallet'), API.req('GET', '/me/library')]);
-    if (!current()) return; LSHOP.seller = s; LSHOP.wallet = w; STATE.seller = s.seller;
+    if (!current()) return; LSHOP.seller = s; LSHOP.wallet = w; STATE.seller = s.seller; LSHOP.mineError = false;
     STATE.orders = od.items.map(apiOrder); LSHOP.ordersNext = od.next; LSHOP.library = new Map(library.items.map(x => [x.productId,x])); STATE.owned = new Set(LSHOP.library.keys()); LSHOP.libraryTried = new Set();
     library.items.forEach(o => { STATE.dlc[o.productId] = o.downloads; });
     if (CUR.key === 'me|lib') await loadLibraryChunk();
@@ -11062,7 +11183,7 @@ async function liveMine(){
     const now = new Date();   // 每月收入：最近 6 个月
     MONTHLY.splice(0, MONTHLY.length, ...Array.from({length:6}, (_, i) => { const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1), k = d.getFullYear() + '-' + pad2(d.getMonth() + 1);
       return [pad2(d.getMonth() + 1), sl.items.filter(o => o.status === 'paid' && o.paidAt && ymdhm(o.paidAt).slice(0, 7) === k).reduce((a, o) => a + f2y(o.price), 0)]; }));
-  } catch(e){ apiFail(e); }
+  } catch(e){ if (current()) LSHOP.mineError = true; apiFail(e); }   // 记下失败：代金券页、工作室概览显示「读不到 + 重试」，不一直停在「正在读取」
 }
 
 /* —— 上传：先要地址，再直传（本机是 /files/…，线上是对象存储） —— */
@@ -11215,9 +11336,12 @@ Object.assign(ACTIONS, {
 });
 
 /* —— 私信 —— */
-const LDM = {timer:0, epoch:0, full:new Set(), loading:new Set(), look:new Set(), miss:new Set(), last:{}, sig:{}, since:{}, before:{}, inflight:new Map(), history:new Set(), side:'', busy:false, listed:false, blk:{}};
+/* 私信列表为空时：还没读到过（listState 不是 ready）显示「正在读取」，最近一次失败显示重试；读到过才是「还没有私信」 */
+const dmListNote = () => LDM.listState === 'error' ? '<div class="request-note" role="status"><span>私信读取失败，请重试</span><button class="pill sm lt" data-act="dm-list-retry">重试</button></div>' : '<div class="request-note" role="status">正在读取私信…</div>';
+ACTIONS['dm-list-retry'] = b => { b.disabled = true; dmThreads().then(() => msgBadge(), () => {}).finally(() => { LDM.side = ''; if (CUR.key?.startsWith('msg|')) dmPaint(CUR.key.slice(4)); }); };   // 再失败也重画，按钮恢复可点
+const LDM = {timer:0, epoch:0, unread:null, listAt:0, full:new Set(), loading:new Set(), look:new Set(), miss:new Set(), last:{}, sig:{}, since:{}, before:{}, inflight:new Map(), history:new Set(), side:'', busy:false, listed:false, listState:'', blk:{}};
 const dmSession = () => { const epoch = LDM.epoch, me = ME; return () => epoch === LDM.epoch && me === ME && STATE.role === 'user'; };
-function dmReset(){ LDM.epoch++; clearInterval(LDM.timer); LDM.timer = 0; LDM.busy = LDM.listed = false;
+function dmReset(){ LDM.epoch++; clearInterval(LDM.timer); LDM.timer = 0; LDM.busy = LDM.listed = false; LDM.listState = ''; LDM.unread = null; LDM.listAt = 0; LDM.sysMark = null;
   dmOutboxReset();
   ['full','loading','look','miss','history'].forEach(k => LDM[k].clear()); LDM.inflight.clear();
   ['last','sig','since','before','blk'].forEach(k => LDM[k] = {}); LDM.side = ''; refill(CHATS, {}); refill(CHAT_UNREAD, {}); }
@@ -11227,20 +11351,26 @@ const dmLive = uid => API.on() && STATE.role === 'user' && LIVE.u.has(uid);
 const dmCut = (uid, ts) => DELC[uid] && ts <= DELC[uid];   // 自己删过聊天记录：删之前的不再显示
 /* 分享来的帖子 / 商品本地没有：去后端取一次 */
 async function dmRefs(list){
-  const current = dmSession(), seen = new Set();
+  const current = dmSession(), seen = new Set(), todo = [];
   for (const m of list){
     if (!m.ref || m.rc || LDM.miss.has(m.ref)) continue;
-    const key = m.t + ':' + m.ref; if (seen.has(key)) continue; seen.add(key);
+    const key = m.t + ':' + m.ref; if (seen.has(key)) continue; seen.add(key); todo.push(m);
+  }
+  const one = async m => {
     try {
       if (m.t === 'post' && !POST(m.ref)){ const data = await API.req('GET', `/posts/${encodeURIComponent(m.ref)}`); if (!current()) return; const p = apiPost(data); if (!POSTS.some(x => x.id === p.id)) POSTS.push(p); }
       if (m.t === 'prod' && !P(m.ref)){ const data = await API.req('GET', `/products/${encodeURIComponent(m.ref)}`); if (!current()) return; apiProduct(data); }
     } catch(e){ if (!current()) return; if (e.status === 404 || e.code === 'not_found') LDM.miss.add(m.ref); }
-  }
+  };
+  // 3 个一起取（一条条串行时，收藏多的账号要排几百个往返）；换了账号就停
+  let i = 0; const work = async () => { while (i < todo.length && current()) await one(todo[i++]); };
+  await Promise.all(Array.from({length:Math.min(3, todo.length)}, work));
 }
 async function dmThreads(){
   const current = dmSession();
-  const r = await API.req('GET', '/dm/threads'), fresh = [], open = CUR.key?.startsWith('msg|') ? CUR.key.slice(4) : '';
-  if (!current()) return fresh;
+  let r; try { r = await API.req('GET', '/dm/threads'); } catch(e){ if (current() && LDM.listState !== 'ready') LDM.listState = 'error'; throw e; }
+  const fresh = [], open = CUR.key?.startsWith('msg|') ? CUR.key.slice(4) : '';
+  if (!current()) return fresh; LDM.listState = 'ready'; LDM.listAt = Date.now(); LDM.unread = r.items.reduce((n, t) => n + t.unread, 0);
   for (const t of r.items){
     apiUser(t.peer); const uid = t.peer.id, m = dmMap(t.last); if (dmCut(uid, m.ts)) continue;
     const had = LDM.last[uid]; LDM.last[uid] = m.id;
@@ -11298,6 +11428,7 @@ async function dmPoll(){
   if (LDM.busy || document.hidden || !API.on() || !API.tok || STATE.role !== 'user') return; LDM.busy = true;
   const current = dmSession();
   try {
+    if (!await dmNeedList() || !current()) return;
     const open = CUR.key?.startsWith('msg|') ? CUR.key.slice(4) : '', fresh = await dmThreads();
     if (!current()) return;
     if (open && LIVE.u.has(open)) await dmConv(open);
@@ -11305,8 +11436,14 @@ async function dmPoll(){
     if (CUR.key?.startsWith('msg|')){ if (!open && fresh.length) rerender(); else dmPaint(open); }
     fresh.slice(-3).forEach(([uid, m]) => toast(`${esc(uname(uid))}：${esc(msgPreview(m))}`, 'blue'));
     msgBadge();
-  } catch(e){ /* 网络抖一下不提示，下一轮再试 */ }
+  } catch(e){ /* 网络抖一下不提示，下一轮再试 */ if (current() && LDM.listState === 'error' && CUR.key?.startsWith('msg|')) dmPaint(CUR.key.slice(4)); }
   finally { if (current()) LDM.busy = false; }
+}
+/* 不在私信页（也不在工作室「我的合作」）时先问未读数，只做一次 count；变了（增或减）才拉全量会话列表。
+   撤回、别的设备发消息这类不改未读数的变化，靠 30 秒一次的兜底和进私信时的立即重读 */
+async function dmNeedList(){
+  if (CUR.key?.startsWith('msg|') || CUR.key === 'seller|collab' || Date.now() - (LDM.listAt || 0) >= 30000) return true;
+  return (await API.req('GET', '/dm/unread')).count !== LDM.unread;
 }
 function dmStart(){ if (!API.on()) return; LDM.listed = false; dmRestore().then(dmPoll); if (!LDM.timer) LDM.timer = setInterval(dmPoll, 4000); }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && LDM.timer){ LACT.resume = true; dmPoll(); } });
@@ -11316,7 +11453,8 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && LD
       if (arg && !USERS[arg] && !LDM.look.has(arg)){ LDM.look.add(arg); API.req('GET', `/users/${encodeURIComponent(arg)}`).then(u => { apiUser(u); if (CUR.key === 'msg|' + arg) rerender(); }).catch(() => {}); }
       if (arg && LIVE.u.has(arg) && !LDM.full.has(arg) && !LDM.loading.has(arg)){ LDM.loading.add(arg);
         dmConv(arg).then(() => { LDM.loading.delete(arg); if (CUR.key === 'msg|' + arg){ LDM.sig[arg] = null; dmPaint(arg); } msgBadge(); }).catch(e => { LDM.loading.delete(arg); apiFail(e); }); }
-      if (!arg && !LDM.listed){ LDM.listed = true; dmThreads().then(() => { if (CUR.key === 'msg|') rerender(); msgBadge(); }).catch(apiFail); }
+      if (!arg && !LDM.listed){ LDM.listed = true; dmThreads().then(() => { if (CUR.key === 'msg|') rerender(); msgBadge(); }).catch(e => { apiFail(e); if (CUR.key === 'msg|') dmPaint(''); }); }
+      else if (LDM.timer && !CUR.key?.startsWith('msg|')) dmThreads().then(fresh => { if (CUR.key === 'msg|' && fresh?.length) rerender(); else if (CUR.key?.startsWith('msg|')) dmPaint(CUR.key.slice(4)); msgBadge(); }).catch(() => {});   // 从别的页面进私信：在外面只看未读数，这里补读一次（渲染时 CUR.key 还是上一页）
     }
     return msg0(arg);
   };
@@ -11624,10 +11762,16 @@ ACTIONS['lu-retry'] = b => { if (admGuard('users')) void luReload(b.dataset.id);
   userSheet = function(uid){ if (!API.on()) return us0(uid);
     if (!admGuard('users')) return;
     sheet(`<div class="ad-us" id="luS" data-uid="${esc(uid)}"><div class="ad-u big">${uav(uid, 'md')}<span><b>${esc(uname(uid))}</b><i>读取中…</i></span></div></div>`, d => d.classList.add('lus-sheet'));
-    void luReload(uid); };
+    void luReload(uid); void luSide(uid); };
 }
+// 「后台、开店与代金券」那一块要的两份数据：后台成员（判断他是不是已经有后台账号）、他能用的券数；和全貌一起读，读到再补画这一块
+async function luSide(uid){ const current = staffSession(), jobs = [];
+  if (admCan('staff') && !LADM.staff) jobs.push(ladmLoad('staff'));
+  if (staffCan('vouchers.manage')) jobs.push(STAFF.req('GET', `/admin/users/${encodeURIComponent(uid)}/wallet`).then(w => { if (current()) (LADM.uwallet ||= {})[uid] = w.usable; }, () => {}));
+  if (!jobs.length) return; await Promise.all(jobs); if (!current()) return;
+  const p = $('#luS')?.dataset.uid === uid && $('#luS .lu-perm'); if (p) p.innerHTML = usPerm(uid); }
 const luTab = (k, n) => `<button class="${(UI.luTab || 'act') === k ? 'on' : ''}" data-act="lu-tab" data-v="${k}">${n}</button>`;
-function luSheet(r){ const u = r.user, c = r.counts, uid = u.id, yuanF = f => '¥' + (f/100).toFixed(2), acts = staffCan('users.act') || staffCan('notify.send') || staffCan('staff.manage'), banned = u.banned && (!u.banUntil || +new Date(u.banUntil) > Date.now()), muted = u.muteUntil && +new Date(u.muteUntil) > Date.now(), stt = banned ? stTag('封禁', 'orange') : muted ? stTag('禁言', 'yellow') : u.status === 'closing' ? stTag('注销中', 'violet') : stTag('正常', 'green');
+function luSheet(r){ const u = r.user, c = r.counts, uid = u.id, yuanF = f => '¥' + (f/100).toFixed(2), acts = staffCan('users.act') || staffCan('notify.send') || staffCan('staff.manage') || admCan('invites') || admCan('vouchers'), banned = u.banned && (!u.banUntil || +new Date(u.banUntil) > Date.now()), muted = u.muteUntil && +new Date(u.muteUntil) > Date.now(), stt = banned ? stTag('封禁', 'orange') : muted ? stTag('禁言', 'yellow') : u.status === 'closing' ? stTag('注销中', 'violet') : stTag('正常', 'green');
   let D = UI.luTab || (acts ? 'act' : 'posts'); if (D === 'act' && !acts || D === 'dm' && !r.dmVisible) D = 'posts'; UI.luTab = D;
   const pane = (k, h) => `<div class="lu-p" data-p="${k}" ${D === k ? '' : 'hidden'}>${h}</div>`;
   return `<div class="ad-us" id="luS" data-uid="${esc(uid)}"><div class="ad-u big">${uav(uid, 'md')}<span><b>${esc(u.name)}</b><i>${u.username ? '用户名 ' + esc(u.username) + ' · ' : ''}@${esc(u.handle)} · 注册于 ${fmtDay(+new Date(u.createdAt))}</i></span>${stt}</div>
@@ -11638,7 +11782,8 @@ function luSheet(r){ const u = r.user, c = r.counts, uid = u.id, yuanF = f => '�
     ${pane('act', `${staffCan('users.act') ? `<label class="ad-lab">处理原因（会发给用户）</label><input class="inp" id="usWhy" placeholder="例如：多次发布引流广告">
       <div class="ad-acts"><button class="pill sm lt" data-act="us-do" data-v="warn" data-id="${esc(uid)}">警告</button><button class="pill sm lt" data-act="us-do" data-v="mute1" data-id="${esc(uid)}">禁言 1 天</button><button class="pill sm lt" data-act="us-do" data-v="mute7" data-id="${esc(uid)}">禁言 7 天</button>
         ${admUserCan('ban7') ? `<button class="pill sm pk" data-act="us-do" data-v="ban7" data-id="${esc(uid)}">封禁 7 天</button><button class="pill sm pk" data-act="us-do" data-v="ban0" data-id="${esc(uid)}">永久封禁</button>` : ''}${banned || muted ? `<button class="pill sm" data-act="us-do" data-v="lift" data-id="${esc(uid)}">解除限制</button>` : ''}${admUserCan('verify') ? `<button class="pill sm lt" data-act="us-do" data-v="verify" data-id="${esc(uid)}">${u.verified ? '取消实名标记' : '标记已实名'}</button>` : ''}</div>` : ''}
-      <div class="ad-acts">${staffCan('notify.send') ? `<button class="pill sm lt" data-act="us-msg" data-id="${esc(uid)}">发站内信</button>` : ''}${u.username && admCan('staff') ? `<button class="pill sm lt" data-act="lus-pw" data-id="${esc(uid)}">重置密码</button>` : ''}${admCan('staff') ? `<button class="pill sm lt" data-act="lus-staff" data-id="${esc(uid)}">开后台账号</button>` : ''}<a class="pill sm lt" data-go="user-${esc(uid)}">看主页</a></div>`)}
+      <div class="ad-acts">${staffCan('notify.send') ? `<button class="pill sm lt" data-act="us-msg" data-id="${esc(uid)}">发站内信</button>` : ''}${u.username && admCan('staff') ? `<button class="pill sm lt" data-act="lus-pw" data-id="${esc(uid)}">重置密码</button>` : ''}<a class="pill sm lt" data-go="user-${esc(uid)}">看主页</a></div>
+      <div class="lu-perm">${usPerm(uid)}</div>`)}
     ${pane('posts', `<div class="ad-mini">${r.posts.map(p => `<a data-go="post-${esc(p.id)}">${fmtDT(+new Date(p.createdAt))} · ${esc(p.title)} · ${{published:'公开', review:'审核中', taken_down:'已下架'}[p.status] || p.status}</a>`).join('') || '<span>没有帖子</span>'}</div>`)}
     ${pane('orders', `<span class="ad-lab">买的</span><div class="ad-mini">${r.bought.map(o => `<span>${fmtDT(+new Date(o.createdAt))} · ${esc(o.title)} · ${yuanF(o.price)} · 卖家 ${esc(o.peer.name)} · ${esc(o.status)}</span>`).join('') || '<span>没有</span>'}</div>
       <span class="ad-lab">卖的</span><div class="ad-mini">${r.sold.map(o => `<span>${fmtDT(+new Date(o.createdAt))} · ${esc(o.title)} · ${yuanF(o.price)} · 买家 ${esc(o.peer.name)} · ${esc(o.status)}</span>`).join('') || '<span>没有</span>'}</div>`)}
@@ -11660,11 +11805,20 @@ wrapAct('do-report', async (orig, b, e) => { if (!liveUser()) return orig(b, e);
 async function ladmGet(k, url, pick, meta = {}){
   if (LADM.busy[k] || LADM.errors[k]) return;
   const session = staffSession(), mark = LADM.reads[k] = {}, current = () => session() && LADM.reads[k] === mark;
-  LADM.busy[k] = true; LADM.requests[k] = {url,...meta};
+  LADM.busy[k] = true; LADM.requests[k] = {...meta, url, pick};
   try { const r = await STAFF.req('GET', url); if (current()) LADM[k] = pick(r); }
   catch(e){ if (current()){ if (e.code !== 'cancel') LADM.errors[k] = e.message || '读取失败，请重试'; apiFail(e); } }
-  finally { if (current()){ LADM.busy[k] = false; rerender(); } }
+  finally { if (current()){ LADM.busy[k] = false; if (CUR.key?.startsWith('admin')) rerender(); } }   // 已经离开后台就不重画（数据留着，下次进来直接用）
 }
+/* 处理完一条：列表不清空（不闪「正在读取…」、滚动位置不变）——先在本地改掉 / 拿掉这一行，再用同一个接口静默重读；待办数马上重新问 */
+function ladmQuiet(k){
+  delete LADM.errors[k]; delete LADM.reads[k]; LADM.busy[k] = false;   // 进行中的旧读取作废（可能是写之前发出的）
+  if (['refunds', 'vouchers', 'invites', 'orders'].includes(k)) return void ladmShop(k, false, true);
+  const q = LADM.requests[k]; if (LADM[k] && q?.pick) return void ladmGet(k, q.url, q.pick, q);
+  LADM[k] = null; }
+function ladmDone(k, fix){
+  if (LADM[k] && fix){ try { LADM[k] = fix(LADM[k]); } catch(e){} }
+  ADMCNT.at = 0; ladmQuiet(k); rerender(); }
 const RP_K = {post:'帖子', comment:'评论', user:'用户', product:'商品', message:'私信', appeal:'申诉'};
 { const rp0 = ADMV.reports;
   ADMV.reports = () => { if (!API.on()) return rp0(); const v = UI.adf?.lrp || 'open';
@@ -11684,18 +11838,38 @@ const RP_K = {post:'帖子', comment:'评论', user:'用户', product:'商品', 
 }
 ACTIONS['lrp-do'] = b => { if (!admGuard('reports')) return; const ok = b.dataset.v === 'resolved';
   sheet(`<h3>${ok ? '举报属实' : '举报不成立'}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">${ok ? '记得先用「处置用户」或下架内容处理被举报的人。' : ''}说明会一起发给举报人。</p><textarea class="inp" id="lrpX" placeholder="${ok ? '例如：已下架该帖子并警告作者' : '例如：内容为原创，未发现侵权'}"></textarea><button class="pill lg" data-act="lrp-go" data-v="${b.dataset.v}" data-id="${esc(b.dataset.id)}">确认</button>`); };
-ACTIONS['lrp-go'] = async b => { b.disabled = true;
-  try { await STAFF.req('POST', `/admin/reports/${encodeURIComponent(b.dataset.id)}/resolve`, {result:b.dataset.v, note:$('#lrpX').value.trim()}); closeSheet(); toast('已处理，已通知举报人', 'green', 'check'); LADM.reports = null; rerender(); }
-  catch(e){ b.disabled = false; apiFail(e); } };
+// 处理完一条：「待处理」里直接拿掉，「全部」里改成处理结果，再静默重读（不清空列表、不跳回顶部）
+const lrpDone = (id, fix) => ladmDone('reports', L => LADM.rpv === 'open' ? L.filter(r => r.id !== id) : L.map(r => r.id === id ? {...r, ...fix, handledBy:admMe().name} : r));
+ACTIONS['lrp-go'] = async b => { if (b.disabled) return; b.disabled = true; const id = b.dataset.id, note = $('#lrpX').value.trim(), current = staffSession();
+  try { await STAFF.req('POST', `/admin/reports/${encodeURIComponent(id)}/resolve`, {result:b.dataset.v, note}); if (!current()) return; closeSheet(); toast('已处理，已通知举报人', 'green', 'check'); lrpDone(id, {status:b.dataset.v, note}); }
+  catch(e){ b.disabled = false; if (!current() || e.code === 'cancel') return; apiFail(e); if (e.status === 409 || e.code === 'handled') ladmDone('reports'); } };   // 已被别人处理（这个接口回 400 handled）：换成服务器的状态
 
 /* ================= 操作日志（连着后端时读服务器的；查看私信记录也在里面） ================= */
 { const lg0 = ADMV.audit;
+  // 按成员筛选交给服务器（staffId）；一页 50 条，「加载更多」带 cursor 接着读。搜索仍在已读到的记录里找
+  const lgWho = () => { const v = UI.adf?.lg; return v && LADM.staff?.some(s => s.id === v) ? v : 'all'; };
+  const lgLoad = (who, more = false) => { const cursor = more ? LADM.auditNext : null; if (more && (!cursor || LADM.lgv !== who)) return;
+    if (LADM.requests.audit?.who !== who){ delete LADM.errors.audit; delete LADM.reads.audit; LADM.busy.audit = false; }
+    return ladmGet('audit', '/admin/audit?limit=50' + (who !== 'all' ? '&staffId=' + encodeURIComponent(who) : '') + (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''), r => {
+      const rows = new Map((cursor ? LADM.audit || [] : []).map(a => [a.id, a])); r.items.forEach(a => rows.set(a.id, a));
+      LADM.lgv = who; LADM.auditNext = r.next && r.next !== cursor ? r.next : null; return [...rows.values()]; }, {who, more:!!cursor}); };
+  const detT = a => { const d = a.detail || {}; return [d.reason, d.with ? '和 ' + uname(d.with) : '', d.title, d.note, d.name, d.username].filter(Boolean).map(String).join(' · '); };
+  ACTIONS['lg-more'] = () => lgLoad(lgWho(), true);
+  ACTIONS['lg-retry'] = () => { const who = lgWho(), more = !!LADM.requests.audit?.more && LADM.lgv === who; delete LADM.errors.audit; delete LADM.reads.audit; LADM.busy.audit = false; rerender(); return lgLoad(who, more); };
+  // 连着后端时导出已经读到的服务器日志（不是本地示例）
+  wrapAct('lg-csv', orig => { if (!API.on()) return orig(); const L = LADM.audit || [], t = a => +new Date(a.createdAt);
+    csvDownload(`ctrlz-audit-${fmtDay(Date.now())}.csv`, [['时间', '成员', '角色', '操作', '对象', '说明'], ...L.map(a => [fmtDay(t(a)) + ' ' + fmtDT(t(a)).slice(6), a.staffName, ADM_ROLES[a.role]?.[0] || a.role, a.action, a.targetType === 'user' ? uname(a.targetId) + ' · ' + a.targetId : a.targetId, detT(a)])]); });
   ADMV.audit = () => { if (!API.on()) return lg0();
-    if (!LADM.audit){ ladmGet('audit', '/admin/audit?limit=50', r => r.items); return ladmWait('操作日志', '读取中'); }
+    if (!LADM.staff && admCan('staff')) ladmLoad('staff');
+    const who = lgWho();
+    if (LADM.lgv === who && (LADM.busy.audit || LADM.errors.audit) && LADM.requests.audit?.who !== who){ delete LADM.errors.audit; delete LADM.reads.audit; LADM.busy.audit = false; }   // 切回已读到的成员：另一位的请求和报错作废
+    if (!LADM.audit || LADM.lgv !== who){ lgLoad(who); if (!LADM.audit) return ladmWait('操作日志', '读取中'); }   // 换成员时旧行和筛选条留着，新结果回来再换
     const q = fq('audit'), L = LADM.audit.filter(a => !q || (a.staffName + a.action + a.targetId + JSON.stringify(a.detail)).toLowerCase().includes(q));
-    const det = a => { const d = a.detail || {}; return [d.reason, d.with ? '和 ' + uname(d.with) : '', d.title, d.note, d.name, d.username].filter(Boolean).map(x => esc(String(x))).join(' · '); };
-    return `${adH('操作日志', `后台的每一个操作都会记下来 · 最近 ${L.length} 条`, adQ('audit', '搜成员、操作或对象'))}
-    <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>时间</th><th>成员</th><th>操作</th><th>对象</th><th>说明</th></tr></thead><tbody>${L.map(a => `<tr class="${/查看私信/.test(a.action) ? 'lg-dm' : ''}"><td class="mut2 n">${fmtDT(+new Date(a.createdAt))}</td><td><b>${esc(a.staffName)}</b> <span class="mut2">${ADM_ROLES[a.role]?.[0] || a.role}</span></td><td>${esc(a.action)}</td><td>${a.targetType === 'user' ? `<a data-act="us-open" data-id="${esc(a.targetId)}">${esc(uname(a.targetId))}</a>` : esc(a.targetId)}</td><td class="mut2">${det(a)}</td></tr>`).join('') || '<tr><td colspan="5" class="mut">没有记录</td></tr>'}</tbody></table></div></div>`; };
+    const det = a => esc(detT(a));
+    return `${adH('操作日志', `后台的每一个操作都会记下来 · 最近 ${L.length} 条`, `${adQ('audit', '搜成员、操作或对象')}<button class="pill sm lt" data-act="lg-csv">${IC.dl}导出 CSV</button>`)}
+    <div class="ad-bar2">${adSeg('lg', [['all', '所有人'], ...(LADM.staff || []).map(s => [esc(s.id), esc(s.name)])], esc(who))}</div>
+    <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>时间</th><th>成员</th><th>操作</th><th>对象</th><th>说明</th></tr></thead><tbody>${L.map(a => `<tr class="${/查看私信/.test(a.action) ? 'lg-dm' : ''}"><td class="mut2 n">${fmtDT(+new Date(a.createdAt))}</td><td><b>${esc(a.staffName)}</b> <span class="mut2">${ADM_ROLES[a.role]?.[0] || a.role}</span></td><td>${esc(a.action)}</td><td>${a.targetType === 'user' ? `<a data-act="us-open" data-id="${esc(a.targetId)}">${esc(uname(a.targetId))}</a>` : esc(a.targetId)}</td><td class="mut2">${det(a)}</td></tr>`).join('') || '<tr><td colspan="5" class="mut">没有记录</td></tr>'}</tbody></table></div></div>
+    ${LADM.errors.audit ? `<p class="mut" role="status">${esc(LADM.errors.audit)} <button class="pill sm lt" data-act="lg-retry">重试</button></p>` : LADM.auditNext ? `<button class="pill lt lg" data-act="lg-more" ${LADM.busy.audit ? 'disabled aria-busy="true"' : ''}>${LADM.busy.audit ? '读取中…' : '加载更多记录'}</button>` : ''}`; };
 }
 
 /* 启动：站点配置以服务器为准；海报的新字段立即生效 */
@@ -11769,7 +11943,18 @@ async function actLoad(force){
     noteSync(); msgBadge(); if (CUR.key === 'msg|') dmPaint('');
   } catch(e){if(current()){LACT.status='error';LACT.error=e.message || '通知读取失败';actPanelPaint();}} finally { if (LACT.request === request){ LACT.busy = false; LACT.request = null;if(session() && revision!==LACT.readRevision && LACT.status==='pending'){LACT.status=LACT.loaded ? 'ready' : 'idle';actPanelPaint();} } }
 }
-{ const poll0 = dmPoll; dmPoll = async function(){ if (document.hidden || !API.on() || !API.tok || STATE.role !== 'user') return; const resume = LACT.resume; LACT.resume = false; await poll0(); if (document.hidden) return; if (resume || LACT.tick++ % 3 === 0) await actLoad(resume); }; }
+/* 官方通知（「CTRL Z 官方」）：和互动提醒同一节奏重读，会话期间也能看到新通知；只有内容变了才更新红点和列表。
+   本地刚标的已读、已提交的反通知（done）保留，免得请求赛跑时又冒出来 */
+async function sysLoad(){ const current = dmSession(), mark = r => JSON.stringify([r.items[0]?.id, r.unread]);
+  try { if (LDM.sysMark){ const head = await API.req('GET', '/notifications?limit=1'); if (!current() || mark(head) === LDM.sysMark) return; }   // 最新一条和未读数都没变（新通知、别的设备标已读都会变）：不拉全量
+    const nt = await API.req('GET', '/notifications?limit=50'); if (!current()) return; LDM.sysMark = mark(nt);
+    const old = new Map((ADM.inbox[ME] || []).map(m => [m.id, m])), L = nt.items.map(n => { const o = old.get(n.id);
+      return {id:n.id, title:n.title, text:n.body, ts:+new Date(n.createdAt), read:n.read || !!o?.read, ...n.extra, ...(o?.done ? {done:true} : {})}; });
+    const sig = x => JSON.stringify(x.map(m => [m.id, m.read, !!m.done]));
+    if (sig(L) === sig(ADM.inbox[ME] || [])) return;
+    ADM.inbox[ME] = L; msgBadge(); if (CUR.key?.startsWith('msg|')){ LDM.side = ''; dmPaint(CUR.key.slice(4)); }
+  } catch(e){ /* 下一轮再试 */ } }
+{ const poll0 = dmPoll; dmPoll = async function(){ if (document.hidden || !API.on() || !API.tok || STATE.role !== 'user') return; const resume = LACT.resume; LACT.resume = false; await poll0(); if (document.hidden) return; if (resume || LACT.tick++ % 3 === 0) await Promise.all([actLoad(resume), sysLoad()]); }; }
 { const after2 = liveAfterLogin; liveAfterLogin = async function(){ actPagesReset();LACT.sig = ''; LACT.ids.clear(); LACT.status='idle';LACT.loaded=false;LACT.error=null;LACT.panel=null; await after2(); actLoad(true); }; }
 wrapAct('note', (orig, b, e) => { const k = b.dataset.v; orig(b, e); if(liveUser()){ const list=$('#layer .m-list'); if(list){LACT.panel={k,list,current:dmSession()};actPanelPaint();if(!LACT.busy && (!LACT.loaded || LACT.status==='error'))void actLoad(true);} if(k==='at')void cmtNoticeLikes(); }
   if (liveUser() && k !== 'at') API.req('POST', '/me/activity/read', {kind:k}).then(() => { LACT.sig = ''; }).catch(() => {}); });
@@ -11782,10 +11967,10 @@ wrapAct('at-all', async(orig,b,e)=>{if(!liveUser())return orig(b,e);if(LACT.bulk
 
 /* ================= 数据备份（平台参数页最上面，只有超管、只在用内置数据库时） ================= */
 { const pa0 = ADMV.params;
-  ADMV.params = () => { const base = pa0(); if (!API.on() || admMe().role !== 'super') return base;
+  ADMV.params = () => { const base = pa0(); if (!API.on() || !staffCan('backup.run')) return base;   // 权限以后端为准（backup.run）
     if (!LADM.backups && !LADM.busy.backups){ ladmGet('backups', '/admin/backups', r => r); }
-    const B = LADM.backups, mb = n => (n/1024/1024).toFixed(1) + ' MB';
-    const box = !B ? '<div class="box"><div class="box-b mut">正在读取备份…</div></div>' : !B.available ? '' : `<div class="box bk-box"><div class="box-h"><h3>数据备份</h3><button class="pill sm" data-act="bk-now">立即备份</button></div><div class="box-b">
+    const B = LADM.backups, mb = n => (n/1024/1024).toFixed(1) + ' MB', err = LADM.errors.backups;
+    const box = !B ? `<div class="box"><div class="box-b mut" role="status">${err ? `${esc(err?.message ?? err)}<button class="pill sm lt" style="margin-left:10px" data-act="ladm-retry" data-v="backups">重试</button>` : '正在读取备份…'}</div></div>` : !B.available ? '' : `<div class="box bk-box"><div class="box-h"><h3>数据备份</h3><button class="pill sm" data-act="bk-now">立即备份</button></div><div class="box-b">
       <p class="mut2" style="font-size:12.5px;margin:0 0 10px">服务器每 ${B.hours} 小时自动备份一次（启动时也备份），保存在服务器文件夹的 ${esc(B.dir)} 里，保留最近 ${B.keep} 份。恢复要在服务器上操作：先停掉服务器，再运行 npm run demo:restore -- latest。</p>
       <div class="ad-mini">${B.items.slice(0, 8).map(x => `<span>${fmtDT(+new Date(x.at))} · ${esc(x.file)} · ${mb(x.size)}</span>`).join('') || '<span>还没有备份</span>'}</div></div></div>`;
     return box + base; };
@@ -11812,9 +11997,11 @@ const avAbs = u => u && u.startsWith('/') ? (API.base || '') + u : u;
 const avMeRefresh = () => { if (STATE.role === 'user') setRole('user', true); };
 wrapAct('ave-save', async (orig, b, e) => { if (!liveUser()) return orig(b, e);
   const shapes = {bg:AVE.bg, sh:AVE.sh.map(x => ({t:x.t, x:Math.round(x.x), y:Math.round(x.y), s:Math.round(x.s), r:Math.round(x.r) % 360, c:x.c}))};
-  try { const r = await API.req('POST', '/me/avatar', {kind:'shapes', shapes}); apiUser(r.user); avMeRefresh(); closeSheet(); toast('头像换好了', 'pink'); rerender(); } catch(err){ apiFail(err); } });
+  if (b?.disabled) return; if (b) b.disabled = true;
+  try { const r = await API.req('POST', '/me/avatar', {kind:'shapes', shapes}); apiUser(r.user); avMeRefresh(); closeSheet(); toast('头像换好了', 'pink'); rerender(); } catch(err){ apiFail(err); } finally { if (b?.isConnected) b.disabled = false; } });
 wrapAct('av-reset', async (orig, b, e) => { if (!liveUser()) return orig(b, e);
-  try { const r = await API.req('POST', '/me/avatar', {kind:'none'}); apiUser(r.user); avMeRefresh(); closeSheet(); toast('换回了首字母头像'); rerender(); } catch(err){ apiFail(err); } });
+  if (b?.disabled) return; if (b) b.disabled = true;
+  try { const r = await API.req('POST', '/me/avatar', {kind:'none'}); apiUser(r.user); avMeRefresh(); closeSheet(); toast('换回了首字母头像'); rerender(); } catch(err){ apiFail(err); } finally { if (b?.isConnected) b.disabled = false; } });
 wrapAct('avc-send', async (orig, b, e) => { if (!liveUser()) return orig(b, e);
   const o = document.createElement('canvas'); o.width = o.height = 512; o.getContext('2d').drawImage(AVC.cv, 0, 0, 512, 512); b.disabled = true;
   try { const blob = await new Promise(r => o.toBlob(r, 'image/jpeg', .88)); const up = await liveUpload(new File([blob], 'avatar.jpg', {type:'image/jpeg'}), 'avatar');
@@ -11831,18 +12018,22 @@ wrapAct('av-cancel', async (orig, b, e) => { if (!liveUser()) return orig(b, e);
 { const avv0 = ADMV.avatars;
   ADMV.avatars = () => { if (!API.on()) return avv0();
     if (!LADM.avatars){ ladmGet('avatars', '/admin/avatars', r => r.items); return ladmWait('头像审核', '读取中'); }
-    return adH('头像审核', '用户上传的照片头像，通过后才对外显示；驳回要写原因') + (LADM.avatars.length ? `<div class="avq">${LADM.avatars.map(q => { apiUser(q.user); return `<div class="avq-i"><img src="${esc(q.url)}" alt="待审核头像"><div style="min-width:0"><b>${esc(q.user.name)}</b><span>${fmtDT(+new Date(q.createdAt))} · 上传的照片</span></div><div class="avq-a"><button class="pill sm lt" data-act="lavq" data-v="0" data-id="${esc(q.id)}">驳回</button><button class="pill sm" data-act="lavq" data-v="1" data-id="${esc(q.id)}">通过</button></div></div>`; }).join('')}</div>` : adEmpty('ALL CLEAR', '没有待审核的头像')); };
+    return adH('头像审核', '用户上传的照片头像，通过后才对外显示；驳回要写原因') + (LADM.avatars.length ? `<div class="avq">${LADM.avatars.map(q => { apiUser(q.user); return `<div class="avq-i"><img src="${esc(q.url)}" alt="待审核头像" loading="lazy" decoding="async"><div style="min-width:0"><b>${esc(q.user.name)}</b><span>${fmtDT(+new Date(q.createdAt))} · 上传的照片</span></div><div class="avq-a"><button class="pill sm lt" data-act="lavq" data-v="0" data-id="${esc(q.id)}">驳回</button><button class="pill sm" data-act="lavq" data-v="1" data-id="${esc(q.id)}">通过</button></div></div>`; }).join('')}</div>` : adEmpty('ALL CLEAR', '没有待审核的头像')); };
 }
 ACTIONS.lavq = b => { if (!admGuard('avatars')) return; const id = b.dataset.id;
   const current=staffSession();const go1 = async (ok, reason = '') => {if(!current())return false;try { await STAFF.req('POST', `/admin/avatars/${encodeURIComponent(id)}/decide`, {ok, reason});if(!current())return false;
-    toast(ok ? '已通过，已通知本人' : '已驳回，已通知本人', ok ? 'green' : 'orange', ok ? 'check' : 'x');LADM.avatars=null;rerender();return true;
-  }catch(e){if(current() && e.code!=='cancel')apiFail(e);return false;}};
-  if (b.dataset.v === '1') go1(true); else rsnSheet('为什么驳回这个头像？', 'avatar', why => go1(false, why)); };
+    toast(ok ? '已通过，已通知本人' : '已驳回，已通知本人', ok ? 'green' : 'orange', ok ? 'check' : 'x');ladmDone('avatars', L => L.filter(q => q.id !== id));return true;
+  }catch(e){if(current() && e.code!=='cancel'){apiFail(e);if(e.status===409 || e.code==='handled')ladmDone('avatars');}return false;}};
+  if (b.dataset.v !== '1') return rsnSheet('为什么驳回这个头像？', 'avatar', why => go1(false, why));
+  if (b.disabled) return; b.disabled = true; go1(true).finally(() => { if (b.isConnected) b.disabled = false; }); };   // 通过：请求没回来前再点不重发
 
 /* —— 收藏 —— */
 async function liveFavs(){
-  try { const r = await API.req('GET', '/me/favs'); STATE.favs = new Set([...r.posts, ...r.products]);
-    await dmRefs([...r.posts.map(ref => ({t:'post', ref})), ...r.products.map(ref => ({t:'prod', ref}))]); } catch(e){}
+  const current = accountSession();
+  try { const r = await API.req('GET', '/me/favs'); if (!current()) return; STATE.favs = new Set([...r.posts, ...r.products]);
+    // 收藏的帖子 / 商品详情在后台补取，不拖住 liveBoot（私信轮询、红点要等它结束才开始）；补完正在看收藏就重画
+    dmRefs([...r.posts.map(ref => ({t:'post', ref})), ...r.products.map(ref => ({t:'prod', ref}))])
+      .then(() => { if (current() && ((CUR.key === 'me|' && UI.meTab === 'favs') || CUR.key === 'me|favs')) rerender(); }).catch(() => {}); } catch(e){}
 }
 wrapAct('fav', async (orig, b, e) => { const id = b.dataset.id, was = STATE.favs.has(id); orig(b, e); if (!liveUser()) return;
   const kind = P(id) && !POST(id) ? 'product' : 'post';
@@ -11871,9 +12062,10 @@ wrapAct('prv-send', async (orig, b, e) => { if (!liveUser()) return orig(b, e);
 wrapAct('inv-check', async (orig, b) => { if (!liveUser()) return orig(b);
   const i = $('#inv'), v = i.value.trim().toUpperCase(), ag = $('#invAgree');
   if (ag && !ag.checked){ fxPop(ag.closest('label'), 'fx-shake', 300); toast('先勾选同意《卖家服务协议》和《素材使用许可》', 'orange', 'x'); return; }
+  if (b.disabled) return; b.disabled = true;   // 开通中再点不重复提交（第二次会报「邀请码已用」）
   try { LSHOP.seller = await API.req('POST', '/me/seller', {code:v, agree:true}); }
-  catch(e){ i.animate([{transform:'translateX(-8px)'}, {transform:'translateX(8px)'}, {transform:'translateX(-4px)'}, {transform:'none'}], {duration:280}); apiFail(e); return; }
-  STATE.seller = true; const r = b.getBoundingClientRect(); burst(r.left + r.width/2, r.top + r.height/2, ['pink', 'yellow', 'blue']); await liveMine();
+  catch(e){ b.disabled = false; i.animate([{transform:'translateX(-8px)'}, {transform:'translateX(8px)'}, {transform:'translateX(-4px)'}, {transform:'none'}], {duration:280}); apiFail(e); return; }
+  STATE.seller = true; const r = b.getBoundingClientRect(); burst(r.left + r.width/2, r.top + r.height/2, ['pink', 'yellow', 'blue']); await liveMine(); b.disabled = false;
   const next = b.closest('form').dataset.next || 'seller-upload';
   if (next === 'cp'){ toast('开通了，选一下要卖什么', 'pink'); UI.dirty = true; drawCompose(); return; }
   closeSheet(); UI.sellerTab = 'upload'; toast('开通了，上架你的第一件作品吧', 'pink'); UI.dirty = true; go(next); });
@@ -11922,7 +12114,8 @@ wrapAct('sp-save', async (orig, b) => { const p = P(b.dataset.id); if (!liveUser
   if (!(price >= 0) || price > 10000){ fxPop($('#spP'), 'fx-shake', 300); toast('价格在 0–10000 元之间', 'orange', 'x'); return; } if (!t){ fxPop($('#spT'), 'fx-shake', 300); return; }
   const body = {}; if (price !== p.price) body.price = y2f(price); if (t !== p.title) body.title = t; if (d !== (p.desc || '')) body.desc = d; if (off !== !!p.selfOff) body.off = off;
   if (!Object.keys(body).length){ closeSheet(); return; }
-  try { const r = await API.req('PATCH', `/products/${p.id}`, body); closeSheet(); toast(r.status === 'review' ? '已保存，改了内容要重新审核' : '已保存', 'green'); await liveShop(); await liveMine(); rerender(); } catch(e){ apiFail(e); } });
+  if (b.disabled) return; b.disabled = true;
+  try { const r = await API.req('PATCH', `/products/${p.id}`, body); closeSheet(); toast(r.status === 'review' ? '已保存，改了内容要重新审核' : '已保存', 'green'); await liveShop(); await liveMine(); rerender(); } catch(e){ b.disabled = false; apiFail(e); } });
 
 /* —— 买：下单付款、免费领取 —— */
 wrapAct('buy0', async (orig, b, e) => { const pr = P(b.dataset.id); if (!pr?.live) return orig(b, e); if (needLogin()) return;
@@ -11941,20 +12134,23 @@ wrapAct('do-pay', async (orig, b) => { const pr = P(b.dataset.id); if (!pr?.live
 /* —— 下载：拿 15 分钟的签名地址直接下载 —— */
 wrapAct('dl', async (orig, b) => { const id = b.dataset.id, pr = P(id); if (!pr?.live) return orig(b);
   const o = STATE.orders.find(x => x.pid === id && x.live && x.st === '已完成'), orderId = LSHOP.library?.get(id)?.orderId || o?.id; if (!orderId){ toast('购买后才能下载', 'orange', 'lock'); return; }
+  if (b.disabled) return; b.disabled = true;   // 拿地址期间再点不重复计下载次数（会影响极速退款）
   try { const r = await API.req('POST', `/orders/${orderId}/download`); STATE.dlc[id] = (STATE.dlc[id] || 0) + 1; if (o) o.dl = (o.dl || 0) + 1;
     const a = Object.assign(document.createElement('a'), {href:r.url, download:r.fileName}); document.body.appendChild(a); a.click(); a.remove(); toast('开始下载：' + esc(r.fileName), 'blue', 'dl'); }
-  catch(e){ apiFail(e); } });
+  catch(e){ apiFail(e); } finally { b.disabled = false; } });
 /* —— 退款：后端判断能不能极速退款 —— */
 wrapAct('do-refund', async (orig, b) => { const o = STATE.orders.find(x => x.no === b.dataset.no); if (!o?.live) return orig(b);
   const pick = $('#rfR .on')?.textContent || '其他', x = $('#rfX').value.trim(), reason = pick + (x ? '：' + x : ''), fast = !(o.vc > 0) && !(STATE.dlc[o.pid] || 0) && (Date.now() - ordTs(o))/864e5 <= 7;
   if (!fast && !x){ fxPop($('#rfX'), 'fx-shake', 300); $('#rfX').focus(); return; }
   const problem = pick === '文件损坏' ? 'broken' : pick === '和描述不符' ? 'mismatch' : 'other';
+  if (b.disabled) return; b.disabled = true;
   try { const r = await API.req('POST', `/orders/${o.id}/refund`, {reason, problem}); closeSheet(); toast(r.fast ? '已退款，原路退回' : r.appeal ? '申诉已提交，平台会在 1 个工作日内审核' : '已提交，平台会在 1 个工作日内处理', r.fast ? 'green' : 'orange', r.fast ? 'check' : undefined); await liveShop(); await liveMine(); rerender(); }
-  catch(e){ apiFail(e); } });
+  catch(e){ b.disabled = false; apiFail(e); } });
 
 /* —— 「我 › 代金券」（原型和后端共用；数据统一走 vcItems） —— */
 function walletView(){
-  if (API.on() && !LSHOP.wallet){ if (!LSHOP.wTry){ LSHOP.wTry = true; liveMine().then(rerender); } return '<div class="box"><div class="box-b mut">正在读取…</div></div>'; }
+  if (API.on() && !LSHOP.wallet){ if (LSHOP.mineError) return '<div class="box"><div class="box-b mut">暂时读不到代金券<button class="pill sm lt" data-act="studio-retry" style="margin-left:10px">重试</button></div></div>';   // 重试同工作室：重读 liveMine
+    if (!LSHOP.wTry){ LSHOP.wTry = true; liveMine().then(rerender); } return '<div class="box"><div class="box-b mut">正在读取…</div></div>'; }
   const on = v => v.st[0] === '可用', V = vcItems(ME).sort((a, b) => (on(a) ? 0 : 1) - (on(b) ? 0 : 1) || (on(a) ? (a.exp || 9e15) - (b.exp || 9e15) : b.ts - a.ts));
   const n = V.filter(on).length, soon = V.filter(v => on(v) && v.exp && v.exp - Date.now() < 7*864e5).length;
   const U = API.on() ? (LSHOP.wallet.uses || []).map(u => ({title:u.title, no:u.orderNo, ded:f2y(u.amount), waste:f2y(u.face - u.amount), back:u.refunded, ts:+new Date(u.createdAt)}))
@@ -11970,13 +12166,13 @@ const liveWalletView = walletView;
 
 /* ================= 后台 · 商城（后端） ================= */
 async function ladmUsersQuiet(){ if (LADM.users || !staffCan('users.read')) return; const current=staffSession();
-  try { const r=await STAFF.req('GET', '/admin/users?limit=50'); if(!current())return; LADM.users=r.items; r.items.forEach(apiUser); LADM.uq=''; } catch(e){} }
-async function adminRecipient(value){
+  try { const r=await STAFF.req('GET', '/admin/users?limit=50'); if(!current())return; LADM.users=r.items; r.items.forEach(apiUser); LADM.uq=''; LADM.uf='all'; LADM.usersNext=r.next || null; } catch(e){} }
+async function adminRecipient(value, onMiss){   // onMiss：找不到 / 重名时交给调用方提示（批量发券只提示一次）
   const name=String(value || '').trim().replace(/^@/,'');if(!name)return '';const current=staffSession();
   const r=await STAFF.req('GET','/admin/recipients?limit=50&q='+encodeURIComponent(name));
   if(!current())throw Object.assign(new Error('已取消请求'),{code:'cancel'});
   const matches=(r.items || [r]).filter(u=>u.id===name || [u.name,u.username,u.handle].some(v=>String(v || '').toLowerCase()===name.toLowerCase()));
-  if(matches.length!==1){toast(matches.length ? '有多个同名用户，请填写用户 ID 或用户名' : '没找到这个用户','orange','x');return null;}
+  if(matches.length!==1){const msg=matches.length ? '有多个同名用户，请填写用户 ID 或用户名' : '没找到这个用户';onMiss ? onMiss(msg) : toast(msg,'orange','x');return null;}
   apiUser(matches[0]);return matches[0].id;
 }
 async function ladmShop(k, more = false, retry = false){
@@ -12003,15 +12199,18 @@ async function ladmShop(k, more = false, retry = false){
       REVIEW.splice(0, REVIEW.length, ...rows.values());
     } else {
       let result;
-      if (k === 'orders') result = await STAFF.req('GET', '/admin/orders');
-      if (k === 'refunds') result = (await STAFF.req('GET', '/admin/refunds?status=all')).items;
-      if (k === 'vouchers'){ await ladmUsersQuiet(); if (!current()) return; result = await STAFF.req('GET', '/admin/vouchers'); }
-      if (k === 'invites'){ await ladmUsersQuiet(); if (!current()) return; result = (await STAFF.req('GET', '/admin/invites')).items; }
+      if (k === 'orders'){ const st = lordSt(); result = await STAFF.req('GET', '/admin/orders' + (st !== 'all' ? '?status=' + st : '')); if (current()) LADM.ordSt = st; }
+      if (k === 'refunds'){   // 「全部」只有最近 200 条：更早还没处理的另读一份接在后面（都比这 200 条早，顺序不变）
+        const [all, open] = await Promise.all([STAFF.req('GET', '/admin/refunds?status=all'), STAFF.req('GET', '/admin/refunds?status=pending')]), ids = new Set(all.items.map(r => r.id));
+        result = [...all.items, ...open.items.filter(r => !ids.has(r.id))]; }
+      // 用户名提示（datalist）和本页数据一起读，不串行多等一次
+      if (k === 'vouchers') [, result] = await Promise.all([ladmUsersQuiet(), STAFF.req('GET', '/admin/vouchers')]);
+      if (k === 'invites') result = (await Promise.all([ladmUsersQuiet(), STAFF.req('GET', '/admin/invites')]))[1].items;
       if (current() && result !== undefined) LADM[k] = result;
     }
   } catch(e){ if (current() && e.code !== 'cancel' && e.name !== 'AbortError'){ LADM.errors[k] = e; apiFail(e); } }
   finally { if (LADM.reads[k] === mark) LADM.busy[k] = false; }
-  if (current()) rerender();
+  if (current() && CUR.key?.startsWith('admin')) rerender();   // 已经离开后台就不重画（数据留着，下次进来直接用）
 }
 const reviewLoadNote = () => LADM.errors?.review ? `<div class="request-note" role="status"><span>${esc(LADM.errors.review.message || '审核读取失败')}</span><button class="pill sm lt" data-act="rv-load-retry">重试</button></div>` : '';
 const reviewMoreHtml = () => LADM.reviewPage?.post || LADM.reviewPage?.comment ? `<div class="msep"><button class="pill sm lt" data-act="rv-more" ${LADM.busy.review ? 'disabled aria-busy="true"' : ''}>${LADM.busy.review ? '正在读取…' : '加载更多待审核'}</button></div>` : '';
@@ -12045,9 +12244,14 @@ const rvLiveDo = async (action, reason = '', captured = rvCur()) => {
       await STAFF.req('POST', base + (action === 'approve' ? '/approve' : '/takedown'), action === 'approve' ? undefined : {reason});
     } else await STAFF.req('POST', `/admin/products/${encodeURIComponent(r.id)}/review`, {action, reason, checklist:[...(r.ck || [])]});
     if (!current()) return false;
+    const keep = LADM.review, paged = !!(LADM.reviewPage?.seenPost?.length || LADM.reviewPage?.seenComment?.length);
     if (typeof adminContentChanged === 'function') adminContentChanged(r.lk || 'prod', r.id, action, r);
     toast(action === 'approve' ? (r.lk ? '已通过，大家现在都能看到' : '已通过，已经上架') : action === 'reject' ? '已驳回，已通知作者' : '已发给卖家', action === 'approve' ? 'green' : 'blue');
-    LADM.review = null; delete LADM.errors?.review; if (UI.rvSel === r.id) UI.rvSel = null; void ladmShop('review'); return true;
+    // 处理完的这条马上拿出队列（快捷键 / 连点不会再处理一次）；队列不清空、不闪「正在读取…」。
+    // 用「加载更多」翻过页的：保留已经读到的几页，不用第一页覆盖（待办数照样重新问）；没翻过页才静默重读
+    const i = REVIEW.findIndex(x => x.id === r.id && (x.lk || 'prod') === (r.lk || 'prod'));
+    if (action === 'ask'){ if (i >= 0) Object.assign(REVIEW[i], {st:'待补充', ask:reason}); } else if (i >= 0) REVIEW.splice(i, 1);   // 要求补充材料的留在队列里标「待补充」
+    delete LADM.errors?.review; if (UI.rvSel === r.id) UI.rvSel = null; LADM.review = keep; if (!keep || !paged) void ladmShop('review'); return true;
   } catch(e){ if (current() && e.code !== 'cancel' && e.name !== 'AbortError') apiFail(e); return false; }
   finally { if (RV_WRITES.get(key) === mark) RV_WRITES.delete(key); if (current()) rerender(); }
 };
@@ -12067,26 +12271,48 @@ wrapAct('rv-ask-go', async (orig, b) => {
 });
 ACTIONS['lsh-reload'] = b => { LADM[b.dataset.v] = null; rerender(); };
 
-function liveOrdersView(){ const d = LADM.orders; if (!d){ ladmShop('orders'); return ladmWait('订单流水', '读取中'); }
-  const S = {paid:['已支付', 'green'], refunded:['已退款', ''], pending:['待付款', 'yellow']};
-  return `${adH('订单流水', `已支付：成交 ${yuan2(f2y(d.sum.gmv))} · 实收现金 ${yuan2(f2y(d.sum.cash))} · 代金券抵扣 ${yuan2(f2y(d.sum.voucher))}（平台承担，卖家照原价结算）`, `<button class="pill sm lt" data-act="lsh-reload" data-v="orders">刷新</button>`)}
-  <div class="box"><div class="tw"><table class="t"><thead><tr><th>订单</th><th>买家</th><th>卖家</th><th>付款</th><th class="r">金额</th><th class="r">代金券</th><th>状态</th><th>时间</th></tr></thead><tbody>${d.items.map(o => `<tr>
+/* 订单流水（连着后端时）：状态筛选交给服务器（最多 300 笔）；搜索在读到的订单里按订单号 / 商品 / 买家 / 卖家找 */
+const LORD_S = {paid:['已支付', 'green'], refunded:['已退款', ''], pending:['待付款', 'yellow']};
+const lordSt = () => LORD_S[UI.adf?.os] ? UI.adf.os : 'all';
+const lordRows = () => { const q = fq('orders'), st = lordSt(); return (LADM.orders?.items || []).filter(o => (st === 'all' || o.status === st) && (!q || (o.no + o.title + o.buyer.name + o.seller.name).toLowerCase().includes(q))); };
+function liveOrdersView(){ const st = lordSt();
+  if (LADM.orders && (LADM.ordWant ?? LADM.ordSt) !== st){ LADM.ordWant = st; delete LADM.reads.orders; delete LADM.errors.orders; LADM.busy.orders = false; if (LADM.ordSt !== st) ladmShop('orders'); }   // 换了状态：旧请求作废；旧行和筛选条留着，新结果回来再换
+  const d = LADM.orders; if (!d){ ladmShop('orders'); return ladmWait('订单流水', '读取中'); }
+  if (['all', 'paid'].includes(LADM.ordSt)) LADM.ordSum = d.sum;   // 服务器只合计筛选结果里的已支付订单：选「已退款 / 待付款」时沿用上次的合计，不显示成 ¥0.00（会像真的零成交）
+  const S = LORD_S, L = lordRows(), sum = k => LADM.ordSum ? yuan2(f2y(LADM.ordSum[k])) : '—';
+  return `${adH('订单流水', `已支付：成交 ${sum('gmv')} · 实收现金 ${sum('cash')} · 代金券抵扣 ${sum('voucher')}（平台承担，卖家照原价结算）`, `${adQ('orders', '订单号 / 商品 / 用户')}<button class="pill sm lt" data-act="od-csv">${IC.dl}导出 CSV</button><button class="pill sm lt" data-act="lsh-reload" data-v="orders">刷新</button>`)}
+  <div class="ad-bar2">${adSeg('os', [['all', '全部状态'], ...Object.entries(S).map(([k, [l]]) => [k, l])], st)}</div>
+  <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>订单</th><th>买家</th><th>卖家</th><th>付款</th><th class="r">金额</th><th class="r">代金券</th><th>状态</th><th>时间</th></tr></thead><tbody>${L.map(o => `<tr class="ad-click" data-act="od-open" data-no="${esc(o.no)}">
     <td><b>${esc(o.title)}</b>${o.tier === 'extended' ? ' <span class="tag">扩展许可</span>' : ''}<div class="mut2 n" style="font-size:11.5px">${o.no}</div></td><td>${esc(o.buyer.name)}</td><td>${esc(o.seller.name)}</td><td class="mut2">${PAY_N[o.payMethod] || o.payMethod}</td>
-    <td class="r n">${yuan2(f2y(o.price))}</td><td class="r n mut2">${o.voucherAmount ? '−' + yuan2(f2y(o.voucherAmount)) : ''}</td><td>${stTag(...(S[o.status] || [o.status, '']))}</td><td class="mut2 n">${fmtDT(+new Date(o.paidAt || o.createdAt))}</td></tr>`).join('') || '<tr><td colspan="8" class="mut">还没有订单</td></tr>'}</tbody></table></div></div>`; }
+    <td class="r n">${yuan2(f2y(o.price))}</td><td class="r n mut2">${o.voucherAmount ? '−' + yuan2(f2y(o.voucherAmount)) : ''}</td><td>${stTag(...(S[o.status] || [o.status, '']))}</td><td class="mut2 n">${fmtDT(+new Date(o.paidAt || o.createdAt))}</td></tr>`).join('') || `<tr><td colspan="8" class="mut">${LADM.busy.orders ? '正在读取…' : d.items.length || st !== 'all' ? '没找到' : '还没有订单'}</td></tr>`}</tbody></table></div></div>
+  ${LADM.errors.orders ? `<p class="mut" role="status">${esc(LADM.errors.orders.message || '读取失败，请重试')} <button class="pill sm lt" data-act="lord-retry">重试</button></p>` : ''}`; }
+ACTIONS['lord-retry'] = () => { ladmQuiet('orders'); rerender(); };
+// 导出 / 点开详情：用服务器读到的订单（看板流水只有最近 120 天，找到就用原来的详情，找不到用这一行）
+wrapAct('od-csv', orig => { if (!LADM.orders) return orig(); const L = lordRows(), t = o => +new Date(o.paidAt || o.createdAt);
+  csvDownload(`ctrlz-orders-${fmtDay(Date.now())}.csv`, [['订单号', '类型', '内容', '买家', '卖家', '金额', '代金券', '渠道', '状态', '时间'], ...L.map(o => [o.no, '商品', o.title, o.buyer.name, o.seller.name, f2y(o.price).toFixed(2), f2y(o.voucherAmount || 0).toFixed(2), PAY_N[o.payMethod] || o.payMethod, (LORD_S[o.status] || [o.status])[0], fmtDay(t(o)) + ' ' + fmtDT(t(o)).slice(6)])]); });
+wrapAct('od-open', (orig, b) => { const no = b.dataset.no, o = LADM.orders?.items?.find(x => x.no === no); if (!o || ledger().some(x => x.no === no)) return orig(b); const ts = +new Date(o.paidAt || o.createdAt);
+  sheet(`<h3>${esc(o.no)}</h3><div class="ad-kv col"><span>内容<b>${esc(o.title)}</b></span><span>类型<b>商品</b></span><span>买家<b>${esc(o.buyer.name)}</b></span><span>卖家<b>${esc(o.seller.name)}</b></span><span>金额<b>${yuan2(f2y(o.price))}</b></span><span>渠道<b>${esc(PAY_N[o.payMethod] || o.payMethod)}</b></span><span>状态<b>${esc((LORD_S[o.status] || [o.status])[0])}</b></span><span>时间<b>${fmtDay(ts)} ${fmtDT(ts).slice(6)}</b></span></div>
+    <div class="ad-acts"><button class="pill sm lt" data-act="us-open" data-id="${esc(o.buyer.id)}">管理买家</button><button class="pill sm lt" data-act="us-open" data-id="${esc(o.seller.id)}">管理卖家</button></div>`); });
 
 function liveRefundsView(){ const L = LADM.refunds; if (!L){ ladmShop('refunds'); return ladmWait('退款', '读取中'); }
-  const S = {pending:['待处理', 'orange'], done:['已退款', 'green'], rejected:['已拒绝', '']};
+  const S = {pending:['待处理', 'orange'], processing:['退款确认中', 'yellow'], done:['已退款', 'green'], rejected:['已拒绝', '']};   // processing：同意了但支付渠道还没确认，可以重试（不能再拒绝）
   return `${adH('退款', '没下载过、7 天内的会自动极速退款；这里主要是需要平台判断的（下载过 / 超过 7 天）', `<button class="pill sm lt" data-act="lsh-reload" data-v="refunds">刷新</button>`)}
   <div class="box"><div class="tw"><table class="t"><thead><tr><th>订单</th><th>买家</th><th class="r">退回</th><th>原因</th><th>状态</th><th></th></tr></thead><tbody>${L.map(r => `<tr>
     <td><b>${esc(r.title)}</b><div class="mut2 n" style="font-size:11.5px">${r.orderNo}</div></td><td>${esc(r.buyer.name)}</td>
     <td class="r n">${yuan2(f2y(r.cashAmount))}${r.voucherAmount ? `<div class="mut2" style="font-size:11.5px">券 ${yuan2(f2y(r.voucherAmount))}</div>` : ''}</td>
     <td>${esc(r.reason)}<div class="mut2" style="font-size:11.5px">${r.fast ? '极速退款' : `下载过 ${r.downloads} 次`} · ${fmtDT(+new Date(r.createdAt))}</div></td><td>${stTag(...(S[r.status] || [r.status, '']))}</td>
-    <td class="r">${r.status === 'pending' ? `<button class="pill sm lt" data-act="lrf-no" data-id="${r.id}">拒绝</button> <button class="pill sm" data-act="lrf-ok" data-id="${r.id}">同意退款</button>` : `<span class="mut2">${esc(r.decidedBy || '自动')}</span>`}</td></tr>`).join('') || '<tr><td colspan="6" class="mut">没有退款申请</td></tr>'}</tbody></table></div></div>`; }
+    <td class="r">${r.status === 'pending' ? `<button class="pill sm lt" data-act="lrf-no" data-id="${r.id}">拒绝</button> <button class="pill sm" data-act="lrf-ok" data-id="${r.id}">同意退款</button>` : r.status === 'processing' ? `<button class="pill sm" data-act="lrf-ok" data-id="${r.id}">重试退款</button>` : `<span class="mut2">${esc(r.decidedBy || '自动')}</span>`}</td></tr>`).join('') || '<tr><td colspan="6" class="mut">没有退款申请</td></tr>'}</tbody></table></div></div>`; }
 Object.assign(ACTIONS, {
-  'lrf-ok': async b => { if (!admGuard('refunds')) return; try { await STAFF.req('POST', `/admin/refunds/${b.dataset.id}/decide`, {ok:true}); toast('已退款', 'green', 'check'); LADM.refunds = null; rerender(); } catch(e){ apiFail(e); } },
+  // 同意 / 重试（processing）：按钮锁住防连点；失败（「退款正在确认」、已被别人处理）也静默重读，显示服务器上的最新状态
+  'lrf-ok': async b => { if (!admGuard('refunds') || b.disabled) return; b.disabled = true; const id = b.dataset.id, current = staffSession();
+    try { await STAFF.req('POST', `/admin/refunds/${id}/decide`, {ok:true}); if (!current()) return; toast('已退款', 'green', 'check'); ladmDone('refunds', L => L.map(r => r.id === id ? {...r, status:'done', decidedBy:admMe().name} : r)); }
+    catch(e){ if (!current() || e.code === 'cancel') return; apiFail(e); ladmDone('refunds'); }
+    finally { if (b.isConnected) b.disabled = false; } },
   'lrf-no': b => { if (!admGuard('refunds')) return; sheet(`<h3>拒绝退款</h3><label class="ad-lab" for="lrfX">原因（会发给买家）</label><textarea class="inp" id="lrfX" placeholder="例如：已下载多次，文件经核实可以正常打开"></textarea><button class="pill lg" data-act="lrf-no-go" data-id="${b.dataset.id}">拒绝</button>`); },
-  'lrf-no-go': async b => { const x = $('#lrfX').value.trim(); if (!x){ fxPop($('#lrfX'), 'fx-shake', 300); return; }
-    try { await STAFF.req('POST', `/admin/refunds/${b.dataset.id}/decide`, {ok:false, reason:x}); closeSheet(); toast('已拒绝', 'orange'); LADM.refunds = null; rerender(); } catch(e){ apiFail(e); } }
+  'lrf-no-go': async b => { const x = $('#lrfX').value.trim(); if (!x){ fxPop($('#lrfX'), 'fx-shake', 300); return; } if (!admGuard('refunds') || b.disabled) return; b.disabled = true; const id = b.dataset.id, current = staffSession();
+    try { await STAFF.req('POST', `/admin/refunds/${id}/decide`, {ok:false, reason:x}); if (!current()) return; closeSheet(); toast('已拒绝', 'orange'); ladmDone('refunds', L => L.map(r => r.id === id ? {...r, status:'rejected', decidedBy:admMe().name} : r)); }
+    catch(e){ if (!current() || e.code === 'cancel') return; apiFail(e); if (e.status === 409) ladmDone('refunds'); }
+    finally { if (b.isConnected) b.disabled = false; } }
 });
 
 function liveVouchersView(){ const d = LADM.vouchers; if (!d){ ladmShop('vouchers'); return ladmWait('代金券', '读取中'); }
@@ -12100,16 +12326,23 @@ function liveVouchersView(){ const d = LADM.vouchers; if (!d){ ladmShop('voucher
     <td class="r">${v.status === 'active' ? `<button class="pill sm lt" data-act="lvc-off" data-id="${v.id}">撤回</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="8" class="mut">还没有发过代金券</td></tr>'}</tbody></table></div></div>`; }
 wrapAct('vc-send', async (orig, b) => { if (!API.on()) return orig(b); if (!admOn() || !admGuard('vouchers')) return;
   const f = b.closest('.vc-f'), to = $('.vcTo', f), amt = r2(+$('.vcAmt', f).value), days = +$('.vcExp', f).value, note = $('.vcNote', f).value.trim();
-  const names = to.value.split(/[,，、\s]+/).filter(Boolean);
+  const names = [...new Set(to.value.split(/[,，、\s]+/).filter(Boolean))];
   if (!names.length){ fxPop(to.type === 'hidden' ? f : to, 'fx-shake', 300); toast('填一下发给谁', 'orange', 'x'); return; }
-  if(names.length>100){toast('每次最多发给 100 个用户','orange','x');return;}
+  if(names.length>50){toast('每次最多发给 50 个用户','orange','x');return;}   // 和后端 userIds.max(50) 一致
   if (!(amt >= 1 && amt <= VC_MAX)){ fxPop($('.vcAmt', f), 'fx-shake', 300); toast(`面额要在 ¥1 到 ${yuan2(VC_MAX)} 之间`, 'orange', 'x'); return; }
   const current=staffSession();if(b.disabled)return;b.disabled = true;
-  try {const uids=[];for(const name of names){const uid=await adminRecipient(name);if(uid===null){fxPop(to,'fx-shake',300);return;}uids.push(uid);}if(!current())return;const list=[...new Set(uids)];
+  try {// 查收件人：5 个一批并发；已经读到过的服务器用户 ID（LIVE.u）不用再查；有一个找不到就停下，只提示一次
+    const uids=[];let miss='';
+    for(let i=0;i<names.length && !miss;i+=5){const got=await Promise.all(names.slice(i,i+5).map(n=>LIVE.u.has(n) ? n : adminRecipient(n,m=>{miss ||= m;})));if(!current())return;if(!miss)uids.push(...got);}
+    if(miss){toast(miss,'orange','x');fxPop(to,'fx-shake',300);return;}
+    const list=[...new Set(uids)].filter(Boolean);
     await STAFF.req('POST', '/admin/vouchers', {userIds:list, amount:y2f(amt), days, note});if(!current())return;toast(`已发出 ${list.length} 张 ${yuan2(amt)} 代金券`, 'pink'); LADM.vouchers = null;
     if (to.type === 'hidden'){ closeSheet(); rerender(); userSheet(list[0]); } else rerender(); }
   catch(e){if(current() && e.code!=='cancel')apiFail(e);}finally{if(b.isConnected)b.disabled=false;} });
-ACTIONS['lvc-off'] = async b => { if (!admGuard('vouchers')) return; try { await STAFF.req('POST', `/admin/vouchers/${b.dataset.id}/revoke`); toast('已撤回', 'orange'); LADM.vouchers = null; rerender(); } catch(e){ apiFail(e); } };
+ACTIONS['lvc-off'] = async b => { if (!admGuard('vouchers') || b.disabled) return; b.disabled = true; const id = b.dataset.id, current = staffSession();
+  try { await STAFF.req('POST', `/admin/vouchers/${id}/revoke`); if (!current()) return; toast('已撤回', 'orange'); ladmDone('vouchers', d => ({...d, items:d.items.map(v => v.id === id ? {...v, status:'revoked'} : v)})); }
+  catch(e){ if (!current() || e.code === 'cancel') return; apiFail(e); if (e.status === 409) ladmDone('vouchers'); }   // 已经撤回过 / 已经用掉：显示服务器上的状态
+  finally { if (b.isConnected) b.disabled = false; } };
 
 function liveInvitesView(){ const L = LADM.invites; if (!L){ ladmShop('invites'); return ladmWait('邀请码', '读取中'); }
   return `${adH('邀请码', '商品售卖许可：创作者开店要用。发给指定用户的只有本人能用（会通过官方通知发给他）；不填就是通用码')}
@@ -12127,7 +12360,8 @@ wrapAct('inv-new', async (orig, b) => { if (!API.on()) return orig(b); if (!admO
   }catch(e){if(current() && e.code!=='cancel')apiFail(e);}finally{if(b.isConnected)b.disabled=false;}
 });
 wrapAct('us-inv', async (orig, b) => { if (!API.on()) return orig(b); if (!admOn() || !admGuard('invites')) return;
-  try { const r = await STAFF.req('POST', '/admin/invites', {userId:b.dataset.id}); toast(`已发给 ${esc(uname(b.dataset.id))}：${r.code}`, 'pink'); LADM.invites = null; } catch(e){ apiFail(e); } });
+  if (b.disabled) return; b.disabled = true; const current = staffSession();
+  try { const r = await STAFF.req('POST', '/admin/invites', {userId:b.dataset.id}); if (!current()) return; toast(`已发给 ${esc(uname(b.dataset.id))}：${r.code}`, 'pink'); LADM.invites = null; } catch(e){ if (current() && e.code !== 'cancel') apiFail(e); } finally { if (b.isConnected) b.disabled = false; } });
 
 /* —— 主页 / 视频流里直接下架、警告：先调后台接口，成功了再更新界面 —— */
 const MOD_WRITES=new Set();
@@ -12280,14 +12514,17 @@ wrapAct('co-psave', (orig, b, e) => { orig(b, e); if (liveUser()) coSvcSave(); }
 /* 后台「合作纠纷」 */
 { const dp0 = ADMV.disputes;
   ADMV.disputes = () => { if (!API.on()) return dp0();
-    if (!LADM.disputes){ ladmGet('disputes', '/admin/collabs?view=all', r => r.items.map(s => coMap(s).id)); return ladmWait('合作纠纷', '读取中'); }
+    // 先读平台介入中的（只有这几单，快），已裁决的历史（最近 200 单）回来后再补上；待处理的不会被历史挤掉
+    if (!LADM.disputes){ LADM.disputesAll = null; delete LADM.errors.disputesAll; delete LADM.reads.disputesAll; LADM.busy.disputesAll = false;
+      ladmGet('disputes', '/admin/collabs?view=dispute', r => r.items.map(s => coMap(s).id)); return ladmWait('合作纠纷', '读取中'); }
+    if (!LADM.disputesAll) ladmGet('disputesAll', '/admin/collabs?view=all', r => r.items.map(s => coMap(s).id));
     return dp0(); }; }
 wrapAct('dp-go', async (orig, b) => { const o = CO_BY(b.dataset.id); if (!o?.live) return orig(b); if (!admGuard('disputes')) return;
   const k = $('#dpK .on')?.dataset.v || 'release', note = $('#dpWhy').value.trim(); if (!note){ fxPop($('#dpWhy'), 'fx-shake', 300); $('#dpWhy').focus(); return; }
-  b.disabled = true;
-  try { await STAFF.req('POST', `/admin/collabs/${encodeURIComponent(o.id)}/rule`, {kind:k === 'part' ? 'partial' : k, refund:k === 'part' ? y2f(+$('#dpAmt').value) : 0, note});
-    closeSheet(); toast('已裁决，已通知双方', 'green', 'check'); LADM.disputes = null; rerender(); }
-  catch(e){ b.disabled = false; apiFail(e); } });
+  if (b.disabled) return; b.disabled = true; const current = staffSession();
+  try { await STAFF.req('POST', `/admin/collabs/${encodeURIComponent(o.id)}/rule`, {kind:k === 'part' ? 'partial' : k, refund:k === 'part' ? y2f(+$('#dpAmt').value) : 0, note}); if (!current()) return;
+    closeSheet(); toast('已裁决，已通知双方', 'green', 'check'); ladmQuiet('disputesAll'); ladmDone('disputes'); }   // 列表留着，两份都静默重读（重读会把这单换成服务器上的状态）
+  catch(e){ b.disabled = false; if (!current() || e.code === 'cancel') return; apiFail(e); if (e.status === 409 || e.code === 'bad_state'){ ladmQuiet('disputesAll'); ladmDone('disputes'); } } });
 
 /* ================= 敏感词、注销检查（连着后端时） =================
    · 敏感词以服务器为准：后台「敏感词」读写 /admin/words，「试一下」问服务器；用户端不再用本地的示例词拦（censor 返回空，由服务器判断）
@@ -12298,10 +12535,14 @@ wrapAct('dp-go', async (orig, b) => { const o = CO_BY(b.dataset.id); if (!o?.liv
     if (!LADM.words){ ladmGet('words', '/admin/words', r => r.items); return ladmWait('敏感词', '读取中'); }
     const W = {block:LADM.words.filter(w => w.level === 'block').map(w => w.word), review:LADM.words.filter(w => w.level === 'review').map(w => w.word)};
     const keep = ADM.words; ADM.words = W; try { return wd0().replace(/data-act="wd-del" data-lv="(\w+)" data-i="(\d+)"/g, (m, lv, i) => `data-act="wd-del" data-lv="${lv}" data-i="${i}" data-w="${esc(W[lv][+i])}"`); } finally { ADM.words = keep; } }; }
-wrapAct('wd-add', async (orig, b) => { if (!admGuard('words')) return; const lv = b.dataset.lv, i = $('#wd-' + lv), v = i.value.trim(); if (!v) return;
-  try { await STAFF.req('PUT', '/admin/words', {word:v, level:lv}); LADM.words = null; rerender(); setTimeout(() => $('#wd-' + lv)?.focus(), 50); toast(`已${lv === 'block' ? '拦截' : '送审'}「${esc(v)}」`, 'green', 'check'); } catch(e){ apiFail(e); } });
-wrapAct('wd-del', async (orig, b) => { if (!admGuard('words')) return; const w = b.dataset.w; if (!w) return;
-  try { await STAFF.req('DELETE', `/admin/words/${encodeURIComponent(w)}`); LADM.words = null; rerender(); } catch(e){ apiFail(e); } });
+// 加词 / 删词：按钮锁住防连点（回车加词也走同一个按钮）；成功后本地先改，再静默重读
+const WD_BUSY = new Set();
+wrapAct('wd-add', async (orig, b) => { if (!admGuard('words')) return; const lv = b.dataset.lv, i = $('#wd-' + lv), v = i.value.trim(); if (!v || b.disabled || WD_BUSY.has(lv)) return; WD_BUSY.add(lv); b.disabled = true; const current = staffSession();
+  try { await STAFF.req('PUT', '/admin/words', {word:v, level:lv}); if (!current()) return; ladmDone('words', L => [...L.filter(w => w.word !== v), {word:v, level:lv}]); setTimeout(() => $('#wd-' + lv)?.focus(), 50); toast(`已${lv === 'block' ? '拦截' : '送审'}「${esc(v)}」`, 'green', 'check'); }
+  catch(e){ if (current() && e.code !== 'cancel') apiFail(e); } finally { WD_BUSY.delete(lv); if (b.isConnected) b.disabled = false; } });
+wrapAct('wd-del', async (orig, b) => { if (!admGuard('words')) return; const w = b.dataset.w; if (!w || b.disabled) return; b.disabled = true; const current = staffSession();
+  try { await STAFF.req('DELETE', `/admin/words/${encodeURIComponent(w)}`); if (!current()) return; ladmDone('words', L => L.filter(x => x.word !== w)); }
+  catch(e){ if (current() && e.code !== 'cancel') apiFail(e); } finally { if (b.isConnected) b.disabled = false; } });
 wrapAct('wd-test', async () => { const r = $('#wdR');
   try { const v = await STAFF.req('POST', '/admin/words/test', {text:$('#wdT').value}); r.innerHTML = v.level === 'pass' ? '没有命中，可以正常发出' : v.level === 'block' ? `会被<b style="color:var(--orange)">拦截</b>：命中「${esc(v.word)}」` : `能发出，但会<b>送审</b>：命中「${esc(v.word)}」`; } catch(e){ apiFail(e); } });
 const LCLOSE = {v:null, at:0, busy:false};
@@ -12325,11 +12566,12 @@ function bizCfg(){ const k = LIVE.cfg; if (!k?.collab) return;
   if (k.legal) Object.assign(ADM.site, k.legal); footLegal(); }
 { const boot4 = liveBoot; liveBoot = async function(){ await boot4(); bizCfg(); if (liveUser()) bizMine(); }; }
 { const after5 = liveAfterLogin; liveAfterLogin = async function(){ await after5(); bizMine(); }; }
-wrapAct('pm-save', async () => { if (!admGuard('params')) return;
+wrapAct('pm-save', async (orig, b) => { if (!admGuard('params') || b?.disabled) return;
   const P = {}, L = {}; $$('[data-pm]').forEach(i => { const k = i.dataset.pm; P[k] = Math.min(PM_MAX[k], Math.max(k === 'coAuto' ? 1 : 0, +i.value || 0))/+i.dataset.m; });
   P.coRev = Math.round(P.coRev); P.coAuto = Math.round(P.coAuto); $$('[data-site]').forEach(i => { L[i.dataset.site] = i.value.trim(); });
+  if (b) b.disabled = true;   // 保存中再点不重复提交
   try { const r = await STAFF.req('PUT', '/admin/settings', {params:P, legal:L}); Object.assign(LIVE.cfg, {plat:r.params.plat, collab:{fee:r.params.coFee, freeRev:r.params.coRev, autoDays:r.params.coAuto}, legal:r.legal}); bizCfg(); toast('已保存，之后的新订单按新参数算', 'green', 'check'); rerender(); }
-  catch(e){ apiFail(e); } });
+  catch(e){ apiFail(e); } finally { if (b?.isConnected) b.disabled = false; } });
 
 /* 用户端：我的入驻申请、发票、收款账户和结算记录 */
 async function bizMine(){ if (!liveUser()) return;
@@ -12377,20 +12619,28 @@ wrapAct('apply-go', async (orig, b) => { if (!liveUser()) return orig(b);
     ADM.apps = LADM.apply.map(a => { apiUser(a.user); return {id:a.id, uid:a.user.id, name:a.user.name, real:a.real, idno:a.idno, phone:a.phone, cats:a.cats, link:a.link, note:a.note || '—', ts:+new Date(a.createdAt),
       st:a.status === 'pending' ? '待审核' : a.status === 'approved' ? '已通过 · ' + (a.inviteCode || '') : '已驳回 · ' + (a.reason || '')}; });
     return ap0(); }; }
-wrapAct('ap-ok', async (orig, b) => { if (!admGuard('apply')) return;
-  try { const r = await STAFF.req('POST', `/admin/seller-apps/${encodeURIComponent(b.dataset.id)}/decide`, {ok:true}); toast('已通过，邀请码 ' + r.code + ' 已发给本人', 'green', 'check'); LADM.apply = null; rerender(); } catch(e){ apiFail(e); } });
+// 处理完一份：「待审核」里拿掉，「全部」里改成结果，再静默重读
+const apDone = (id, fix) => ladmDone('apply', L => LADM.apv === 'todo' ? L.filter(a => a.id !== id) : L.map(a => a.id === id ? {...a, ...fix} : a));
+wrapAct('ap-ok', async (orig, b) => { if (!admGuard('apply') || b.disabled) return; b.disabled = true; const id = b.dataset.id, current = staffSession();
+  try { const r = await STAFF.req('POST', `/admin/seller-apps/${encodeURIComponent(id)}/decide`, {ok:true}); if (!current()) return; toast('已通过，邀请码 ' + r.code + ' 已发给本人', 'green', 'check'); apDone(id, {status:'approved', inviteCode:r.code}); }
+  catch(e){ if (!current() || e.code === 'cancel') return; apiFail(e); if (e.status === 409) ladmDone('apply'); }   // 已经被别人处理过：显示服务器上的状态
+  finally { if (b.isConnected) b.disabled = false; } });
 wrapAct('ap-no', async (orig, b) => { if (!admGuard('apply')) return; const a = ADM.apps.find(x => x.id === b.dataset.id); if (!a) return;const current=staffSession();
-  rsnSheet(`驳回「${esc(a.name)}」的入驻申请`, 'apply', async why => { try {if(!current())return false;await STAFF.req('POST', `/admin/seller-apps/${encodeURIComponent(a.id)}/decide`, {ok:false, reason:why});if(!current())return false;toast('已驳回，已通知本人', 'orange', 'x'); LADM.apply = null; rerender();return true;}catch(e){if(current() && e.code!=='cancel')apiFail(e);return false;} }); });
+  rsnSheet(`驳回「${esc(a.name)}」的入驻申请`, 'apply', async why => { try {if(!current())return false;await STAFF.req('POST', `/admin/seller-apps/${encodeURIComponent(a.id)}/decide`, {ok:false, reason:why});if(!current())return false;toast('已驳回，已通知本人', 'orange', 'x'); apDone(a.id, {status:'rejected', reason:why});return true;}catch(e){if(current() && e.code!=='cancel'){apiFail(e);if(e.status===409)ladmDone('apply');}return false;} }); });
 
 { const iv0 = ADMV.invoice;
   ADMV.invoice = () => { if (!API.on()) return iv0(); const f = UI.adf?.iv || 'todo';
     if (!LADM.invoice || LADM.ivv !== f){ LADM.ivv = f; LADM.invoice = null; ladmGet('invoice', '/admin/invoices?view=' + f, r => r.items); return ladmWait('发票', '读取中'); }
     ADM.invoices = LADM.invoice.map(v => { apiUser(v.user); return bizInvMap(v, v.orderNo, v.item, v.user.id); });
     return iv0(); }; }
+const ivDone = (id, fix) => ladmDone('invoice', L => LADM.ivv === 'todo' ? L.filter(v => v.id !== id) : L.map(v => v.id === id ? {...v, ...fix} : v));
 wrapAct('inv-dgo', async (orig, b) => { if (!admGuard('invoice')) return; const n = $('#ivN').value.trim(); if (!/^\d{8,20}$/.test(n)){ fxPop($('#ivN'), 'fx-shake', 300); return; }
-  try { await STAFF.req('POST', `/admin/invoices/${encodeURIComponent(b.dataset.id)}/decide`, {ok:true, invoiceNo:n}); closeSheet(); toast('已开具，已通知用户', 'green', 'check'); LADM.invoice = null; rerender(); } catch(e){ apiFail(e); } });
+  if (b.disabled) return; b.disabled = true; const id = b.dataset.id, current = staffSession();
+  try { await STAFF.req('POST', `/admin/invoices/${encodeURIComponent(id)}/decide`, {ok:true, invoiceNo:n}); if (!current()) return; closeSheet(); toast('已开具，已通知用户', 'green', 'check'); ivDone(id, {status:'issued', invoiceNo:n}); }
+  catch(e){ if (!current() || e.code === 'cancel') return; apiFail(e); if (e.status === 409) ladmDone('invoice'); }
+  finally { if (b.isConnected) b.disabled = false; } });   // 成功后面板关了，按钮已不在页面上
 wrapAct('inv-no', async (orig, b) => { if (!admGuard('invoice')) return; const v = ADM.invoices.find(x => x.id === b.dataset.id); if (!v) return;const current=staffSession();
-  rsnSheet(`驳回「${esc(v.title)}」的发票申请`, 'invoice', async why => { try {if(!current())return false;await STAFF.req('POST', `/admin/invoices/${encodeURIComponent(v.id)}/decide`, {ok:false, reason:why});if(!current())return false;toast('已驳回', 'orange', 'x'); LADM.invoice = null; rerender();return true;}catch(e){if(current() && e.code!=='cancel')apiFail(e);return false;} }); });
+  rsnSheet(`驳回「${esc(v.title)}」的发票申请`, 'invoice', async why => { try {if(!current())return false;await STAFF.req('POST', `/admin/invoices/${encodeURIComponent(v.id)}/decide`, {ok:false, reason:why});if(!current())return false;toast('已驳回', 'orange', 'x'); ivDone(v.id, {status:'rejected', reason:why});return true;}catch(e){if(current() && e.code!=='cancel'){apiFail(e);if(e.status===409)ladmDone('invoice');}return false;} }); });
 
 /* 看板：流水来自服务器 */
 const LLEDGER = {v:null, at:0, busy:false, mark:null, error:null};
@@ -12399,7 +12649,7 @@ const LLEDGER = {v:null, at:0, busy:false, mark:null, error:null};
     if (!staffCan('orders.read')) return [];
     if (!LLEDGER.busy && Date.now() - LLEDGER.at > 15000){ LLEDGER.busy = true; LLEDGER.at = Date.now(); const mark = LLEDGER.mark = {}, current = staffSession();
       STAFF.req('GET', '/admin/ledger?days=120').then(r => { if (!current() || LLEDGER.mark !== mark) return; Object.values(r.users).forEach(u => apiUser(u)); LLEDGER.error = null; LLEDGER.v = r.items.map(x => ({...x, amt:f2y(x.amt), vc:f2y(x.vc), part:f2y(x.part), ts:+new Date(x.ts)})); if (CUR.key?.startsWith('admin')) rerender(); })
-        .catch(e => { if (current() && LLEDGER.mark === mark) LLEDGER.error = e.code === 'cancel' ? null : e.message; }).finally(() => { if (current() && LLEDGER.mark === mark) LLEDGER.busy = false; }); }
+        .catch(e => { if (current() && LLEDGER.mark === mark){ LLEDGER.error = e.code === 'cancel' ? null : e.message || '读取失败，请重试'; if (LLEDGER.error && CUR.key?.startsWith('admin')) rerender(); } })   /* 看板上显示错误和「重试」 */.finally(() => { if (current() && LLEDGER.mark === mark) LLEDGER.busy = false; }); }
     return LLEDGER.v || []; }; }
 { const ds0 = ADMV.dash;
   ADMV.dash = () => { if (!API.on()) return ds0();
@@ -12410,13 +12660,17 @@ const LLEDGER = {v:null, at:0, busy:false, mark:null, error:null};
     const held = L.filter(x => x.st === 'held' || x.st === 'dispute').reduce((a, x) => a + x.amt, 0);
     const todo = [['review', '待审核'], ['avatars', '头像'], ['reports', '举报'], ['apply', '入驻'], ['refunds', '退款'], ['disputes', '纠纷'], ['invoice', '发票']].filter(t => admCan(t[0])).map(([k, l]) => [k, l, C[k] || 0]);
     const body = ds0(), i = body.indexOf('<div class="ad-grid2">');
+    // 流水还没读到 / 读失败时不显示 ¥0.00（会像真的零成交）：金额写「—」，第一格说明正在读取或给「重试」
+    const lok = !!LLEDGER.v, money = v => admCan('orders') && lok ? yuan2(v) : '—';
+    const ldNote = LLEDGER.error ? `${esc(LLEDGER.error)} <button class="pill sm lt" data-act="lld-retry">重试</button>` : '读取中…';
     return `${adH('看板', `${mon} · 数据来自服务器的订单流水`)}
-    <div class="kpis"><div class="kpi"><span class="lab">本月成交额</span><b class="num">${admCan('orders') ? yuan2(gmv) : '—'}</b><span class="d">${admCan('orders') ? ML.length + ' 笔订单' : '财务 / 客服可见'}</span></div>
-      <div class="kpi"><span class="lab">平台收入</span><b class="num">${admCan('orders') ? yuan2(rev) : '—'}</b><span class="d">商品 ${+(PLAT*100).toFixed(1)}% · 合作 ${+(CO_FEE*100).toFixed(1)}%</span></div>
+    <div class="kpis"><div class="kpi"><span class="lab">本月成交额</span><b class="num">${money(gmv)}</b><span class="d">${!admCan('orders') ? '财务 / 客服可见' : lok ? ML.length + ' 笔订单' : ldNote}</span></div>
+      <div class="kpi"><span class="lab">平台收入</span><b class="num">${money(rev)}</b><span class="d">商品 ${+(PLAT*100).toFixed(1)}% · 合作 ${+(CO_FEE*100).toFixed(1)}%</span></div>
       <div class="kpi"><span class="lab">用户 / 创作者</span><b class="num">${S.users} / ${S.creators}</b><span class="d">今天新增 ${S.newToday} · 在售商品 ${S.onSale}</span></div>
-      <div class="kpi"><span class="lab">托管中的合作款</span><b class="num">${admCan('orders') ? yuan2(held) : '—'}</b><span class="d">纠纷 ${C.disputes || 0} 单</span></div></div>
+      <div class="kpi"><span class="lab">托管中的合作款</span><b class="num">${money(held)}</b><span class="d">纠纷 ${C.disputes || 0} 单</span></div></div>
     ${todo.length ? `<div class="ad-todo">${todo.map(([k, l, n]) => `<button data-act="atab" data-v="${k}" class="${n ? 'on' : ''}"><b class="num">${n}</b><span>${l}</span></button>`).join('')}</div>` : ''}
     ${admCan('orders') && i >= 0 ? body.slice(i) : ''}`; }; }
+ACTIONS['lld-retry'] = () => { LLEDGER.at = 0; LLEDGER.error = null; rerender(); };
 
 /* 内容：帖子 / 商品 / 评论，下架和恢复走后台接口 */
 function adminContentChanged(kind,id,action,row={}){
@@ -12454,11 +12708,13 @@ function adminContentChanged(kind,id,action,row={}){
 }
 async function adminLoadContent(kind,more=false,retry=false){
   if(!staffCan(kind==='prod' ? 'products.review' : 'content.read'))return;
-  if(LADM.ctk!==kind){LADM.ctk=kind;LADM.content=null;LADM.contentNext=null;LADM.contentSeen=new Set();delete LADM.errors.content;delete LADM.reads.content;LADM.busy.content=false;}
+  const qs=adminContentQuery(kind);
+  if(LADM.ctk!==kind){LADM.ctk=kind;LADM.ctq=qs;LADM.content=null;LADM.contentNext=null;LADM.contentSeen=new Set();delete LADM.errors.content;delete LADM.reads.content;LADM.busy.content=false;}
+  else if(LADM.ctq!==qs){LADM.ctq=qs;LADM.contentNext=null;LADM.contentSeen=new Set();delete LADM.errors.content;delete LADM.reads.content;LADM.busy.content=false;}   // 换了搜索词 / 筛选：旧行先留着，新结果回来再换
   if(LADM.busy.content || LADM.errors.content && !retry || more && !LADM.contentNext)return;
   if(!more)LADM.contentSeen=new Set();
   const current=staffSession(),mark=LADM.reads.content={},cursor=more ? LADM.contentNext : null;
-  const url=kind==='post' ? '/admin/posts?view=all&limit=50' : kind==='prod' ? '/admin/products?status=all' : '/admin/comments?view=all&limit=50';
+  const url=kind==='post' ? '/admin/posts?'+qs+'&limit=50' : kind==='prod' ? '/admin/products?'+qs : '/admin/comments?view=all&limit=50';
   const active=()=>current() && LADM.ctk===kind && LADM.reads.content===mark;
   LADM.busy.content=true;delete LADM.errors.content;
   try{const r=await STAFF.req('GET',url+(cursor ? '&cursor='+encodeURIComponent(cursor) : ''));if(!active())return;
@@ -12468,12 +12724,19 @@ async function adminLoadContent(kind,more=false,retry=false){
   }catch(e){if(active() && e.code!=='cancel')LADM.errors.content=e.message || '读取失败，请重试';}
   finally{if(active()){LADM.busy.content=false;if(CUR.key?.startsWith('admin'))rerender();}}
 }
+/* 帖子 / 商品的搜索词和「已下架 / 在售」筛选交给服务器（读到的行仍在本地再筛一遍）；评论接口不支持，仍在本地筛 */
+function adminContentQuery(kind){
+  const f=UI.adf?.cs || 'all',q=kind==='cmt' ? '' : (UI.adq?.content || '').trim().toLowerCase().slice(0,kind==='prod' ? 40 : 100).replace(/[\uD800-\uDBFF]$/,'');   // 截断位置落在 emoji 中间时去掉半个字符，否则 encodeURIComponent 会抛错
+  const st=kind==='post' ? 'view='+(f==='off' ? 'taken_down' : 'all') : kind==='prod' ? 'status='+(f==='off' ? 'taken_down' : f==='on' ? 'on_sale' : 'all') : 'view=all';
+  return st+(q ? '&q='+encodeURIComponent(q) : '');
+}
 ACTIONS['lct-more']=()=>adminLoadContent(LADM.ctk,true);
 ACTIONS['lct-retry']=()=>adminLoadContent(LADM.ctk,!!LADM.content && !!LADM.contentNext,true);
 { const ct0 = ADMV.content;
   ADMV.content = () => { if (!API.on()) return ct0(); const tabs=[['post','帖子'],['prod','商品'],['cmt','评论']].filter(([k])=>staffCan(k==='prod' ? 'products.review' : 'content.read'));
     const k=tabs.some(([k])=>k===UI.adf?.ct) ? UI.adf.ct : tabs[0]?.[0],q=fq('content'),f=UI.adf?.cs || 'all';if(!k)return ladmWait('内容','当前身份没有查看权限');
     if (!LADM.content || LADM.ctk !== k){void adminLoadContent(k);return ladmWait('内容','读取中','content');}
+    if (LADM.ctq !== adminContentQuery(k)) void adminLoadContent(k);
     const off = x => x.status === 'taken_down', who = x => x.author || x.seller;
     const rows = LADM.content.filter(x => (f==='all' || f==='off' ? f==='all' || off(x) : ['published','on_sale'].includes(x.status)) && (!q || ((x.title || x.body || '') + who(x).name).toLowerCase().includes(q))).map(x => { apiUser(who(x));
       const st = off(x) ? stTag(k === 'cmt' ? '已删除' : '已下架', 'orange') : x.status === 'review' || x.status === 'need_info' ? stTag('审核中', 'yellow') : x.status === 'on_sale' || x.status === 'published' ? stTag(k === 'prod' ? '在售' : '在线', 'green') : stTag(x.status, '');
@@ -12481,7 +12744,7 @@ ACTIONS['lct-retry']=()=>adminLoadContent(LADM.ctk,!!LADM.content && !!LADM.cont
       return `<tr><td><span class="ad-u">${k === 'cmt' ? uav(x.author.id) : ''}<span><b>${esc(k === 'cmt' ? x.body : x.title)}</b><i>${esc(who(x).name)}${k === 'cmt' ? ` · 在「${esc(x.postTitle)}」` : k === 'prod' ? ' · ' + yuan2(f2y(x.price)) : ''} · ${fmtDay(+new Date(x.createdAt))}</i></span></span></td><td class="r n">${k === 'prod' ? x.salesCount : ''}</td><td>${st}</td><td class="r">${act}</td></tr>`; }).join('');
     return `${adH('内容', '已发布的内容；下架后用户端立刻看不到，可以恢复。作者会收到通知', adQ('content', '搜标题、内容或作者'))}
     <div class="ad-bar2">${adSeg('ct',tabs,k)}${adSeg('cs', [['all', '全部'], ['on', '在线'], ['off', '已下架']], f)}</div>
-    <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>内容</th><th class="r">${k === 'prod' ? '销量' : ''}</th><th>状态</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="mut">没找到</td></tr>'}</tbody></table></div></div>
+    <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>内容</th><th class="r">${k === 'prod' ? '销量' : ''}</th><th>状态</th><th></th></tr></thead><tbody>${rows || `<tr><td colspan="4" class="mut">${LADM.busy.content ? '正在读取…' : '没找到'}</td></tr>`}</tbody></table></div></div>
     ${LADM.errors.content ? `<p class="mut" role="status">${esc(LADM.errors.content)} <button class="pill sm lt" data-act="lct-retry">重试</button></p>` : LADM.contentNext ? `<button class="pill lt lg" data-act="lct-more" ${LADM.busy.content ? 'disabled aria-busy="true"' : ''}>${LADM.busy.content ? '读取中…' : '加载更多内容'}</button>` : ''}`; }; }
 const CONTENT_WRITES=new Set();
 ACTIONS.lct = b => { if (!admGuard('content')) return; const {k, v, id} = b.dataset;
@@ -12508,15 +12771,18 @@ RJ_REASON.payout = ['收款账户信息有误', '收款账户已注销 / 冻结'
       <tbody>${rows.map(r => `<tr><td><span class="ad-u">${uav(r.seller.id)}<span><b>${esc(r.seller.name)}</b><i>${r.payee ? esc(`${PAYEE_K[r.payee.kind]?.[0] || r.payee.kind} · ${r.payee.name}${r.payee.acct ? ' · ' + r.payee.acct : ''}`) : '<span style="color:var(--orange)">未绑定收款账户</span>'}</i></span></span></td><td class="r n">${r.n}</td><td class="r n">${Y(r.gross)}</td><td class="r n neg">−${Y(r.fee)}</td><td class="r n neg">−${Y(r.plat)}</td><td class="r n">${Y(r.co)}</td><td class="r n neg">−${Y(r.coFee)}</td><td class="r n"><b>${Y(r.net)}</b></td>
         ${D.generated ? `<td>${stTag(PAY_ST[r.status] || r.status, {pending:'yellow', paid:'green', failed:'orange'}[r.status])}${r.txn ? `<br><span class="mut2 n" style="font-size:11.5px">${esc(r.txn)}</span>` : r.reason ? `<br><span class="mut2" style="font-size:11.5px">${esc(r.reason)}</span>` : ''}</td><td class="r">${r.status !== 'paid' ? `<button class="pill sm" data-act="lpo-pay" data-id="${r.id}">标记已打款</button> <button class="pill sm lt" data-act="lpo-fail" data-id="${r.id}">失败</button>` : ''}</td>` : ''}</tr>`).join('') || `<tr><td colspan="8" class="mut">这个月没有可结算的订单</td></tr>`}</tbody></table></div></div>
     <p class="mut2" style="font-size:12.5px;margin-top:10px">⚠️ 现在只记录打款状态；接入真实支付后，打款走支付渠道的分账 / 结算接口（微信支付电商收付通、支付宝直付通等）。</p>`; }; }
+// 标记打款 / 失败：这一行先改成结果，再静默重读（列表不清空）
+const poDone = (id, fix) => ladmDone('payout', D => ({...D, rows:D.rows.map(r => r.id === id ? {...r, ...fix} : r)}));
 Object.assign(ACTIONS, {
   'lpo-gen': async b => { if (!admGuard('payout')) return; b.disabled = true;
     try { const r = await STAFF.req('POST', '/admin/payouts/generate', {month:b.dataset.v}); toast(`结算单已生成，已通知 ${r.count} 位创作者`, 'green', 'check'); LADM.payout = null; rerender(); } catch(e){ b.disabled = false; apiFail(e); } },
   'lpo-pay': b => { if (!admGuard('payout')) return; const id = b.dataset.id;
     sheet(`<h3>标记已打款</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">线下打款完成后，把银行 / 支付渠道的流水号填在这里，创作者会收到通知。</p><label class="ad-lab" for="poTx">打款流水号</label><input class="inp" id="poTx" autocomplete="off" maxlength="64"><button class="pill lg" data-act="lpo-pgo" data-id="${esc(id)}">确认已打款</button>`); },
-  'lpo-pgo': async b => { const t = $('#poTx').value.trim(); if (t.length < 4){ fxPop($('#poTx'), 'fx-shake', 300); return; } b.disabled = true;
-    try { await STAFF.req('POST', `/admin/payouts/${encodeURIComponent(b.dataset.id)}/mark`, {st:'paid', txn:t}); closeSheet(); toast('已标记打款，已通知创作者', 'green', 'check'); LADM.payout = null; rerender(); } catch(e){ b.disabled = false; apiFail(e); } },
+  'lpo-pgo': async b => { const t = $('#poTx').value.trim(); if (t.length < 4){ fxPop($('#poTx'), 'fx-shake', 300); return; } if (b.disabled) return; b.disabled = true;
+    const id = b.dataset.id;
+    try { await STAFF.req('POST', `/admin/payouts/${encodeURIComponent(id)}/mark`, {st:'paid', txn:t}); closeSheet(); toast('已标记打款，已通知创作者', 'green', 'check'); poDone(id, {status:'paid', txn:t}); } catch(e){ b.disabled = false; apiFail(e); } },
   'lpo-fail': b => { if (!admGuard('payout')) return; const id = b.dataset.id,current=staffSession();
-    rsnSheet('打款失败的原因', 'payout', async why => { try {if(!current())return false;await STAFF.req('POST', `/admin/payouts/${encodeURIComponent(id)}/mark`, {st:'failed', reason:why});if(!current())return false;toast('已标记失败，已通知创作者', 'orange', 'x'); LADM.payout = null; rerender();return true;}catch(e){if(current() && e.code!=='cancel')apiFail(e);return false;} }); }
+    rsnSheet('打款失败的原因', 'payout', async why => { try {if(!current())return false;await STAFF.req('POST', `/admin/payouts/${encodeURIComponent(id)}/mark`, {st:'failed', reason:why});if(!current())return false;toast('已标记失败，已通知创作者', 'orange', 'x'); poDone(id, {status:'failed', reason:why});return true;}catch(e){if(current() && e.code!=='cancel')apiFail(e);return false;} }); }
 });
 
 /* ================= 自助找回密码：恢复码（连着后端时） =================
@@ -12573,9 +12839,9 @@ wrapAct('counter-go', async (orig, b) => { if (!liveUser()) return orig(b); cons
   catch(e){ b.disabled = false; apiFail(e); } });
 ACTIONS['lrp-ct'] = b => { if (!admGuard('reports')) return; const ok = b.dataset.v === '1';
   sheet(`<h3>${ok ? '恢复内容' : '维持下架'}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">结果会同时通知作者和投诉人。${ok ? '投诉人在合理期限内没有进一步证据的，一般应恢复。' : ''}</p><textarea class="inp" id="lctX" placeholder="说明（可选）"></textarea><button class="pill lg" data-act="lrp-cgo" data-v="${b.dataset.v}" data-id="${esc(b.dataset.id)}">确认</button>`); };
-ACTIONS['lrp-cgo'] = async b => { b.disabled = true;
-  try { await STAFF.req('POST', `/admin/reports/${encodeURIComponent(b.dataset.id)}/counter`, {restore:b.dataset.v === '1', note:$('#lctX').value.trim()}); closeSheet(); toast('已处理，已通知双方', 'green', 'check'); LADM.reports = null; rerender(); }
-  catch(e){ b.disabled = false; apiFail(e); } };
+ACTIONS['lrp-cgo'] = async b => { if (b.disabled) return; b.disabled = true; const id = b.dataset.id, restore = b.dataset.v === '1', note = $('#lctX').value.trim(), current = staffSession();
+  try { await STAFF.req('POST', `/admin/reports/${encodeURIComponent(id)}/counter`, {restore, note}); if (!current()) return; closeSheet(); toast('已处理，已通知双方', 'green', 'check'); lrpDone(id, {status:restore ? 'counter_restored' : 'counter_kept', note}); }
+  catch(e){ b.disabled = false; if (!current() || e.code === 'cancel') return; apiFail(e); if (e.status === 409) ladmDone('reports'); } };
 
 /* 商品上传新版本：真的传文件，先进审核，通过后服务器通知买过的人 */
 const SVF = {file:null};
@@ -12621,12 +12887,15 @@ ACTIONS['tax-dl'] = () => { if (LADM.tax) csvDownload(`ctrlz-tax-${$('#taxQ .on'
    · 商品页打开时记一次浏览（/products/{id}/view），工作室「我的产品」显示浏览量和下单率（/me/product-stats）
    · 菜单「反馈问题」→ /feedback（自动带设备、浏览器、页面，登录了可以附截图）；网页报错自动上报 /client-errors；后台「反馈与报错」页签 */
 const MORE = {busy:{}};
+// 首页下一页的游标：「关注」只翻关注流（没登录时没有下一页），「推荐」翻推荐流
+const homeNext = () => (UI.homeTab || 'rec') !== 'fol' ? LIVE.next : liveUser() && LIVE.folMe === ME && Array.isArray(LIVE.fol) ? LIVE.fnext : null;
 const moreBox = k => `<div class="wrap feed-more"><button class="pill lt" data-act="more" data-v="${esc(k)}">加载更多</button></div>`;
-const addPosts = items => items.map(apiPost).forEach(p => { if (!POSTS.some(x => x.id === p.id)) POSTS.push(p); });
+const addPosts = items => items.map(apiPost).forEach(p => { const old = POSTS.find(x => x.id === p.id); if (old) delete old.folOnly; else POSTS.push(p); });   // 之前只在关注流里的帖子，这次在推荐里也读到了：解除 folOnly
 const moreState = () => JSON.stringify([CUR.key,UI.homeTab,UI.shop,UI.userTab,STATE.settings.pers,[...STATE.follows],[...STATE.blocks]]);
 function patchMoreList(k, changed = new Set()){
-  let list, box, area, empty, cls, make, prefix;
-  if (k === 'home'){ list = POSTS.filter(p => !p.failed && !blocked(p.author) && ((UI.homeTab || 'rec') !== 'fol' || STATE.follows.has(p.author))); if ((UI.homeTab || 'rec') === 'rec' && !STATE.settings.pers) list = byTime(list);
+  let list, box, area, empty, cls, make, prefix, folWait = false;
+  if (k === 'home'){ const tab = UI.homeTab || 'rec', fl = tab === 'fol' && liveUser(), fols = fl && Array.isArray(LIVE.fol) && LIVE.folMe === ME;   // 和 ROUTES.home 一样：登录后的「关注」按 LIVE.fol
+    list = (fl ? (fols ? LIVE.fol.map(id => POST(id)) : []) : POSTS).filter(p => p && !p.failed && !blocked(p.author) && (tab === 'fol' ? STATE.follows.has(p.author) || fl && !LIVE.folOff?.has(p.author) : !p.folOnly)); if (tab === 'rec' && !STATE.settings.pers) list = byTime(list); folWait = fl && !fols;
     area = $('#app .hfeed'); box = area && $('.mason',area); empty = area && $('.empty',area); cls = 'mason'; make = postCard; prefix = 'p-'; }
   else if (k === 'shop'){ list = shopProducts(); area = $('#app .sticky-f')?.nextElementSibling; box = area && $('.grid-p',area); empty = area && $('.empty',area); cls = 'grid-p'; make = sleeve; prefix = 'i-'; }
   else if (k.startsWith('user:') && (!UI.userTab || UI.userTab === 'works')){ const uid = k.slice(5); list = blocked(uid) ? [] : POSTS.filter(p => p.author === uid);
@@ -12635,7 +12904,7 @@ function patchMoreList(k, changed = new Set()){
   if (!area) return false;
   if (list.length) $$('.sk-list', area).forEach(el => el.remove());   // 数据到了，拿掉加载占位
   if (k === 'home' && UI.homeTab === 'fol'){ const sugg = $('.sugg',area), row = sugg && $('.sugg-r',sugg), label = sugg && $('.lab',sugg);
-    if (label) label.textContent = list.length ? '还可以关注' : '先关注几位创作者';
+    if (label) label.textContent = list.length || folWait && STATE.follows.size ? '还可以关注' : '先关注几位创作者';
     if (row && !$$('.sg',row).some(el => el._followLeaving)){ const left = row.scrollLeft, users = Object.values(USERS).filter(u => u.id !== ME && !STATE.follows.has(u.id) && !blocked(u.id) && (!API.on() || LIVE.u.has(u.id)));
       row.innerHTML = users.map(u => `<div class="sg ${ucls(u.id)}"><a data-go="user-${u.id}">${av(u.id, 'md')}<b>${esc(u.name)}</b><span>${esc(u.role.split(' · ')[0])}</span></a><button class="pill sm" data-act="follow" data-id="${u.id}">关注</button></div>`).join(''); row.scrollLeft = left; }
   }
@@ -12649,15 +12918,15 @@ function patchMoreList(k, changed = new Set()){
   if (box){ const nodes = new Map([...box.children].map(el => [el.dataset.flip,el])), added = [], want = new Set(list.map(p => prefix + p.id));
     for (const [id,node] of nodes) if (!want.has(id)) node.remove();
     let cursor = box.firstElementChild;
-    for (const p of list){ const key = prefix + p.id; let node = nodes.get(key);
-      if (!node || changed.has(p.id)){ const t = document.createElement('template'); t.innerHTML = make(p); const fresh = t.content.firstElementChild;
+    for (const [i,p] of list.entries()){ const key = prefix + p.id; let node = nodes.get(key);
+      if (!node || changed.has(p.id)){ const t = document.createElement('template'); t.innerHTML = make(p, i, list); const fresh = t.content.firstElementChild;
         if (node){ if (cursor === node) cursor = node.nextElementSibling; node.replaceWith(fresh); } node = fresh; added.push(node); }
       if (node === cursor) cursor = cursor.nextElementSibling; else box.insertBefore(node,cursor);
     }
     const waves = added.flatMap(el => $$('canvas[data-wave]',el)); if (waves.length) onClean(waveLoop(waves));
     added.forEach(el => { rollNums(el); fitText(el); }); syncLive();
   }
-  const more = $('#app .feed-more'), next = k === 'home' ? LIVE.next : k === 'shop' ? LSHOP.next : LIVE.pnext?.[k.slice(5)];
+  const more = $('#app .feed-more'), next = k === 'home' ? homeNext() : k === 'shop' ? LSHOP.next : LIVE.pnext?.[k.slice(5)];
   if (more){ if (next) more.outerHTML = moreBox(k); else more.remove(); }
   else if (next) $('#app .page')?.insertAdjacentHTML('beforeend',moreBox(k));
   if (k === 'shop') $$('#app .cats [data-act="sf"]').forEach(el => { const key = el.dataset.v, n = PRODUCTS.filter(p => onSale(p) && (key === 'all' || p.cat === key)).length; const count = $('.ct',el); if (count) count.textContent = n; });
@@ -12666,7 +12935,9 @@ function patchMoreList(k, changed = new Set()){
 async function moreLoad(k){ if (MORE.busy[k]) return; MORE.busy[k] = true;
   const state = moreState();
   try {
-    if (k === 'home' && LIVE.next){ const r = await API.req('GET', '/posts?tab=rec&limit=30&cursor=' + encodeURIComponent(LIVE.next)); LIVE.next = r.next; addPosts(r.items); }
+    if (k === 'home' && (UI.homeTab || 'rec') === 'fol'){ const seq = LIVE.folSeq, c = homeNext();   // 关注流翻自己的游标，不去翻推荐流
+      if (c){ const r = await API.req('GET', '/posts?tab=following&limit=30&cursor=' + encodeURIComponent(c)); if (seq === LIVE.folSeq && LIVE.folMe === ME && Array.isArray(LIVE.fol)){ LIVE.fnext = r.next; folAdd(r.items); } } }
+    else if (k === 'home' && LIVE.next){ const r = await API.req('GET', '/posts?tab=rec&limit=30&cursor=' + encodeURIComponent(LIVE.next)); LIVE.next = r.next; addPosts(r.items); }
     else if (k === 'shop' && LSHOP.next){ const r = await API.req('GET', '/products?limit=60&cursor=' + encodeURIComponent(LSHOP.next)); LSHOP.next = r.next; r.items.forEach(apiProduct); }
     else if (k.startsWith('user:')){ const id = k.slice(5), c = LIVE.pnext?.[id]; if (c){ const r = await API.req('GET', `/posts?author=${encodeURIComponent(id)}&limit=50&cursor=${encodeURIComponent(c)}`); LIVE.pnext[id] = r.next; addPosts(r.items); } }
     if (state === moreState() && !patchMoreList(k)) rerender();
@@ -12675,7 +12946,7 @@ ACTIONS.more = b => { b.disabled = true; b.textContent = '加载中…'; moreLoa
 const MORE_IO = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ const b = e.target.querySelector('[data-act="more"]'); if (b && !b.disabled) ACTIONS.more(b); } }), {rootMargin:'600px 0px'}) : null;
 const moreWatch = () => { if (MORE_IO){ MORE_IO.disconnect(); $$('.feed-more').forEach(el => MORE_IO.observe(el)); } };
 document.addEventListener('rendered',moreWatch);
-{ const h0 = ROUTES.home; ROUTES.home = (...a) => { const h = h0(...a); if (!API.on() || !LIVE.next) return h; onMount(moreWatch); return h + moreBox('home'); }; }
+{ const h0 = ROUTES.home; ROUTES.home = (...a) => { const h = h0(...a); if (!API.on() || !homeNext()) return h; onMount(moreWatch); return h + moreBox('home'); }; }
 { const s0 = ROUTES.shop; ROUTES.shop = (...a) => { const h = s0(...a); if (!API.on() || !LSHOP.next) return h; onMount(moreWatch); return h + moreBox('shop'); }; }
 { const u0 = ROUTES.user; ROUTES.user = id => { const h = u0(id); if (!API.on() || !LIVE.pnext?.[id] || (UI.userTab && UI.userTab !== 'works')) return h; onMount(moreWatch); return h + moreBox('user:' + id); }; }
 
@@ -12727,8 +12998,9 @@ ADMV.feedback = () => { if (!API.on()) return adH('反馈与报错', '连上后�
       <div class="ad-ra">${f.status === 'open' ? `<button class="pill sm" data-act="fb-done" data-id="${esc(f.id)}">已处理</button>` : ''}</div></div>`; }).join('') || adEmpty('ALL CLEAR', '没有待处理的反馈')}</div>`; };
 ACTIONS['fb-done'] = b => { if (!admGuard('feedback')) return;
   sheet(`<h3>反馈已处理</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">写一句回复（可选），登录的用户会在「CTRL Z 官方」里收到。</p><textarea class="inp" id="fbN" placeholder="例如：已经修好了，刷新一下就行"></textarea><button class="pill lg" data-act="fb-dgo" data-id="${esc(b.dataset.id)}">确认</button>`); };
-ACTIONS['fb-dgo'] = async b => { b.disabled = true;
-  try { await STAFF.req('POST', `/admin/feedback/${encodeURIComponent(b.dataset.id)}/done`, {note:$('#fbN').value.trim()}); closeSheet(); toast('已处理', 'green', 'check'); LADM.feedback = null; rerender(); }
+ACTIONS['fb-dgo'] = async b => { if (b.disabled) return; b.disabled = true; const id = b.dataset.id, note = $('#fbN').value.trim();
+  try { await STAFF.req('POST', `/admin/feedback/${encodeURIComponent(id)}/done`, {note}); closeSheet(); toast('已处理', 'green', 'check');
+    ladmDone('feedback', L => LADM.fbv === 'open' ? L.filter(f => f.id !== id) : L.map(f => f.id === id ? {...f, status:'done', note, handledBy:admMe().name} : f)); }   // 「待处理」里拿掉、「全部」里改状态，再静默重读
   catch(e){ b.disabled = false; apiFail(e); } };
 
 /* ================= 商品真实试听（连着后端时） =================
@@ -12853,6 +13125,18 @@ Object.assign(ACTIONS, {
 const saleLeft = o => { const d = Math.ceil((o.saleUntil - Date.now())/864e5); return d <= 1 ? '今天结束' : `剩 ${d} 天`; };
 { const it2 = ROUTES.item; ROUTES.item = id => { const h = it2(id), o = P(id); if (!o?.saleUntil || o.saleUntil < Date.now()) return h;
     return h.replace(/<div class="buybar"><span class="price">([^<]*)<\/span>/, (m, pr) => `<div class="buybar"><span class="price">${pr}<s>¥${o.orig}</s></span><span class="tag c-pink sale-t">限时 · ${saleLeft(o)}</span>`); }; }
+/* 商品直达链接（连着后端时）：本地没有这件（不在 /products 第一页，或列表还没回来）就单独取一次，取的时候显示「正在加载」；
+   真的不存在（404）才显示原来的「商品不存在」，网络错误给重试。状态记在 LSHOP.one */
+{ const it3 = ROUTES.item; ROUTES.item = id => { if (!API.on() || !id || P(id)) return it3(id);
+    const one = LSHOP.one ||= {}, st = one[id];
+    if (st === 'missing') return it3(id);
+    if (st === 'error') return `<div class="wrap msub"><div class="request-note" role="status"><span>商品读取失败，请重试</span><button class="pill sm lt" data-act="item-retry" data-id="${esc(id)}">重试</button></div></div>`;
+    if (st !== 'loading'){ one[id] = 'loading'; const base = API.base, me = ME, same = () => base === API.base && me === ME && LSHOP.one === one;
+      API.req('GET', `/products/${encodeURIComponent(id)}`).then(d => { if (!same()){ delete one[id]; return; } apiProduct(d).pvAt = Date.now(); one[id] = 'ok'; })   // 刚取过，预览不用再取一次
+        .catch(e => { if (!same() || e.code === 'cancel'){ delete one[id]; return; } one[id] = e.status === 404 || e.code === 'not_found' ? 'missing' : 'error'; })   // 账号变了：不算失败，下次渲染按现在的身份重取
+        .finally(() => { if (CUR.key === 'item|' + id) rerender(); }); }
+    return `<div class="wrap msub"><div class="empty miss"><div class="x">···</div><span>正在加载</span></div></div>`; }; }
+ACTIONS['item-retry'] = b => { delete LSHOP.one?.[b.dataset.id]; rerender(); };
 wrapAct('sp-manage', (orig, b, e) => { orig(b, e); const p = P(b.dataset.id); if (!p?.live) return;
   $$('#layer .sp-ver').at(-1)?.insertAdjacentHTML('afterend', `<div class="sp-ver"><div><b>限时折扣</b><span class="mut2">${p.saleUntil && p.saleUntil > Date.now() ? `¥${p.price}（原价 ¥${p.orig}）· ${saleLeft(p)}` : '没有在打折'}</span></div><button class="pill sm lt" data-act="sale-open" data-id="${esc(p.id)}">${p.saleUntil && p.saleUntil > Date.now() ? '修改' : '设置折扣'}</button></div>`); });
 ACTIONS['sale-open'] = b => { const p = P(b.dataset.id), base = p.orig ?? p.price, on = p.saleUntil && p.saleUntil > Date.now();
@@ -13023,7 +13307,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
   render(); if (API.on()){ void dmRestore(); liveBoot(); } msgBadge(); setTimeout(navInk, 300); (window.requestIdleCallback || setTimeout)(loadHarmonySC);
   // 缓存加速（Service Worker，见 sw.js）：页面加载完再注册，不和首屏抢资源
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) addEventListener('load', () => setTimeout(() => navigator.serviceWorker.register('sw.js').catch(() => {}), 1500));
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { COVERS.clear(); if (!CUR.post) rerender(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { coverFontDrop(); if (!CUR.post) rerender(); });
 })();
 </script>
 

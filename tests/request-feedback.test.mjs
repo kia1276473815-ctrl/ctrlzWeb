@@ -126,7 +126,7 @@ function polls(){
 test('隐藏页私信和提醒均不请求，前台恢复合并为一次补读',async()=>{
   const p=polls();p.hidden=true;await p.ctx.dmPoll();await p.ctx.actLoad(true);assert.equal(p.polls,0);assert.equal(p.requests.length,0);
   vm.runInContext('LACT.tick=1',p.ctx);p.hidden=false;p.listeners.visibilitychange();await tick();assert.equal(p.polls,1);
-  assert.equal(p.requests.filter(x=>x==='/me/activity/unread').length,1);assert.equal(p.requests.length,4);
+  assert.equal(p.requests.filter(x=>x==='/me/activity/unread').length,1);assert.equal(p.requests.filter(x=>x==='/notifications?limit=50').length,1);assert.equal(p.requests.length,5);
 });
 test('私信等待读取期间变成隐藏页，不追加提醒请求',async()=>{
   const p=polls(),wait=defer();vm.runInContext('dmPollBefore = dmPoll',p.ctx);

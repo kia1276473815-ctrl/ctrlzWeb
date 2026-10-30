@@ -15,7 +15,7 @@ const post = (id, media = [], type = 'audio') => ({id, type, title:'送审声音
 const comment = id => ({id, postId:'post-one', postTitle:'原帖', body:'待审核回复', author:{id:'author'}, createdAt:'2026-10-12T00:00:00.000Z'});
 function harness(){
   const requests = [], toasts = [], errors = [], changed = [], listeners = new Map(), cleanups = [], mediaOps = [], dom = {panel:null, input:null, button:null, selected:'含违规信息', askPicks:[], askInput:{value:'补充说明', focus(){}}, cleanup:null, html:'', closed:0, renders:0};
-  const ctx = vm.createContext({Map, Set, WeakSet, JSON, Promise, encodeURIComponent, Date, API:{base:'https://fixture', on:() => true}, STAFF:{epoch:1, me:{id:'staff-one'}, req(method, path, body){ const wait=deferred(); requests.push({method,path,body,...wait}); return wait.promise; }},
+  const ctx = vm.createContext({Map, Set, WeakSet, JSON, Promise, encodeURIComponent, Date, CUR:{key:'admin|review'}, API:{base:'https://fixture', on:() => true}, STAFF:{epoch:1, me:{id:'staff-one'}, req(method, path, body){ const wait=deferred(); requests.push({method,path,body,...wait}); return wait.promise; }},
     LADM:{review:null, busy:{}, reads:{}, errors:{}}, REVIEW:[], UI:{rvSel:null}, ACTIONS:{'rv-ok'(){},'rv-no'(){},'rv-ask'(){ ctx.sheet('<textarea id="askX"></textarea>'); },'rv-ask-go'(){}},
     document:{addEventListener(type, callback){const l=listeners.get(type)||[];l.push(callback);listeners.set(type,l);},dispatchEvent(event){mediaOps.push(event.type);}},CustomEvent:class{constructor(type){this.type=type;}},
     PEND:{id:null},quickPlayPending:null,GEN:{on:false,pending:false,pause(){this.on=false;mediaOps.push('GEN.pause');},stop(){this.on=this.pending=false;mediaOps.push('GEN.stop');}},

@@ -1,10 +1,19 @@
 /* 商品试听界面按路由加载，共用页面的音频上下文。 */
+/* 静止的画布不占动画循环：tick 返回 false 就退出，有变化时 wake 挂回来。
+   除了调用方自己叫醒（敲击、改参数），主题、发声开始 / 停止、尺寸、进入视野（OBS 的 _onObs）、回到前台、任何点击（音频上下文可能刚建好）都会叫醒看一眼 */
+function idleLoop(cv, tick){
+  let off = null; const evs = ['theme','gen','rendered','visibilitychange','pointerup','click'];
+  const frame = t => { if (!tick(t) && off){ off(); off = null; } }, wake = () => { if (!off) off = loopAdd(frame); };
+  cv._onObs = wake; evs.forEach(k => document.addEventListener(k, wake)); wake();
+  onClean(() => { cv._onObs = null; evs.forEach(k => document.removeEventListener(k, wake)); if (off){ off(); off = null; } });
+  return wake;
+}
 (window.CtrlzViews ||= {}).audio = {"pvSample":function(pr){
-  const KEYS = '1234QWERASDFZXCV'; const st = {sel:0, hitT:-9, cancelled:false}; let bus = null;
+  const KEYS = '1234QWERASDFZXCV'; const st = {sel:0, hitT:-9, cancelled:false}; let bus = null, wake = () => {};
   const hit = (i, e) => {
     const pe = $$('.pad')[i]; if (pe && !reduced()){ const r = pe.getBoundingClientRect(), d = document.createElement('span'); d.className = 'rip'; d.style.left = (e ? e.clientX - r.left : r.width/2) + 'px'; d.style.top = (e ? e.clientY - r.top : r.height/2) + 'px'; pe.appendChild(d); setTimeout(() => d.remove(), 600); }
     if (!AU.init()) return; if (!bus){ bus = AU.ctx.createGain(); bus.gain.value = .9; bus.connect(AU.buses.preview); }
-    const [, type, tone, url] = pr.pads[i]; if (url) pvBuf(url, bus, st); else AU.drum(type, AU.ctx.currentTime, tone, bus, 1); st.sel = i; st.hitT = performance.now();   // url = 卖家传的真实试听
+    const [, type, tone, url] = pr.pads[i]; if (url) pvBuf(url, bus, st); else AU.drum(type, AU.ctx.currentTime, tone, bus, 1); st.sel = i; st.hitT = performance.now(); wake();   // url = 卖家传的真实试听
     $$('.pad').forEach((p, k) => { p.classList.toggle('sel', k === i); if (k === i){ p.classList.add('hit'); setTimeout(() => p.classList.remove('hit'), 110); } });
     const l = $('#padName'); if (l) l.textContent = pr.pads[i][0];
   };
@@ -13,8 +22,8 @@
     const cv = $('#pvWave', root);
     // 只预取当前 pad，不一次下载整包；离页后迟到的下载不再突然发声。
     if (pr.pads[0]?.[3]) pvFetch(pr.pads[0][3]).catch(() => {}); onClean(() => { st.cancelled = true; });
-    let drawn = ''; onClean(loopAdd(() => { if (!visible(cv)) return; const k = clamp((performance.now() - st.hitT)/500, 0, 1), sz = cv._sz || {}, key = [st.sel,k === 1,sz.width,sz.height,isDark()].join('|');
-      if (k === 1 && key === drawn) return; drawn = key; drawWave(cv, st.sel + 3, k, {hit: 2 + (st.sel % 4)*1.5, bars:72, on:INK[CATS[pr.cat].c === 'pink' ? 'blue' : 'pink']}); }));
+    let drawn = ''; wake = idleLoop(cv, () => { if (!visible(cv)) return false; const k = clamp((performance.now() - st.hitT)/500, 0, 1), sz = cv._sz || {}, key = [st.sel,k === 1,sz.width,sz.height,isDark()].join('|');
+      if (k === 1 && key === drawn) return false; drawn = key; drawWave(cv, st.sel + 3, k, {hit: 2 + (st.sel % 4)*1.5, bars:72, on:INK[CATS[pr.cat].c === 'pink' ? 'blue' : 'pink']}); return true; });
     const kd = e => { if (e.target.closest('input,textarea,select') || e.repeat || e.metaKey || e.ctrlKey || CUR.post) return; const i = KEYS.indexOf(e.key.toUpperCase()); if (i >= 0){ hit(i); e.preventDefault(); } };
     document.addEventListener('keydown', kd); onClean(() => document.removeEventListener('keydown', kd));
     $('.pads', root).addEventListener('pointerdown', e => { const p = e.target.closest('.pad'); if (p){ e.preventDefault(); hit(+p.dataset.i, e); } });
@@ -29,20 +38,21 @@
 "pvPreset":function(pr){
   const base = pr.id === 'p4' ? 36 : 48, ids = {}; const st = {cur:0, oct:0, hitT:-1e9, p:{...pr.presets[0][1]}};
   const pending = new Set(), intent = () => { const v = {cancelled:false}; pending.add(v); return v; }, cancel = v => { if (v){ v.cancelled = true; pending.delete(v); } }, cancelAll = () => { pending.forEach(cancel); };
+  let wake = () => {};
   const prefetch = () => { const url = pr.presets[st.cur]?.[2]; if (url) pvFetch(url).catch(() => {}); };
   const kroot = () => base + 12 + st.oct*12, ON = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'], nn = m => ON[m % 12] + (Math.floor(m/12) - 1);
   const OMIN = Math.ceil((24 - base - 12)/12), OMAX = Math.floor((84 - base - 12)/12);   // 键盘范围 C1 ～ C7
   const KMAP = 'AWSEDFTGYHUJK';
   const out = () => { AU.init(); const b = AU.bus('syn', .9); AU.send('syn', st.p.spc*.8); return b; };
-  const play = (m, dur=.3, t, request=null) => { if (request?.cancelled || !AU.init()) return; st.hitT = performance.now() + (t ? (t - AU.ctx.currentTime)*1000 : 0);
+  const play = (m, dur=.3, t, request=null) => { if (request?.cancelled || !AU.init()) return; st.hitT = performance.now() + (t ? (t - AU.ctx.currentTime)*1000 : 0); wake();
     const url = pr.presets[st.cur]?.[2]; if (url){ request ||= intent(); pvNote(url, m, t || AU.ctx.currentTime, dur, st.p, out(), request).finally(() => pending.delete(request)); return; }   // 卖家录的音：按音高变调，XY 板仍然控制滤波和包络
     AU.note(m, t || AU.ctx.currentTime, dur, {...st.p, gain:.2, sub: base === 36}, out()); };
-  const mk = (k, label, fmt) => { const h = slider({label, val:st.p[k], fmt, onChange:x => { st.p[k] = x; }}); ids[k] = lastId(); return h; };
+  const mk = (k, label, fmt) => { const h = slider({label, val:st.p[k], fmt, onChange:x => { st.p[k] = x; wake(); }}); ids[k] = lastId(); return h; };
   ACTIONS.preset = b => {
     cancelAll(); const i = +b.dataset.i, target = pr.presets[i][1]; st.cur = i; prefetch(); st.p.wav = target.wav; $$('.prs button').forEach((x, k) => x.classList.toggle('on', k === i));
     $('#synName').textContent = pr.presets[i][0].replace(/^\w+ \d+ /, '');
     const from = {...st.p}, t0 = performance.now();
-    const step = now => { const k = Math.min(1, (now - t0)/260), e = 1 - Math.pow(1-k, 3); ['cut','res','atk','rel','spc'].forEach(key => { st.p[key] = from[key] + (target[key] - from[key])*e; if (ids[key]) rngSet(ids[key], st.p[key], false); }); st.p.det = target.det; if (k < 1) requestAnimationFrame(step); };
+    const step = now => { const k = Math.min(1, (now - t0)/260), e = 1 - Math.pow(1-k, 3); ['cut','res','atk','rel','spc'].forEach(key => { st.p[key] = from[key] + (target[key] - from[key])*e; if (ids[key]) rngSet(ids[key], st.p[key], false); }); st.p.det = target.det; wake(); if (k < 1) requestAnimationFrame(step); };
     requestAnimationFrame(step); play(kroot(), .35);
   };
   ACTIONS.phrase = async () => { if (!AU.init()) return; const request = intent(), url = pr.presets[st.cur]?.[2];
@@ -58,12 +68,12 @@
     const xy = $('#xy', root), knob = $('.knob', xy), cv = $('canvas', xy), g = cv.getContext('2d');
     const place = () => { knob.style.left = (st.p.cut*100) + '%'; knob.style.top = ((1 - st.p.res)*100) + '%'; };
     let down = false, lastNote = 0;
-    const setXY = e => { const r = xy.getBoundingClientRect(); st.p.cut = clamp((e.clientX - r.left)/r.width, 0, 1); st.p.res = clamp(1 - (e.clientY - r.top)/r.height, 0, 1); place(); sfx('tick'); if (performance.now() - lastNote > 180){ lastNote = performance.now(); play(kroot() + [0,3,7,10,12][Math.floor(st.p.cut*4.99)], .16); } };
+    const setXY = e => { const r = xy.getBoundingClientRect(); st.p.cut = clamp((e.clientX - r.left)/r.width, 0, 1); st.p.res = clamp(1 - (e.clientY - r.top)/r.height, 0, 1); place(); wake(); sfx('tick'); if (performance.now() - lastNote > 180){ lastNote = performance.now(); play(kroot() + [0,3,7,10,12][Math.floor(st.p.cut*4.99)], .16); } };
     xy.addEventListener('pointerdown', e => { down = true; xy.setPointerCapture(e.pointerId); xy.classList.add('drag'); setXY(e); });
     xy.addEventListener('pointermove', e => { if (down) setXY(e); });
     xy.addEventListener('pointerup', () => { down = false; xy.classList.remove('drag'); });
-    let xyDrawn = ''; onClean(loopAdd(t => { if (!visible(cv)) return; const sz = cv._sz || {}, active = GEN.on || t - st.hitT < 300 + (.003 + st.p.atk*1.2 + .05 + st.p.rel*2.2)*1000;
-      const key = [st.p.cut,st.p.res,st.p.atk,st.p.rel,st.p.spc,sz.width,sz.height,isDark(),!!AU.an].join('|'); if (!active && key === xyDrawn) return; xyDrawn = key;
+    let xyDrawn = ''; wake = idleLoop(cv, t => { if (!visible(cv)) return false; const sz = cv._sz || {}, active = GEN.on || t - st.hitT < 300 + (.003 + st.p.atk*1.2 + .05 + st.p.rel*2.2)*1000;
+      const key = [st.p.cut,st.p.res,st.p.atk,st.p.rel,st.p.spc,sz.width,sz.height,isDark(),!!AU.an].join('|'); if (!active && key === xyDrawn) return false; xyDrawn = key;
       place(); const {w, h, dpr} = fitCanvas(cv); g.clearRect(0,0,w,h); g.globalCompositeOperation = 'multiply';
       const cx = st.p.cut*w, cy = (1 - st.p.res)*h;
       // 红色图形：起音越短越接近三角形（尖），尾音 / 空间越大图形越大、越模糊；每次发声跟着包络鼓一下
@@ -75,7 +85,7 @@
       g.closePath(); g.fill(); g.restore();
       g.fillStyle = INK.yellow; g.fillRect(0, cy, cx, h - cy);
       if (AU.an){ AU.an.getByteTimeDomainData(WAVE); g.globalCompositeOperation = 'source-over'; g.strokeStyle = INK.ink; g.lineWidth = 2*dpr; g.beginPath(); for (let i=0;i<512;i+=2){ const x = i/512*w, y = h*.5 + (WAVE[i]-128)/128*h*.4; i ? g.lineTo(x,y) : g.moveTo(x,y); } g.stroke(); }
-      g.globalCompositeOperation = 'source-over'; }));
+      g.globalCompositeOperation = 'source-over'; return true; });
     // 键盘：按下发声；手指按住滑过别的键也能连着弹（触屏的指针会被按下的键捕获，所以用坐标找键）
     const kb = $('#kb', root); let kdn = null, last = null, touchRequest = null; const held = new Map();
     const keyDown = (el, request) => { if (!el) return; play(kroot() + +el.dataset.k,.3,undefined,request); el.classList.add('hit'); setTimeout(() => el.classList.remove('hit'), 150); };
@@ -112,8 +122,8 @@
   ACTIONS['v-loop'] = b => { st.loop = !st.loop; b.classList.toggle('on', st.loop); };
   const grade = () => { const g = st.grade, cv = $('#vidCv'); if (cv) cv.style.filter = `hue-rotate(${g.h}deg) saturate(${g.s}) brightness(${g.b})`; };
   onMount(root => {
-    const cv = $('#vidCv', root), box = $('#vbox', root); let prev = 0;
-    st.onFrame = () => { if (!st.loop && st.time < prev && st.playing){ st.playing = false; st.time = st.len - .001; syncP(); } prev = st.time; const t = $('#vTc'); if (t) t.textContent = `${tc(st.time)} / ${tc(st.len)}`; rngSet(tlId, st.time/st.len, false); const sp = $('#vSplit'); if (sp && st.ab) sp.style.left = (st.split*100) + '%'; };
+    const cv = $('#vidCv', root), box = $('#vbox', root); let prev = 0, tlV = -1, spL = '';
+    st.onFrame = () => { if (!st.loop && st.time < prev && st.playing){ st.playing = false; st.time = st.len - .001; syncP(); } prev = st.time; const t = $('#vTc'), s = `${tc(st.time)} / ${tc(st.len)}`; if (t && t.textContent !== s) t.textContent = s; const v = st.time/st.len; if (v !== tlV){ tlV = v; rngSet(tlId, v, false); } const sp = $('#vSplit'), left = (st.split*100) + '%'; if (sp && st.ab && left !== spL){ spL = left; sp.style.left = left; } };
     onClean(loopAdd(makeVidLoop(cv, pr.vis, st)));
     box.addEventListener('pointermove', e => { if (!st.ab) return; const r = box.getBoundingClientRect(); st.split = clamp((e.clientX - r.left)/r.width, .04, .96); });
     box.addEventListener('click', () => { if (!st.ab) ACTIONS['v-play'](); });

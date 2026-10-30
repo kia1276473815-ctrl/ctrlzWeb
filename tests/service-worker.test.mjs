@@ -4,19 +4,21 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 const source=fs.readFileSync(new URL('../sw.js',import.meta.url),'utf8');
-function worker({online=true,fetchImpl=async()=>new Response('network'),cached=true}={}){
-  const origin='http://127.0.0.1:8789',listeners=new Map(),cache=new Map(),timers=[],cleared=[],puts=[],precache=[],matched=[];
+function worker({online=true,fetchImpl=async()=>new Response('network'),cached=true,keys=['ctrlz-static-v4']}={}){
+  const origin='http://127.0.0.1:8789',listeners=new Map(),cache=new Map(),timers=[],cleared=[],puts=[],precache=[],matched=[],deleted=[];
   const key=k=>new URL(typeof k==='string'?k:k.url,origin+'/').href;
   if(cached){cache.set(key('./'),new Response('cached-html'));cache.set(key('/scripts/audio-cache.js'),new Response('cached-script'));}
-  const ca={match:async k=>{const response=cache.get(key(k))?.clone();matched.push(response);return response;},put:async(k,r)=>{puts.push(key(k));cache.set(key(k),r);},addAll:async xs=>precache.push(...xs)};
-  const ctx=vm.createContext({URL,Headers,Response,AbortController,console,location:{origin},
+  const ca={match:async k=>{const response=cache.get(key(k))?.clone();matched.push(response);return response;},put:async(k,r)=>{puts.push(key(k));cache.set(key(k),r);},addAll:async xs=>precache.push(...xs),
+    keys:async k=>[...cache.keys()].filter(u=>u.split('?')[0]===key(k).split('?')[0]).map(url=>({url})),delete:async k=>cache.delete(key(k))};
+  class Request{constructor(url,init={}){this.url=url;this.cache=init.cache;}}
+  const opened=[],ctx=vm.createContext({URL,Headers,Response,Request,AbortController,console,location:{origin},
     self:{navigator:{onLine:online},addEventListener:(kind,fn)=>listeners.set(kind,fn),skipWaiting:async()=>{},clients:{claim:async()=>{}}},
-    caches:{open:async()=>ca,keys:async()=>['ctrlz-static-v4'],delete:async()=>true},fetch:fetchImpl,
+    caches:{open:async name=>{opened.push(name);return ca;},keys:async()=>keys,delete:async name=>{deleted.push(name);return true;}},fetch:fetchImpl,
     setTimeout:(fn,ms)=>{const id={fn,ms};timers.push(id);return id;},clearTimeout:id=>cleared.push(id)});
   vm.runInContext(source,ctx);
   const dispatch=(path,options={})=>{let response;const waits=[],request={url:origin+path,method:'GET',mode:'cors',...options};
     listeners.get('fetch')({request,respondWith:value=>response=value,waitUntil:value=>waits.push(value)});return {response,waits};};
-  return {dispatch,listeners,cache,key,timers,cleared,puts,precache,matched};
+  return {dispatch,listeners,cache,key,timers,cleared,puts,precache,matched,deleted,opened};
 }
 const tick=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
 
@@ -42,8 +44,29 @@ test('联网成功采用新页面并更新统一主页缓存，未命中离线�
 
 test('安装缓存HTML与四个经典脚本，私密签名文件和接口请求不被主页策略接管',async()=>{
   const w=worker(),waits=[];w.listeners.get('install')({waitUntil:value=>waits.push(value)});await Promise.all(waits);
-  assert.deepEqual(w.precache,['./','./scripts/audio-cache.js?v=20261011','./scripts/dm-outbox.js','./scripts/harmony-loader.js?v=20261012','./scripts/views-admin-v1.js?v=20261012-voucher','./scripts/views-audio-v1.js','./scripts/docs-v1.js?v=20261012-voucher']);
+  assert.deepEqual(w.precache.map(x=>typeof x==='string'?x:x.url),['./','./scripts/audio-cache.js?v=20261011','./scripts/dm-outbox.js','./scripts/harmony-loader.js?v=20261012','./scripts/views-admin-v1.js?v=20261012-voucher','./scripts/views-audio-v1.js?v=20261030-perf','./scripts/docs-v1.js?v=20261012-voucher']);
+  // 页面和带版本号的脚本复用 HTTP 缓存；没版本号的 dm-outbox.js 可能是旧副本，照常走网络
+  assert.deepEqual(w.precache.filter(x=>typeof x==='string'),['./scripts/dm-outbox.js']);assert(w.precache.filter(x=>typeof x!=='string').every(x=>x.cache==='force-cache'));
   for(const path of ['/files/post_audio/u/202610/f_1.wav?sig=secret','/avatars/photo.png','/s/p_1','/dm/with/u','/posts'])assert.equal(w.dispatch(path).response,undefined,path);
+});
+
+const nextTurn=()=>new Promise(resolve=>setImmediate(resolve));
+test('字体 / vendor 进独立缓存且升 V 时保留；后台刷新内容没变不重写，变了才写',async()=>{
+  const headers={etag:'"a"','content-length':'3'},w=worker({keys:['ctrlz-static-v4','ctrlz-assets-v1'],fetchImpl:async()=>new Response('new',{headers})});
+  const waits=[];w.listeners.get('activate')({waitUntil:value=>waits.push(value)});await Promise.all(waits);assert.deepEqual(w.deleted,['ctrlz-static-v4']);
+  w.cache.set(w.key('/fonts/a.ttf'),new Response('old',{headers}));
+  const same=w.dispatch('/fonts/a.ttf');assert.equal(await(await same.response).text(),'old');await Promise.all(same.waits);await nextTurn();
+  assert.equal(w.opened.at(-1),'ctrlz-assets-v1');assert.deepEqual(w.puts,[],'ETag 一样不重写');
+  w.cache.set(w.key('/fonts/b.ttf'),new Response('old',{headers:{etag:'"old"'}}));
+  const changed=w.dispatch('/fonts/b.ttf');await changed.response;await Promise.all(changed.waits);await nextTurn();assert.deepEqual(w.puts,[w.key('/fonts/b.ttf')]);
+  const icon=w.dispatch('/icons/a.png');await icon.response;await Promise.all(icon.waits);assert.match(w.opened.at(-1),/^ctrlz-static-v\d+$/);
+});
+test('脚本换了 ?v= 版本写入时删掉同路径旧条目；页面和缓存是同一份时不重写',async()=>{
+  const w=worker();w.cache.set(w.key('/scripts/views.js?v=1'),new Response('old'));
+  const e=w.dispatch('/scripts/views.js?v=2');await e.response;await Promise.all(e.waits);
+  assert.equal(w.cache.has(w.key('/scripts/views.js?v=1')),false);assert.equal(w.cache.has(w.key('/scripts/views.js?v=2')),true);
+  const headers={'last-modified':'Fri, 30 Oct 2026 00:00:00 GMT','content-length':'7'},same=worker({fetchImpl:async()=>new Response('network',{headers})});same.cache.set(same.key('./'),new Response('network',{headers}));
+  const nav=same.dispatch('/',{mode:'navigate'});await nav.response;await Promise.all(nav.waits);assert.deepEqual(same.puts,[]);
 });
 
 const decodedHtml='<!doctype html><html><head><title>离线中文页面</title></head><body><script src="scripts/audio-cache.js"></script></body></html>';
@@ -66,4 +89,25 @@ test('联网缓存使用原响应clone，网络失败回退同样保留原响应
   const saved=w.cache.get(w.key('./'));assertOriginalHeaders(saved);assert.notEqual(saved,response);assert.equal(await saved.clone().text(),decodedHtml);
   const fallback=worker({fetchImpl:async()=>{throw Error('网络不可达');}});fallback.cache.set(fallback.key('./'),new Response(decodedHtml,{headers:gzipMetadata}));
   const cached=await fallback.dispatch('/',{mode:'navigate'}).response;assert.equal(cached,fallback.matched[0]);assertOriginalHeaders(cached);assert.equal(await cached.text(),decodedHtml);
+});
+
+test('ASSETS 升级时清掉旧的字体 / vendor 缓存，当前这份保留',async()=>{
+  const w=worker({keys:['ctrlz-static-v4','ctrlz-assets-v0','ctrlz-assets-v1','ctrlz-font-sc-v1']}),waits=[];w.listeners.get('activate')({waitUntil:value=>waits.push(value)});await Promise.all(waits);
+  assert.deepEqual(w.deleted,['ctrlz-static-v4','ctrlz-assets-v0']);
+});
+test('旧标签页按旧 ?v= 请求脚本：不挤掉预缓存的新版本，离线时新页面还能打开',async()=>{
+  const name=source.match(/views-admin-v1\.js\?v=[^']+/)[0],w=worker();w.cache.set(w.key('/scripts/'+name),new Response('precached'));
+  const e=w.dispatch('/scripts/views-admin-v1.js?v=old');await e.response;await Promise.all(e.waits);
+  assert.equal(w.cache.has(w.key('/scripts/'+name)),true);assert.equal(w.cache.has(w.key('/scripts/views-admin-v1.js?v=old')),true);
+});
+test('服务器没有校验值（ctrlz-server 的压缩响应）：字体 / vendor 大小一样不重写，大小变了才写；图标和页面照常写',async()=>{
+  const plain={'content-length':'3'},w=worker({fetchImpl:async()=>new Response('new',{headers:plain})});
+  w.cache.set(w.key('/fonts/a.ttf'),new Response('old',{headers:plain}));
+  const same=w.dispatch('/fonts/a.ttf');await same.response;await Promise.all(same.waits);await nextTurn();assert.deepEqual(w.puts,[]);
+  w.cache.set(w.key('/vendor/b.js'),new Response('longer',{headers:{'content-length':'6'}}));
+  const changed=w.dispatch('/vendor/b.js');await changed.response;await Promise.all(changed.waits);await nextTurn();assert.deepEqual(w.puts,[w.key('/vendor/b.js')]);
+  w.cache.set(w.key('/icons/c.png'),new Response('old',{headers:plain}));
+  const icon=w.dispatch('/icons/c.png');await icon.response;await Promise.all(icon.waits);await nextTurn();assert.equal(w.puts.at(-1),w.key('/icons/c.png'));
+  const nav=worker({fetchImpl:async()=>new Response('new',{headers:plain})});nav.cache.set(nav.key('./'),new Response('old',{headers:plain}));
+  const page=nav.dispatch('/',{mode:'navigate'});await page.response;await Promise.all(page.waits);assert.deepEqual(nav.puts,[nav.key('./')],'HTML 不按大小判断');
 });

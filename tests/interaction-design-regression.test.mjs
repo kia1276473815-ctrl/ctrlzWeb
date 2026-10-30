@@ -36,7 +36,7 @@ test('收藏局部更新同步我页面页签数字',()=>{
 });
 test('关注流取消最后一个作者后恢复原空态，保留推荐关注区域',()=>{
   let replacement,rendered=0;const box={children:[],replaceWith:e=>replacement=e},area={};
-  const ctx=realm({POSTS:[],STATE:{follows:new Set(),blocks:new Set(),settings:{pers:true}},UI:{homeTab:'fol'},LIVE:{next:null},blocked:()=>false,postCard(){},
+  const ctx=realm({POSTS:[],STATE:{follows:new Set(),blocks:new Set(),settings:{pers:true}},UI:{homeTab:'fol'},LIVE:{next:null},blocked:()=>false,liveUser:()=>false,homeNext:()=>null,postCard(){},
     $:q=>q==='#app .hfeed'?area:q==='.mason'?box:null,$$:()=>[],document:{createElement:()=>({}),dispatchEvent:()=>rendered++},Event});
   vm.runInContext(section('function patchMoreList(', 'async function moreLoad(k)'),ctx);assert.equal(ctx.patchMoreList('home'),true);
   assert.equal(replacement.className,'empty');assert(replacement.innerHTML.includes('关注的人还没有发东西'));assert(!replacement.innerHTML.includes('data-act="compose"'));assert.equal(rendered,1);

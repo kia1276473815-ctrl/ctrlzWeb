@@ -123,7 +123,7 @@ test('同一用户面板关闭后再打开也只接受最新读取；退出后�
 });
 
 const userDto = ()=>({user:{id:'user',name:'User',handle:'u',username:'user',createdAt:'2026-01-01',status:'active',banned:false,muteUntil:null},counts:{posts:0,comments:0,followers:0,following:0,bought:0,boughtAmount:0,sold:0,soldAmount:0,refunds:0,reportsAgainst:0},posts:[],bought:[],sold:[],devices:[],sanctions:[],dmPeers:[],dmVisible:false});
-function userHtml(r,dto=userDto()){Object.assign(r.ctx,{uav:()=>'',fmtDay:()=>'',fmtDT:()=>'',stTag:s=>s,ago:()=>'',admOn:()=>true});if(!r.ctx._luTestLoaded){r.load(section('const luTab =','ACTIONS[\'lu-tab\']'));r.ctx._luTestLoaded=true;}r.ctx.dto=dto;return r.load('luSheet(dto)');}
+function userHtml(r,dto=userDto()){Object.assign(r.ctx,{uav:()=>'',fmtDay:()=>'',fmtDT:()=>'',stTag:s=>s,ago:()=>'',admOn:()=>true,INVITES:[],IC:{plus:'+'},vcCount:()=>0});if(!r.ctx._luTestLoaded){r.load(source.split('\n').find(l=>l.startsWith('const ADM_ROLES =')));r.load(section('function usPerm(uid){','function userSheet(uid){'));r.load(section('const luTab =','ACTIONS[\'lu-tab\']'));r.ctx._luTestLoaded=true;}r.ctx.dto=dto;return r.load('luSheet(dto)');}
 
 test('角色可见性与后端perms对齐：运营内容只读、财务用户只读、客服不封禁',()=>{
   const r=realm();r.login('ops','ops');assert.equal(r.load("admCan('content')"),true);assert.equal(r.load("staffCan('content.act')"),false);
@@ -131,6 +131,13 @@ test('角色可见性与后端perms对齐：运营内容只读、财务用户只
   r.login('cs','cs');const cs=userHtml(r);assert(cs.includes('data-v="mute1"'));assert(cs.includes('data-act="us-msg"'));assert(!cs.includes('data-v="ban7"'));assert(!cs.includes('data-v="ban0"'));assert(!cs.includes('data-v="verify"'));assert.equal(r.load("admUserCan('verify')"),false);
   r.login('mod','mod');const mod=userHtml(r);assert(mod.includes('data-v="ban7"'));assert(!mod.includes('data-act="us-msg"'));assert(mod.includes('data-v="verify"'));assert(mod.includes('标记已实名'));
   r.login('super','super');const verified=userDto();verified.user.verified=true;const superHtml=userHtml(r,verified);assert(superHtml.includes('data-v="verify"'));assert(superHtml.includes('取消实名标记'));assert(!superHtml.includes('>标记已实名<'));
+});
+
+test('用户全貌的「后台、开店与代金券」：成员没读到不显示开后台账号，已是成员显示角色，券数来自服务器',()=>{
+  const r=realm();r.login();let html=userHtml(r);assert(html.includes('data-act="us-inv"'));assert(html.includes('data-act="us-vc"'));assert(!html.includes('data-act="lus-staff"'));assert(!html.includes('能用'));
+  r.ctx.LADM.staff=[{userId:'other',role:'mod',email:'o@test'}];r.ctx.LADM.uwallet={user:2};html=userHtml(r);assert.equal(html.split('data-act="lus-staff"').length,2);assert(html.includes('能用 2 张'));
+  r.ctx.LADM.staff.push({userId:'user',role:'cs',email:'cs@test'});html=userHtml(r);assert(!html.includes('data-act="lus-staff"'));assert(html.includes('后台 · 客服'));assert(html.includes('cs@test'));
+  r.login('ops','ops');html=userHtml(r);assert(html.includes('data-act="us-inv"'));assert(!html.includes('data-act="us-vc"'));assert(!html.includes('后台 · '));
 });
 
 test('到期禁言和封禁在用户详情显示正常，不给错误解除按钮',()=>{

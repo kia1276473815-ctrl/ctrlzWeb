@@ -47,7 +47,7 @@ test('保存中输入继续变更，成功只清理已保存的文字',async()=>
 });
 function reels(){
   let input,p={id:'a'},sends=0;const box={classList:{add(){},remove(){}},setAttribute(){},set innerHTML(v){input=field();input.tagName='INPUT';}};
-  const r=drafts({RL:{el:{classList:{add(){},remove(){}}},cm:false},reelCur:()=>p,cmtsOf:()=>[],reelCmList:()=>'',IC:{x:'',arrow:''},UI:{flashCmt:null},$:s=>s==='#rlIn'?input:s==='.cmt.flash'?null:box,ACTIONS:{'rl-send':()=>sends++},setTimeout(){}});
+  const r=drafts({RL:{el:{classList:{add(){},remove(){}}},cm:false},reelCur:()=>p,cmtsOf:()=>[],reelCmList:()=>'',IC:{x:'',arrow:''},UI:{flashCmt:null},$:s=>s==='#rlIn'?input:s==='.cmt.flash'?null:box,ACTIONS:{'rl-send':()=>sends++},setTimeout(){},reelCmSync(){}});
   vm.runInContext(section('function openReelCm(focus){','Object.assign(ACTIONS, {'),r.ctx);
   return {...r,open:()=>r.ctx.openReelCm(),get input(){return input;},set post(v){p=v;},get sends(){return sends;}};
 }

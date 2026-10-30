@@ -41,7 +41,7 @@ function setup(hash='#v-target'){
     renderBase:(r,arg)=>{base.push([r,arg]);CUR.key=r+'|'+arg;CUR.hash='#'+(arg ? r+'-'+arg : r);},
     closePostLayer(){},renderPost:id=>base.push(['post',id]),postExit:fn=>fn(),
     commentRouteRestore(){},commentRouteSuffix:()=>'',navReplace:h=>{location.hash=h;},isRootH:()=>false,navTab(){},
-    COVERS:{clear:()=>coverClears++},liveUser:()=>false,liveShop:async()=>{},liveMe(){},apiFail:e=>{throw e;},
+    coverFontDrop:()=>coverClears++,liveUser:()=>false,liveShop:async()=>{},liveMe(){},apiFail:e=>{throw e;},
     scheduleLiveRefresh:()=>frames.push(()=>ctx.rerender()),msgBadge(){},badge(){},setRole(){},
     history:{state:{},replaceState:(state,title,url)=>{replaces.push(url);if(url)location.hash=url;}},
   });
