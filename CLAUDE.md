@@ -21,18 +21,17 @@
   - 平板 / 电脑（≥761px）：`#hd` 变成固定的左侧边栏（返回 / 首页 / 商城 / 私信 / 搜索 / 发布 / 我 …… 深浅色 / 更多），`--hd` 为 0
   - 往下滑收起、往上滑浮出：手机子页面的顶栏、首页「关注 / 推荐」那一行（所有尺寸）；贴在顶部的元素用 `--hdy` 定位
 - 首页「关注 / 推荐」支持左右滑动切换，手指跟随（`homeSwitch` / `HOME_TABS`）
-- 工作室只有三个页签：概览（含收入与结算）/ 我的产品（含店铺信息、上架入口）/ 我的合作（编曲、混音、演唱等合作业务，数据在 `COLLAB`）。上架（`#seller-upload`）是「我的产品」的子页面。以后新增业务尽量放进这三个页签，不要再加页签
+- 工作室只有两个页签：概览（含收入与结算）/ 我的产品（含店铺信息、上架入口）。上架（`#seller-upload`）是「我的产品」的子页面。以后新增业务尽量放进这两个页签，不要再加页签
 - 页内页签（如工作室的页签）：原地替换网址、不新增返回记录、不播放翻页动画、不跳回顶部（`NAVX.inpage`）
 - 搜索按板块区分：首页搜全站、商城只搜商品、私信只搜联系人和聊天记录、「我」不显示搜索（`SCOPES` / `searchScope()`）
 - 头像：`av()` 有图用图（`AVIMG`，存在浏览器本地）。「我」页面点头像可更换：用几何图形拼（为防违规内容，**不允许自由绘制**；最多 5 个图形：圆 / 方块 / 三角 / 半圆 / 圆环 / 长条，可改颜色、大小、角度、位置，马上生效）或上传照片（裁剪后进 `AVQ`，管理员后台「头像」页签审核通过才生效，驳回会提示本人）
-- 我的合作：每项业务可设起价或「面议」，接下邀约时确认报价
 - 分享统一用 `shareSheet(k, id)`（k = post / prod / user）：上面选私信联系人发送，下面「复制链接」「其它 App」（`navigator.share`，不支持时复制链接）
 - 已购资源的交付方式在 `DELIVER`：文件 / 链接（可带提取码）/ 文本，可组合；链接和文本在资源库里「展开链接」原地展开
 - 输入框（评论 `#cmtIn`、私信 `#cvIn`）是自动长高的 textarea，统一用 `composer(t, send)` 绑定：回车发送（输入法组字时不发，Shift+回车换行）、聚焦时 `.cdock` 里的图标被挤到输入栏分界线上方变成会滚的小球（不要在输入框和分界线之间留空白区；只转图标不转影子，影子按离地高度变化）（`dockOn` / `dockOff`，重力共用陀螺仪 `GRAV`），失焦弹回原位；帖子重绘（点赞等）会保留未发出的文字和小球位置
 - 私信通知：「喜欢 / 新粉丝」看过就清零；「回复与@」按条记未读（`AT_READ` / `atMark`），点进帖子或给这条回复点赞才算读过，面板右侧是给回复点赞的心（不放封面），有「全部已读」；通知条数字 = 未读条数（`noteSync`）。私信列表头有「全部已读」（`dm-readall`）
 - 私信里的分享（`cv-pick`）：手机上是顶到状态栏的整屏页面（不要上浮式面板），大屏是居中对话框；「我的作品 / 收藏 / 已购」三个页签，左右滑切换（`.pk-pages` 横向 scroll-snap）
-- 抽成：商品售卖平台抽成 3%（`PLAT`）；合作订单平台服务费 `CO_FEE`（由创作者承担，委托方只付合作金额），免费修改 `CO_FREE_REV` = 2 次，交付后 `CO_AUTO_DAYS` = 7 天自动验收
-- 合作邀约（数据 `CO.orders`、`REP`，存浏览器本地）：主页「合作」页签（`coProfile`：好评度名片 + 业务卡 + 评价；自己的主页 / 「我」页面也显示，是预览，不放编辑入口）→ 点业务卡展开成邀约表单（`coForm`，按业务定制字段 `SVC_DEF`，按住录音键发送）→ 私信里是邀约卡片（`coCard`，接下 / 婉拒 / 再聊聊 / 改价；改价生成新版卡片，旧版作废）→ 担保付款（HELD）→ 交付 → 验收或申请修改 → 完成（DONE）→ 互评。对方的回应在原型里由 `coSim` 模拟。工作室「我的合作」和私信卡片用同一份数据
+- 抽成：商品售卖平台抽成 3%（`PLAT`）
+- 合作功能已移除：没有邀约、托管、交付验收、互评、分成合作或后台合作纠纷入口。旧的合作页签 / 链接归到现有作品或工作室页面，旧私信 `co` / `cosys` 记录显示停用提示。第一次发布只删代码，后端历史迁移和三张合作表保留作回退兼容；验收后至少观察 3 天，才单独发布删表迁移。不要恢复合作功能或顺手删除商品评价仍使用的 `.co-rate`、`co-star`。
 - 预设试弹键盘只有一个八度（C～C），用 ‹ › 或 Z / X 切换八度，按住滑动可连弹
 - **深浅色切换过场** `themeFx(apply, 按钮)`（`THX_FX`）：View Transitions 拍旧外观快照，回调里换外观，每帧用 `--thc`（clip-path）或 `--thm…`（mask）决定新外观从哪里露出来，上面一层 `thfx` 画布画特效；过场期间 `html.thvt` 让顶栏 / 底栏不单独成组。变亮：冲击波 / 手电筒（先照右上再铺满）/ 半调印刷；变暗：黑色金属粘液 = **水波荡漾**（总长 1.75 秒，加快照点下去到结束约 1.85 秒，用户要求不超过 2 秒：前约 1 秒黑夜从按钮扩散，同心水波一圈圈往外推、逐渐平息到 0，结束不跳；水波是折射，深色背景上再叠很淡的波光；贴图没解码好时滤镜里垫中性灰 `feFlood`，不会整页跳一下）。**手机（`F.lite`）不开折射**（高像素密度下整屏 SVG 位移滤镜很卡），改成加重的明暗水波圈，边缘点数 72、特效层 1.5 倍像素。折射实现：`--thf` 挂 SVG 位移贴图滤镜 `#thxLens` 到新旧快照上，贴图每帧由 `thDisp` 按边界算径向偏移，toBlob 后台编码，滤镜区域只取粘液周围 `lensBox`）/ 日食 / 夜幕。**手机（`isMob()`）用另一套 `THX_FX_M`**：切换按钮是菜单里的一行字不是圆按钮，所以不用手电筒 / 日食 / 冲击波，变亮 = 日出 / 百叶窗拉开 / 半调印刷，变暗 = 粘液 / 夜幕 / 百叶窗合上；起点取按钮里的图标。每次随机、不和上一次重复；点一下屏幕直接到结尾；减少动效或浏览器不支持时退回淡入淡出。新增效果：往 `THX_FX.light / dark` 里加 `{n, dur, init?(F), frame(F, k, g, ms)}`，`F.clip()` / `F.mask()` 设形状、`g` 画特效
 - 交互动效：用 `fxPop(el, 类名)`（`fx-up` 弹起 / `fx-dn` 缩回 / `fx-jelly` 果冻 / 分类卡 `hit`）、`fxRing()`、`burst()`；重绘后元素是新的，要在 rerender 之后再找元素加动效。动效类名用 `fx-` 前缀，别和已有样式重名（比如 `.drop` 是上传区）。尊重「减少动效」设置（`reduced()` / `html.rm`）
@@ -58,7 +57,7 @@
 - 搜索连着后端时去 `GET /users?q=` 找人（`LSRCH`，私信搜索里也能直接发起私信），不列示例用户
 - 本机测试账号：后端 `npm run demo:accounts` 只生成一个超管（用户名 `admin`，密码写进后端文件夹的「测试账号.txt」）。其他账号在后台「用户 › 新建账号」建（用户名 + 密码 + 可选后台权限，`lus-new` / `acctSheet`），忘了密码点「重置密码」（`lus-pw`）
 - **连着后端时这些页签以服务器为准**：举报（`/admin/reports`，卡片里有被举报内容、「双方私信」「处置用户」）、公告与站内信（站内信「指定用户」通过受限 `/admin/recipients` 搜索，`smRow` / `sm-pick` 选人；邀请码和代金券也用这个目录，不能让运营读取 `/admin/users`；群发 `/admin/notify/broadcast`；公告改动推 `/admin/site/ann`，确认成功才更新）、海报与分类（`/admin/site/slides|cats`）、操作日志（`/admin/audit`）。用户弹窗 `userSheet` 连着后端时是「用户全貌」`luSheet`（处置 / 帖子 / 订单 / 私信对象 / 登录设备 / 处置记录）
-- **查看私信记录** `dmViewSheet(a, b, 预设理由)`：要选理由，后端记进操作日志；入口在用户全貌的「私信对象」、举报卡片、合作纠纷裁决面板。只在处理纠纷 / 举报 / 申诉时用
+- **查看私信记录** `dmViewSheet(a, b, 预设理由)`：要选理由，后端记进操作日志；入口在用户全貌的「私信对象」和举报卡片。只在处理举报、用户申诉或核实交易问题时用
 - **海报编辑器**（「海报与分类」，`ADMV.ops` / `peEditor`）：左边列表右边编辑，可改文案、按钮跳转（`link`）、主色、价格、浅 / 深背景、每个发声槽位的采样（`PS_SLOTS`，场景里发声统一走 `psnd(B, 槽位, 合成音, 变调)`，有采样放采样）。草稿在 `UI.opS`（`slidesConf()` 有草稿就直接返回同一份，别改回每次重建）。编辑器的操作用 `queueMicrotask` 注册，因为原来的海报操作定义在后面会覆盖。默认海报按钮指向示例商品（item-p1 / p3 / p5），真实后端里不存在，要在编辑器里改
 - 新组件里如果用了 `display:flex` 又要靠 `hidden` 属性隐藏，要补 `[hidden]{display:none!important}`（`.pe` / `.smp` / `.lu-p` 已加）
 - 待审核（`ADMV.review`）：左队列 + 右详情（`rvDetail`：内容、来源与授权、发布者资质与历史、审核清单 `RV_CK`）；操作是通过 / 要求补充材料（`rv-ask`，留在队列里标「待补充」，卖家那边同步）/ 驳回。卖家「提交审核」会把完整快照推进 `REVIEW`（`sp` 关联卖家的商品）；`decl` 是来源声明 + 授权文件，上架表单还没收集
@@ -67,9 +66,8 @@
 - 对用户的结果一律用 `notify(uid, 标题, 正文)` 发到私信最上面的「CTRL Z 官方」（`sysRow` / `sysbox`，可回复申诉 → 进举报队列）。驳回要带原因（`rsnSheet` / `RJ_REASON`）
 - 下架：帖子从 `POSTS` 挪进 `TAKEN_P`（用户端 `POST()` 取不到，管理员能看）；商品走 `onSale`；评论没有 id，用 `cmtKey(帖子id, 评论)` 认，读评论统一用 `cmtsOf(pid)`。下架 / 恢复都会通知作者
 - 账号处置：`ADM.acct[uid]` 的 ban / mute / warns / verified；用户端发帖、评论、私信、上架前调 `canSpeak()`，发文字用 `speakOk(text)`（同时查敏感词 `ADM.words`：block 拦截、review 能发但进待审核）
-- 订单流水 `ledger()` 由商品订单 + 已购 + 退款 + 合作订单推出来；结算 `payoutRows(月份)`；导出用 `csvDownload`（已防公式注入）
-- 平台参数 `PLAT / CO_FEE / CO_FREE_REV / CO_AUTO_DAYS` 是 `let`，由 `applyParams()` 从 `ADM.params` 读，后台改了马上生效（有上限 `PM_MAX`）
-- 合作纠纷裁决：全额放款 / 部分退款 / 全额退款，写进 `o.ruling`、订单状态 done 或 refunded，双方收到通知、私信卡片显示裁决
+- 订单流水 `ledger()` 由商品订单 + 已购 + 退款推出来；结算 `payoutRows(月份)`；导出用 `csvDownload`（已防公式注入）
+- 平台参数 `PLAT` 是 `let`，由 `applyParams()` 从 `ADM.params` 读，后台改了马上生效（有上限 `PM_MAX`）
 - 运营配置：商城海报（`slidesConf` / `applySlides`）和分类（`catsConf` / `applyCats`，`c.off` 的分类不显示）；首页公告条 `annBar()`（含被禁言 / 封禁时的受限提示）
 - 用户端举报（`report` / `do-report`，data-k = post / prod / user）进 `REPORTS` 队列，入口：帖子「⋯」、分享面板（不是自己的东西才显示）、商品页「举报 · 版权投诉」
 - 用户端入驻申请 `apply-open`：只存打码后的实名信息，正式版走实名认证接口
@@ -104,11 +102,11 @@
 - 上架「原创 / 授权承诺」`#upOrig` 默认不勾，提交时必须勾
 - 自己的帖子：「⋯」里编辑 / 删除（`post-edit` / `post-del`，存 `MINE`）；自己的评论能删（`STATE.cdel`，`cmtsOf` 过滤），别人的评论能举报（`report` data-k="cmt" data-p=帖子），评论操作统一用 `cmtCtl(pid, c)`
 - 卖家商品管理：工作室「我的产品」→「管理」（`sp-manage`）：改价、上下架（`p.selfOff`，`onSale` 已排除）、改标题介绍（进复审）、上传新版本（`sp-ver`，`p.ver` / `p.vlog`）。改动存 `PE`，启动时套回 `PRODUCTS`。已购资源「有新版本」用 `verNew(p)`，下载过（`dlMark`）就算看过
-- 商品评价：买过才能写（`prv-write`，复用合作评价的 `.co-rate` 星星），`PRV` 存本地；商品页 `prvBox(p)`，示例评价由 `prvOf` 固定生成
+- 商品评价：买过才能写（`prv-write`，星星继续使用 `.co-rate`、`co-star`，不属于已移除的合作功能），`PRV` 存本地；商品页 `prvBox(p)`，示例评价由 `prvOf` 固定生成
 - 订单：整行点开详情 `ordSheet(no)`（查看资源 / 保存凭证 `receiptPNG` / 申请发票 / 联系卖家 / 退款）；发票 `ADM.invoices`，后台「发票」页签（财务）开具或驳回并通知；付款成功给买家发「购买成功」、给卖家发「有新订单」（在 `grant`）
 - 下载文件名一律用英文（部分浏览器会丢掉中文下载名）；生成文件要在点击手势里同步触发下载
 - 账号安全：换绑手机号（`acc-phone`，复用登录的短信下拉 `smsShow`）、登录设备（`acc-devs` / `DEVS`）
-- 私信：自己发的文字 / 图片 2 分钟内可撤回（`msg-rc`，`m.rc`）；会话「⋯」里删除聊天记录 / 举报 / 拉黑，删过的会话记在 `DELC`，启动时 `delcApply()`（要在合作卡片注入私信之后）
+- 私信：自己发的文字 / 图片 2 分钟内可撤回（`msg-rc`，`m.rc`）；会话「⋯」里删除聊天记录 / 举报 / 拉黑，删过的会话记在 `DELC`，启动时 `delcApply()`
 - 别人主页的「关注者 / 关注中」可点开（`u-list` / `relList`），自己的仍用 `me-list`
 - 点击分发是「data-act 优先于 data-go」：整行可点的列表里不要再放 data-go 链接，放到详情里
 
@@ -122,16 +120,15 @@
 - **私信（连着后端时）**：`/dm/*`，`LDM` 状态。「发起私信」和私信页的搜索只列有关系的人（`GET /dm/contacts`：我关注的人、我买过 TA 东西的卖家；买过我东西的人不放，大卖家会太多），其他人从 TA 主页发私信。聊天里对方的头像可以点去主页（`msgAv`）。会话列表每 4 秒轮询（`dmPoll`，页面在后台不轮询），打开的会话每次读全部（`dmConv`）并标已读，只在内容变了时重画（`dmPaint`）。`sendMsg` 先放一条 `pend` 的消息再调接口；图片带 `file` 上传（`dm_image`）；撤回 / 全部已读 / 分享面板发送 / 发起私信（`GET /users?q=` 找人）都包装过。示例私信和通知在 `liveReset` 里清空
 - **互动提醒（连着后端时）**：三格「喜欢 / 新粉丝 / 回复与@」读 `/me/activity*`（`actLoad`，挂在 `dmPoll` 上每 3 次轮询问一次未读数，变了才拉列表；新评论 / 回复弹提示）。喜欢 / 新粉丝 打开就 `POST /me/activity/read {kind}`；回复与@ 按条读（`atMark` 包装，id 以 `ac_` 开头）。`NOTE_NEW.at` 原来是按 `AT_READ` 现算的 getter，被 `refill` 改成普通数字时用 `actSetAt` 赋值
 - **头像 / 收藏 / 商品评价（连着后端时）**：`apiUser` 包装后以服务器为准设 `AVIMG`（`avatarShapes` 用 `avShapesImg` 现画、`avatarUrl` 是 `/avatars/…` 稳定地址，`avAbs` 补后端前缀，都没有就删掉用首字母）。`ave-save` / `av-reset` / `avc-send`（照片裁好后 `liveUpload(…, 'avatar')` 再提交审核）/ `av-edit`（从 `GET /me/avatar` 同步 `AVQ` 和驳回提示）/ `av-cancel` 都包装过；后台「头像」页签 `ADMV.avatars` + `lavq`。收藏 `liveFavs()` 登录后读回 `STATE.favs`，`fav` 包装成 PUT / DELETE。商品评价 `prvBox` 连着后端时读 `/products/{id}/reviews`（缓存 `LPRV`，不显示示例评价，能不能写看服务器的 `canWrite`）。浏览历史只存本地。自己的头像会记进本地 `avImgs`（只记自己的），刷新时先显示它，不闪首字母
-- **合作（连着后端时）**：订单在服务器（`/collabs`、`/me/collabs`），`coMap` 把服务器订单换成原型的样子放进 `CO.orders`（`o.live = true`，金额换成元），页面代码不用改；`CO_LIVE` 为真时 `coSave` 不存本地。私信里的 `co` / `cosys` 消息就是卡片和状态说明（`dmMap` 里 `coTxt` 把 `{a}` `{b}` 换成「你」或名字），`dmConv` / `dmThreads` 发现某单有新记录就重读那一单（`coSync`）。按钮的做法：先调接口，成功了再跑原来的操作（动效、关面板），然后 `coAfter` 用服务器的订单覆盖本地并重读私信；`coSim` 对真实订单不动（对方的回应来自对方本人）。业务设置 `co-svc` / `co-psave` 存 `PUT /me/collab/svcs`（`LCO.svcDirty` 防止没存上就被读回来覆盖）；别人的业务和好评度 `coPeer(uid)` → `USVC` / `LCO.rep`（`repOf` 连着后端时读它）。交付文件 `co-file` 拿签名地址下载。后台「合作纠纷」读 `/admin/collabs`，裁决 `dp-go` → `/admin/collabs/{id}/rule`。服务费 / 免费修改次数 / 自动验收天数从 `/config` 的 `collab` 读
 - **后台页签上的数字**（连着后端时）：读 `GET /admin/counts`（`admCnt`，最多 3 秒问一次），不再用原型的示例队列
-- **后台其余页签（连着后端时）**：做法是把服务器数据换成原型的样子放进 `ADM.*`（这个网址一直连后端，覆盖本地示例无妨），再调原来的页面函数；操作先调接口再 `LADM.x = null` 重读。看板 `ledger()` 换成 `/admin/ledger`（`LLEDGER`）+ `/admin/stats`；内容 `lct`（帖子 / 商品 / 评论下架恢复）；敏感词 `/admin/words`（`censor` 连着后端时返回空，由服务器判断）；入驻 `/admin/seller-apps`（`ap-ok` / `ap-no`）；发票 `/admin/invoices`（`inv-dgo` / `inv-no`）；结算 `ADMV.payout` 重写（`lpo-gen` / `lpo-pay` 填流水号 / `lpo-fail`）；平台参数 `pm-save` → `PUT /admin/settings`，`bizCfg()` 把 `/config` 的参数和主体备案套到 `PLAT` / `CO_*` / `ADM.site`
+- **后台其余页签（连着后端时）**：做法是把服务器数据换成原型的样子放进 `ADM.*`（这个网址一直连后端，覆盖本地示例无妨），再调原来的页面函数；操作先调接口再 `LADM.x = null` 重读。看板 `ledger()` 换成 `/admin/ledger`（`LLEDGER`）+ `/admin/stats`；内容 `lct`（帖子 / 商品 / 评论下架恢复）；敏感词 `/admin/words`（`censor` 连着后端时返回空，由服务器判断）；入驻 `/admin/seller-apps`（`ap-ok` / `ap-no`）；发票 `/admin/invoices`（`inv-dgo` / `inv-no`）；结算 `ADMV.payout` 重写（`lpo-gen` / `lpo-pay` 填流水号 / `lpo-fail`）；平台参数 `pm-save` → `PUT /admin/settings`，`bizCfg()` 把 `/config` 的参数和主体备案套到 `PLAT` / `ADM.site`，不依赖兼容字段 `/config.collab`
 - **用户端入驻 / 发票 / 收款 / 注销（连着后端时）**：`bizMine()` 读 `/me/seller-app`、`/me/invoices`、`/me/payee`（`LBIZ`）；`ordSheet` 用 `LBIZ.inv` 显示发票状态，`inv-go` / `py-save` / `apply-go` 调接口；注销检查 `closeChecks` 读 `/me/close/checks`（`LCLOSE`）
 - **恢复码（自助找回密码）**：注册后 `auFinish` 弹 `rcSheet` 显示一次（`AUTH.rc`）；登录面板「用恢复码重设」`au-forgot` / `rc-go`；设置 › 账号与隐私「找回密码用的恢复码」`rc-new`（后台成员不显示，服务器也不允许）
 - **申诉 / 反通知 / 新版本 / 通知开关 / 涉税（连着后端时）**：官方通知里回复 `sys-reply` → `POST /me/appeals`；通知带 `act:'counter'` 时显示「提交反通知」，`counter` / `counter-go` → `/reports/{id}/counter`；后台举报卡片显示申诉内容和反通知，`lrp-ct` 恢复 / 维持。商品「上传新版本」`sp-ver` 换成真的文件选择（`#svF`，`SVF.file`），`sp-vgo` 上传后 `POST /products/{id}/version`（先审核，`p.pendingVer`）；`apiProduct` 的 `ver` / `vlog` 来自服务器。通知开关 `nt` 存 `PATCH /me {notifyPrefs}`，`liveMe` 读回。结算打款页「导出季度涉税信息」`tax-open` / `tax-go` / `tax-dl`（先生成再点下载，保证下载在点击里触发）
 - **令牌**：网页和接口同域时（`API.cookie`），refresh token 只在服务器设的 httpOnly cookie 里，本地 `apiTok.refresh` 存的是占位 `'cookie'`，刷新时不带请求体；跨域（`?api=别的地址`）时照旧存本地
 - **数据备份**：后台「平台参数」最上面（超管、连着后端且服务器用内置数据库时）`bk-now` → `POST /admin/backups`
 - **声音 / 可视化帖子**：发帖时把音频传上去（`post_audio`；浏览器认不出的格式和「示例音频」用 `wavBlob` 转 WAV），后端 type 是 `audio`，`style.vis` 有值就是可视化。`apiPost` 给出 `aurl` / `adur`；`renderTrack` 遇到真实帖子就下载解码（地址过期重新取一次帖子）
-- 已接通：用户名密码登录、手机号登录（新用户建档存名字）、微信登录跳转（`au-3p` wx）、信息流、别人主页（`LIVE.prof`）、帖子评论（`openPost` 打开时拉）、点赞、评论、删评论、发帖（文字 / 提问 / 图片 / 视频链接；图片先 `/uploads` 再直传）、编辑删除帖子、关注、拉黑、个性化推荐、资料、登录设备、换绑 / 绑定手机号（`live-bind`）、官方通知、导出、注销、退出、合作
+- 已接通：用户名密码登录、手机号登录（新用户建档存名字）、微信登录跳转（`au-3p` wx）、信息流、别人主页（`LIVE.prof`）、帖子评论（`openPost` 打开时拉）、点赞、评论、删评论、发帖（文字 / 提问 / 图片 / 视频链接；图片先 `/uploads` 再直传）、编辑删除帖子、关注、拉黑、个性化推荐、资料、登录设备、换绑 / 绑定手机号（`live-bind`）、官方通知、导出、注销、退出
 - **第 2 阶段（商城）也接上了**（见 `商城接后端` 那一段）：`apiProduct` / `apiOrder` 把后端商品、订单灌进 `PRODUCTS` / `STATE.orders`；卖家的 `SELLER_PRODUCTS` / `SELLER_ORDERS` / `MONTHLY` 来自 `/me/products`、`/me/sales`；余额 `LSHOP.wallet`（分），`vcBal` / `agreeNeed` 连着后端时读 `LSHOP`。开店（`inv-check` → `/me/seller`）、协议确认、上架（交付文件和授权文件真的上传 `liveUpload`，提交 `/products`，待补充 / 驳回用 `sp-redo` 填回表单 PATCH 重新提交）、下单付款（`do-pay` → `/orders`，成功后复用 `paidUI`）、下载（签名地址）、退款都用 `wrapAct` 包装。后台的待审核（`REVIEW` 换成 `rvOfLive`）、订单流水、退款、代金券、邀请码、主页下架走 `/admin/*`，缓存在 `LADM`，切页签时重读。金额：后端「分」、页面「元」（`f2y` / `y2f`）。示例商品的试听（pads / presets / 视觉）暂时用通用的演示内容
 - 启动顺序：`liveReset()`（同步清掉示例帖子、没登录就当游客）→ `render()` → `liveBoot()`（微信回跳登录 → `/me` → 信息流 → 关注 / 黑名单 / 通知）
 - 真实后端模式只推荐真实用户（`LIVE.u`）；示例用户在后端不存在，关注它们只改本地
@@ -165,7 +162,7 @@
 - 3D / 着色器统一走 `FX`：three.js 和 Paper Shaders 打包后放在 `vendor/`（只含用到的部分，不走第三方 CDN），按需 `import()`；`FX.can()` 不通过（减少动效 / 省流量 / 内存或核心少 / 没有 WebGL2）就用 2D 版。一种效果一个 WebGL 上下文，不动不重画，离开屏幕就停，手机像素比封顶（`FX.lite`）
 - 商城海报的 3D 样品包：`SCENES.pack` + `packBag(THREE)`，背景是 Paper 的 grainGradient；手机上没人碰时 30 帧。玩得太猛会炸：揉 / 甩 / 连着捏都往压力 `E` 里加（随时间泄掉），过半袋子鼓起、快满发抖 + 嘶声，满了炸成碎片 + 一把带物理的 sample 小球（重力、碰撞、睡眠防抖），点球发声并弹起、点空地推开；翻走或放 25 秒自动封袋（`away()`）
 - 海报自动翻页：在玩（敲 / 捏 / 拖 / 键盘）就把这一张的倒计时清零，停手 10 秒（`IDLE`）后才继续；场景可以实现 `busy()` 表示「还有东西在动，先别翻」
-- 液态金属 `METAL`：argentui 的 mountMetal（MIT）原生内核；`foil(stamp, 'gold' | 'silver')` 把章变成烫金 / 烫银，按章底下的实际底色自动选浅底 / 深底方案。PAID、DONE 烫金，HELD 烫银
+- 液态金属 `METAL`：argentui 的 mountMetal（MIT）原生内核；`foil(stamp, 'gold' | 'silver')` 把章变成烫金 / 烫银，按章底下的实际底色自动选浅底 / 深底方案。付款成功的 PAID 烫金
 - 软胶（`RUB`）：SVG 光照滤镜（模糊轮廓当高度 + 漫反射 + 高光 + 投影）把图形「鼓起来」，不开 WebGL。`#fx-rub` 点光源跟光标 / 陀螺仪（商城选中分类卡插画 `catRub`，插画整体包进 `<g class="rub-g">`，原有敲击动画照常）；`#fx-rub2` 固定光源（空状态的四个漂浮几何 `EMPTY_RUB`，自动插进 `.empty`，带印章的不插）
 - 私信三个快捷入口的小图标是纯 CSS 奶油软胶方块（和发布按钮同材质，哑光无玻璃反光——玻璃高光会像老 iPhone 图标），按下压扁回弹
 - 「我」头像后面的色块是 Paper grainGradient 流动渐变（`MH_GG`，加载好之前 / 不支持时是 `::before` 纯黄）
