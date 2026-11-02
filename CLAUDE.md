@@ -11,6 +11,7 @@
 ## 发布
 - 网站是单文件 `index.html`（+ `fonts/`、`icons/` 等静态资源），没有构建步骤
 - 推送到 `main` 后 GitHub Pages 自动发布到 https://kia1276473815-ctrl.github.io/ctrlzWeb/ （1～2 分钟）
+- 2026-11-02 合作收尾从前端 `639cdd7` / 后端 `3b39197` 承接，保留用户名密码登录，不启用邮箱版。本轮验收范围是本地、腾讯云和两个 GitHub main，GitHub Pages 不在本轮验收范围；实际发布和 CI 结果以 `ctrlz-server/docs/evidence/collab-removal-final-2026-11-02.md` 记录为准。旧邮箱 refs 保留供以后参考，须基于新 main 重接迁移，不能直接发布旧候选覆盖本轮收尾。
 
 ## 约定
 - 代码注释用中文，风格与现有代码一致
@@ -31,7 +32,7 @@
 - 私信通知：「喜欢 / 新粉丝」看过就清零；「回复与@」按条记未读（`AT_READ` / `atMark`），点进帖子或给这条回复点赞才算读过，面板右侧是给回复点赞的心（不放封面），有「全部已读」；通知条数字 = 未读条数（`noteSync`）。私信列表头有「全部已读」（`dm-readall`）
 - 私信里的分享（`cv-pick`）：手机上是顶到状态栏的整屏页面（不要上浮式面板），大屏是居中对话框；「我的作品 / 收藏 / 已购」三个页签，左右滑切换（`.pk-pages` 横向 scroll-snap）
 - 抽成：商品售卖平台抽成 3%（`PLAT`）
-- 合作功能已移除：没有邀约、托管、交付验收、互评、分成合作或后台合作纠纷入口。旧的合作页签 / 链接归到现有作品或工作室页面，旧私信 `co` / `cosys` 记录显示停用提示。第一次发布只删代码，后端历史迁移和三张合作表保留作回退兼容；验收后至少观察 3 天，才单独发布删表迁移。不要恢复合作功能或顺手删除商品评价仍使用的 `.co-rate`、`co-star`。
+- 合作功能已移除：没有邀约、托管、交付验收、互评、分成合作或后台合作纠纷入口。旧的合作页签 / 链接归到现有作品或工作室页面，未知私信类型继续安全降级。负责人于 2026-11-02 明确提前结束观察期，本轮单独收尾后端三张合作表及兼容字段；历史迁移和 Git 历史保留，删表后的版本不能直接回退到仍查询合作表的旧代码。实际迁移 / 发布验收另见完成记录，不以这段约定代替结果。不要恢复合作功能或顺手删除商品评价仍使用的 `.co-rate`、`co-star`、公司主体 `co` 或旧网址兜底。
 - 预设试弹键盘只有一个八度（C～C），用 ‹ › 或 Z / X 切换八度，按住滑动可连弹
 - **深浅色切换过场** `themeFx(apply, 按钮)`（`THX_FX`）：View Transitions 拍旧外观快照，回调里换外观，每帧用 `--thc`（clip-path）或 `--thm…`（mask）决定新外观从哪里露出来，上面一层 `thfx` 画布画特效；过场期间 `html.thvt` 让顶栏 / 底栏不单独成组。变亮：冲击波 / 手电筒（先照右上再铺满）/ 半调印刷；变暗：黑色金属粘液 = **水波荡漾**（总长 1.75 秒，加快照点下去到结束约 1.85 秒，用户要求不超过 2 秒：前约 1 秒黑夜从按钮扩散，同心水波一圈圈往外推、逐渐平息到 0，结束不跳；水波是折射，深色背景上再叠很淡的波光；贴图没解码好时滤镜里垫中性灰 `feFlood`，不会整页跳一下）。**手机（`F.lite`）不开折射**（高像素密度下整屏 SVG 位移滤镜很卡），改成加重的明暗水波圈，边缘点数 72、特效层 1.5 倍像素。折射实现：`--thf` 挂 SVG 位移贴图滤镜 `#thxLens` 到新旧快照上，贴图每帧由 `thDisp` 按边界算径向偏移，toBlob 后台编码，滤镜区域只取粘液周围 `lensBox`）/ 日食 / 夜幕。**手机（`isMob()`）用另一套 `THX_FX_M`**：切换按钮是菜单里的一行字不是圆按钮，所以不用手电筒 / 日食 / 冲击波，变亮 = 日出 / 百叶窗拉开 / 半调印刷，变暗 = 粘液 / 夜幕 / 百叶窗合上；起点取按钮里的图标。每次随机、不和上一次重复；点一下屏幕直接到结尾；减少动效或浏览器不支持时退回淡入淡出。新增效果：往 `THX_FX.light / dark` 里加 `{n, dur, init?(F), frame(F, k, g, ms)}`，`F.clip()` / `F.mask()` 设形状、`g` 画特效
 - 交互动效：用 `fxPop(el, 类名)`（`fx-up` 弹起 / `fx-dn` 缩回 / `fx-jelly` 果冻 / 分类卡 `hit`）、`fxRing()`、`burst()`；重绘后元素是新的，要在 rerender 之后再找元素加动效。动效类名用 `fx-` 前缀，别和已有样式重名（比如 `.drop` 是上传区）。尊重「减少动效」设置（`reduced()` / `html.rm`）
@@ -121,7 +122,7 @@
 - **互动提醒（连着后端时）**：三格「喜欢 / 新粉丝 / 回复与@」读 `/me/activity*`（`actLoad`，挂在 `dmPoll` 上每 3 次轮询问一次未读数，变了才拉列表；新评论 / 回复弹提示）。喜欢 / 新粉丝 打开就 `POST /me/activity/read {kind}`；回复与@ 按条读（`atMark` 包装，id 以 `ac_` 开头）。`NOTE_NEW.at` 原来是按 `AT_READ` 现算的 getter，被 `refill` 改成普通数字时用 `actSetAt` 赋值
 - **头像 / 收藏 / 商品评价（连着后端时）**：`apiUser` 包装后以服务器为准设 `AVIMG`（`avatarShapes` 用 `avShapesImg` 现画、`avatarUrl` 是 `/avatars/…` 稳定地址，`avAbs` 补后端前缀，都没有就删掉用首字母）。`ave-save` / `av-reset` / `avc-send`（照片裁好后 `liveUpload(…, 'avatar')` 再提交审核）/ `av-edit`（从 `GET /me/avatar` 同步 `AVQ` 和驳回提示）/ `av-cancel` 都包装过；后台「头像」页签 `ADMV.avatars` + `lavq`。收藏 `liveFavs()` 登录后读回 `STATE.favs`，`fav` 包装成 PUT / DELETE。商品评价 `prvBox` 连着后端时读 `/products/{id}/reviews`（缓存 `LPRV`，不显示示例评价，能不能写看服务器的 `canWrite`）。浏览历史只存本地。自己的头像会记进本地 `avImgs`（只记自己的），刷新时先显示它，不闪首字母
 - **后台页签上的数字**（连着后端时）：读 `GET /admin/counts`（`admCnt`，最多 3 秒问一次），不再用原型的示例队列
-- **后台其余页签（连着后端时）**：做法是把服务器数据换成原型的样子放进 `ADM.*`（这个网址一直连后端，覆盖本地示例无妨），再调原来的页面函数；操作先调接口再 `LADM.x = null` 重读。看板 `ledger()` 换成 `/admin/ledger`（`LLEDGER`）+ `/admin/stats`；内容 `lct`（帖子 / 商品 / 评论下架恢复）；敏感词 `/admin/words`（`censor` 连着后端时返回空，由服务器判断）；入驻 `/admin/seller-apps`（`ap-ok` / `ap-no`）；发票 `/admin/invoices`（`inv-dgo` / `inv-no`）；结算 `ADMV.payout` 重写（`lpo-gen` / `lpo-pay` 填流水号 / `lpo-fail`）；平台参数 `pm-save` → `PUT /admin/settings`，`bizCfg()` 把 `/config` 的参数和主体备案套到 `PLAT` / `ADM.site`，不依赖兼容字段 `/config.collab`
+- **后台其余页签（连着后端时）**：做法是把服务器数据换成原型的样子放进 `ADM.*`（这个网址一直连后端，覆盖本地示例无妨），再调原来的页面函数；操作先调接口再 `LADM.x = null` 重读。看板 `ledger()` 换成 `/admin/ledger`（`LLEDGER`）+ `/admin/stats`；内容 `lct`（帖子 / 商品 / 评论下架恢复）；敏感词 `/admin/words`（`censor` 连着后端时返回空，由服务器判断）；入驻 `/admin/seller-apps`（`ap-ok` / `ap-no`）；发票 `/admin/invoices`（`inv-dgo` / `inv-no`）；结算 `ADMV.payout` 重写（`lpo-gen` / `lpo-pay` 填流水号 / `lpo-fail`）；平台参数 `pm-save` → `PUT /admin/settings`，`bizCfg()` 只把 `/config.plat` 商品抽成和主体备案套到 `PLAT` / `ADM.site`
 - **用户端入驻 / 发票 / 收款 / 注销（连着后端时）**：`bizMine()` 读 `/me/seller-app`、`/me/invoices`、`/me/payee`（`LBIZ`）；`ordSheet` 用 `LBIZ.inv` 显示发票状态，`inv-go` / `py-save` / `apply-go` 调接口；注销检查 `closeChecks` 读 `/me/close/checks`（`LCLOSE`）
 - **恢复码（自助找回密码）**：注册后 `auFinish` 弹 `rcSheet` 显示一次（`AUTH.rc`）；登录面板「用恢复码重设」`au-forgot` / `rc-go`；设置 › 账号与隐私「找回密码用的恢复码」`rc-new`（后台成员不显示，服务器也不允许）
 - **申诉 / 反通知 / 新版本 / 通知开关 / 涉税（连着后端时）**：官方通知里回复 `sys-reply` → `POST /me/appeals`；通知带 `act:'counter'` 时显示「提交反通知」，`counter` / `counter-go` → `/reports/{id}/counter`；后台举报卡片显示申诉内容和反通知，`lrp-ct` 恢复 / 维持。商品「上传新版本」`sp-ver` 换成真的文件选择（`#svF`，`SVF.file`），`sp-vgo` 上传后 `POST /products/{id}/version`（先审核，`p.pendingVer`）；`apiProduct` 的 `ver` / `vlog` 来自服务器。通知开关 `nt` 存 `PATCH /me {notifyPrefs}`，`liveMe` 读回。结算打款页「导出季度涉税信息」`tax-open` / `tax-go` / `tax-dl`（先生成再点下载，保证下载在点击里触发）
