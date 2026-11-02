@@ -9950,7 +9950,7 @@ Object.assign(ACTIONS, {
     if (!e || !p){ fxPop(!e ? $('#alE') : $('#alP'), 'fx-shake', 300); return; } if (b.disabled) return; b.disabled = true;
     try { const r = await STAFF.req('POST', '/admin/auth/login', {email:e, password:p, ...(t ? {totp:t} : {})}); STAFF.set(r.token, r.staff); if (!await STAFF.check()){ b.disabled = false; return; }
       closeSheet(); if (!liveUser()) setRole('admin'); toast(`已登录后台：${esc(r.staff.name)} · ${ADM_ROLES[r.staff.role]?.[0] || r.staff.role}`, 'green', 'check'); go('admin'); }
-    catch(err){ b.disabled = false; apiFail(err); if (err.code === 'totp_required') $('#alT')?.focus(); } },
+    catch(err){ b.disabled = false; apiFail(err); if (err.code === 'totp_required' || err.code === 'bad_totp') $('#alT')?.focus(); } },
   'adm-out': async () => { const current = staffSession(); try { if (STAFF.tok) await STAFF.req('POST', '/admin/auth/logout'); } catch(e){} if (!current()) return; STAFF.drop(); setRole(API.on() && API.tok ? 'user' : API.on() ? 'guest' : 'user', true); toast('已退出后台', 'blue'); go('home'); }
 });
 /* ================= 后台接后端（连着后端时） =================
@@ -10680,7 +10680,7 @@ const pickAny = cb => { const i = Object.assign(document.createElement('input'),
 
 /* ================= 用户名密码登录、进后台、私信、声音帖子（连着后端时） =================
    · 登录面板：「登录 / 注册」两个页签（用户名 + 密码）；后端开了手机号登录（/config 的 phoneLogin）才多一个「手机号」页签，开了微信才显示微信
-   · 进后台：关联了后台账号的用户再输一次自己的密码（/admin/auth/via-user）；后端要求动态口令（线上）时多一个输入框
+   · 进后台：关联了后台账号的用户再输一次自己的密码（/admin/auth/via-user）；始终提供动态口令输入，是否必填由后端核验
    · 私信：/dm/*。打开会话时读全部消息，平时每 4 秒读一次会话列表（页面在后台时不读），有新消息弹提示
    · 声音 / 可视化帖子：音频真的上传（post_audio），别人刷到时下载、解码，和原型里的曲子一样播放 */
 LIVE.cfg = {phoneLogin:true, passwordLogin:true, wechatLogin:false, requirePhone:true, adminTotp:true};
@@ -10772,10 +10772,10 @@ ACTIONS['pw-go'] = async b => { const U = $('#pwU'), O = $('#pwO'), N = $('#pwN'
   ACTIONS['adm-login'] = async () => {
     if (!API.on() || !LIVE.staffEmail || STATE.role !== 'user') return admLogin0();
     if (await STAFF.check()){ go('admin'); return; }
-    const t = LIVE.cfg.adminTotp, noPw = !LIVE.me?.hasPassword;
-    sheet(`<h3>进入后台</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">${noPw ? '你的账号还没有密码。先设置一个密码，再用它进后台。' : `再输一次你的登录密码${t ? '，以及验证器 App 里的 6 位动态口令' : ''}。连续输错会被限制 15 分钟。`}</p>
+    const noPw = !LIVE.me?.hasPassword;
+    sheet(`<h3>进入后台</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">${noPw ? '你的账号还没有密码。先设置一个密码，再用它进后台。' : '再输一次你的登录密码；如已绑定动态口令，也要填写验证器 App 里的 6 位数字。连续输错会被限制 15 分钟。'}</p>
       ${noPw ? '<button class="pill lg" data-act="pw-set">设置密码</button>' : `<label class="ad-lab" for="avP">登录密码</label><input class="inp" id="avP" type="password" autocomplete="current-password">
-      ${t ? '<label class="ad-lab" for="avT">动态口令</label><input class="inp" id="avT" inputmode="numeric" maxlength="6" autocomplete="one-time-code">' : ''}
+      <label class="ad-lab" for="avT">动态口令（验证器 App 里的 6 位数字）</label><input class="inp" id="avT" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
       <button class="pill lg" data-act="adm-via-go">进入后台</button>`}
       <button class="more" data-act="adm-email">用后台邮箱登录</button>`, d => { setTimeout(() => $('#avP', d)?.focus(), 80);
         $$('#avP, #avT', d).forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') ACTIONS['adm-via-go']($('[data-act="adm-via-go"]', d)); })); });
@@ -10786,7 +10786,7 @@ Object.assign(ACTIONS, {
   'adm-via-go': async b => { const P = $('#avP'), T = $('#avT'); if (!P.value){ fxPop(P, 'fx-shake', 300); return; } if (b.disabled) return; b.disabled = true; const current = staffSession();
     try { const r = await API.req('POST', '/admin/auth/via-user', {password:P.value, ...(T?.value.trim() ? {totp:T.value.trim()} : {})}); if (!current()) return; STAFF.set(r.token, r.staff); if (!await STAFF.check()){ b.disabled = false; return; }
       closeSheet(); toast(`已进入后台：${esc(r.staff.name)} · ${ADM_ROLES[r.staff.role]?.[0] || r.staff.role}`, 'green', 'check'); go('admin'); }
-    catch(err){ b.disabled = false; apiFail(err); if (err.code === 'wrong_password'){ P.value = ''; P.focus(); } else if (/totp/.test(err.code || '')) T?.focus(); } }
+    catch(err){ b.disabled = false; apiFail(err); if (err.code === 'wrong_password'){ P.value = ''; P.focus(); } else if (err.code === 'totp_required' || err.code === 'bad_totp') T?.focus(); } }
 });
 
 /* —— 后台：新建账号（用户名 + 密码）、重置密码 —— */
