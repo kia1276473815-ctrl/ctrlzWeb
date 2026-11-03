@@ -31,6 +31,7 @@ function form(){
     LADM:{staff:[]},uname:id=>id,ADM_ROLES:{super:['超级管理员']},location:{origin:'https://fixture.test'},
   });
   ctx.STAFF.req=(...args)=>ctx.API.req(...args);
+  vm.runInContext(section('function canRecoverAccount(){','function setExtra(){'),ctx);
   vm.runInContext(section('/* 凭据写入只提交一次','function admLoginSheet(){'),ctx);
   vm.runInContext(section('/* —— 设置：用户名、修改密码 —— */','/* —— 进后台'),ctx);
   vm.runInContext(section('function rcSheet(','/* ================= 申诉'),ctx);
@@ -93,12 +94,31 @@ for(const kind of ['正常','关闭面板','换账号','打开其它面板'])tes
   if(kind==='正常'){assert.match(h.html,/SYNTHETIC-NEW-CODE/);assert.match(h.html,/data-username="fixture_user"/);assert.equal(h.ctx.AUTH.rc,null);}else assert.doesNotMatch(h.html,/SYNTHETIC-NEW-CODE/);
 });
 test('恢复码生成保留当前session并明确其它设备需重新登录',async()=>{
-  const h=form();h.ctx.ACTIONS['rc-new']();h.nodes.rcOld.value='current-password';const work=h.run('rc-ngo');h.waits[0].resolve({code:'SYNTHETIC-CODE'});await work;
+  const h=form();h.ctx.LIVE.staffEmail=null;h.ctx.ACTIONS['rc-new']();h.nodes.rcOld.value='current-password';const work=h.run('rc-ngo');h.waits[0].resolve({code:'SYNTHETIC-CODE'});await work;
   assert.equal(h.ctx.API.tok,h.appToken);assert.equal(h.calls[0].retry,false);assert.match(h.html,/其它设备需重新登录/);assert.match(h.html,/SYNTHETIC-CODE/);
   h.ctx.API.setTok({access:'other',refresh:'cookie'});assert.doesNotMatch(h.html,/SYNTHETIC-CODE/);
 });
 test('恢复码生成关闭或换号后不再显示一次性秘密',async()=>{
-  for(const switchAccount of [false,true]){const h=form();h.ctx.ACTIONS['rc-new']();const work=h.run('rc-ngo');h.ctx.closeSheet();if(switchAccount){h.ctx.API.setTok({access:'other',refresh:'cookie'});h.ctx.ME='other';}h.waits[0].resolve({code:'SYNTHETIC-CODE'});await work;assert.doesNotMatch(h.html,/SYNTHETIC-CODE/);}
+  for(const switchAccount of [false,true]){const h=form();h.ctx.LIVE.staffEmail=null;h.ctx.ACTIONS['rc-new']();const work=h.run('rc-ngo');h.ctx.closeSheet();if(switchAccount){h.ctx.API.setTok({access:'other',refresh:'cookie'});h.ctx.ME='other';}h.waits[0].resolve({code:'SYNTHETIC-CODE'});await work;assert.doesNotMatch(h.html,/SYNTHETIC-CODE/);}
+});
+
+test('停用但仍关联后台的账号遵循recoveryAllowed=false，不能从action打开恢复码表单',()=>{
+  const h=form();h.ctx.LIVE.staffEmail=null;h.ctx.LIVE.me.recoveryAllowed=false;h.ctx.ACTIONS['rc-new']();
+  assert.equal(h.html,'');assert.equal(h.calls.length,0);assert.match(h.toasts[0][0],/联系超级管理员/);
+});
+
+test('解除关联后新的recoveryAllowed=true恢复入口，undefined兼容旧staffEmail合同',()=>{
+  const h=form();h.ctx.LIVE.me.recoveryAllowed=false;assert.equal(h.ctx.canRecoverAccount(),false);
+  h.ctx.LIVE.me.recoveryAllowed=true;h.ctx.ACTIONS['rc-new']();assert.ok(h.nodes.rcOld);assert.equal(h.ctx.canRecoverAccount(),true);
+  delete h.ctx.LIVE.me.recoveryAllowed;assert.equal(h.ctx.canRecoverAccount(),false);h.ctx.LIVE.staffEmail=null;assert.equal(h.ctx.canRecoverAccount(),true);
+});
+
+test('设置页按明确的恢复能力渲染，禁用关联与解绑刷新后状态一致',()=>{
+  const h=form();Object.assign(h.ctx,{closingOf:()=>null,ntOn:()=>true,swBtn:()=>'',mask:String,DEVS:[],apiBox:()=>'',DOC_ORD:[]});
+  h.ctx.API.on=()=>true;h.ctx.STATE.settings={pers:true};h.ctx.STATE.blocks=new Set();h.ctx.STATE.seller=false;
+  vm.runInContext(section('function setExtra(){','const MESUB = {'),h.ctx);
+  h.ctx.LIVE.staffEmail=null;h.ctx.LIVE.me.recoveryAllowed=false;assert.doesNotMatch(h.ctx.setExtra(),/data-act="rc-new"/);
+  h.ctx.LIVE.me.recoveryAllowed=true;assert.match(h.ctx.setExtra(),/data-act="rc-new"/);
 });
 test('人员管理仅staff.manage可对停用且非当前成员显示解除关联',()=>{
   const h=form();h.ctx.LADM.staff=[{id:'current-staff',userId:'own',name:'自己',role:'super',enabled:true},{id:'disabled',userId:'target',name:'待交接',role:'mod',enabled:false},{id:'enabled',userId:'target2',name:'启用',role:'mod',enabled:true}];

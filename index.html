@@ -8213,6 +8213,7 @@ function payeeBox(){ const p = ADM.payee[ME], mine = ADM.payouts.flatMap(b => b.
 
 /* —— 设置里新增的几块 —— */
 const swBtn = (on, act, k) => `<button class="pill sm ${on ? '' : 'lt'}" data-act="${act}" ${k ? `data-k="${k}"` : ''} role="switch" aria-checked="${on}">${on ? '已开启' : '关闭'}</button>`;
+function canRecoverAccount(){ return LIVE.me?.recoveryAllowed ?? !LIVE.staffEmail; }
 function setExtra(){ const cl = closingOf(ME);
   return `${cl ? `<div class="ann warn"><span class="ann-i">${IC.x}</span><span class="ann-t"><b>账号注销中，${fmtDay(cl.until)} 完成</b><span>冷静期内可以随时撤销，撤销后账号恢复正常</span></span><button class="pill sm" data-act="close-undo">撤销注销</button></div>` : ''}
     <div class="box"><div class="box-h"><h3>通知</h3><span class="mut2" style="font-size:13px">关掉后不计入未读提醒，消息照常收到</span></div><div class="box-b set-l">
@@ -8221,7 +8222,7 @@ function setExtra(){ const cl = closingOf(ME);
     <div class="box"><div class="box-h"><h3>账号与隐私</h3></div><div class="box-b set-l">
       <label class="set-r set-2"><span>个性化推荐<span class="mut2" style="display:block;font-size:12.5px">关掉后「推荐」按发布时间排列，不再参考你的关注和互动</span></span>${swBtn(STATE.settings.pers, 'pers')}</label>
       ${API.on() ? `<button class="set-r" data-act="pw-set">${LIVE.me?.hasPassword ? '修改密码' : '设置用户名和密码'}<span class="mut2">${LIVE.me?.username ? esc(LIVE.me.username) + ' ' : ''}›</span></button>` : ''}
-      ${API.on() && LIVE.me?.username && !LIVE.staffEmail ? `<button class="set-r" data-act="rc-new">找回密码用的恢复码<span class="mut2">${LIVE.me.hasRecovery ? '已生成 · 重新生成' : '还没有 · 去生成'} ›</span></button>` : ''}
+      ${API.on() && LIVE.me?.username && canRecoverAccount() ? `<button class="set-r" data-act="rc-new">找回密码用的恢复码<span class="mut2">${LIVE.me.hasRecovery ? '已生成 · 重新生成' : '还没有 · 去生成'} ›</span></button>` : ''}
       <button class="set-r" data-act="acc-phone">换绑手机号<span class="mut2">${(() => { const a = ACC.list.find(x => x.id === ME); return a?.phone ? '+86 ' + mask(a.phone) : '未绑定'; })()} ›</span></button>
       <button class="set-r" data-act="acc-devs">登录设备<span class="mut2">${API.on() ? "" : DEVS.length + 1 + " 台 "}›</span></button>
       <a class="set-r" href="#me-blocks">黑名单<span class="mut2">${STATE.blocks.size ? STATE.blocks.size + ' 人' : '没有'} ›</span></a>
@@ -12216,7 +12217,7 @@ ACTIONS['rc-go'] = async b => { const u = $('#rcU').value.trim(), c = $('#rcC').
     auFinish(r.user.id, 'back'); liveAfterLogin(); toast('密码已重设，其它设备上的登录都已退出', 'green', 'check'); }
   catch(e){ if (!scope.same()) return; if (credentialUnknown(e)){ toast('无法确认重设结果，请先用新密码登录，不要重复提交恢复码', 'orange', 'x'); if (scope.active()) credentialLoginButton(b, u); }
     else if (scope.active()){ b.disabled = false; credentialFailure(e); } } };
-ACTIONS['rc-new'] = () => { const has = LIVE.me?.hasPassword;
+ACTIONS['rc-new'] = () => { if (!canRecoverAccount()){ toast('后台成员的账号不能使用恢复码，请联系超级管理员', 'orange', 'x'); return; } const has = LIVE.me?.hasPassword;
   sheet(`<h3>${LIVE.me?.hasRecovery ? '重新生成恢复码' : '生成恢复码'}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">忘了密码时用它自己重设。${LIVE.me?.hasRecovery ? '重新生成后，旧的那组就不能用了。' : ''}</p>
     ${has ? '<label class="ad-lab" for="rcOld">当前密码</label><input class="inp" id="rcOld" type="password" autocomplete="current-password">' : ''}
     <button class="pill lg" data-act="rc-ngo">生成</button>`, d => setTimeout(() => $('#rcOld', d)?.focus(), 80)); };
