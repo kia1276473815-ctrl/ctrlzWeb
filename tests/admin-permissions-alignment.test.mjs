@@ -67,6 +67,14 @@ test('后台403权限变动补读真实角色，不注销App身份',async()=>{
   await assert.rejects(r.staff.req('POST','/admin/posts/p/takedown',{}),e=>e.status===403);assert.equal(r.staff.me.role,'cs');assert.equal(r.staff.tok,'super-token');assert.equal(r.ctx.STATE.role,'user');assert.equal(r.ctx.LLEDGER.v,null);assert.equal(calls.length,2);
 });
 
+test('后台凭据版本失效401只退出后台并清缓存，保留App本人会话',async()=>{
+  const r=realm(async()=>response(401,{error:{code:'unauthorized',message:'后台登录已过期'}}));r.login();const appToken=r.ctx.API.tok;
+  r.ctx.LADM.users=[{id:'private-user'}];r.ctx.LLEDGER.v=[{id:'private-ledger'}];
+  await assert.rejects(r.staff.req('GET','/admin/me'),e=>e.status===401);
+  assert.equal(r.staff.tok,null);assert.equal(r.staff.me,null);assert.equal(r.ctx.LADM.users,null);assert.equal(r.ctx.LLEDGER.v,null);assert.equal(r.storage.has('ctrlz2.staff'),false);
+  assert.equal(r.ctx.API.tok,appToken);assert.equal(r.ctx.STATE.role,'user');
+});
+
 test('换后台账号、角色或退出清掉审核/流水/计数及所有异步标记',()=>{
   const r=realm();r.login();r.ctx.LADM.users=[{id:'private'}];r.ctx.LADM.busy.users=true;r.ctx.LADM.errors.users='offline';r.ctx.LADM.reads.users={};r.ctx.LADM.requests.users={};r.ctx.ADMCNT.v={review:99};r.ctx.LLEDGER.v=[{amount:100}];r.ctx.REVIEW.push({id:'private-review'});r.ctx.UI.luTab='dm';r.ctx.UI.smTo='old';r.ctx.LU.mark={};
   const old=r.ctx.staffSession();r.login('cs','cs');assert.equal(old(),false);assert.equal(r.ctx.LADM.users,null);assert.deepEqual(Object.keys(r.ctx.LADM.busy),[]);assert.deepEqual(Object.keys(r.ctx.LADM.errors),[]);assert.equal(r.ctx.ADMCNT.v.review,undefined);assert.equal(r.ctx.LLEDGER.v,null);assert.equal(r.ctx.REVIEW.length,0);assert.equal(r.ctx.LU.mark,null);assert.equal(r.ctx.UI.smTo,null);

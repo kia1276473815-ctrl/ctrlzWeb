@@ -3605,7 +3605,7 @@ function sheet(html, mount){
 /* 关闭面板：真的面板立刻移除（后面的逻辑照旧同步：查不到旧元素，焦点照常还给原来的按钮），
    另外复制一份「影子」在原位置播放滑下 / 淡出（不能点、读屏跳过、没有 id），播完就删——和打开时同一条路线回去。
    o.instant：替换成新面板、翻页、按 Esc（键盘操作不播动画）时瞬间关；o.v：手指甩下来的速度（px/ms），退场接着这个速度 */
-function closeSheet(o){ if (_sheetClean){ try { _sheetClean(); } catch(e){} _sheetClean = null; }
+function closeSheet(o){ closeSheet.epoch = (closeSheet.epoch || 0) + 1; if (_sheetClean){ try { _sheetClean(); } catch(e){} _sheetClean = null; }
   const ov = $('#layer > .sov'); if (ov && !o?.instant && !reduced()) try { sheetGhost(ov, o?.v || 0); } catch(e){}
   $('#layer').innerHTML = ''; }
 const SHEET_GHOSTS = new Set();
@@ -9854,7 +9854,7 @@ const API = {
     if (this.cookie && this.tok?.refresh && this.tok.refresh !== 'cookie') this.setTok(this.tok, true);
   },
   on(){ return !!this.base; },
-  setTok(t, refreshing = false){ if (t && this.cookie) t = {...t, refresh:'cookie'}; if (!refreshing){ this.epoch++; this._ref = null; } if (!t && this.tok) this.sessionReset?.(); this.tok = t; store.set('apiTok', t); },
+  setTok(t, refreshing = false){ if (t && this.cookie) t = {...t, refresh:'cookie'}; if (!refreshing){ this.epoch++; this._ref = null; this.credentialReset?.(); } if (!t && this.tok) this.sessionReset?.(); this.tok = t; store.set('apiTok', t); },
   async req(method, path, body, retry = true, options = {}){
     if (typeof retry === 'object'){ options = retry; retry = true; }
     const base = this.base, token = this.tok, epoch = this.epoch;
@@ -9883,7 +9883,10 @@ const API = {
   refresh(){ if (this._ref) return this._ref; const token = this.tok, base = this.base; if (!token?.refresh) return Promise.resolve(false);
     const task = (async () => {
       try { const r = await this.req('POST', '/auth/refresh', this.cookie ? {} : {refreshToken:token.refresh}, false, {timeoutMs:10000});
-        if (token !== this.tok || base !== this.base) throw Object.assign(new Error('账号已切换'), {code:'cancel'}); this.setTok({access:r.accessToken, refresh:r.refreshToken}, true); const c = this.claims(r.accessToken); this.skew = c?.iat ? c.iat * 1000 - Date.now() : 0; return true; }
+        if (token !== this.tok || base !== this.base) throw Object.assign(new Error('账号已切换'), {code:'cancel'});
+        const before = this.claims(token.access), c = this.claims(r?.accessToken);
+        if (before?.sub && before?.sid && (!c || c.sub !== before.sub || c.sid !== before.sid)){ liveLoggedOut('会话已变化，请重新登录'); throw Object.assign(new Error('会话已变化，请重新登录'), {code:'cancel'}); }
+        this.setTok({access:r.accessToken, refresh:r.refreshToken}, true); this.skew = c?.iat ? c.iat * 1000 - Date.now() : 0; return true; }
       catch(e){ if ((e.status === 401 || e.status === 403) && token === this.tok && base === this.base){ liveLoggedOut(); return false; } throw e; }
     })(); this._ref = task; task.finally(() => { if (this._ref === task) this._ref = null; }).catch(() => {}); return task;
   }
@@ -9901,7 +9904,7 @@ const STAFF = {
   set(tok, s, perms){ const next = Array.isArray(perms) ? [...perms] : null;
     const changed = this.tok !== tok || this.base !== API.base || this.me?.id !== s.id || this.me?.role !== s.role || JSON.stringify(this.perms) !== JSON.stringify(next);
     if (changed){ this.epoch++; staffCacheReset(); } this.tok = tok; this.base = API.base;
-    this.me = {id:s.id, name:s.name, role:s.role, email:s.email, on:s.enabled !== false}; this.perms = next; this.validated = !!next && s.enabled !== false; this.save(); },
+    this.me = {id:s.id, name:s.name, role:s.role, email:s.email, userId:s.userId || null, on:s.enabled !== false}; this.perms = next; this.validated = !!next && s.enabled !== false; this.save(); },
   drop(tell){ this.epoch++; this.tok = this.me = this.perms = null; this.validated = false; this.base = ''; this.save(); staffCacheReset();
     if (STATE.role === 'admin'){ setRole(API.tok ? 'user' : 'guest', true); if (tell) toast('后台登录已过期，请重新登录', 'blue'); rerender(); }
     else if (tell && /^admin/.test(CUR.key || '')){ toast('后台登录已过期，请重新进入', 'blue'); rerender(); } },
@@ -9927,6 +9930,7 @@ function staffSession(){ const epoch = STAFF.epoch, token = STAFF.tok, base = AP
   return () => STAFF.epoch === epoch && STAFF.tok === token && API.base === base && (!token || STAFF.base === base);
 }
 function staffCacheReset(){
+  if ($('#layer [data-staff-secret]')) closeSheet({instant:true});
   try { for (const k in LADM) LADM[k] = ['busy','errors','reads','requests'].includes(k) ? {} : null; } catch(e){}
   try { Object.assign(ADMCNT, {v:{},at:0,busy:false,mark:null}); } catch(e){}
   try { Object.assign(LLEDGER, {v:null,at:0,busy:false,mark:null,error:null}); } catch(e){}
@@ -9935,6 +9939,45 @@ function staffCacheReset(){
   UI.rvSel = null; UI.luTab = null; UI.smTo = null; UI.smMode = null;
 }
 STAFF.load();
+/* 凭据写入只提交一次；账号/面板变化后不回填令牌、秘密或旧页面。 */
+const CREDENTIALS = {rcTimer:0};
+function credentialScope(anchor){
+  const base = API.base, epoch = API.epoch, me = ME, role = STATE.role, panel = closeSheet.epoch || 0;
+  const same = () => API.base === base && API.epoch === epoch && ME === me && STATE.role === role;
+  return {same, active:() => same() && (closeSheet.epoch || 0) === panel && anchor?.isConnected !== false};
+}
+const credentialUnknown = e => !e?.credentialUnsent && (e?.credentialUnknown || ['network','timeout','credential_result_unknown'].includes(e?.code) || e?.status >= 500);
+function credentialUncertain(){ return Object.assign(new Error('无法确认操作结果，请先用新密码确认登录'), {code:'credential_result_unknown', credentialUnknown:true}); }
+async function credentialRequest(path, body, scope){
+  // 刷新只能发生在提交之前；已经带出的一次性凭据不能在401后自动重发。
+  if (!path.startsWith('/auth/') && API.tok?.refresh && API.stale?.()) try { await API.refresh(); } catch(e){ e.credentialUnsent = true; throw e; }
+  if (!scope.active()) throw Object.assign(new Error('操作已取消'), {code:'cancel'});
+  try { return await API.req('POST', path, body, false); }
+  catch(e){ if (credentialUnknown(e)) e.credentialUnknown = true; throw e; }
+}
+function credentialLoginResult(r, recovery = false){
+  if (!r || typeof r.accessToken !== 'string' || !r.accessToken || typeof r.refreshToken !== 'string' || !r.refreshToken || typeof r.user?.id !== 'string' || !r.user.id || recovery && (typeof r.recoveryCode !== 'string' || !r.recoveryCode)) throw credentialUncertain();
+  return r;
+}
+function credentialFailure(e, password, totp){
+  if (e?.code === 'cancel') return;
+  if (credentialUnknown(e) && totp?.value){ totp.value = ''; toast('暂时无法确认后台登录结果，请等待新动态口令后重试', 'orange', 'x'); totp.focus(); return; }
+  apiFail(e);
+  if (['wrong_password','credentials_changed'].includes(e?.code)){ if (password){ password.value = ''; password.focus(); } }
+  else if (['totp_required','bad_totp','totp_replayed'].includes(e?.code)){ if (totp){ if (e.code === 'totp_replayed') totp.value = ''; totp.focus(); } }
+}
+function credentialStaffRevoked(uid, email){
+  const legacy = STAFF.me && !Object.prototype.hasOwnProperty.call(STAFF.me, 'userId');
+  if (STAFF.tok && (STAFF.me?.userId === uid || legacy && email && STAFF.me?.email?.toLowerCase() === email.toLowerCase())) STAFF.drop();
+}
+function credentialLoginButton(button, username){
+  button.disabled = false; button.textContent = '用新密码登录'; button.dataset.act = 'credential-login'; button.dataset.username = username || '';
+}
+ACTIONS['credential-login'] = b => { AUTH.uname = b.dataset.username || AUTH.uname || ''; loginSheet('请用新密码确认登录'); };
+API.credentialReset = () => {
+  clearTimeout(CREDENTIALS.rcTimer); CREDENTIALS.rcTimer = 0; AUTH.rc = AUTH.rcT = AUTH.rcOwner = AUTH.rcUser = null;
+  if ($('#layer [data-credential-secret]')) closeSheet({instant:true});
+};
 function admLoginSheet(){ const pre = STATE.role === 'user' ? LIVE.staffEmail || '' : '';   // 关联了后台账号的 App 用户：邮箱帮他填好
   sheet(`<h3>后台登录</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">后台账号和 App 账号分开，由超级管理员创建。连续输错会被限制 15 分钟。</p>
     <label class="ad-lab" for="alE">邮箱</label><input class="inp" id="alE" type="email" autocomplete="username" value="${esc(pre)}">
@@ -9947,10 +9990,11 @@ Object.assign(ACTIONS, {
   'adm-login': async () => { if (!API.on()){ if (protoOn()){ setRole('admin'); go('admin'); } return; }
     if (await STAFF.check()){ if (!liveUser()) setRole('admin'); go('admin'); } else admLoginSheet(); },
   'adm-login-go': async b => { const e = $('#alE').value.trim(), p = $('#alP').value, t = $('#alT').value.trim();
-    if (!e || !p){ fxPop(!e ? $('#alE') : $('#alP'), 'fx-shake', 300); return; } if (b.disabled) return; b.disabled = true;
-    try { const r = await STAFF.req('POST', '/admin/auth/login', {email:e, password:p, ...(t ? {totp:t} : {})}); STAFF.set(r.token, r.staff); if (!await STAFF.check()){ b.disabled = false; return; }
+    if (!e || !p){ fxPop(!e ? $('#alE') : $('#alP'), 'fx-shake', 300); return; } if (b.disabled) return; b.disabled = true; const scope = credentialScope(b), current = staffSession();
+    try { const r = await STAFF.req('POST', '/admin/auth/login', {email:e, password:p, ...(t ? {totp:t} : {})}); if (!scope.active() || !current()) return; if (!r?.token || !r.staff?.id) throw credentialUncertain(); STAFF.set(r.token, r.staff); if (!await STAFF.check()){ if (scope.active()) b.disabled = false; return; }
+      if (!scope.active() || STAFF.tok !== r.token || STAFF.me?.id !== r.staff.id) return;
       closeSheet(); if (!liveUser()) setRole('admin'); toast(`已登录后台：${esc(r.staff.name)} · ${ADM_ROLES[r.staff.role]?.[0] || r.staff.role}`, 'green', 'check'); go('admin'); }
-    catch(err){ b.disabled = false; apiFail(err); if (err.code === 'totp_required' || err.code === 'bad_totp') $('#alT')?.focus(); } },
+    catch(err){ if (!scope.active()) return; b.disabled = false; credentialFailure(err, $('#alP'), $('#alT')); } },
   'adm-out': async () => { const current = staffSession(); try { if (STAFF.tok) await STAFF.req('POST', '/admin/auth/logout'); } catch(e){} if (!current()) return; STAFF.drop(); setRole(API.on() && API.tok ? 'user' : API.on() ? 'guest' : 'user', true); toast('已退出后台', 'blue'); go('home'); }
 });
 /* ================= 后台接后端（连着后端时） =================
@@ -9982,7 +10026,7 @@ ACTIONS['ladm-retry'] = b => { const k = b.dataset.v; if (!admGuard(k === 'backu
 function credSheet(title, who, r){
   const rows = [['后台登录邮箱', r.staff.email], ['初始密码', r.password], ['动态口令密钥', r.totpSecret]];
   sheet(`<h3>${esc(title)}</h3><p class="ad-warn y">密码和密钥只显示这一次，请马上发给${esc(who)}。对方在验证器 App 里选「手动输入密钥」填密钥，或者用下面的绑定地址。</p>
-    <div class="cred">${rows.map(([k, v]) => `<div><span>${k}</span><code>${esc(v)}</code><button class="pill sm lt" data-act="cp-secret" data-v="${esc(v)}">复制</button></div>`).join('')}
+    <div class="cred" data-staff-secret>${rows.map(([k, v]) => `<div><span>${k}</span><code>${esc(v)}</code><button class="pill sm lt" data-act="cp-secret" data-v="${esc(v)}">复制</button></div>`).join('')}
     <div><span>绑定地址</span><code class="sm">${esc(r.totpUri)}</code><button class="pill sm lt" data-act="cp-secret" data-v="${esc(r.totpUri)}">复制</button></div></div>
     <button class="pill lg" data-act="cp-secret" data-v="${esc(rows.map(([k, v]) => k + '：' + v).join('\n') + '\n绑定地址：' + r.totpUri + '\n后台：' + location.origin + '/#admin')}">全部复制</button>`); }
 async function lsfPatch(id, body, el){ if (!admGuard('staff') || el?.disabled) return; if (el) el.disabled = true;   // el：点的按钮 / 改的下拉框，请求没回来前锁住
@@ -9990,15 +10034,23 @@ async function lsfPatch(id, body, el){ if (!admGuard('staff') || el?.disabled) r
 const roleOpts = sel => Object.entries(ADM_ROLES).map(([k, [n]]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${n}</option>`).join('');
 function ladmStaffView(){
   if (!LADM.staff){ ladmLoad('staff'); return ladmWait('人员与权限', '后台成员（读取中）'); }
-  const me = admMe();
-  return `${adH('人员与权限', '每个后台账号一个角色；停用后立刻下线、不能再登录。新成员的初始密码和动态口令只显示一次', `<button class="pill sm" data-act="lsf-new">${IC.plus}加一个人</button>`)}
+  const me = admMe(), can = staffCan('staff.manage'), enabledSupers = LADM.staff.filter(s => s.enabled && s.role === 'super').length;
+  return `${adH('人员与权限', '每个后台账号一个角色；停用后立刻下线、不能再登录。完成身份交接后可解除已停用成员的 App 关联', can ? `<button class="pill sm" data-act="lsf-new">${IC.plus}加一个人</button>` : '')}
   <div class="box"><div class="tw"><table class="t"><thead><tr><th>成员</th><th>关联 App 账号</th><th>角色</th><th>状态</th><th>最近登录</th><th></th></tr></thead><tbody>${LADM.staff.map(s => `<tr>
     <td><b>${esc(s.name)}</b>${s.id === me.id ? ' <span class="mut2">（当前）</span>' : ''}<div class="mut2" style="font-size:12px">${esc(s.email)}</div></td>
     <td class="mut2">${s.userId ? `<a data-go="user-${esc(s.userId)}">${esc(USERS[s.userId]?.name || '已关联')}</a>` : '—'}</td>
-    <td><select class="inp ad-sel" data-act-ch="lsf-role" data-id="${esc(s.id)}" ${s.id === me.id ? 'disabled' : ''}>${roleOpts(s.role)}</select></td>
+    <td><select class="inp ad-sel" data-act-ch="lsf-role" data-id="${esc(s.id)}" ${!can || s.id === me.id || s.enabled && s.role === 'super' && enabledSupers <= 1 ? 'disabled' : ''}>${roleOpts(s.role)}</select></td>
     <td>${s.enabled ? stTag('启用', 'green') : stTag('停用', '')}</td><td class="mut2 n">${s.lastLoginAt ? fmtDT(+new Date(s.lastLoginAt)) : '—'}</td>
-    <td class="r">${s.id === me.id ? '' : `<button class="pill sm lt" data-act="lsf-on" data-id="${esc(s.id)}" data-v="${s.enabled ? 0 : 1}">${s.enabled ? '停用' : '启用'}</button>`}</td></tr>`).join('')}</tbody></table></div></div>`;
+    <td class="r">${!can || s.id === me.id ? '' : `${s.enabled && s.role === 'super' && enabledSupers <= 1 ? '' : `<button class="pill sm lt" data-act="lsf-on" data-id="${esc(s.id)}" data-v="${s.enabled ? 0 : 1}">${s.enabled ? '停用' : '启用'}</button>`}${!s.enabled && s.userId ? `<button class="pill sm lt" data-act="lsf-unlink" data-id="${esc(s.id)}">解除 App 关联</button>` : ''}`}</td></tr>`).join('')}</tbody></table></div></div>`;
 }
+ACTIONS['lsf-unlink'] = b => { if (!admGuard('staff')) return; const s = LADM.staff?.find(s => s.id === b.dataset.id);
+  if (!s || s.enabled || !s.userId || s.id === admMe().id) return;
+  sheet(`<h3>解除 ${esc(s.name)} 的 App 关联？</h3><p class="ad-warn y">请先确认已完成后台身份交接。解除后，该 App 账号不再关联此后台身份；后台账号保持停用。App 账号可以按账号规则申请注销。</p><button class="pill lg" data-act="lsf-unlink-go" data-id="${esc(s.id)}">确认解除关联</button>`);
+};
+ACTIONS['lsf-unlink-go'] = async b => { if (!admGuard('staff') || b.disabled) return; const scope = credentialScope(b), current = staffSession(); b.disabled = true;
+  try { await STAFF.req('PATCH', '/admin/staff/' + encodeURIComponent(b.dataset.id), {unlinkUser:true}); if (!scope.active() || !current()) return; closeSheet(); toast('App 关联已解除，后台账号保持停用', 'green', 'check'); LADM.staff = null; ladmLoad('staff'); }
+  catch(e){ if (scope.active()){ b.disabled = false; apiFail(e); } }
+};
 function ladmUsersView(){
   const f = ladmUsF();
   if (!LADM.users || LADM.uq !== fq('users') || LADM.uf !== f){ ladmLoad('users'); if (!LADM.users) return ladmWait('用户', '读取中'); }
@@ -10270,7 +10322,7 @@ function liveMe(me){
   ADM.acct[me.id] = {warns:[], ...(me.limits.banned ? {ban:{until:me.limits.banUntil ? +new Date(me.limits.banUntil) : 0, reason:me.limits.reason || ''}} : {}), ...(me.limits.muteUntil ? {mute:{until:+new Date(me.limits.muteUntil), reason:me.limits.reason || ''}} : {})};
   if (ME !== me.id || STATE.role !== 'user'){ dmReset(); ME = me.id; store.set('me', ME); restoreAccount(ME); setRole('user', true); void dmRestore(); }
 }
-function liveLoggedOut(){ if (!API.tok && STATE.role !== 'user') return; API.setTok(null); if (STATE.role === 'user'){ signOut(true); toast('登录已过期，请重新登录', 'blue'); rerender(); } }
+function liveLoggedOut(message = '登录已过期，请重新登录'){ if (!API.tok && STATE.role !== 'user') return; API.setTok(null); if (STATE.role === 'user'){ signOut(true); toast(message, 'blue'); rerender(); } }
 
 /* 启动：同步部分先清掉示例内容（避免先闪一下假数据），再异步拉真实数据 */
 function liveReset(){
@@ -10720,15 +10772,19 @@ const auAgree = () => `<div class="au-ag ${AUTH.need ? 'need' : ''}"><button cla
   };
 }
 async function auPwGo(reg, username, password){
-  if (AUTH.busy) return; AUTH.busy = true; const b = $('.au-go'); if (b){ b.disabled = true; b.textContent = reg ? '正在注册…' : '正在登录…'; }
+  if (AUTH.busy) return; AUTH.busy = true; const b = $('.au-go'), scope = credentialScope(b); if (b){ b.disabled = true; b.textContent = reg ? '正在注册…' : '正在登录…'; }
   try {
-    const r = await API.req('POST', reg ? '/auth/register' : '/auth/login', {username, password});
+    const r = credentialLoginResult(await credentialRequest(reg ? '/auth/register' : '/auth/login', {username, password}, scope), reg);
+    if (!scope.active()){ if (scope.same()){ API.setTok(null); if (STATE.role === 'user') signOut(true); toast(reg ? '账号已注册，请用刚设置的密码重新登录' : '验证已完成，请重新打开登录面板登录', 'blue'); rerender(); } return; }
     AUTH.busy = false; AUTH.pw = AUTH.pw2 = AUTH.err = '';
     API.setTok({access:r.accessToken, refresh:r.refreshToken}); apiUser(r.user);
+    if (reg){ AUTH.rc = r.recoveryCode; AUTH.rcUser = username; AUTH.rcOwner = {base:API.base, epoch:API.epoch, id:r.user.id}; }
     let a = ACC.list.find(x => x.id === r.user.id); if (!a){ a = {id:r.user.id}; ACC.list.push(a); } Object.assign(a, {name:r.user.name, username}); ACC.save();
     if (r.isNew){ LIVE.pendingId = r.user.id; AUTH.prof = {name:'', c:USERS[r.user.id].c, tags:new Set(), fol:new Set(), phone:'', email:''}; AUTH.step = 'prof'; auRender(); }
     else { auFinish(r.user.id, 'back'); liveAfterLogin(); }
   } catch(e){
+    if (!scope.active()) return;
+    if (reg && credentialUnknown(e)){ AUTH.busy = false; AUTH.err = '无法确认注册结果，请先用刚设置的密码登录'; const m = $('#auM'); if (m) m.textContent = AUTH.err; if (b) credentialLoginButton(b, username); return; }
     AUTH.busy = false; AUTH.err = e.message; const m = $('#auM'); if (m) m.innerHTML = `<span class="bad">${esc(e.message)}</span>`;
     const g = $('.au-go'); if (g){ g.disabled = false; g.textContent = reg ? '注册并登录' : '登录'; auShake(g); }
   }
@@ -10759,13 +10815,19 @@ ACTIONS['pw-set'] = () => { const me = LIVE.me || {}, has = me.hasPassword, un =
     <label class="ad-lab" for="pwN2">再输一次新密码</label><input class="inp" id="pwN2" type="password" autocomplete="new-password" maxlength="72">
     <button class="pill lg" data-act="pw-go">保存</button>`); };
 ACTIONS['pw-go'] = async b => { const U = $('#pwU'), O = $('#pwO'), N = $('#pwN'), N2 = $('#pwN2'), bad = (el, m) => { fxPop(el, 'fx-shake', 300); toast(m, 'orange', 'x'); };
+  if (b.disabled) return;
   if (U && !USER_RE.test(U.value.trim())) return bad(U, '用户名只能用字母、数字、下划线，3–20 位');
   if (O && !O.value) return bad(O, '先输入现在的密码');
   if (N.value.length < 8) return bad(N, '新密码至少 8 位');
   if (N.value !== N2.value) return bad(N2, '两次输入的新密码不一样');
-  b.disabled = true;
-  try { await API.req('POST', '/me/password', {password:N.value, ...(O ? {oldPassword:O.value} : {}), ...(U ? {username:U.value.trim()} : {})}); liveMe(await API.req('GET', '/me')); closeSheet(); toast('密码已保存', 'green', 'check'); rerender(); }
-  catch(e){ b.disabled = false; apiFail(e); } };
+  b.disabled = true; const scope = credentialScope(b), uid = ME, email = LIVE.staffEmail, username = U?.value.trim() || LIVE.me?.username;
+  try { const r = await credentialRequest('/me/password', {password:N.value, ...(O ? {oldPassword:O.value} : {}), ...(U ? {username} : {})}, scope); if (!scope.same()) return; if (r?.ok !== true) throw credentialUncertain();
+    credentialStaffRevoked(uid, email); if (LIVE.me?.id === uid){ LIVE.me.hasPassword = true; if (username) LIVE.me.username = username; }
+    if (scope.active()) closeSheet(); toast('密码已保存，其它设备需要重新登录', 'green', 'check'); rerender();
+  } catch(e){ if (!scope.active()) return; b.disabled = false; if (credentialUnknown(e)){ toast('暂时无法确认密码是否已保存，请先用新密码确认登录', 'orange', 'x'); credentialLoginButton(b, username); } else credentialFailure(e, O); return; }
+  // 写入已确认，资料读取失败不能把它改报成“保存失败”。
+  try { const me = await API.req('GET', '/me'); if (scope.same() && me?.id === uid){ liveMe(me); rerender(); } }
+  catch(e){ if (scope.same() && e.code !== 'cancel') toast('密码已保存，账号资料暂时无法刷新', 'blue'); } };
 
 /* —— 进后台：关联了后台账号的用户，用自己的密码 —— */
 { const admLogin0 = ACTIONS['adm-login'];
@@ -10783,17 +10845,18 @@ ACTIONS['pw-go'] = async b => { const U = $('#pwU'), O = $('#pwO'), N = $('#pwN'
 }
 Object.assign(ACTIONS, {
   'adm-email': () => admLoginSheet(),
-  'adm-via-go': async b => { const P = $('#avP'), T = $('#avT'); if (!P.value){ fxPop(P, 'fx-shake', 300); return; } if (b.disabled) return; b.disabled = true; const current = staffSession();
-    try { const r = await API.req('POST', '/admin/auth/via-user', {password:P.value, ...(T?.value.trim() ? {totp:T.value.trim()} : {})}); if (!current()) return; STAFF.set(r.token, r.staff); if (!await STAFF.check()){ b.disabled = false; return; }
+  'adm-via-go': async b => { const P = $('#avP'), T = $('#avT'); if (!P.value){ fxPop(P, 'fx-shake', 300); return; } if (b.disabled) return; b.disabled = true; const current = staffSession(), scope = credentialScope(b);
+    try { const r = await credentialRequest('/admin/auth/via-user', {password:P.value, ...(T?.value.trim() ? {totp:T.value.trim()} : {})}, scope); if (!scope.active() || !current()) return; if (!r?.token || !r.staff?.id) throw credentialUncertain(); STAFF.set(r.token, r.staff); if (!await STAFF.check()){ if (scope.active()) b.disabled = false; return; }
+      if (!scope.active() || STAFF.tok !== r.token || STAFF.me?.id !== r.staff.id) return;
       closeSheet(); toast(`已进入后台：${esc(r.staff.name)} · ${ADM_ROLES[r.staff.role]?.[0] || r.staff.role}`, 'green', 'check'); go('admin'); }
-    catch(err){ b.disabled = false; apiFail(err); if (err.code === 'wrong_password'){ P.value = ''; P.focus(); } else if (err.code === 'totp_required' || err.code === 'bad_totp') T?.focus(); } }
+    catch(err){ if (!scope.active()) return; b.disabled = false; credentialFailure(err, P, T); } }
 });
 
 /* —— 后台：新建账号（用户名 + 密码）、重置密码 —— */
 function acctSheet(title, username, password, staffRole){
   const site = location.origin + '/?api=self', rows = [['网站', site], ['用户名', username], ['密码', password]];
   sheet(`<h3>${esc(title)}</h3><p class="ad-warn y">密码只显示这一次，请马上发给对方。对方登录后可以在「设置 › 账号与隐私」里改密码。${staffRole ? `对方是后台「${esc(ADM_ROLES[staffRole]?.[0] || staffRole)}」：登录后点左上角菜单里的「进入后台」，再输一次自己的密码就能进。` : ''}</p>
-    <div class="cred">${rows.map(([k, v]) => `<div><span>${k}</span><code>${esc(v)}</code><button class="pill sm lt" data-act="cp-secret" data-v="${esc(v)}">复制</button></div>`).join('')}</div>
+    <div class="cred" data-staff-secret>${rows.map(([k, v]) => `<div><span>${k}</span><code>${esc(v)}</code><button class="pill sm lt" data-act="cp-secret" data-v="${esc(v)}">复制</button></div>`).join('')}</div>
     <button class="pill lg" data-act="cp-secret" data-v="${esc(rows.map(([k, v]) => k + '：' + v).join('\n'))}">全部复制</button>`); }
 Object.assign(ACTIONS, {
   'lus-new': () => { if (!admGuard('staff')) return; sheet(`<h3>新建账号</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">对方用用户名和密码登录。密码不填就自动生成一个，建好后只显示这一次。</p>
@@ -10809,8 +10872,10 @@ Object.assign(ACTIONS, {
       acctSheet(`已建好：${r.user.name}`, u, r.password, role); ladmLoad('users'); } catch(err){ b.disabled = false; apiFail(err); } },
   'lus-pw': b => { if (!admGuard('staff')) return; const uid = b.dataset.id;
     sheet(`<h3>重置 ${esc(uname(uid))} 的密码？</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">会生成一个新密码（只显示一次），对方所有设备上的登录都会失效。</p><button class="pill lg" data-act="lus-pw-go" data-id="${esc(uid)}">重置</button>`); },
-  'lus-pw-go': async b => { const uid = b.dataset.id; b.disabled = true;
-    try { const r = await STAFF.req('POST', `/admin/users/${encodeURIComponent(uid)}/password`); acctSheet(`${uname(uid)} 的新密码`, r.username, r.password, null); } catch(err){ b.disabled = false; apiFail(err); } }
+  'lus-pw-go': async b => { if (b.disabled) return; const uid = b.dataset.id, scope = credentialScope(b), current = staffSession(); b.disabled = true;
+    try { const r = await STAFF.req('POST', `/admin/users/${encodeURIComponent(uid)}/password`); if (!scope.active() || !current()) return; if (!r?.username || !r.password) throw credentialUncertain();
+      credentialStaffRevoked(uid, uid === ME ? LIVE.staffEmail : null); if (uid === ME && API.tok){ API.setTok(null); signOut(true); } acctSheet(`${uname(uid)} 的新密码`, r.username, r.password, null); }
+    catch(err){ if (scope.active()){ b.disabled = false; if (credentialUnknown(err)) toast('无法确认重置结果，请先核对账号状态后再操作', 'orange', 'x'); else apiFail(err); } } }
 });
 
 /* —— 私信 —— */
@@ -12119,17 +12184,18 @@ Object.assign(ACTIONS, {
 /* ================= 自助找回密码：恢复码（连着后端时） =================
    注册时服务器给一组恢复码（只显示一次）；忘了密码在登录面板「用恢复码重设」；设置里可以重新生成（要先输密码）。
    用恢复码重设后所有设备的登录失效，同时换一组新的恢复码 */
-function rcSheet(code, title = '保存好你的恢复码'){
+function rcSheet(code, title = '保存好你的恢复码', username = LIVE.me?.username || ''){
   sheet(`<h3>${title}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px;line-height:1.6">忘了密码时，用它在登录页「用恢复码重设」。<b>只显示这一次</b>，请截图或抄下来放在安全的地方；用过一次会换一组新的。</p>
-    <code class="rc-code">${esc(code)}</code>
-    <div class="ad-inl" style="justify-content:center;gap:8px;margin-top:8px"><button class="pill sm lt" data-act="cp-secret" data-v="${esc(code)}">复制</button><button class="pill sm lt" data-act="rc-dl" data-v="${esc(code)}">${IC.dl}下载成文件</button></div>
+    <code class="rc-code" data-credential-secret>${esc(code)}</code>
+    <div class="ad-inl" style="justify-content:center;gap:8px;margin-top:8px"><button class="pill sm lt" data-act="cp-secret" data-v="${esc(code)}">复制</button><button class="pill sm lt" data-act="rc-dl" data-v="${esc(code)}" data-username="${esc(username)}">${IC.dl}下载成文件</button></div>
     <button class="pill lg" data-act="close" style="margin-top:12px">我已经保存好了</button>`); }
-ACTIONS['rc-dl'] = b => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([`CTRL Z 恢复码（忘了密码时用）\n用户名：${LIVE.me?.username || ''}\n恢复码：${b.dataset.v}\n用过一次会换一组新的。\n`], {type:'text/plain'})); a.download = 'ctrlz-recovery-code.txt'; document.body.appendChild(a); a.click(); a.remove(); };
+ACTIONS['rc-dl'] = b => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([`CTRL Z 恢复码（忘了密码时用）\n用户名：${b.dataset.username || ''}\n恢复码：${b.dataset.v}\n用过一次会换一组新的。\n`], {type:'text/plain'})); a.download = 'ctrlz-recovery-code.txt'; document.body.appendChild(a); a.click(); a.remove(); const url = a.href; setTimeout(() => URL.revokeObjectURL(url), 1000); };
 /* 注册后：起完名字进入网站时把恢复码给用户 */
-{ const apg = auPwGo; auPwGo = async function(reg, username, password){ if (!reg) return apg(reg, username, password);
-    const req0 = API.req; API.req = async function(m, path, body){ const r = await req0.apply(this, arguments); if (path === '/auth/register' && r?.recoveryCode) AUTH.rc = r.recoveryCode; return r; };
-    try { return await apg(reg, username, password); } finally { API.req = req0; } }; }
-{ const af0 = auFinish; auFinish = function(id, kind){ af0(id, kind); if (AUTH.rc){ const c = AUTH.rc, t = AUTH.rcT || '注册好了，先保存恢复码'; AUTH.rc = AUTH.rcT = null; setTimeout(() => rcSheet(c, t), 450); } }; }
+{ const af0 = auFinish; auFinish = function(id, kind){ af0(id, kind);
+    const c = AUTH.rc, t = AUTH.rcT || '注册好了，先保存恢复码', owner = AUTH.rcOwner, username = AUTH.rcUser;
+    AUTH.rc = AUTH.rcT = AUTH.rcOwner = AUTH.rcUser = null;
+    if (c && owner?.id === id && owner.base === API.base && owner.epoch === API.epoch){ const scope = credentialScope(); clearTimeout(CREDENTIALS.rcTimer);
+      CREDENTIALS.rcTimer = setTimeout(() => { CREDENTIALS.rcTimer = 0; if (scope.active() && ME === id) rcSheet(c, t, username); }, 450); } }; }
 ACTIONS['au-forgot'] = () => { const u = $('#auU')?.value.trim() || AUTH.uname || '';
   sheet(`<h3>用恢复码重设密码</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">恢复码是注册时给你的那一串（16 位，4 组）。没有恢复码的话请联系管理员重置。</p>
     <label class="ad-lab" for="rcU">用户名</label><input class="inp" id="rcU" autocapitalize="off" spellcheck="false" autocomplete="username" value="${esc(u)}">
@@ -12138,21 +12204,29 @@ ACTIONS['au-forgot'] = () => { const u = $('#auU')?.value.trim() || AUTH.uname |
     <label class="ad-lab" for="rcP2">再输一次</label><input class="inp" id="rcP2" type="password" autocomplete="new-password">
     <button class="pill lg" data-act="rc-go">重设密码并登录</button>`, d => setTimeout(() => $(u ? '#rcC' : '#rcU', d)?.focus(), 80)); };
 ACTIONS['rc-go'] = async b => { const u = $('#rcU').value.trim(), c = $('#rcC').value.trim(), p = $('#rcP').value, p2 = $('#rcP2').value;
+  if (b.disabled) return;
   const bad = !u ? '#rcU' : c.replace(/[^0-9a-z]/gi, '').length < 16 ? '#rcC' : p.length < 8 ? '#rcP' : p !== p2 ? '#rcP2' : null;
   if (bad){ fxPop($(bad), 'fx-shake', 300); toast(bad === '#rcP2' ? '两次输入的密码不一样' : bad === '#rcP' ? '密码至少 8 位' : '这一项格式不对', 'orange', 'x'); return; }
-  b.disabled = true;
-  try { const r = await API.req('POST', '/auth/recover', {username:u, code:c, password:p});
+  b.disabled = true; const scope = credentialScope(b);
+  try { const r = credentialLoginResult(await credentialRequest('/auth/recover', {username:u, code:c, password:p}, scope), true); if (!scope.same()) return;
+    if (!scope.active()){ API.setTok(null); if (STATE.role === 'user') signOut(true); toast('密码已重设，请用新密码重新登录', 'blue'); rerender(); return; }
     API.setTok({access:r.accessToken, refresh:r.refreshToken}); apiUser(r.user);
     let a = ACC.list.find(x => x.id === r.user.id); if (!a){ a = {id:r.user.id}; ACC.list.push(a); } Object.assign(a, {name:r.user.name, username:u}); ACC.save();
-    AUTH.rc = r.recoveryCode; AUTH.rcT = '密码已重设，这是新的恢复码'; auFinish(r.user.id, 'back'); liveAfterLogin(); toast('密码已重设，其它设备上的登录都已退出', 'green', 'check'); }
-  catch(e){ b.disabled = false; apiFail(e); } };
+    AUTH.rc = r.recoveryCode; AUTH.rcT = '密码已重设，这是新的恢复码'; AUTH.rcUser = u; AUTH.rcOwner = {base:API.base, epoch:API.epoch, id:r.user.id};
+    auFinish(r.user.id, 'back'); liveAfterLogin(); toast('密码已重设，其它设备上的登录都已退出', 'green', 'check'); }
+  catch(e){ if (!scope.same()) return; if (credentialUnknown(e)){ toast('无法确认重设结果，请先用新密码登录，不要重复提交恢复码', 'orange', 'x'); if (scope.active()) credentialLoginButton(b, u); }
+    else if (scope.active()){ b.disabled = false; credentialFailure(e); } } };
 ACTIONS['rc-new'] = () => { const has = LIVE.me?.hasPassword;
   sheet(`<h3>${LIVE.me?.hasRecovery ? '重新生成恢复码' : '生成恢复码'}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">忘了密码时用它自己重设。${LIVE.me?.hasRecovery ? '重新生成后，旧的那组就不能用了。' : ''}</p>
     ${has ? '<label class="ad-lab" for="rcOld">当前密码</label><input class="inp" id="rcOld" type="password" autocomplete="current-password">' : ''}
     <button class="pill lg" data-act="rc-ngo">生成</button>`, d => setTimeout(() => $('#rcOld', d)?.focus(), 80)); };
-ACTIONS['rc-ngo'] = async b => { b.disabled = true;
-  try { const r = await API.req('POST', '/me/recovery-code', {password:$('#rcOld')?.value || undefined}); if (LIVE.me) LIVE.me.hasRecovery = true; rcSheet(r.code); rerender(); }
-  catch(e){ b.disabled = false; if (e.code === 'wrong_password'){ fxPop($('#rcOld'), 'fx-shake', 300); toast('密码不对', 'orange', 'x'); } else apiFail(e); } };
+ACTIONS['rc-ngo'] = async b => { if (b.disabled) return; b.disabled = true;
+  const scope = credentialScope(b), username = LIVE.me?.username || '', uid = ME;
+  try { const r = await credentialRequest('/me/recovery-code', {password:$('#rcOld')?.value || undefined}, scope); if (!scope.same()) return; if (typeof r?.code !== 'string' || !r.code) throw credentialUncertain();
+    if (LIVE.me?.id === uid) LIVE.me.hasRecovery = true;
+    if (scope.active()) rcSheet(r.code, '新的恢复码已生成，其它设备需重新登录', username);
+    else toast('恢复码已更新，本次未显示；请重新验证后生成并保存', 'blue'); rerender(); }
+  catch(e){ if (!scope.active()) return; b.disabled = false; if (credentialUnknown(e)) toast('无法确认恢复码是否已更新，请重新验证后再生成', 'orange', 'x'); else credentialFailure(e, $('#rcOld')); } };
 
 /* ================= 申诉、版权反通知、商品新版本、通知开关、涉税报送（连着后端时） ================= */
 /* 回复「CTRL Z 官方」= 申诉，进后台「举报」队列 */

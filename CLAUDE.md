@@ -53,7 +53,10 @@
 - **谁能进**：连着后端时只能用后台会话进（关联了后台账号的 App 用户用自己的密码 `/admin/auth/via-user`，或后台邮箱 + 密码 + 动态口令 `/admin/auth/login`；令牌放 sessionStorage，见 `STAFF`）；后台账号和 App 账号分开，第一位超级管理员在服务器上 `npm run admin:create -- 邮箱 名字` 创建。没连后端（GitHub Pages 纯原型）时，后台和「原型 · 切换身份」默认都不出现，`?demo=1` 打开演示模式才有（`?demo=0` 关掉，`protoOn()`）。`setRole('admin')` 会被 `admAllowed()` 拦住。**前端拦截只是不露入口，真正的保护在后端**：每个 `/admin` 接口都校验后台会话和权限，后台页面以后接接口时也只能走后端
 - 连着后端时 `admMe()` 就是登录的后台账号（角色以后端为准）。已接后端的：「人员与权限」（`ladmStaffView`：列表、加人、改角色、停用）、「用户」（`ladmUsersView`：列表、搜索、超管「新建账号」= 用户名密码 App 账号 + 可选后台权限、「重置密码」）、用户弹窗的警告 / 禁言 / 封禁 / 解除（`us-do` 先调 `/admin/users/{id}/actions`）。数据缓存在 `LADM`，改动后置空重读。其余页签仍是原型数据
 - 新建后台账号的初始密码和动态口令只显示一次（`credSheet`，复制用 `cp-secret`，不要把密码弹在 toast 里）
-- 后台账号可以关联 App 账号（后端 `staff.userId`）：`/me` 返回 `staffEmail` / `staffRole`，存在 `LIVE.staffEmail`，侧边菜单显示「进入后台」→ 再输一次自己的登录密码（`/admin/auth/via-user`，`LIVE.cfg.adminTotp` 为真时多一个动态口令框），底下留「用后台邮箱登录」（`admLoginSheet`）
+- 后台账号可以关联 App 账号（后端 `staff.userId`）：`/me` 返回 `staffEmail` / `staffRole`，存在 `LIVE.staffEmail`，侧边菜单显示「进入后台」→ 再输一次自己的登录密码（`/admin/auth/via-user`）。两种后台登录始终提供动态口令框，是否必填由后端核验；`config.adminTotp=false`也不能绕过已绑定的口令，底下保留「用后台邮箱登录」（`admLoginSheet`）。`403 totp_replayed`清空已消费的码、等待新码重试；`403 credentials_changed`要求重输密码，两者均保留App会话。direct错密码/错码仍兼容`401 unauthorized`，该登录接口的401不清App。
+- 凭据操作通过`credentialScope`绑定服务、App会话轮次、账号和面板轮次；关闭面板或切换账号后，迟到授权和恢复码计时器不能回填。敏感POST只提交一次，必要的access刷新发生在提交之前；网络/超时/500或不完整成功响应视为结果未知，恢复页引导用新密码确认登录，不能自动重交一次性码。
+- 改密码`200 {ok:true}`即为写入确认，随后`GET /me`失败单独提示资料未刷新；保留当前App会话，其它设备和关联后台会话按后端合同撤销。前端只清被撤销的关联`STAFF`与后台缓存，明确`userId:null`的独立后台不受旧`staffEmail`缓存影响。生成新恢复码同样保留当前App会话并提示其它设备重新登录；恢复成功须完整返回新token、用户和新码才安装，秘密仅在当前账号一次展示/复制/下载。正常refresh保留JWT的`sub/sid`，失配会清App并要求重新登录；不改变既有token存储方式。
+- 已停用且关联App的后台成员，只有`staff.manage`可在「人员与权限」确认身份交接后解除关联（`PATCH /admin/staff/{id}`，`unlinkUser:true`）；当前成员和最后启用超管的保护仍由后端最终裁决。停用但仍关联的账号不能自助恢复或注销；注销前先停用并解除关联。封禁用户仍保留申诉、已购及导出入口，邮箱方案继续封存。
 - **连着后端时进后台不切身份**：用 App 账号登录 + 有后台会话 = 本人 + 后台权限（`liveStaff()` / `admOn()`），`STATE.role` 仍是 `user`，发作品、私信、关注和普通用户完全一样；后台页、`admGuard`、`modActor`、`us-do` 都认 `admOn()`。只有没登录 App、直接用后台邮箱登录时才切成 `admin` 身份。判断「是不是管理员」不要再直接写 `STATE.role === 'admin'`
 - 搜索连着后端时去 `GET /users?q=` 找人（`LSRCH`，私信搜索里也能直接发起私信），不列示例用户
 - 本机测试账号：后端 `npm run demo:accounts` 只生成一个超管（用户名 `admin`，密码写进后端文件夹的「测试账号.txt」）。其他账号在后台「用户 › 新建账号」建（用户名 + 密码 + 可选后台权限，`lus-new` / `acctSheet`），忘了密码点「重置密码」（`lus-pw`）

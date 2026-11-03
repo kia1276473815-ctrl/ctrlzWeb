@@ -54,6 +54,20 @@ test('切换账号时迟到刷新不能覆盖新令牌',async()=>{
   const wait=defer(),r=requests(async()=>wait.promise);const task=r.api.refresh();await tick();r.api.setTok({access:'other',refresh:'other-refresh'});
   wait.resolve(response(200,{accessToken:'stale',refreshToken:'stale-refresh'}));await assert.rejects(task,e=>e.code==='cancel');assert.equal(r.api.tok.access,'other');
 });
+
+const jwt=claims=>'header.'+Buffer.from(JSON.stringify(claims)).toString('base64url')+'.signature';
+test('同域cookie正常刷新保留sub/sid，凭据版本变化仍可沿用当前设备',async()=>{
+  const before={sub:'user-a',sid:'session-a',iat:1,cv:1},after={...before,iat:2,cv:2};let sent;
+  const r=requests(async(_url,init)=>{sent=JSON.parse(init.body);return response(200,{accessToken:jwt(after),refreshToken:'fresh-refresh'});},{atob:s=>Buffer.from(s,'base64').toString('binary')});
+  r.api.cookie=true;r.api.tok={access:jwt(before),refresh:'cookie'};await r.api.refresh();
+  assert.deepEqual(sent,{});assert.equal(r.api.tok.refresh,'cookie');assert.equal(r.api.claims(r.api.tok.access).sid,'session-a');assert.equal(r.loggedOut,0);
+});
+for(const changed of ['sub','sid','missing'])test(`cookie刷新${changed}失配时停止旧业务并退出App，绝不静默换号`,async()=>{
+  const before={sub:'user-a',sid:'session-a',iat:1},after={...before,[changed]:'other'};
+  const r=requests(async()=>response(200,{accessToken:changed==='missing'?'malformed':jwt(after),refreshToken:'fresh-refresh'}),{atob:s=>Buffer.from(s,'base64').toString('binary')});
+  r.api.cookie=true;r.api.tok={access:jwt(before),refresh:'cookie'};
+  await assert.rejects(r.api.refresh(),e=>e.code==='cancel');assert.equal(r.api.tok,null);assert.equal(r.loggedOut,1);
+});
 test('账号切换后迟到401不刷新新账号、不以新身份重发旧写入',async()=>{
   const wait=defer(),calls=[];const r=requests(async(url,init)=>{calls.push([url,init.headers.Authorization]);return wait.promise;});
   const task=r.api.req('POST','/dm',{body:'旧账号消息'});await tick();r.api.setTok({access:'other',refresh:'other-refresh'});wait.resolve(response(401));

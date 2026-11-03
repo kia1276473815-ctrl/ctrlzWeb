@@ -13,7 +13,7 @@ const section = (start, end) => {
 const result = {token:'fixture-staff-token', staff:{id:'fixture-staff',name:'测试后台',role:'super'}};
 
 function form({adminTotp=false, hasPassword=true, responses=[]}={}) {
-  let html='', nodes={}, focused=null, closed=0;
+  let html='', nodes={}, focused=null, closed=0, buttons=[];
   const calls=[], errors=[], appToken={access:'fixture-app-token',refresh:'cookie'};
   const request = async (method,path,body) => {
     calls.push({method,path,body});
@@ -22,28 +22,30 @@ function form({adminTotp=false, hasPassword=true, responses=[]}={}) {
     return next || result;
   };
   const ctx=vm.createContext({
-    ACTIONS:{}, STATE:{role:'user'}, LIVE:{cfg:{adminTotp},staffEmail:'fixture@example.test',me:{hasPassword}},
-    API:{on:()=>true,tok:appToken,req:request},
+    ACTIONS:{}, ME:'fixture-app',AUTH:{},STATE:{role:'user'}, LIVE:{cfg:{adminTotp},staffEmail:'fixture@example.test',me:{hasPassword}},
+    API:{base:'https://fixture.test',epoch:1,on:()=>true,tok:appToken,req:request},
     STAFF:{tok:null,req:request,check:async()=>!!ctx.STAFF.tok,set:(token,staff)=>{ctx.STAFF.tok=token;ctx.STAFF.me=staff;}},
     staffSession:()=>()=>true, liveUser:()=>true, ADM_ROLES:{super:['超级管理员']},
     esc:String, apiFail:e=>errors.push(e), toast(){},go(){},setRole:r=>ctx.STATE.role=r,rerender(){},fxPop(){},protoOn:()=>false,
-    setTimeout:fn=>{fn();return 1;},
-    closeSheet:()=>closed++,
+    setTimeout:fn=>{fn();return 1;},clearTimeout(){},
+    closeSheet:()=>{closed++;ctx.closeSheet.epoch=(ctx.closeSheet.epoch||0)+1;Object.values(nodes).forEach(n=>n.isConnected=false);buttons.forEach(b=>b.isConnected=false);},
     sheet:(text,setup)=>{
+      ctx.closeSheet.epoch=(ctx.closeSheet.epoch||0)+1;Object.values(nodes).forEach(n=>n.isConnected=false);buttons.forEach(b=>b.isConnected=false);buttons=[];
       html=text;nodes={};
       for(const match of text.matchAll(/<input\b[^>]*\bid="([^"]+)"[^>]*>/g)){
-        const id=match[1];nodes[id]={value:match[0].match(/\bvalue="([^"]*)"/)?.[1] || '',markup:match[0],focus:()=>focused=id,addEventListener(){}};
+        const id=match[1];nodes[id]={value:match[0].match(/\bvalue="([^"]*)"/)?.[1] || '',markup:match[0],isConnected:true,focus:()=>focused=id,addEventListener(){}};
       }
       setup?.({});
     },
     $:selector=>nodes[selector.replace(/^#/,'')] || null,
     $$:selectors=>selectors.split(',').map(s=>nodes[s.trim().replace(/^#/,'')]).filter(Boolean),
   });
+  vm.runInContext(section('/* 凭据写入只提交一次','function admLoginSheet(){'),ctx);
   vm.runInContext(section('function admLoginSheet(){','/* ================= 后台接后端'),ctx);
   vm.runInContext(section('/* —— 进后台：关联了后台账号的用户，用自己的密码 —— */','/* —— 后台：新建账号'),ctx);
   return {ctx,calls,errors,appToken,get html(){return html;},get nodes(){return nodes;},get focused(){return focused;},get closed(){return closed;},
     show:async via=>via?ctx.ACTIONS['adm-login']():ctx.admLoginSheet(),
-    submit:async via=>{const button={disabled:false};await ctx.ACTIONS[via?'adm-via-go':'adm-login-go'](button);return button;}};
+    submit:async via=>{const button={disabled:false,isConnected:true};buttons.push(button);await ctx.ACTIONS[via?'adm-via-go':'adm-login-go'](button);return button;}};
 }
 const failure = code => Object.assign(new Error(code==='totp_setup_required'?'这个账号还没有设置动态口令，请联系超级管理员':'动态口令待重试'),{code,status:403});
 
@@ -62,6 +64,15 @@ test('无密码的关联用户仍先设置密码并保留独立后台登录入�
 });
 
 for(const via of [true,false]){
+  test(`${via?'关联用户':'独立邮箱'}已消费动态码清空口令并可等待新码，凭据变化要求重输密码且App不退出`,async()=>{
+    for(const code of ['totp_replayed','credentials_changed']){
+      const r=form({responses:[failure(code),result]});await r.show(via);const pw=via?'avP':'alP',otp=via?'avT':'alT';
+      r.nodes[pw].value='fixture-password';if(!via)r.nodes.alE.value='fixture@example.test';r.nodes[otp].value='123456';
+      const first=await r.submit(via);assert.equal(first.disabled,false);assert.equal(r.ctx.API.tok,r.appToken);assert.equal(r.ctx.STAFF.tok,null);
+      assert.equal(r.focused,code==='totp_replayed'?otp:pw);assert.equal(r.nodes[code==='totp_replayed'?otp:pw].value,'');
+      r.nodes[pw].value='new-fixture-password';r.nodes[otp].value='654321';await r.submit(via);assert.equal(r.ctx.STAFF.tok,result.token);assert.equal(r.calls.length,2);
+    }
+  });
   test(`${via?'关联用户403口令错误契约':'独立邮箱兼容totp_required/bad_totp响应'}保留密码和App会话，聚焦后可重试成功`,async()=>{
     for(const code of ['totp_required','bad_totp']){
       const r=form({adminTotp:false,responses:[failure(code),result]});await r.show(via);
@@ -91,6 +102,12 @@ for(const via of [true,false]){
     assert.equal(r.errors[0].code,'totp_setup_required');assert.match(r.errors[0].message,/联系超级管理员/);assert.equal(r.ctx.API.tok,r.appToken);
   });
 }
+
+for(const via of [true,false])for(const changed of ['关闭面板','App换号'])test(`${via?'关联用户':'独立邮箱'}${changed}后迟到授权不能装后台token或跳后台`,async()=>{
+  let resolve;const response=new Promise(r=>resolve=r),r=form({responses:[response]});await r.show(via);r.nodes[via?'avP':'alP'].value='fixture-password';if(!via)r.nodes.alE.value='fixture@example.test';
+  const work=r.submit(via);if(changed==='关闭面板')r.ctx.closeSheet();else{r.ctx.API.epoch++;r.ctx.ME='other';}
+  resolve(result);await work;assert.equal(r.ctx.STAFF.tok,null);assert.equal(r.ctx.API.tok,r.appToken);
+});
 
 test('独立邮箱401 unauthorized契约通过实际STAFF.req保留密码和App会话，并可重试成功',async()=>{
   const r=form();await r.show(false);r.nodes.alE.value='fixture@example.test';r.nodes.alP.value='fixture-password';r.nodes.alT.value='000000';
