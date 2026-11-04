@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import {installTrade} from './trade-fixture.mjs';
 const source=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const section=(a,b)=>{const start=source.indexOf(a),end=source.indexOf(b,start+a.length);assert(start>=0&&end>start,`找不到实际源码：${a}`);return source.slice(start,end);};
 const tick=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
@@ -18,6 +19,7 @@ function accountRealm(overrides={}){
     document:{createElement:()=>({content:{querySelector:()=>null,querySelectorAll:()=>[]}}),dispatchEvent(){}},Event:class{},
     esc:x=>String(x??''),uname:x=>x,yuan2:x=>String(x),crypto:{randomUUID:()=> 'uuid-'+(++uuid)},
     localStorage:{getItem:k=>stored.get(k)??null,setItem:(k,v)=>stored.set(k,v)},...overrides});
+  installTrade(ctx);
   vm.runInContext(section('const store =','/* ================= 管理后台数据'),ctx);
   vm.runInContext(section('const apiOrder =','function liveApplyOrder'),ctx);
   vm.runInContext(section('const ACCOUNT_PAGES =','(function boot(){'),ctx);

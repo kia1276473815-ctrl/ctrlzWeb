@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import {installTrade} from './trade-fixture.mjs';
 
 const source = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const section = (a, b) => { const start = source.indexOf(a), end = source.indexOf(b, start + a.length); assert(start >= 0 && end > start, a); return source.slice(start, end); };
@@ -39,8 +40,9 @@ test('处理完一条：列表不清空，本地先改，再用同一个接口�
 
 test('退款确认中的显示中文和「重试退款」；连点只发一次，失败也重读', async () => {
   let done = 0; const r = realm({ladmDone:() => done++, ladmShop(){}, ladmWait:() => '', adH:t => t, f2y:x => x / 100, yuan2:String, fmtDT:String, stTag:(a, c) => `<i class="${c}">${a}</i>`});
+  installTrade(r.ctx);
   r.load(section('function liveRefundsView(){', 'function liveVouchersView(){'));
-  r.ctx.LADM.refunds = [{id:'rf1', status:'processing', title:'T', orderNo:'N', buyer:{name:'B'}, cashAmount:100, reason:'坏了', fast:false, downloads:1, createdAt:'2026-10-01'}];
+  r.ctx.LADM.refunds = [{id:'rf1',tradeSource:'mock', status:'processing', title:'T', orderNo:'N', buyer:{name:'B'}, cashAmount:100, reason:'坏了', fast:false, downloads:1, createdAt:'2026-10-01'}];
   const html = r.ctx.liveRefundsView(); assert.match(html, /退款确认中/); assert.match(html, /data-act="lrf-ok"[^>]*>重试退款/); assert.doesNotMatch(html, /data-act="lrf-no"/);
   const b = {dataset:{id:'rf1'}, disabled:false, isConnected:true}; const work = r.ctx.ACTIONS['lrf-ok'](b); await r.ctx.ACTIONS['lrf-ok'](b);
   assert.equal(r.requests.length, 1); assert.equal(b.disabled, true);

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import {installTrade} from './trade-fixture.mjs';
 
 const source = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const section = (a, b) => {
@@ -16,7 +17,7 @@ const coupon = (id, amt, extra = {}) => ({id, uid:'fixture-me', amt, exp:0, note
 
 function voucherRealm(vouchers = [], {live = false, product = pr()} = {}) {
   const calls = [], errors = [], notices = [], feedback = [], frames = [], saved = new Map();
-  const sh = {innerHTML:''}, box = {innerHTML:''}, input = {value:'', focusCount:0, focus(){this.focusCount++;}};
+  const sh = {innerHTML:'',isConnected:true}, box = {innerHTML:''}, input = {value:'', focusCount:0, focus(){this.focusCount++;}};
   const reason = {textContent:'文件损坏'};
   let paid = 0, sequence = 0, responder = async (method, path) => path === '/orders'
     ? {id:'fixture-order', status:'paid'} : path === '/me/wallet' ? ctx.LSHOP.wallet : {fast:false, appeal:true};
@@ -35,16 +36,17 @@ function voucherRealm(vouchers = [], {live = false, product = pr()} = {}) {
     reduced:() => true, vcWarnFx(){}, haptic(){}, fxPop:(...args) => feedback.push(args),
     sheet:html => {sh.innerHTML = html;}, closeSheet(){}, toast:(...args) => notices.push(args),
     admSave(){}, notify:(...args) => notices.push(args), apiFail:e => errors.push(e), badge(){}, rerender(){},
-    paidUI:() => paid++, liveApplyOrder:o => feedback.push({appliedOrder:o}), liveShop:async()=>{}, liveMine:async()=>{},
+    paidUI:() => paid++, liveApplyOrder:o => feedback.push({appliedOrder:o}), liveShop:async()=>{}, liveMine:async()=>{}, accountSession:()=>()=>true,
     performance:{now:() => 0}, requestAnimationFrame:fn => {frames.push(fn);return frames.length;}});
   const run = text => vm.runInContext(text, ctx);
+  installTrade(ctx);
   run(section('const f2y =', 'const SP_ST ='));
   run(section('const r2 = x =>', '/* 在首页 / 视频流里直接处理内容'));
   run(section('function grant(pr, pay, price', '/* 付款面板下半截：'));
   run(section('function vcSel(pr){', '/* 提醒出现时的动效：'));
   run(section('function payBox(pr){', 'ACTIONS.buy0 ='));
   run(section("ACTIONS['vc-pick'] =", "ACTIONS['do-pay'] ="));
-  run(section("ACTIONS['do-pay'] =", 'function paidUI(pr, sh)'));
+  run(section("ACTIONS['do-pay'] =", 'function paidUI('));
   run(section('const ordTs =', 'refundSync();'));
   run('Object.assign(ACTIONS, {' + section('  refund: b =>', '  // 收款账户') + '});');
   run(section('function orderAttempt(pr,body){', '(function boot(){'));
@@ -57,12 +59,12 @@ function voucherRealm(vouchers = [], {live = false, product = pr()} = {}) {
     flushPayment(){const pending = frames.splice(0);pending.forEach(fn => fn(1200));},
     select:id => ctx.ACTIONS['vc-pick']({dataset:{id:product.id, v:id}}),
     confirm:() => ctx.ACTIONS['vc-ok']({dataset:{id:product.id}}),
-    pay:() => ctx.ACTIONS['do-pay']({dataset:{id:product.id}}),
-    refund:no => ctx.ACTIONS['do-refund']({dataset:{no}})};
+    pay:() => ctx.ACTIONS['do-pay']({dataset:{id:product.id},isConnected:true}),
+    refund:no => ctx.ACTIONS['do-refund']({dataset:{no},isConnected:true,closest:()=>sh})};
 }
 function addOrder(r, extra = {}) {
   const order = {id:'fixture-order', no:'CZ-fixture', pid:r.product.id, price:100, vc:60,
-    time:new Date(Date.now() - 3600000).toISOString(), st:'已完成', live:true, ...extra};
+    time:new Date(Date.now() - 3600000).toISOString(), st:'已完成', live:true, tradeSource:'mock', ...extra};
   r.ctx.STATE.orders.push(order);
   return order;
 }
@@ -157,7 +159,8 @@ test('付款响应丢失后同券重试复用请求键，换券会分配独立�
   assert.equal(writes.length, 3);assert.equal(writes[0].body.requestKey, writes[1].body.requestKey);
   assert.notEqual(writes[0].body.requestKey, writes[2].body.requestKey);
   assert.deepEqual(writes.map(c => c.body.voucherId), ['a', 'a', 'b']);
-  assert.equal(r.errors.length, 3);
+  assert.equal(r.errors.length, 0);
+  assert.equal(r.notices.filter(x => /无法确认操作结果.*不要重复提交/.test(x[0])).length, 3);
 });
 
 test('作废确认状态、换券、不用券的提交键相互隔离，成功只释放自己的键', () => {
@@ -206,7 +209,7 @@ for (const [label, problem] of [['文件损坏', 'broken'], ['和描述不符', 
     assert.deepEqual(r.calls, [{method:'POST', path:'/orders/fixture-order/refund',
       body:{reason:label + '：隔离具体问题', problem}}]);
     assert.equal(r.ctx.REFUNDS.length, 0);
-    assert(r.notices.some(x => x[0] === '申诉已提交，平台会在 1 个工作日内审核'));
+    assert(r.notices.some(x => x[0] === '模拟申请已提交，未发生真实退款'));
     assert(!r.notices.some(x => x[0] === '已退款，原路退回'));
   });
 }
@@ -217,5 +220,5 @@ test('现金未下载新订单仍允许无补充说明退款，未退化为用�
   await r.refund(o.no);
   assert.deepEqual(r.calls[0].body, {reason:'不想要了', problem:'other'});
   assert.equal(r.input.focusCount, 0);
-  assert(r.notices.some(x => x[0] === '已退款，原路退回'));
+  assert(r.notices.some(x => x[0] === '模拟退款已完成，未实际退回资金'));
 });

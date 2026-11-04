@@ -6759,7 +6759,7 @@ ROUTES.item = id => {
   const used = POSTS.filter(p => p.attach.includes(pr.id));
   const same = PRODUCTS.filter(p => p.seller === pr.seller && p.id !== pr.id).slice(0, 4);
   const T = tplOf(pr), stage = T === 'sample' ? pvSample(pr) : T === 'preset' ? pvPreset(pr) : pvVideo(pr);
-  const buyBtn = own ? `<span class="li-b">${dlBtns(pr, 'lg', true)}</span>` : `<button class="pill lg cta" data-act="buy" data-id="${pr.id}">${pr.price ? '购买' : '免费领取'}</button>`;
+  const buyBtn = own ? `<span class="li-b">${dlBtns(pr, 'lg', true)}</span>` : `<button class="pill lg cta" data-act="buy" data-id="${pr.id}" ${API.on() && (!pr.live || !tradeAllowed(tradePurchaseKind(pr))) ? 'disabled aria-disabled="true"' : ''}>${tradeBuyLabel(pr)}</button>`;
   const favBtn = `<button class="pill lg ic lt" data-act="fav" data-id="${pr.id}" aria-label="收藏" style="width:54px;${STATE.favs.has(pr.id) ? 'color:var(--blue)' : ''}">${STATE.favs.has(pr.id) ? IC.saveF : IC.save}</button>`;
   onMount(root => mountWaves(root));
   return `<div class="wrap c-${c.c}">
@@ -6768,7 +6768,7 @@ ROUTES.item = id => {
     <div class="info">
       <div class="ihead"><div class="icw"><div class="icv" data-qbox="${pr.id}"><img src="${cover(pr.cover, 1, 240, 240)}" alt="" width="240" height="240"><span class="pv"><button class="pbtn sm" data-act="qplay" data-id="${pr.id}" aria-label="播放">${IC.play}</button></span></div><a class="stk c-${c.c}" href="#shop-${pr.cat}" title="看更多${esc(c.cn)}">${GLYPH[pr.cat]}${esc(pr.kind)}</a></div><div style="min-width:0"><div class="x en">${esc(pr.en)}</div><h1>${esc(pr.title)}</h1>
         <div class="mut" style="font-size:13.5px;margin-top:10px;display:flex;gap:14px;flex-wrap:wrap"><span>${pr.rating == null ? '暂无评价' : '★ ' + pr.rating.toFixed(1)}</span><span>${pr.sales.toLocaleString()} 人拥有</span><span>${esc(pr.size)}</span></div></div></div>
-      ${off ? `<div class="ann warn"><span class="ann-i">${IC.x}</span><span class="ann-t"><b>已下架</b><span>${STATE.owned.has(pr.id) ? '你已经买过，仍然可以下载' : '买家搜不到它，可以在工作室重新上架'}</span></span></div>` : ''}<div class="buy"><span class="price">${pr.price ? '¥' + pr.price : '免费'}${pr.orig ? `<s>¥${pr.orig}</s>` : ''}</span>${favBtn}${buyBtn}</div>
+      ${off ? `<div class="ann warn"><span class="ann-i">${IC.x}</span><span class="ann-t"><b>已下架</b><span>${STATE.owned.has(pr.id) ? '你已经买过，仍然可以下载' : '买家搜不到它，可以在工作室重新上架'}</span></span></div>` : ''}<div class="buy"><span class="price">${pr.price ? '¥' + pr.price : '免费'}${pr.orig ? `<s>¥${pr.orig}</s>` : ''}</span>${favBtn}${buyBtn}</div>${!own && pr.live ? tradeNotice(tradePurchaseKind(pr),true) : ''}
       <p style="font-size:15px;line-height:1.8;color:var(--ink-2)">${esc(pr.desc)}</p>
       <div class="facts"><div><span class="lab">内容</span><b>${esc(pr.count)}</b></div><div><span class="lab">格式</span><b>${esc(pr.format)}</b></div><div class="wide"><span class="lab">兼容</span><b>${esc(pr.compat)}</b></div></div>
       <div><span class="lab" style="display:block;margin-bottom:10px">可以怎么用 · <a href="#doc-license" style="text-decoration:underline">许可条款</a></span><div class="lic"><span>${IC.check.replace('<svg','<svg width="13" height="13"')}发行作品</span><span>${IC.check.replace('<svg','<svg width="13" height="13"')}演出与直播</span><span>${IC.check.replace('<svg','<svg width="13" height="13"')}切片改编</span><span class="no">转售原文件</span><span class="no">再打包出售</span></div></div>
@@ -6832,13 +6832,14 @@ function vcWarnFx(el){ if (!el || reduced()) return; const E = 'cubic-bezier(.2,
   if (hole){ hole.animate([{transform:'scale(1.8)', opacity:0}, {transform:'scale(.85)', opacity:1, offset:.7}, {transform:'none', opacity:1}], {duration:420, delay:260, easing:E, fill:'backwards'});
     setTimeout(() => { const r = hole.getBoundingClientRect(); fxShapes(r.left + r.width/2, r.top + r.height/2, 6, 50, ['pink','yellow'], 90); haptic(10); }, 520); } }
 function payBox(pr){
+  if (API.on() && (!pr.live || !tradeAllowed(tradePurchaseKind(pr)))) return tradeNotice('paidCheckout', true);
   const ded = vcDed(pr), cash = r2(pr.price - ded), w = vcWasteOf(pr), gate = w > 0 && !UI.vcOk;
-  return `${vcPick(pr)}${cash > 0 ? `<div class="pays">${[['微信支付','green'],['支付宝','blue'],['银行卡','ink']].map(([m,c]) => `<button data-act="paym" data-m="${m}" class="${UI.pay===m?'on':''}"><i style="background:${INK[c]}"></i>${m}</button>`).join('')}</div>` : ''}
+  return `${tradeNotice('paidCheckout')}${vcPick(pr)}${cash > 0 && !API.on() ? `<div class="pays">${[['微信支付','green'],['支付宝','blue'],['银行卡','ink']].map(([m,c]) => `<button data-act="paym" data-m="${m}" class="${UI.pay===m?'on':''}"><i style="background:${INK[c]}"></i>${m}</button>`).join('')}</div>` : ''}
     <div class="sum">${pr.orig ? `<div><span class="mut">原价</span><span class="num">${yuan2(pr.orig)}</span></div><div><span class="mut">限时优惠</span><span class="num" style="color:var(--pink)">−${yuan2(pr.orig - pr.price)}</span></div>` : ''}
       ${ded ? `<div><span class="mut">代金券抵扣</span><span class="num" style="color:var(--pink)">−${yuan2(ded)}</span></div>` : ''}
       <div class="tot"><span>${ded ? '实付' : '合计'}</span><b class="num">${yuan2(cash)}</b></div></div>
     ${gate ? `<button class="pill lg vcw-go" data-act="vc-ok" data-id="${pr.id}">知道了，剩下的 ${yuan2(w)} 作废</button>`
-      : `<button class="pill lg" data-act="do-pay" data-id="${pr.id}" id="payBtn">${cash > 0 ? `${payVerb(UI.pay)} ${yuan2(cash)}` : '用代金券支付'}</button>`}`;
+      : `<button class="pill lg" data-act="do-pay" data-id="${pr.id}" id="payBtn">${API.on() ? `确认模拟支付 ${yuan2(cash)}` : cash > 0 ? `${payVerb(UI.pay)} ${yuan2(cash)}` : '用代金券支付'}</button>`}`;
 }
 ACTIONS.buy0 = b => {
   if (needLogin()) return; const pr = P(b.dataset.id);
@@ -6847,7 +6848,7 @@ ACTIONS.buy0 = b => {
   setTimeout(() => vcWarnFx($('#vcw')), 320);   // 默认选上了券：面板升起后在票根上打孔
   sheet(`<h3>${esc(pr.title)}</h3>
     <div style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:center" class="c-${CATS[pr.cat].c}"><img src="${cover(pr.cover, hash(pr.id)%50, 160, 160)}" alt="" style="width:64px;height:64px;border-radius:12px"><div><b class="x" style="font-size:18px">${esc(pr.en)}</b><div class="mut2" style="font-size:13px;margin-top:4px">${esc(USERS[pr.seller].shop)}</div></div></div>
-    <div id="payBox" style="display:contents">${payBox(pr)}</div>
+    <div id="payBox" data-product-id="${pr.id}" style="display:contents">${payBox(pr)}</div>
     <p class="mut2 pay-cf">付款即确认：数字资源下载或查看后不适用七日无理由退货（文件损坏、和描述严重不符的除外）。按<a href="#doc-license">《素材使用许可》</a>使用 · <a href="#doc-refund">《退款规则》</a></p>`);
 };
 ACTIONS.paym = b => { UI.pay = b.dataset.m; $$('.pays button').forEach(x => x.classList.toggle('on', x === b)); const pb = $('#payBtn'); pb.textContent = pb.textContent.replace(/^用\S+?支付/, payVerb(UI.pay)); };
@@ -6865,11 +6866,12 @@ ACTIONS['do-pay'] = b => {
   const t0 = performance.now(); const tick = now => { const k = Math.min(1, (now - t0)/1200); const r = $('#rp'); if (!r) return; r.style.setProperty('--p', k*100); if (k < 1) requestAnimationFrame(tick); else done(); }; requestAnimationFrame(tick);
   const done = () => { grant(pr, cash > 0 ? UI.pay : '代金券', pr.price, ded, vid); paidUI(pr, sh); };
 };
-function paidUI(pr, sh){ sfx('ok');
-    setTimeout(() => { const st = $('#layer .stamp'); if (st){ const r = st.getBoundingClientRect(); fxShapes(r.left + r.width/2, r.top + r.height/2, 28, 170, ['pink','blue','yellow','orange','green'], 70); fxPop($('#layer .sheet'), 'fx-thud', 400); haptic(16); } }, 140);
-    setTimeout(() => { const st = $('#layer .stamp'); flyTo(st ? st.getBoundingClientRect() : null, cover(pr.cover, hash(pr.id)%50, 200, 200), () => { STATE.libNew++; badge(); }); }, 520);
-    sh.innerHTML = `<button class="x-close" data-act="close-re" aria-label="关闭">${IC.x}</button><div class="done"><span class="stamp big pop" style="--sc:var(--blue)">PAID<small>已付款</small></span><b style="font-size:20px;margin-top:10px">${esc(pr.title)} 是你的了</b><span class="mut" style="font-size:14px">已放进资源库，随时可以下载</span></div><button class="pill lg" data-act="dl" data-id="${pr.id}">${IC.dl}现在下载</button><button class="pill lg lt" data-act="close-re">继续逛</button>`;
-    foil($('#layer .stamp'), 'gold');
+function paidUI(pr, sh, order){ sfx('ok');
+    const source=API.on() ? tradeSource(order) : 'prototype', stamp=source === 'mock' ? 'TEST' : source === 'legacy' ? 'HIST' : source === 'free' ? 'FREE' : 'PAID', label=source === 'mock' ? '模拟付款' : source === 'legacy' ? '历史订单' : source === 'free' ? '已领取' : '已付款';
+    setTimeout(() => { if (!sh.isConnected) return; const st = $('.stamp',sh); if (st){ const r = st.getBoundingClientRect(); fxShapes(r.left + r.width/2, r.top + r.height/2, 28, 170, ['pink','blue','yellow','orange','green'], 70); fxPop(sh, 'fx-thud', 400); haptic(16); } }, 140);
+    setTimeout(() => { if (!sh.isConnected) return; const st = $('.stamp',sh); flyTo(st ? st.getBoundingClientRect() : null, cover(pr.cover, hash(pr.id)%50, 200, 200), () => { STATE.libNew++; badge(); }); }, 520);
+    sh.innerHTML = `<button class="x-close" data-act="close-re" aria-label="关闭">${IC.x}</button><div class="done"><span class="stamp big pop" style="--sc:var(--blue)">${stamp}<small>${label}</small></span><b style="font-size:20px;margin-top:10px">${esc(pr.title)} 是你的了</b><span class="mut" style="font-size:14px">${source === 'mock' ? '未实际扣款；测试资源已放进资源库' : source === 'legacy' ? '已确认原订单权益，本次没有重新付款' : '已放进资源库，随时可以下载'}</span></div><button class="pill lg" data-act="dl" data-id="${pr.id}">${IC.dl}现在下载</button><button class="pill lg lt" data-act="close-re">继续逛</button>`;
+    foil($('.stamp',sh), 'gold');
 }
 ACTIONS['close-re'] = () => { closeSheet(); rerender(); };
 ACTIONS.dl = b => {
@@ -6962,7 +6964,7 @@ function meLegacy(arg){
   const nav = [['lib','资源库', owned.length],['orders','订单', 0],['favs','收藏', 0],['settings','设置', 0]];
   let body = '';
   if (t === 'lib') body = `<div class="lib">${owned.map(p => `<div class="li c-${CATS[p.cat].c}"><img src="${cover(p.cover, hash(p.id)%50, 180, 180)}" alt="" data-go="item-${p.id}" style="cursor:pointer"><div style="min-width:0"><div class="lab" style="display:flex;gap:6px;align-items:center"><span class="dot"></span>${esc(p.en)}</div><h4>${esc(p.title)}</h4><div class="m">${esc(p.size)}${verNew(p) ? ` · <b style="color:var(--pink)">有新版本 ${esc(p.ver)}</b>` : ''}</div><div class="li-b">${dlBtns(p, 'sm')}${prvMine(p.id) ? '' : `<button class="pill sm lt" data-act="prv-write" data-id="${p.id}">评价</button>`}</div></div>${dlOf(p.id).links.length || dlOf(p.id).texts.length ? `<div class="dlx" id="dlx-${p.id}" hidden>${dlPanel(p)}</div>` : ''}</div>`).join('')}</div>`;
-  if (t === 'orders') body = `<div class="box"><div class="tw"><table class="t"><thead><tr><th>资源</th><th>付款方式</th><th class="r">金额</th><th>时间</th><th>状态</th><th></th></tr></thead><tbody>${STATE.orders.map(o => { const p = P(o.pid) || {id:o.pid,title:o.title}; return `<tr class="ad-click" data-act="ord-open" data-no="${o.no}"><td><a data-go="item-${p.id}" style="cursor:pointer;font-weight:600">${esc(p.title)}</a>${o.fresh ? ' <span class="tag c-pink">新</span>' : ''}<div class="mut2" style="font-size:11.5px;font-family:var(--f-b)">${o.no}</div></td><td>${o.pay}${o.vc && o.pay !== '代金券' ? ' + 代金券' : ''}</td><td class="r n">${yuan2(o.price)}${o.vc ? `<div class="mut2" style="font-size:11.5px">券 −${yuan2(o.vc)}</div>` : ''}</td><td class="mut2 n">${o.time}</td><td><span class="st"><span class="dot c-${ordSt(o) === '已完成' ? 'green' : ordSt(o) === '退款中' ? 'orange' : 'violet'}"></span>${ordSt(o)}</span>${rfOf(o.no)?.st === '已拒绝' ? '<div class="mut2" style="font-size:11.5px">退款未通过</div>' : ''}</td><td class="r"><button class="pill sm lt" data-act="ord-open" data-no="${o.no}">详情</button> ${ordSt(o) === '已完成' && o.price > 0 && !rfOf(o.no) ? `<button class="pill sm lt" data-act="refund" data-no="${o.no}">${o.vc ? '申诉' : '退款'}</button>` : ''}</td></tr>`; }).join('')}</tbody></table></div></div>`;
+  if (t === 'orders') body = `<div class="box"><div class="tw"><table class="t"><thead><tr><th>资源</th><th>付款方式</th><th class="r">金额</th><th>时间</th><th>状态</th><th></th></tr></thead><tbody>${STATE.orders.map(o => { const p = P(o.pid) || {id:o.pid,title:o.title}; return `<tr class="ad-click" data-act="ord-open" data-no="${o.no}"><td><a data-go="item-${p.id}" style="cursor:pointer;font-weight:600">${esc(p.title)}</a>${tradeOrderBadge(o)}${o.fresh ? ' <span class="tag c-pink">新</span>' : ''}<div class="mut2" style="font-size:11.5px;font-family:var(--f-b)">${o.no}</div></td><td>${o.pay}${o.vc && o.pay !== '代金券' ? ' + 代金券' : ''}</td><td class="r n">${yuan2(o.price)}${o.vc ? `<div class="mut2" style="font-size:11.5px">券 −${yuan2(o.vc)}</div>` : ''}</td><td class="mut2 n">${o.time}</td><td><span class="st"><span class="dot c-${ordSt(o) === '已完成' ? 'green' : ordSt(o) === '退款中' ? 'orange' : 'violet'}"></span>${ordSt(o)}</span>${rfOf(o.no)?.st === '已拒绝' ? '<div class="mut2" style="font-size:11.5px">退款未通过</div>' : ''}</td><td class="r"><button class="pill sm lt" data-act="ord-open" data-no="${o.no}">详情</button> ${ordSt(o) === '已完成' && o.price > 0 && !rfOf(o.no) && tradeOrderCan(o,'canRefund') ? `<button class="pill sm lt" data-act="refund" data-no="${o.no}">${o.vc ? '申诉' : '退款'}</button>` : ''}</td></tr>`; }).join('')}</tbody></table></div></div>`;
   if (t === 'favs'){ const fp = PRODUCTS.filter(p => STATE.favs.has(p.id)), fs = POSTS.filter(p => STATE.favs.has(p.id)); onMount(root => mountWaves(root));
     body = `${fp.length ? `<div class="grid-p">${fp.map(sleeve).join('')}</div>` : ''}${fs.length ? `<div class="mason" style="margin-top:32px">${fs.map(postCard).join('')}</div>` : ''}${!fp.length && !fs.length ? '<div class="empty"><div class="x">空</div><span>看到喜欢的就点书签</span></div>' : ''}`; }
   const profBox = `<div class="box"><div class="box-h"><h3>资料</h3></div><div class="box-b"><div class="fg"><div class="fl"><label for="pf-n">名字</label><input class="inp" id="pf-n" required maxlength="24" autocomplete="nickname" value="${esc(u.name)}"></div><div class="fl"><label for="pf-c">城市</label><input class="inp" id="pf-c" maxlength="20" autocomplete="address-level2" value="${esc(u.city)}"></div><div class="fl full"><label for="pf-b">一句话介绍</label><textarea class="inp" id="pf-b" maxlength="200">${esc(u.bio)}</textarea></div></div><button class="pill" data-act="save-prof" style="margin-top:14px">保存</button></div></div>`;
@@ -6987,12 +6989,12 @@ function studioLiveOverview(){
   const S = LSHOP.stats, bad = LSHOP.statsError || LSHOP.mineError; if (!S) return `${payeeBox()}<div class="box"><div class="box-b mut">${bad ? '暂时读不到销售统计' : '正在读取销售统计…'}${bad ? '<button class="pill sm lt" data-act="studio-retry" style="margin-left:10px">重试</button>' : ''}</div></div>`;
   const M = S.currentMonth, month = +M.month.slice(5), monthly = S.monthly, max = Math.max(1, ...monthly.map(m => f2y(m.gross)));
   const views = S.views30d, prev = S.previousViews30d, change = views != null && prev > 0 ? Math.round((views - prev)/prev*100) : null;
-  return `${payeeBox()}<div class="kpis"><div class="kpi cc c-pink grain"><span class="lab" style="color:var(--on);position:relative;z-index:2">${month}月预计到手</span><b data-roll="${f2y(M.net)}" data-pre="¥" style="position:relative;z-index:2">${yuan2(f2y(M.net))}</b><span class="d" style="color:var(--on);position:relative;z-index:2">${S.estimatedFees ? '按现行示例费率估算，非已到账金额' : '已扣平台费与支付手续费'}</span></div>
+  return `${payeeBox()}${tradeSummaryNotice(S.simulation)}<div class="kpis"><div class="kpi cc c-pink grain"><span class="lab" style="color:var(--on);position:relative;z-index:2">${month}月${S.simulation ? '模拟净额' : '预计到手'}</span><b data-roll="${f2y(M.net)}" data-pre="¥" style="position:relative;z-index:2">${yuan2(f2y(M.net))}</b><span class="d" style="color:var(--on);position:relative;z-index:2">${S.simulation ? '仅内测计算，未发生真实结算' : S.estimatedFees ? '按现行示例费率估算，非已到账金额' : '已扣平台费与支付手续费'}</span></div>
     <div class="kpi"><span class="lab">${month}月销售额</span><b data-roll="${f2y(M.gross)}" data-pre="¥">${yuan2(f2y(M.gross))}</b><span class="d">${M.paidCount} 单 · ${M.refundCount} 单已退款</span></div>
     <div class="kpi"><span class="lab">30 天浏览</span><b>${views == null ? '—' : views.toLocaleString()}</b><span class="d">${change == null ? views == null ? '暂无浏览统计' : '暂无上期比较' : '比上期' + (change >= 0 ? '多 ' : '少 ') + Math.abs(change) + '%'}</span></div>
     <div class="kpi"><span class="lab">下单率</span><b>${S.conversion == null ? '—' : (S.conversion*100).toFixed(1) + '%'}</b><span class="d">${S.conversion == null ? '暂无转化统计' : '近 30 天浏览转化'}</span></div></div>
     <div class="box"><div class="box-h"><h3>每月收入</h3><span class="mut2" style="font-size:13px">元 · 已退款不计入</span></div><div class="bars">${monthly.map((m, i) => { const v = f2y(m.gross); return `<div class="b ${i === monthly.length - 1 ? 'cur' : ''}"><em>${v}</em><i style="height:${Math.max(4, v/max*120)}px"></i><span>${+m.month.slice(5)}月</span></div>`; }).join('')}</div></div>
-    <div class="box"><div class="box-h"><h3>每月销售汇总</h3><span class="mut2" style="font-size:13px">${S.estimatedFees ? '实际订单 · 支付费用估算' : '实际订单统计'}</span></div><div class="tw"><table class="t"><thead><tr><th>月份</th><th>已付款 / 已退款</th><th class="r">销售额</th><th class="r">支付手续费</th><th class="r">平台费</th><th class="r">预计到手</th></tr></thead><tbody>${monthly.slice().reverse().map(m => `<tr><td class="n">${esc(m.month)}</td><td>${m.paidCount} / ${m.refundCount} 单</td><td class="r n">${yuan2(f2y(m.gross))}</td><td class="r n neg">−${yuan2(f2y(m.fee))}</td><td class="r n neg">−${yuan2(f2y(m.platformFee))}</td><td class="r n">${yuan2(f2y(m.net))}</td></tr>`).join('')}</tbody></table></div></div>`;
+    <div class="box"><div class="box-h"><h3>每月销售汇总</h3><span class="mut2" style="font-size:13px">${S.simulation ? '内测模拟订单统计' : S.estimatedFees ? '订单 · 支付费用估算' : '订单统计'}</span></div><div class="tw"><table class="t"><thead><tr><th>月份</th><th>已付款 / 已退款</th><th class="r">销售额</th><th class="r">支付手续费</th><th class="r">平台费</th><th class="r">预计到手</th></tr></thead><tbody>${monthly.slice().reverse().map(m => `<tr><td class="n">${esc(m.month)}</td><td>${m.paidCount} / ${m.refundCount} 单</td><td class="r n">${yuan2(f2y(m.gross))}</td><td class="r n neg">−${yuan2(f2y(m.fee))}</td><td class="r n neg">−${yuan2(f2y(m.platformFee))}</td><td class="r n">${yuan2(f2y(m.net))}</td></tr>`).join('')}</tbody></table></div></div>`;
 }
 ACTIONS['studio-retry'] = async b => { b.disabled = true; await liveMine(); rerender(); };
 ROUTES.seller = arg => {
@@ -7286,7 +7288,7 @@ function rvDetail(r){
       ${app ? `<p class="mut2" style="font-size:12.5px;margin:0">入驻资料：实名 ${esc(app.real)} · 作品 ${esc(app.link)}</p>` : ''}
       ${admCan('users') ? `<button class="pill sm lt" data-act="us-open" data-id="${esc(r.who)}" style="align-self:flex-start">在用户管理里查看</button>` : ''}</section>
     <section class="rv-s"><h4>审核清单 <span class="mut2" style="font-weight:400">${done.size} / ${ck.length}</span></h4><div class="rv-ck">${ck.map((t, i) => `<button class="${done.has(i) ? 'on' : ''}" data-act="rv-ck" data-i="${i}" role="checkbox" aria-checked="${done.has(i)}"><i>${IC.check}</i><span>${esc(t)}</span></button>`).join('')}</div></section>
-    <div class="qact"><button class="pill lg" data-act="rv-ok" ${r.live && rvBusy(r) ? 'disabled aria-busy="true"' : ''} style="background:var(--green);color:var(--on)">${IC.check}通过<kbd>A</kbd></button>${r.lk ? '' : `<button class="pill lg lt" data-act="rv-ask" ${r.live && rvBusy(r) ? 'disabled' : ''}>要求补充材料</button>`}<button class="pill lg lt" data-act="rv-no" ${r.live && rvBusy(r) ? 'disabled' : ''}>${IC.x}驳回<kbd>R</kbd></button></div>`;
+    ${r.live && !r.lk ? tradePublishNote() : ''}<div class="qact"><button class="pill lg" data-act="rv-ok" ${r.live && rvBusy(r) ? 'disabled aria-busy="true"' : ''} style="background:var(--green);color:var(--on)">${IC.check}通过<kbd>A</kbd></button>${r.lk ? '' : `<button class="pill lg lt" data-act="rv-ask" ${r.live && rvBusy(r) ? 'disabled' : ''}>要求补充材料</button>`}<button class="pill lg lt" data-act="rv-no" ${r.live && rvBusy(r) ? 'disabled' : ''}>${IC.x}驳回<kbd>R</kbd></button></div>`;
 }
 /* 审核原生试听与现有播放器互斥：暂停保留位置，正在等待旧签名的请求也取消。 */
 let RV_MEDIA = null;
@@ -8205,10 +8207,10 @@ const payeeLine = uid => { const p = ADM.payee[uid]; return p ? `${PAYEE_K[p.kin
 /* 测试服只有 http：填证件号、卡号之前提醒一句，上 https 以后自动不显示 */
 function plainNote(){ return location.protocol === 'http:' ? '<p class="plain-note">测试环境走明文传输，请不要填写真实的证件号和银行卡号</p>' : ''; }
 function payeeBox(){ const p = ADM.payee[ME], mine = ADM.payouts.flatMap(b => b.rows.filter(r => r.seller === ME).map(r => ({...r, month:b.month}))).reverse();
-  return `<div class="box"><div class="box-h"><h3>收款与结算</h3><span class="tag c-yellow">每月结算</span></div><div class="box-b pay-b">
+  return `<div class="box"><div class="box-h"><h3>收款与结算</h3><span class="tag c-yellow">${API.on() ? "结算记录" : "每月结算"}</span></div><div class="box-b pay-b">
     ${p ? `<div class="pay-a"><span class="pay-i c-${PAYEE_K[p.kind][1]}">${p.kind === 'bank' ? '卡' : p.kind === 'alipay' ? '支' : '微'}</span><span><b>${PAYEE_K[p.kind][0]}</b><i>${esc(p.name)} · ${esc(p.acct)}${p.bank ? ' · ' + esc(p.bank) : ''}</i></span><button class="pill sm lt" data-act="payee">更换</button></div>`
-      : `<div class="ann warn pay-w"><span class="ann-i">${IC.x}</span><span class="ann-t"><b>还没绑定收款账户</b><span>月底结算会打不出去，户名要和实名认证一致</span></span><button class="pill sm" data-act="payee">去绑定</button></div>`}
-    ${mine.length ? `<div class="tw"><table class="t"><thead><tr><th>结算月</th><th class="r">金额</th><th>状态</th></tr></thead><tbody>${mine.map(r => `<tr><td class="n">${r.month}</td><td class="r n">${yuan2(r.net)}</td><td>${stTag(r.st, {待打款:'yellow', 已打款:'green', 打款失败:'orange'}[r.st])}${r.txn ? ` <span class="mut2 n" style="font-size:11.5px">${esc(r.txn)}</span>` : ''}</td></tr>`).join('')}</tbody></table></div>` : '<p class="mut2" style="font-size:13px;margin:0">平台生成结算单后，结算记录会出现在这里，打款结果也会通过「CTRL Z 官方」通知你。</p>'}
+      : `<div class="ann warn pay-w"><span class="ann-i">${IC.x}</span><span class="ann-t"><b>还没绑定收款账户</b><span>${API.on() ? "保存收款资料不会发起打款；当前仅查看历史或模拟结算记录" : "月底结算会打不出去，户名要和实名认证一致"}</span></span><button class="pill sm" data-act="payee">去绑定</button></div>`}
+    ${mine.length ? `<div class="tw"><table class="t"><thead><tr><th>结算月</th><th class="r">金额</th><th>状态</th></tr></thead><tbody>${mine.map(r => `<tr><td class="n">${r.month} ${tradeOrderBadge(r)}</td><td class="r n">${yuan2(r.net)}</td><td>${stTag(r.st, {待打款:'yellow', 已打款:'green', 打款失败:'orange'}[r.st])}${r.txn ? ` <span class="mut2 n" style="font-size:11.5px">${esc(r.txn)}</span>` : ''}</td></tr>`).join('')}</tbody></table></div>` : `<p class="mut2" style="font-size:13px;margin:0">${API.on() ? "结算记录会显示在这里；模拟打款不会发生真实资金划转。" : "平台生成结算单后，结算记录会出现在这里，打款结果也会通过「CTRL Z 官方」通知你。"}</p>`}
   </div></div>`; }
 
 /* —— 设置里新增的几块 —— */
@@ -8367,17 +8369,18 @@ RJ_REASON.invoice = ['抬头或税号有误', '该订单已退款', '重复申�
 /* —— 购买凭证：画成图片保存 —— */
 function receiptPNG(o){ const p = P(o.pid), W = 720, H = 920, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), ff = getComputedStyle(document.body).fontFamily;
   g.fillStyle = '#F4F1EA'; g.fillRect(0, 0, W, H); g.fillStyle = '#141418'; g.font = `900 46px ${ff}`; g.fillText('CTRL Z', 56, 96); g.fillStyle = '#FF4FA3'; g.fillRect(56, 116, 80, 8);
-  g.fillStyle = '#141418'; g.font = `700 26px ${ff}`; g.fillText('购买凭证', 56, 176);
+  g.fillStyle = '#141418'; g.font = `700 26px ${ff}`; g.fillText(o.live ? tradeSource(o) === 'mock' ? '内测模拟订单（无真实扣款）' : tradeSource(o) === 'free' ? '免费领取记录' : '历史订单（来源未确认）' : '购买凭证', 56, 176);
   const rows = [['订单号', o.no], ['资源', p.title], ['卖家', uname(p.seller)], ['买家', uname(ME)], ['金额', yuan2(o.price)], ['支付方式', o.pay], ['下单时间', o.time], ['状态', ordSt(o)], ['授权', '个人及商业作品使用，不得转售原文件']];
   g.font = `400 22px ${ff}`; rows.forEach(([k, v], i) => { const y = 250 + i*62; g.fillStyle = '#8A8780'; g.fillText(k, 56, y); g.fillStyle = '#141418'; g.fillText(String(v).slice(0, 26), 220, y); g.fillStyle = 'rgba(20,20,24,.12)'; g.fillRect(56, y + 22, W - 112, 2); });
-  g.save(); g.translate(W - 170, H - 170); g.rotate(-.18); g.strokeStyle = '#FF4FA3'; g.lineWidth = 6; g.beginPath(); g.arc(0, 0, 84, 0, Math.PI*2); g.stroke(); g.fillStyle = '#FF4FA3'; g.font = `900 40px ${ff}`; g.textAlign = 'center'; g.fillText(ordSt(o) === '已退款' ? 'REFUND' : 'PAID', 0, 14); g.restore();
+  g.save(); g.translate(W - 170, H - 170); g.rotate(-.18); g.strokeStyle = '#FF4FA3'; g.lineWidth = 6; g.beginPath(); g.arc(0, 0, 84, 0, Math.PI*2); g.stroke(); g.fillStyle = '#FF4FA3'; g.font = `900 40px ${ff}`; g.textAlign = 'center'; g.fillText(o.live ? tradeSource(o) === 'mock' ? 'TEST' : tradeSource(o) === 'free' ? 'FREE' : 'HIST' : ordSt(o) === '已退款' ? 'REFUND' : 'PAID', 0, 14); g.restore();
   g.fillStyle = '#8A8780'; g.font = `400 16px ${ff}`; g.fillText(`${coName()} · 生成于 ${fmtDay(Date.now())}`, 56, H - 48);
   const u8 = Uint8Array.from(atob(c.toDataURL('image/png').split(',')[1]), ch => ch.charCodeAt(0)), a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([u8], {type:'image/png'})); a.download = `ctrlz-receipt-${o.no}.png`;
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);   // 同步生成，保证在点击手势内触发下载；文件名用英文，部分浏览器会丢掉中文下载名
   toast('凭证已保存'); }
 function ordSheet(no){ const o = STATE.orders.find(x => x.no === no); if (!o) return; const p = P(o.pid), inv = invOf(no), st = ordSt(o);
-  sheet(`<h3>订单详情</h3><div class="ad-kv col"><span>订单号<b class="n">${o.no}</b></span><span>资源<b>${esc(p.title)}</b></span><span>卖家<b>${esc(uname(p.seller))}</b></span><span>金额<b>${o.price ? yuan2(o.price) : '免费'}</b></span>${o.vc ? `<span>代金券抵扣<b>−${yuan2(o.vc)}</b></span><span>实付<b>${yuan2(r2(o.price - o.vc))}</b></span>` : ''}<span>支付方式<b>${esc(o.pay)}</b></span>${o.lic ? `<span>许可编号<b class="n">${esc(o.lic)}</b></span>` : ''}<span>时间<b>${esc(o.time)}</b></span><span>状态<b>${st}</b></span>${inv ? `<span>发票<b>${inv.st}${inv.invNo ? ' · ' + esc(inv.invNo) : ''}</b></span>` : ''}</div>
-    <div class="ad-acts"><a class="pill sm lt" data-go="item-${p.id}">查看资源</a><button class="pill sm lt" data-act="ord-rcpt" data-no="${o.no}">${IC.dl}保存凭证</button>${o.price > 0 && st !== '已退款' && !inv ? `<button class="pill sm lt" data-act="inv-open" data-no="${o.no}">申请发票</button>` : ''}<a class="pill sm lt" href="#msg-${p.seller}">联系卖家</a>${st === '已完成' && o.price > 0 && !rfOf(o.no) ? `<button class="pill sm lt" data-act="refund" data-no="${o.no}">${o.vc ? '申诉' : '退款'}</button>` : ''}</div>`); }
+  sheet(`<h3>订单详情</h3>${tradeOrderBadge(o)}<div class="ad-kv col"><span>订单号<b class="n">${o.no}</b></span><span>资源<b>${esc(p.title)}</b></span><span>卖家<b>${esc(uname(p.seller))}</b></span><span>金额<b>${o.price ? yuan2(o.price) : '免费'}</b></span>${o.vc ? `<span>代金券抵扣<b>−${yuan2(o.vc)}</b></span><span>实付<b>${yuan2(r2(o.price - o.vc))}</b></span>` : ''}<span>支付方式<b>${esc(o.pay)}</b></span>${o.lic ? `<span>许可编号<b class="n">${esc(o.lic)}</b></span>` : ''}<span>时间<b>${esc(o.time)}</b></span><span>状态<b>${st}</b></span>${inv ? `<span>发票<b>${inv.st}${inv.invNo ? ' · ' + esc(inv.invNo) : ''}</b></span>` : ''}</div>
+    ${o.live && tradeSource(o) === 'mock' ? '<p class="mut2">内测模拟记录，不代表真实扣款、退款、打款或开票。</p>' : ''}
+    <div class="ad-acts"><a class="pill sm lt" data-go="item-${p.id}">查看资源</a><button class="pill sm lt" data-act="ord-rcpt" data-no="${o.no}">${IC.dl}保存凭证</button>${o.live && tradeOrderCan(o,'canPay') ? `<button class="pill sm" data-act="order-pay" data-id="${o.id}">${tradeSource(o) === 'free' ? '确认领取' : '继续确认模拟订单'}</button>` : ''}${o.price > 0 && st !== '已退款' && !inv && tradeOrderCan(o,'canInvoice') ? `<button class="pill sm lt" data-act="inv-open" data-no="${o.no}">${o.live ? '申请模拟发票' : '申请发票'}</button>` : ''}<a class="pill sm lt" href="#msg-${p.seller}">联系卖家</a>${st === '已完成' && o.price > 0 && !rfOf(o.no) && tradeOrderCan(o,'canRefund') ? `<button class="pill sm lt" data-act="refund" data-no="${o.no}">${o.vc ? '申诉' : '退款'}</button>` : ''}</div>`); }
 
 /* —— 登录设备（原型：本机 + 示例设备） —— */
 const uaName = () => { const u = navigator.userAgent; const os = /iPhone/.test(u) ? 'iPhone' : /iPad|Macintosh.*Mobile/.test(u) ? 'iPad' : /Android/.test(u) ? 'Android' : /Mac/.test(u) ? 'Mac' : /Windows/.test(u) ? 'Windows' : '电脑';
@@ -8510,8 +8513,8 @@ Object.assign(ACTIONS, {
 ADM_TABS.splice(ADM_TABS.findIndex(t => t[0] === 'payout') + 1, 0, ['invoice', '发票', '交易', ['super', 'fin']]);
 ADMV.invoice = () => { const f = UI.adf?.iv || 'todo', L = ADM.invoices.filter(v => f === 'all' || (f === 'todo') === (v.st === '待开具'));
   return `${adH('发票', '用户在订单详情里申请；开具后填发票号码，会通知用户', adSeg('iv', [['todo', '待开具'], ['all', '全部']], f))}
-  <div class="ad-list">${L.map(v => `<div class="ad-row ${v.st === '待开具' ? '' : 'dim'}"><div class="ad-rm"><b>${esc(v.title)} · ${yuan2(v.amt)}</b><span class="mut">${v.kind}${v.tax ? ' · 税号 ' + esc(v.tax) : ''} · ${esc(v.mail)} · ${v.no} · ${esc(v.item)} · @${esc(uname(v.uid))}</span>${v.st !== '待开具' ? `<span class="mut2">${v.st}${v.invNo ? ' · ' + v.invNo : ''}${v.why ? ' · ' + esc(v.why) : ''}</span>` : ''}</div>
-    <div class="ad-ra">${v.st === '待开具' ? `<button class="pill sm lt" data-act="inv-no" data-id="${v.id}">驳回</button><button class="pill sm" data-act="inv-done" data-id="${v.id}">已开具</button>` : ''}</div></div>`).join('') || adEmpty('ALL CLEAR', '没有待开的发票')}</div>`; };
+  <div class="ad-list">${L.map(v => `<div class="ad-row ${v.st === '待开具' ? '' : 'dim'}"><div class="ad-rm"><b>${esc(v.title)} · ${yuan2(v.amt)}</b>${tradeOrderBadge(v)}<span class="mut">${v.kind}${v.tax ? ' · 税号 ' + esc(v.tax) : ''} · ${esc(v.mail)} · ${v.no} · ${esc(v.item)} · @${esc(uname(v.uid))}</span>${v.st !== '待开具' ? `<span class="mut2">${v.st}${v.invNo ? ' · ' + v.invNo : ''}${v.why ? ' · ' + esc(v.why) : ''}</span>` : ''}</div>
+    <div class="ad-ra">${v.st === '待开具' && (!API.on() || tradeRowAllowed(v,'invoices')) ? `<button class="pill sm lt" data-act="inv-no" data-id="${v.id}">驳回</button><button class="pill sm" data-act="inv-done" data-id="${v.id}">已开具</button>` : ''}</div></div>`).join('') || adEmpty('ALL CLEAR', '没有待开的发票')}</div>`; };
 function msgList(sel){
   const ids = Object.keys(CHATS).filter(id => USERS[id] && !blocked(id)).sort((a, b) => lastTs(b) - lastTs(a));
   return `<div class="m-quick">${[['likes','喜欢','pink',IC.heartF],['fans','新粉丝','blue','<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.4-7 8-7s7 2.5 8 7z"/></svg>'],['at','回复与@','yellow',RIC.cm]].map(([k,l,c,ic]) => { const n = NOTE_NEW[k] || 0; return `<button class="mq c-${c} mq-${k} ${n ? 'live' : ''}" data-act="note" data-v="${k}" data-n="${n}" aria-label="${l}${n ? '，' + n + ' 条新的' : ''}"><span class="mq-h"><span class="g">${ic}</span><b>${l}</b></span><span class="mq-n">${n}</span></button>`; }).join('')}</div>
@@ -9835,6 +9838,7 @@ function requestWait(task, signal){
 const API = {
   base: '', tok: null, _ref: null, epoch:0,
   init(){
+    this.tradeReset?.();
     const q = new URLSearchParams(location.search).get('api'), served = document.querySelector('meta[name="ctrlz-api"]')?.content === 'self';
     /* 网页是 ctrlz-server 给的：一直连它自己（不会掉回本地模拟）。?api= 指向别的地方一律不认，不然一条链接就能让这次输入的密码、
        动态口令都发到别人的服务器，还能回伪造的内容。
@@ -10671,7 +10675,8 @@ function apiProduct(p){
   // 真实商品的试听由 preview 明确提供，不用示例音频代替卖家素材。
   if (!old) PRODUCTS.push(o); return o;
 }
-const apiOrder = o => (apiUser(o.seller), {id:o.id, no:o.no, pid:o.productId, title:o.title, price:f2y(o.price), vc:f2y(o.voucherAmount), pay:PAY_N[o.payMethod] || o.payMethod, time:ymdhm(o.paidAt || o.createdAt),
+const apiOrder = o => (apiUser(o.seller), {id:o.id, no:o.no, pid:o.productId, title:o.title, price:f2y(o.price), vc:f2y(o.voucherAmount), pay:tradePayName(o,o.payMethod), time:ymdhm(o.paidAt || o.createdAt),
+  status:o.status, tradeSource:tradeSource(o), ...Object.fromEntries(['canPay','canDownload','canRefund','canInvoice'].filter(k => Object.hasOwn(o,k)).map(k => [k,o[k] === true])),
   st:o.status === 'refunded' ? '已退款' : ['pending','processing'].includes(o.refund?.status || o.refundStatus) ? '退款中' : {pending:'待付款',failed:'付款失败'}[o.status] || '已完成',
   live:true, paidAt:o.paidAt, createdAt:o.createdAt, summary:!Object.hasOwn(o,'licenseNo'), dl:o.downloads, lic:o.licenseNo, rfx:o.refund, fresh:false});
 function liveApplyOrder(o){ STATE.orders = [apiOrder(o), ...STATE.orders.filter(x => x.id !== o.id)]; STATE.owned.add(o.productId); LSHOP.library?.set(o.productId,{productId:o.productId,orderId:o.id,downloads:o.downloads}); const p = P(o.productId); if (p) p.sales++; }
@@ -10709,7 +10714,7 @@ async function liveMine(){
     SELLER_PRODUCTS.splice(0, SELLER_PRODUCTS.length, ...mp.items.map(p => { apiProduct(p);
       return {id:p.id, pid:['on_sale', 'off', 'taken_down'].includes(p.status) ? p.id : null, title:p.title, cat:CATS[p.cat] ? p.cat : 'sample', st:SP_ST[p.status] || p.status, views:0, sales:p.salesCount, conv:'—',
         cover:{...p.cover, txt:p.en || p.title}, live:true, note:p.status === 'need_info' ? '需要补充：' + p.reviewNote : p.status === 'rejected' ? '驳回原因：' + p.reviewNote : p.status === 'taken_down' ? '平台下架：' + p.reviewNote : p.status === 'review' ? '审核中 · 通常 1–2 个工作日' : ''}; }));
-    SELLER_ORDERS.splice(0, SELLER_ORDERS.length, ...sl.items.map(o => ({no:o.no, buyer:apiUser(o.buyer).id, amt:f2y(o.price), cash:f2y(o.cashAmount ?? o.price), pay:PAY_N[o.payMethod] || o.payMethod, st:o.status === 'refunded' ? 'refund' : 'paid', time:o.paidAt ? ymdhm(o.paidAt).slice(5) : '', title:o.title})));
+    SELLER_ORDERS.splice(0, SELLER_ORDERS.length, ...sl.items.map(o => ({no:o.no, buyer:apiUser(o.buyer).id, tradeSource:tradeSource(o), amt:f2y(o.price), cash:f2y(o.cashAmount ?? o.price), pay:tradePayName(o,o.payMethod), st:o.status === 'refunded' ? 'refund' : 'paid', time:o.paidAt ? ymdhm(o.paidAt).slice(5) : '', title:o.title})));
     const now = new Date();   // 每月收入：最近 6 个月
     MONTHLY.splice(0, MONTHLY.length, ...Array.from({length:6}, (_, i) => { const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1), k = d.getFullYear() + '-' + pad2(d.getMonth() + 1);
       return [pad2(d.getMonth() + 1), sl.items.filter(o => o.status === 'paid' && o.paidAt && ymdhm(o.paidAt).slice(0, 7) === k).reduce((a, o) => a + f2y(o.price), 0)]; }));
@@ -10736,8 +10741,87 @@ const pickAny = cb => { const i = Object.assign(document.createElement('input'),
    · 进后台：关联了后台账号的用户再输一次自己的密码（/admin/auth/via-user）；始终提供动态口令输入，是否必填由后端核验
    · 私信：/dm/*。打开会话时读全部消息，平时每 4 秒读一次会话列表（页面在后台时不读），有新消息弹提示
    · 声音 / 可视化帖子：音频真的上传（post_audio），别人刷到时下载、解码，和原型里的曲子一样播放 */
-LIVE.cfg = {phoneLogin:true, passwordLogin:true, wechatLogin:false, requirePhone:true, adminTotp:true};
-async function liveCfg(){ try { Object.assign(LIVE.cfg, await API.req('GET', '/config')); } catch(e){} }
+/* 交易能力只认当前服务的完整合同；未知、加载中、失败均不开放新交易。 */
+const TRADE = {base:'', seq:0, status:'unknown', value:null};
+const TRADE_FLAGS = ['paidCheckout','freeClaim','refunds','payouts','invoices'];
+function normalizeTrade(value){
+  if (!value || !['disabled','mock'].includes(value.mode) || value.freeClaim !== true || TRADE_FLAGS.some(k => typeof value[k] !== 'boolean')) return null;
+  if (value.mode === 'disabled' && TRADE_FLAGS.some(k => k !== 'freeClaim' && value[k])) return null;
+  return Object.fromEntries([['mode',value.mode],...TRADE_FLAGS.map(k => [k,value[k]])]);
+}
+function tradeCaps(){ return TRADE.base === API.base && TRADE.status === 'ready' ? TRADE.value : null; }
+function tradeAllowed(action){ return !API.on() || tradeCaps()?.[action] === true; }
+function tradePurchaseKind(pr){ return pr.price === 0 ? 'freeClaim' : 'paidCheckout'; }
+function tradeBuyLabel(pr){ if (!API.on()) return pr.price ? '购买' : '免费领取'; if (!pr.live || !tradeAllowed(tradePurchaseKind(pr))) return pr.price ? '暂未开放购买' : '暂不可领取'; return pr.price ? '模拟购买' : '免费领取'; }
+function tradeReason(action){
+  if (!tradeCaps()) return '暂时无法确认交易状态，请重新读取后再试';
+  return ({paidCheckout:'当前暂未开放付款，有价商品仍可查看',freeClaim:'当前暂不可领取',refunds:'当前暂不办理退款，历史记录仍可查看',payouts:'当前暂不办理结算打款，历史记录仍可查看',invoices:'当前暂不办理发票，历史记录仍可查看'})[action] || '当前操作暂未开放';
+}
+function tradeGuard(action){ if (tradeAllowed(action)) return true; toast(tradeReason(action),'orange','x'); return false; }
+function tradeNotice(action='paidCheckout', retry=false){
+  if (!API.on()) return '';
+  const text = tradeCaps()?.mode === 'mock' ? '内测模拟交易，不会实际扣款、退款、打款或开具发票。' : tradeAllowed(action) && tradeCaps() ? '当前仅开放免费领取，有价商品暂不支持付款。' : tradeReason(action);
+  return `<p class="mut2" data-trade-notice style="font-size:13px;line-height:1.6">${esc(text)}${retry && !tradeCaps() ? ' <button class="more" data-act="trade-retry">重新读取</button>' : ''}</p>`;
+}
+function tradeSource(row){ return ['free','mock'].includes(row?.tradeSource) ? row.tradeSource : 'legacy'; }
+function tradeOrderLabel(row){ return ({mock:'内测模拟',free:'免费领取',legacy:'历史记录 · 来源未确认'})[tradeSource(row)]; }
+function tradePayName(row,method){ return tradeSource(row) === 'mock' ? '模拟支付' : tradeSource(row) === 'free' ? '免费领取' : PAY_N[method] || method || '—'; }
+function tradeOrderBadge(row){ return API.on() || row?.live || Object.hasOwn(row || {},'tradeSource') ? `<span class="tag ${tradeSource(row) === 'mock' ? 'c-yellow' : ''}">${tradeOrderLabel(row)}</span>` : ''; }
+function tradeOrderCan(o, key){
+  if (!API.on()) return true;
+  if (!o?.live) return false;
+  if (Object.hasOwn(o,key) && typeof o[key] !== 'boolean') return false;
+  const source=tradeSource(o), status=o.status || ({'待付款':'pending','付款失败':'failed','已退款':'refunded','已完成':'paid'})[o.st];
+  if (key === 'canDownload') return typeof o[key] === 'boolean' ? o[key] : status === 'paid';
+  if (source === 'legacy' || o[key] === false) return false;
+  if (key === 'canPay') return status === 'pending' && tradeAllowed(source === 'free' ? 'freeClaim' : 'paidCheckout') && (o[key] === true || source === 'free' || source === 'mock');
+  const action=key === 'canRefund' ? 'refunds' : 'invoices';
+  return source === 'mock' && status === 'paid' && tradeAllowed(action) && (o[key] === true || o.price > 0 && (key !== 'canInvoice' || o.price > (o.vc || 0)));
+}
+function tradeOrderGuard(o,key){ if (tradeOrderCan(o,key)) return true; toast(tradeSource(o) === 'legacy' ? '来源未确认的历史交易仅供查看，不能继续付款、退款或开票' : tradeReason(key === 'canPay' ? tradeSource(o) === 'free' ? 'freeClaim' : 'paidCheckout' : key === 'canRefund' ? 'refunds' : 'invoices'),'orange','x'); return false; }
+function tradeRowAllowed(row,action){ return !API.on() || tradeAllowed(action) && tradeSource(row) === 'mock'; }
+function tradeRowGuard(row,action){ if (tradeRowAllowed(row,action)) return true; toast(tradeSource(row) === 'legacy' ? '来源未确认的历史交易仅供查看，不能新增财务操作' : tradeReason(action),'orange','x'); return false; }
+function tradePendingOrder(o){
+  if (!o?.id || !['pending','failed'].includes(o.status)) throw new Error('无法确认订单结果');
+  STATE.orders=[apiOrder(o),...STATE.orders.filter(x => x.id !== o.id)];
+  toast(o.status === 'pending' ? '订单仍待确认，请在订单详情查看；不要重复创建订单' : '订单未完成，请在订单详情查看','orange','x'); rerender();
+}
+function tradePublishNote(){ if (!API.on()) return ''; return `<p class="mut2" data-trade-publish style="font-size:13px;line-height:1.6">${tradeCaps()?.mode === 'mock' ? '当前为内测模拟交易，审核和上架不代表真实收款。' : '可以提交审核、编辑和展示商品；当前有价商品暂不支持付款，免费资源仍按服务器能力领取。'}</p>`; }
+function tradeSummaryNotice(simulation){ return API.on() ? `<p class="mut2" data-trade-summary style="font-size:13px;line-height:1.6">${simulation === true ? '以下为内测模拟统计，不代表真实收入、退款或到账。' : '真实资金业务尚未开放，资金汇总不包含历史未确认及模拟交易；原记录仍可逐条查看。'}</p>` : ''; }
+async function tradePost(path,body,action){
+  const base=API.base, epoch=API.epoch;
+  if (API.tok?.refresh && API.stale?.()) try { await API.refresh(); } catch(e){ e.tradeUnsent=true; throw e; }
+  if (base !== API.base || epoch !== API.epoch) throw Object.assign(new Error('账号已切换'),{code:'cancel'});
+  if (!tradeAllowed(action)) throw Object.assign(new Error(tradeReason(action)),{code:'trade_disabled',status:503,tradeUnsent:true});
+  return API.req('POST',path,body,false);
+}
+function tradeFailure(e){
+  if (e.code === 'cancel') return;
+  if (['trade_disabled','legacy_trade_read_only'].includes(e.code)){ apiFail(e); void liveCfg(); return; }
+  if (!e.tradeUnsent && (!e.status || e.status >= 500)) toast('暂时无法确认操作结果，请先查看订单或历史记录，不要重复提交','orange','x');
+  else apiFail(e);
+}
+function resetTrade(){ TRADE.seq++; TRADE.base=API.base; TRADE.status='unknown'; TRADE.value=null; if (LIVE.cfg) LIVE.cfg.trade=null; }
+API.tradeReset=resetTrade;
+LIVE.cfg = {phoneLogin:true, passwordLogin:true, wechatLogin:false, requirePhone:true, adminTotp:true,trade:null};
+async function liveCfg(){
+  const base=API.base, seq=++TRADE.seq; TRADE.base=base; TRADE.status='loading'; TRADE.value=null; LIVE.cfg.trade=null;
+  try { const cfg=await API.req('GET','/config'); if (base !== API.base || seq !== TRADE.seq) return;
+    const trade=normalizeTrade(cfg?.trade); Object.assign(LIVE.cfg,cfg,{trade}); TRADE.value=trade; TRADE.status=trade ? 'ready' : 'invalid';
+  } catch(e){ if (base !== API.base || seq !== TRADE.seq) return; TRADE.status='failed'; }
+  if (base !== API.base || seq !== TRADE.seq) return;
+  const box=$('#payBox'), pr=box?.dataset?.productId && P(box.dataset.productId); if (pr?.live) box.innerHTML=payBox(pr);
+  if (API.on()) rerender();
+}
+ACTIONS['trade-retry']=async b => { if (b?.disabled) return; if (b) b.disabled=true; await liveCfg(); if (b?.isConnected) b.disabled=false; };
+ACTIONS['order-pay']=async b => {
+  const row=STATE.orders.find(o => o.id === b.dataset.id); if (b.disabled || !row || !tradeOrderGuard(row,'canPay')) return;
+  const current=accountSession(), sh=b.closest?.('.sheet'); b.disabled=true;
+  try { const o=await tradePost('/orders/'+encodeURIComponent(row.id)+'/pay',{},tradeSource(row) === 'free' ? 'freeClaim' : 'paidCheckout'); if (!current()) return;
+    if (o.status !== 'paid'){ tradePendingOrder(o); return; } liveApplyOrder(o); const pr=P(o.productId);
+    if (pr && sh?.isConnected) paidUI(pr,sh,o); else { toast('订单已确认，请在资源库查看','green'); rerender(); }
+  } catch(e){ if (current()) tradeFailure(e); } finally { if (b.isConnected) b.disabled=false; }
+};
 const USER_RE = /^[A-Za-z0-9_]{3,20}$/;
 { const me0 = liveMe;
   liveMe = function(me){ LIVE.me = me; me0(me); const a = ACC.list.find(x => x.id === me.id); if (a){ a.username = me.username || undefined; a.ini = avIni(USERS[me.id]); ACC.save(); }
@@ -11317,7 +11401,7 @@ function luSheet(r){ const u = r.user, c = r.counts, uid = u.id, yuanF = f => '�
   const pane = (k, h) => `<div class="lu-p" data-p="${k}" ${D === k ? '' : 'hidden'}>${h}</div>`;
   return `<div class="ad-us" id="luS" data-uid="${esc(uid)}"><div class="ad-u big">${uav(uid, 'md')}<span><b>${esc(u.name)}</b><i>${u.username ? '用户名 ' + esc(u.username) + ' · ' : ''}@${esc(u.handle)} · 注册于 ${fmtDay(+new Date(u.createdAt))}</i></span>${stt}</div>
     ${banned ? `<p class="ad-warn">封禁${u.banUntil ? '至 ' + fmtDay(+new Date(u.banUntil)) : '（永久）'}</p>` : ''}${muted ? `<p class="ad-warn y">禁言至 ${fmtDay(+new Date(u.muteUntil))}</p>` : ''}
-    <div class="ad-kv lu-kv"><span>帖子<b>${c.posts}</b></span><span>评论<b>${c.comments}</b></span><span>粉丝<b>${c.followers}</b></span><span>关注<b>${c.following}</b></span><span>买过<b>${c.bought}</b><i>${yuanF(c.boughtAmount)}</i></span><span>卖出<b>${c.sold}</b><i>${yuanF(c.soldAmount)}</i></span><span>退款<b>${c.refunds}</b></span><span>被举报<b>${c.reportsAgainst}</b></span></div>
+    <div class="ad-kv lu-kv"><span>帖子<b>${c.posts}</b></span><span>评论<b>${c.comments}</b></span><span>粉丝<b>${c.followers}</b></span><span>关注<b>${c.following}</b></span><span>买过<b>${c.bought}</b><i>${yuanF(c.boughtAmount)}</i></span><span>卖出<b>${c.sold}</b><i>${yuanF(c.soldAmount)}</i></span><span>退款<b>${c.refunds}</b></span><span>被举报<b>${c.reportsAgainst}</b></span></div>${tradeSummaryNotice(r.simulation)}
     <p class="mut2" style="font-size:12.5px;margin:2px 0 0">登录方式：${[u.username ? '用户名密码' : '', u.phone ? '手机 ' + esc(u.phone) : '', u.wechat ? '微信' : ''].filter(Boolean).join(' · ') || '—'}</p>
     <div class="seg ad-seg lu-tabs">${acts ? luTab('act', '处置') : ''}${luTab('posts', '帖子')}${luTab('orders', '订单')}${r.dmVisible ? luTab('dm', '私信对象') : ''}${luTab('dev', '登录设备')}${luTab('log', '处置记录')}</div>
     ${pane('act', `${staffCan('users.act') ? `<label class="ad-lab">处理原因（会发给用户）</label><input class="inp" id="usWhy" placeholder="例如：多次发布引流广告">
@@ -11326,8 +11410,8 @@ function luSheet(r){ const u = r.user, c = r.counts, uid = u.id, yuanF = f => '�
       <div class="ad-acts">${staffCan('notify.send') ? `<button class="pill sm lt" data-act="us-msg" data-id="${esc(uid)}">发站内信</button>` : ''}${u.username && admCan('staff') ? `<button class="pill sm lt" data-act="lus-pw" data-id="${esc(uid)}">重置密码</button>` : ''}<a class="pill sm lt" data-go="user-${esc(uid)}">看主页</a></div>
       <div class="lu-perm">${usPerm(uid)}</div>`)}
     ${pane('posts', `<div class="ad-mini">${r.posts.map(p => `<a data-go="post-${esc(p.id)}">${fmtDT(+new Date(p.createdAt))} · ${esc(p.title)} · ${{published:'公开', review:'审核中', taken_down:'已下架'}[p.status] || p.status}</a>`).join('') || '<span>没有帖子</span>'}</div>`)}
-    ${pane('orders', `<span class="ad-lab">买的</span><div class="ad-mini">${r.bought.map(o => `<span>${fmtDT(+new Date(o.createdAt))} · ${esc(o.title)} · ${yuanF(o.price)} · 卖家 ${esc(o.peer.name)} · ${esc(o.status)}</span>`).join('') || '<span>没有</span>'}</div>
-      <span class="ad-lab">卖的</span><div class="ad-mini">${r.sold.map(o => `<span>${fmtDT(+new Date(o.createdAt))} · ${esc(o.title)} · ${yuanF(o.price)} · 买家 ${esc(o.peer.name)} · ${esc(o.status)}</span>`).join('') || '<span>没有</span>'}</div>`)}
+    ${pane('orders', `<span class="ad-lab">买的</span><div class="ad-mini">${r.bought.map(o => `<span>${fmtDT(+new Date(o.createdAt))} · ${esc(o.title)} · ${yuanF(o.price)} · 卖家 ${esc(o.peer.name)} · ${esc(o.status)} ${tradeOrderBadge(o)}</span>`).join('') || '<span>没有</span>'}</div>
+      <span class="ad-lab">卖的</span><div class="ad-mini">${r.sold.map(o => `<span>${fmtDT(+new Date(o.createdAt))} · ${esc(o.title)} · ${yuanF(o.price)} · 买家 ${esc(o.peer.name)} · ${esc(o.status)} ${tradeOrderBadge(o)}</span>`).join('') || '<span>没有</span>'}</div>`)}
     ${pane('dm', !r.dmVisible ? '<p class="mut2" style="font-size:12.5px">私信对象和登录 IP 属于隐私，只有超级管理员、内容审核和客服能看。</p>' : `<p class="mut2" style="font-size:12.5px">只显示和谁聊过、各发了几条；要看内容点「查看记录」，需要写理由并记进操作日志。</p><div class="lu-dm">${r.dmPeers.map(p => { apiUser(p.peer); return `<div class="lu-dmr">${uav(p.peer.id)}<span><b>${esc(p.peer.name)}</b><i>TA 发 ${p.sent} 条 · 收 ${p.received} 条 · 最近 ${ago(+new Date(p.lastAt))}</i></span>${admCan('reports') ? `<button class="pill sm lt" data-act="dv-open" data-a="${esc(uid)}" data-b="${esc(p.peer.id)}">查看记录</button>` : ''}</div>`; }).join('') || '<span class="mut2">没有私信</span>'}</div>`)}
     ${pane('dev', `<div class="ad-mini">${r.devices.map(d => `<span>${esc(d.device || '未知设备')} · ${esc(d.ip || '')} · ${fmtDT(+new Date(d.lastUsedAt))}${d.active ? '' : ' · 已退出'}</span>`).join('') || '<span>没有记录</span>'}</div>`)}
     ${pane('log', `<div class="ad-mini">${r.sanctions.map(s => `<span>${fmtDT(+new Date(s.at))} · ${esc(s.action)} · ${esc(s.by)}${s.reason ? ' · ' + esc(s.reason) : ''}</span>`).join('') || '<span>没有处置记录</span>'}</div>`)}
@@ -11666,34 +11750,34 @@ wrapAct('sp-save', async (orig, b) => { const p = P(b.dataset.id); if (!liveUser
   try { const r = await API.req('PATCH', `/products/${p.id}`, body); closeSheet(); toast(r.status === 'review' ? '已保存，改了内容要重新审核' : '已保存', 'green'); await liveShop(); await liveMine(); rerender(); } catch(e){ b.disabled = false; apiFail(e); } });
 
 /* —— 买：下单付款、免费领取 —— */
-wrapAct('buy0', async (orig, b, e) => { const pr = P(b.dataset.id); if (!pr?.live) return orig(b, e); if (needLogin()) return;
+wrapAct('buy0', async (orig, b, e) => { const pr = P(b.dataset.id); if (!API.on()) return orig(b,e); if (b.disabled) return; if (!pr?.live){ toast('商品资料尚未读取，请稍后重试','orange','x'); return; } if (!tradeGuard(tradePurchaseKind(pr)) || needLogin()) return;
   if (pr.price > 0) return orig(b, e);   // 付费的照常打开付款面板
-  const attempt = orderAttempt(pr,{productId:pr.id}); b.disabled = true; try { const o = await API.req('POST','/orders',attempt.body); if (o.status !== 'paid') throw new Error('领取没有完成，请重试'); attempt.done(); liveApplyOrder(o); STATE.libNew++; badge(); toast('已放进你的资源库', 'green'); rerender(); } catch(err){ b.disabled = false; apiFail(err); } });
-wrapAct('do-pay', async (orig, b) => { const pr = P(b.dataset.id); if (!pr?.live) return orig(b);
-  const sh = $('#layer .sheet'), ded = vcDed(pr), cash = r2(pr.price - ded), v = vcSel(pr);
+  const attempt = orderAttempt(pr,{productId:pr.id}), current=accountSession(); b.disabled = true; try { const o = await tradePost('/orders',attempt.body,'freeClaim'); if (!current()) return; if (o.status !== 'paid'){ tradePendingOrder(o); return; } attempt.done(); liveApplyOrder(o); STATE.libNew++; badge(); toast('已放进你的资源库', 'green'); rerender(); } catch(err){ if (current()) tradeFailure(err); } finally { if (b.isConnected) b.disabled=false; } });
+wrapAct('do-pay', async (orig, b) => { const pr = P(b.dataset.id); if (!API.on()) return orig(b); if (!pr?.live || !tradeGuard(tradePurchaseKind(pr))) return;
+  const sh = $('#layer .sheet'), ded = vcDed(pr), cash = r2(pr.price - ded), v = vcSel(pr); if (!sh?.isConnected || b.disabled) return;
   if (vcWasteOf(pr) > 0 && !UI.vcOk) return;   // 会作废的券必须先确认（后端也会拦：没带 confirmWaste 就报 voucher_waste）
-  sh.innerHTML = `<div class="done"><div class="ring-p" id="rp" style="--p:35"></div><b style="font-size:18px">${cash > 0 ? `正在等待${UI.pay}…` : '正在用代金券支付…'}</b></div>`;
+  const current=accountSession(); sh.innerHTML = `<div class="done"><div class="ring-p" id="rp" style="--p:35"></div><b style="font-size:18px">正在确认模拟订单…</b></div>`;
   const attempt = orderAttempt(pr,{productId:pr.id,payMethod:PAY_M[UI.pay] || 'wechat',...(v ? {useVoucher:true,voucherId:v.id,confirmWaste:true} : {useVoucher:false})});
-  try { const o = await API.req('POST','/orders',attempt.body);
-    if (o.status !== 'paid') throw new Error('付款没有完成，请重试');
+  try { const o = await tradePost('/orders',attempt.body,tradePurchaseKind(pr)); if (!current()) return;
+    if (o.status !== 'paid'){ if (sh.isConnected) closeSheet(); tradePendingOrder(o); return; }
     attempt.done(); liveApplyOrder(o); try { LSHOP.wallet = await API.req('GET', '/me/wallet'); } catch(e){}
-    paidUI(pr, sh); }
-  catch(err){ closeSheet(); apiFail(err); if (/^voucher_/.test(err.code || '')) try { LSHOP.wallet = await API.req('GET', '/me/wallet'); } catch(e){} } });
+    if (!current()) return; if (sh.isConnected) paidUI(pr, sh, o); else toast('订单已确认，请在资源库查看','green'); }
+  catch(err){ if (!current()) return; if (sh.isConnected) closeSheet(); tradeFailure(err); if (/^voucher_/.test(err.code || '')) try { LSHOP.wallet = await API.req('GET', '/me/wallet'); } catch(e){} } });
 /* —— 下载：拿 15 分钟的签名地址直接下载 —— */
 wrapAct('dl', async (orig, b) => { const id = b.dataset.id, pr = P(id); if (!pr?.live) return orig(b);
-  const o = STATE.orders.find(x => x.pid === id && x.live && x.st === '已完成'), orderId = LSHOP.library?.get(id)?.orderId || o?.id; if (!orderId){ toast('购买后才能下载', 'orange', 'lock'); return; }
+  const o = STATE.orders.find(x => x.pid === id && x.live && x.st === '已完成'), orderId = LSHOP.library?.get(id)?.orderId || o?.id; if (!orderId){ toast('购买后才能下载', 'orange', 'lock'); return; } if (o && !tradeOrderCan(o,'canDownload')){ toast('该订单暂不可下载，请重新读取订单状态','orange','lock'); return; }
   if (b.disabled) return; b.disabled = true;   // 拿地址期间再点不重复计下载次数（会影响极速退款）
   try { const r = await API.req('POST', `/orders/${orderId}/download`); STATE.dlc[id] = (STATE.dlc[id] || 0) + 1; if (o) o.dl = (o.dl || 0) + 1;
     const a = Object.assign(document.createElement('a'), {href:r.url, download:r.fileName}); document.body.appendChild(a); a.click(); a.remove(); toast('开始下载：' + esc(r.fileName), 'blue', 'dl'); }
   catch(e){ apiFail(e); } finally { b.disabled = false; } });
 /* —— 退款：后端判断能不能极速退款 —— */
-wrapAct('do-refund', async (orig, b) => { const o = STATE.orders.find(x => x.no === b.dataset.no); if (!o?.live) return orig(b);
+wrapAct('do-refund', async (orig, b) => { const o = STATE.orders.find(x => x.no === b.dataset.no); if (!API.on()) return orig(b); if (!o?.live || !tradeOrderGuard(o,'canRefund')) return;
   const pick = $('#rfR .on')?.textContent || '其他', x = $('#rfX').value.trim(), reason = pick + (x ? '：' + x : ''), fast = !(o.vc > 0) && !(STATE.dlc[o.pid] || 0) && (Date.now() - ordTs(o))/864e5 <= 7;
   if (!fast && !x){ fxPop($('#rfX'), 'fx-shake', 300); $('#rfX').focus(); return; }
   const problem = pick === '文件损坏' ? 'broken' : pick === '和描述不符' ? 'mismatch' : 'other';
-  if (b.disabled) return; b.disabled = true;
-  try { const r = await API.req('POST', `/orders/${o.id}/refund`, {reason, problem}); closeSheet(); toast(r.fast ? '已退款，原路退回' : r.appeal ? '申诉已提交，平台会在 1 个工作日内审核' : '已提交，平台会在 1 个工作日内处理', r.fast ? 'green' : 'orange', r.fast ? 'check' : undefined); await liveShop(); await liveMine(); rerender(); }
-  catch(e){ b.disabled = false; apiFail(e); } });
+  if (b.disabled) return; b.disabled = true; const current=accountSession(), sh=b.closest?.('.sheet');
+  try { const r = await tradePost(`/orders/${o.id}/refund`,{reason,problem},'refunds'); if (!current()) return; if (sh?.isConnected) closeSheet(); toast(r.fast ? '模拟退款已完成，未实际退回资金' : '模拟申请已提交，未发生真实退款', r.fast ? 'green' : 'orange', r.fast ? 'check' : undefined); await liveShop(); await liveMine(); rerender(); }
+  catch(e){ if (!current()) return; if (b.isConnected) b.disabled = false; tradeFailure(e); } });
 
 /* —— 「我 › 代金券」（原型和后端共用；数据统一走 vcItems） —— */
 function walletView(){
@@ -11826,40 +11910,40 @@ const lordRows = () => { const q = fq('orders'), st = lordSt(); return (LADM.ord
 function liveOrdersView(){ const st = lordSt();
   if (LADM.orders && (LADM.ordWant ?? LADM.ordSt) !== st){ LADM.ordWant = st; delete LADM.reads.orders; delete LADM.errors.orders; LADM.busy.orders = false; if (LADM.ordSt !== st) ladmShop('orders'); }   // 换了状态：旧请求作废；旧行和筛选条留着，新结果回来再换
   const d = LADM.orders; if (!d){ ladmShop('orders'); return ladmWait('订单流水', '读取中'); }
-  if (['all', 'paid'].includes(LADM.ordSt)) LADM.ordSum = d.sum;   // 服务器只合计筛选结果里的已支付订单：选「已退款 / 待付款」时沿用上次的合计，不显示成 ¥0.00（会像真的零成交）
+  if (['all', 'paid'].includes(LADM.ordSt)) LADM.ordSum = {...d.sum,simulation:d.simulation === true};   // 服务器只合计筛选结果里的已支付订单：选「已退款 / 待付款」时沿用上次的合计，不显示成 ¥0.00（会像真的零成交）
   const S = LORD_S, L = lordRows(), sum = k => LADM.ordSum ? yuan2(f2y(LADM.ordSum[k])) : '—';
-  return `${adH('订单流水', `已支付：成交 ${sum('gmv')} · 实收现金 ${sum('cash')} · 代金券抵扣 ${sum('voucher')}（平台承担，卖家照原价结算）`, `${adQ('orders', '订单号 / 商品 / 用户')}<button class="pill sm lt" data-act="od-csv">${IC.dl}导出 CSV</button><button class="pill sm lt" data-act="lsh-reload" data-v="orders">刷新</button>`)}
-  <div class="ad-bar2">${adSeg('os', [['all', '全部状态'], ...Object.entries(S).map(([k, [l]]) => [k, l])], st)}</div>
+  return `${adH('订单流水', `${LADM.ordSum?.simulation ? '内测模拟：' : '资金汇总：'}成交 ${sum('gmv')} · 现金记账 ${sum('cash')} · 代金券抵扣 ${sum('voucher')}`,  `${adQ('orders', '订单号 / 商品 / 用户')}<button class="pill sm lt" data-act="od-csv">${IC.dl}导出 CSV</button><button class="pill sm lt" data-act="lsh-reload" data-v="orders">刷新</button>`)}
+  ${tradeSummaryNotice(LADM.ordSum?.simulation)}<div class="ad-bar2">${adSeg('os', [['all', '全部状态'], ...Object.entries(S).map(([k, [l]]) => [k, l])], st)}</div>
   <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>订单</th><th>买家</th><th>卖家</th><th>付款</th><th class="r">金额</th><th class="r">代金券</th><th>状态</th><th>时间</th></tr></thead><tbody>${L.map(o => `<tr class="ad-click" data-act="od-open" data-no="${esc(o.no)}">
-    <td><b>${esc(o.title)}</b>${o.tier === 'extended' ? ' <span class="tag">扩展许可</span>' : ''}<div class="mut2 n" style="font-size:11.5px">${o.no}</div></td><td>${esc(o.buyer.name)}</td><td>${esc(o.seller.name)}</td><td class="mut2">${PAY_N[o.payMethod] || o.payMethod}</td>
+    <td><b>${esc(o.title)}</b> ${tradeOrderBadge(o)}${o.tier === 'extended' ? ' <span class="tag">扩展许可</span>' : ''}<div class="mut2 n" style="font-size:11.5px">${o.no}</div></td><td>${esc(o.buyer.name)}</td><td>${esc(o.seller.name)}</td><td class="mut2">${esc(tradePayName(o,o.payMethod))}</td>
     <td class="r n">${yuan2(f2y(o.price))}</td><td class="r n mut2">${o.voucherAmount ? '−' + yuan2(f2y(o.voucherAmount)) : ''}</td><td>${stTag(...(S[o.status] || [o.status, '']))}</td><td class="mut2 n">${fmtDT(+new Date(o.paidAt || o.createdAt))}</td></tr>`).join('') || `<tr><td colspan="8" class="mut">${LADM.busy.orders ? '正在读取…' : d.items.length || st !== 'all' ? '没找到' : '还没有订单'}</td></tr>`}</tbody></table></div></div>
   ${LADM.errors.orders ? `<p class="mut" role="status">${esc(LADM.errors.orders.message || '读取失败，请重试')} <button class="pill sm lt" data-act="lord-retry">重试</button></p>` : ''}`; }
 ACTIONS['lord-retry'] = () => { ladmQuiet('orders'); rerender(); };
 // 导出 / 点开详情：用服务器读到的订单（看板流水只有最近 120 天，找到就用原来的详情，找不到用这一行）
 wrapAct('od-csv', orig => { if (!LADM.orders) return orig(); const L = lordRows(), t = o => +new Date(o.paidAt || o.createdAt);
-  csvDownload(`ctrlz-orders-${fmtDay(Date.now())}.csv`, [['订单号', '类型', '内容', '买家', '卖家', '金额', '代金券', '渠道', '状态', '时间'], ...L.map(o => [o.no, '商品', o.title, o.buyer.name, o.seller.name, f2y(o.price).toFixed(2), f2y(o.voucherAmount || 0).toFixed(2), PAY_N[o.payMethod] || o.payMethod, (LORD_S[o.status] || [o.status])[0], fmtDay(t(o)) + ' ' + fmtDT(t(o)).slice(6)])]); });
-wrapAct('od-open', (orig, b) => { const no = b.dataset.no, o = LADM.orders?.items?.find(x => x.no === no); if (!o || ledger().some(x => x.no === no)) return orig(b); const ts = +new Date(o.paidAt || o.createdAt);
-  sheet(`<h3>${esc(o.no)}</h3><div class="ad-kv col"><span>内容<b>${esc(o.title)}</b></span><span>类型<b>商品</b></span><span>买家<b>${esc(o.buyer.name)}</b></span><span>卖家<b>${esc(o.seller.name)}</b></span><span>金额<b>${yuan2(f2y(o.price))}</b></span><span>渠道<b>${esc(PAY_N[o.payMethod] || o.payMethod)}</b></span><span>状态<b>${esc((LORD_S[o.status] || [o.status])[0])}</b></span><span>时间<b>${fmtDay(ts)} ${fmtDT(ts).slice(6)}</b></span></div>
+  csvDownload(`ctrlz-orders-${fmtDay(Date.now())}.csv`, [['订单号', '类型', '来源', '内容', '买家', '卖家', '金额', '代金券', '渠道', '状态', '时间'], ...L.map(o => [o.no, '商品', tradeOrderLabel(o), o.title, o.buyer.name, o.seller.name, f2y(o.price).toFixed(2), f2y(o.voucherAmount || 0).toFixed(2), tradePayName(o,o.payMethod), (LORD_S[o.status] || [o.status])[0], fmtDay(t(o)) + ' ' + fmtDT(t(o)).slice(6)])]); });
+wrapAct('od-open', (orig, b) => { const no = b.dataset.no, o = LADM.orders?.items?.find(x => x.no === no); if (!o) return orig(b); const ts = +new Date(o.paidAt || o.createdAt);
+  sheet(`<h3>${esc(o.no)}</h3>${tradeOrderBadge(o)}${tradeSource(o) === 'mock' ? tradeNotice('paidCheckout') : ''}<div class="ad-kv col"><span>内容<b>${esc(o.title)}</b></span><span>类型<b>商品</b></span><span>买家<b>${esc(o.buyer.name)}</b></span><span>卖家<b>${esc(o.seller.name)}</b></span><span>金额<b>${yuan2(f2y(o.price))}</b></span><span>渠道<b>${esc(tradePayName(o,o.payMethod))}</b></span><span>状态<b>${esc((LORD_S[o.status] || [o.status])[0])}</b></span><span>时间<b>${fmtDay(ts)} ${fmtDT(ts).slice(6)}</b></span></div>
     <div class="ad-acts"><button class="pill sm lt" data-act="us-open" data-id="${esc(o.buyer.id)}">管理买家</button><button class="pill sm lt" data-act="us-open" data-id="${esc(o.seller.id)}">管理卖家</button></div>`); });
 
 function liveRefundsView(){ const L = LADM.refunds; if (!L){ ladmShop('refunds'); return ladmWait('退款', '读取中'); }
   const S = {pending:['待处理', 'orange'], processing:['退款确认中', 'yellow'], done:['已退款', 'green'], rejected:['已拒绝', '']};   // processing：同意了但支付渠道还没确认，可以重试（不能再拒绝）
-  return `${adH('退款', '没下载过、7 天内的会自动极速退款；这里主要是需要平台判断的（下载过 / 超过 7 天）', `<button class="pill sm lt" data-act="lsh-reload" data-v="refunds">刷新</button>`)}
+  return `${adH('退款', '查看历史申请；仅内测模拟来源且服务器允许的记录可继续处理' , `<button class="pill sm lt" data-act="lsh-reload" data-v="refunds">刷新</button>`)}
   <div class="box"><div class="tw"><table class="t"><thead><tr><th>订单</th><th>买家</th><th class="r">退回</th><th>原因</th><th>状态</th><th></th></tr></thead><tbody>${L.map(r => `<tr>
-    <td><b>${esc(r.title)}</b><div class="mut2 n" style="font-size:11.5px">${r.orderNo}</div></td><td>${esc(r.buyer.name)}</td>
+    <td><b>${esc(r.title)}</b> ${tradeOrderBadge(r)}<div class="mut2 n" style="font-size:11.5px">${r.orderNo}</div></td><td>${esc(r.buyer.name)}</td>
     <td class="r n">${yuan2(f2y(r.cashAmount))}${r.voucherAmount ? `<div class="mut2" style="font-size:11.5px">券 ${yuan2(f2y(r.voucherAmount))}</div>` : ''}</td>
     <td>${esc(r.reason)}<div class="mut2" style="font-size:11.5px">${r.fast ? '极速退款' : `下载过 ${r.downloads} 次`} · ${fmtDT(+new Date(r.createdAt))}</div></td><td>${stTag(...(S[r.status] || [r.status, '']))}</td>
-    <td class="r">${r.status === 'pending' ? `<button class="pill sm lt" data-act="lrf-no" data-id="${r.id}">拒绝</button> <button class="pill sm" data-act="lrf-ok" data-id="${r.id}">同意退款</button>` : r.status === 'processing' ? `<button class="pill sm" data-act="lrf-ok" data-id="${r.id}">重试退款</button>` : `<span class="mut2">${esc(r.decidedBy || '自动')}</span>`}</td></tr>`).join('') || '<tr><td colspan="6" class="mut">没有退款申请</td></tr>'}</tbody></table></div></div>`; }
+    <td class="r">${!tradeRowAllowed(r,'refunds') ? '<span class="mut2">仅供查看</span>' : r.status === 'pending' ? `<button class="pill sm lt" data-act="lrf-no" data-id="${r.id}">拒绝</button> <button class="pill sm" data-act="lrf-ok" data-id="${r.id}">同意模拟退款</button>` : r.status === 'processing' ? `<button class="pill sm" data-act="lrf-ok" data-id="${r.id}">重试退款</button>` : `<span class="mut2">${esc(r.decidedBy || '自动')}</span>`}</td></tr>`).join('') || '<tr><td colspan="6" class="mut">没有退款申请</td></tr>'}</tbody></table></div></div>`; }
 Object.assign(ACTIONS, {
   // 同意 / 重试（processing）：按钮锁住防连点；失败（「退款正在确认」、已被别人处理）也静默重读，显示服务器上的最新状态
-  'lrf-ok': async b => { if (!admGuard('refunds') || b.disabled) return; b.disabled = true; const id = b.dataset.id, current = staffSession();
-    try { await STAFF.req('POST', `/admin/refunds/${id}/decide`, {ok:true}); if (!current()) return; toast('已退款', 'green', 'check'); ladmDone('refunds', L => L.map(r => r.id === id ? {...r, status:'done', decidedBy:admMe().name} : r)); }
-    catch(e){ if (!current() || e.code === 'cancel') return; apiFail(e); ladmDone('refunds'); }
+  'lrf-ok': async b => { if (!admGuard('refunds') || b.disabled || !tradeRowGuard(LADM.refunds?.find(r => r.id === b.dataset.id),'refunds')) return; b.disabled = true; const id = b.dataset.id, current = staffSession();
+    try { await STAFF.req('POST', `/admin/refunds/${id}/decide`, {ok:true}); if (!current()) return; toast('模拟退款已完成，未实际退回资金', 'green', 'check'); ladmDone('refunds', L => L.map(r => r.id === id ? {...r, status:'done', decidedBy:admMe().name} : r)); }
+    catch(e){ if (!current() || e.code === 'cancel') return; tradeFailure(e); ladmDone('refunds'); }
     finally { if (b.isConnected) b.disabled = false; } },
-  'lrf-no': b => { if (!admGuard('refunds')) return; sheet(`<h3>拒绝退款</h3><label class="ad-lab" for="lrfX">原因（会发给买家）</label><textarea class="inp" id="lrfX" placeholder="例如：已下载多次，文件经核实可以正常打开"></textarea><button class="pill lg" data-act="lrf-no-go" data-id="${b.dataset.id}">拒绝</button>`); },
-  'lrf-no-go': async b => { const x = $('#lrfX').value.trim(); if (!x){ fxPop($('#lrfX'), 'fx-shake', 300); return; } if (!admGuard('refunds') || b.disabled) return; b.disabled = true; const id = b.dataset.id, current = staffSession();
+  'lrf-no': b => { if (!admGuard('refunds') || !tradeRowGuard(LADM.refunds?.find(r => r.id === b.dataset.id),'refunds')) return; sheet(`<h3>拒绝退款</h3><label class="ad-lab" for="lrfX">原因（会发给买家）</label><textarea class="inp" id="lrfX" placeholder="例如：已下载多次，文件经核实可以正常打开"></textarea><button class="pill lg" data-act="lrf-no-go" data-id="${b.dataset.id}">拒绝</button>`); },
+  'lrf-no-go': async b => { if (!admGuard('refunds') || b.disabled || !tradeRowGuard(LADM.refunds?.find(r => r.id === b.dataset.id),'refunds')) return; const x = $('#lrfX').value.trim(); if (!x){ fxPop($('#lrfX'), 'fx-shake', 300); return; } b.disabled = true; const id = b.dataset.id, current = staffSession();
     try { await STAFF.req('POST', `/admin/refunds/${id}/decide`, {ok:false, reason:x}); if (!current()) return; closeSheet(); toast('已拒绝', 'orange'); ladmDone('refunds', L => L.map(r => r.id === id ? {...r, status:'rejected', decidedBy:admMe().name} : r)); }
-    catch(e){ if (!current() || e.code === 'cancel') return; apiFail(e); if (e.status === 409) ladmDone('refunds'); }
+    catch(e){ if (!current() || e.code === 'cancel') return; tradeFailure(e); if (e.status === 409) ladmDone('refunds'); }
     finally { if (b.isConnected) b.disabled = false; } }
 });
 
@@ -11977,17 +12061,18 @@ async function bizMine(){ if (!liveUser()) return;
   try { const [a, iv, pe] = await Promise.all([API.req('GET', '/me/seller-app'), API.req('GET', '/me/invoices'), API.req('GET', '/me/payee')]);
     LBIZ.app = a.app; LBIZ.inv = iv.items; LBIZ.at = Date.now();
     if (pe.payee) ADM.payee[ME] = pe.payee; else delete ADM.payee[ME];
-    ADM.payouts = pe.payouts.slice().reverse().map(r => ({id:r.id, month:r.month, rows:[{seller:ME, net:f2y(r.net), st:PAY_ST[r.status] || r.status, txn:r.txn}]})); } catch(e){} }
-const bizInvMap = (v, no, item, uid) => ({id:v.id, no, uid, item, amt:f2y(v.amount), kind:v.kind === 'company' ? '企业' : '个人', title:v.title, tax:v.taxNo, mail:v.email, st:{pending:'待开具', issued:'已开具', rejected:'已驳回'}[v.status], invNo:v.invoiceNo, why:v.reason, ts:+new Date(v.createdAt)});
+    ADM.payouts = pe.payouts.slice().reverse().map(r => ({id:r.id, month:r.month, rows:[{seller:ME, tradeSource:tradeSource(r), net:f2y(r.net), st:(tradeSource(r) === 'mock' ? '模拟' : '')+(PAY_ST[r.status] || r.status), txn:r.txn}]})); } catch(e){} }
+const bizInvMap = (v, no, item, uid) => ({tradeSource:tradeSource(v),id:v.id, no, uid, item, amt:f2y(v.amount), kind:v.kind === 'company' ? '企业' : '个人', title:v.title, tax:v.taxNo, mail:v.email, st:{pending:'待开具', issued:tradeSource(v) === 'mock' ? '模拟已登记' : '已开具', rejected:'已驳回'}[v.status], invNo:v.invoiceNo, why:v.reason, ts:+new Date(v.createdAt)});
 const bizMyInv = () => LBIZ.inv.map(v => { const o = STATE.orders.find(x => x.id === v.orderId); return bizInvMap(v, o?.no || v.orderId, o ? P(o.pid)?.title || '' : '', ME); });
 { const os0 = ordSheet; ordSheet = function(no){ if (!liveUser()) return os0(no); const keep = ADM.invoices; ADM.invoices = bizMyInv(); try { return os0(no); } finally { ADM.invoices = keep; } }; }
-wrapAct('inv-go', async (orig, b) => { const o = STATE.orders.find(x => x.no === b.dataset.no); if (!o?.live) return orig(b);
+wrapAct('inv-open', (orig,b) => { const o=STATE.orders.find(x => x.no === b.dataset.no); if (API.on() && (!o?.live || !tradeOrderGuard(o,'canInvoice'))) return; orig(b); if (API.on()) $('#layer .sheet h3')?.insertAdjacentHTML('afterend',tradeNotice('invoices')); });
+wrapAct('inv-go', async (orig, b) => { const o = STATE.orders.find(x => x.no === b.dataset.no); if (!API.on()) return orig(b); if (!o?.live || !tradeOrderGuard(o,'canInvoice')) return;
   const k = $('#ivK .on').dataset.v, t = $('#ivT').value.trim(), x = $('#ivX').value.trim().toUpperCase(), m = $('#ivM').value.trim();
   const bad = !t ? '#ivT' : k === '企业' && !/^[0-9A-Z]{15}$|^[0-9A-Z]{18}$|^[0-9A-Z]{20}$/.test(x) ? '#ivX' : !/^\S+@\S+\.\S+$/.test(m) ? '#ivM' : null;
   if (bad){ fxPop($(bad), 'fx-shake', 300); toast('这一项格式不对', 'orange', 'x'); return; }
   b.disabled = true;
-  try { const v = await API.req('POST', '/me/invoices', {orderId:o.id, kind:k === '企业' ? 'company' : 'personal', title:t, taxNo:x, email:m}); LBIZ.inv.unshift(v); closeSheet(); toast('已提交，开好后发到你的邮箱'); }
-  catch(e){ b.disabled = false; apiFail(e); } });
+  try { const v = await tradePost('/me/invoices',{orderId:o.id, kind:k === '企业' ? 'company' : 'personal', title:t, taxNo:x, email:m},'invoices'); LBIZ.inv.unshift(v); closeSheet(); toast('模拟发票申请已记录，不会实际开票或发送邮件'); }
+  catch(e){ b.disabled = false; tradeFailure(e); } });
 /* 收款账户：只把打码后的存上去 */
 { const pb0 = payeeBox; payeeBox = function(){ if (liveUser() && Date.now() - LBIZ.at > 8000){ LBIZ.at = Date.now(); bizMine().then(() => { if (CUR.key?.startsWith('seller')) rerender(); }); } return pb0(); }; }
 wrapAct('py-save', async (orig, b) => { if (!liveUser()) return orig(b);
@@ -12031,15 +12116,16 @@ wrapAct('ap-no', async (orig, b) => { if (!admGuard('apply')) return; const a = 
   ADMV.invoice = () => { if (!API.on()) return iv0(); const f = UI.adf?.iv || 'todo';
     if (!LADM.invoice || LADM.ivv !== f){ LADM.ivv = f; LADM.invoice = null; ladmGet('invoice', '/admin/invoices?view=' + f, r => r.items); return ladmWait('发票', '读取中'); }
     ADM.invoices = LADM.invoice.map(v => { apiUser(v.user); return bizInvMap(v, v.orderNo, v.item, v.user.id); });
-    return iv0(); }; }
+    return tradeNotice('invoices',true) + iv0(); }; }
 const ivDone = (id, fix) => ladmDone('invoice', L => LADM.ivv === 'todo' ? L.filter(v => v.id !== id) : L.map(v => v.id === id ? {...v, ...fix} : v));
-wrapAct('inv-dgo', async (orig, b) => { if (!admGuard('invoice')) return; const n = $('#ivN').value.trim(); if (!/^\d{8,20}$/.test(n)){ fxPop($('#ivN'), 'fx-shake', 300); return; }
+wrapAct('inv-done',(orig,b) => { if (!API.on()) return orig(b); if (!admGuard('invoice')) return; const v=LADM.invoice?.find(v => v.id === b.dataset.id); if (!tradeRowGuard(v,'invoices')) return; sheet(`<h3>登记模拟发票</h3>${tradeNotice('invoices')}<p class="mut2">${esc(v.title)} · ${yuan2(f2y(v.amount))}</p><label class="ad-lab" for="ivN">模拟号码</label><input class="inp" id="ivN" inputmode="numeric" autocomplete="off"><button class="pill lg" data-act="inv-dgo" data-id="${esc(v.id)}">确认模拟记录</button>`); });
+wrapAct('inv-dgo', async (orig, b) => { if (!API.on()) return orig(b); if (!admGuard('invoice') || !tradeRowGuard(LADM.invoice?.find(v => v.id === b.dataset.id),'invoices')) return; const n = $('#ivN').value.trim(); if (!/^\d{8,20}$/.test(n)){ fxPop($('#ivN'), 'fx-shake', 300); return; }
   if (b.disabled) return; b.disabled = true; const id = b.dataset.id, current = staffSession();
-  try { await STAFF.req('POST', `/admin/invoices/${encodeURIComponent(id)}/decide`, {ok:true, invoiceNo:n}); if (!current()) return; closeSheet(); toast('已开具，已通知用户', 'green', 'check'); ivDone(id, {status:'issued', invoiceNo:n}); }
-  catch(e){ if (!current() || e.code === 'cancel') return; apiFail(e); if (e.status === 409) ladmDone('invoice'); }
+  try { await STAFF.req('POST', `/admin/invoices/${encodeURIComponent(id)}/decide`, {ok:true, invoiceNo:n}); if (!current()) return; closeSheet(); toast('模拟发票已登记，未实际开票或发送邮件', 'green', 'check'); ivDone(id, {status:'issued', invoiceNo:n}); }
+  catch(e){ if (!current() || e.code === 'cancel') return; tradeFailure(e); if (e.status === 409) ladmDone('invoice'); }
   finally { if (b.isConnected) b.disabled = false; } });   // 成功后面板关了，按钮已不在页面上
-wrapAct('inv-no', async (orig, b) => { if (!admGuard('invoice')) return; const v = ADM.invoices.find(x => x.id === b.dataset.id); if (!v) return;const current=staffSession();
-  rsnSheet(`驳回「${esc(v.title)}」的发票申请`, 'invoice', async why => { try {if(!current())return false;await STAFF.req('POST', `/admin/invoices/${encodeURIComponent(v.id)}/decide`, {ok:false, reason:why});if(!current())return false;toast('已驳回', 'orange', 'x'); ivDone(v.id, {status:'rejected', reason:why});return true;}catch(e){if(current() && e.code!=='cancel'){apiFail(e);if(e.status===409)ladmDone('invoice');}return false;} }); });
+wrapAct('inv-no', async (orig, b) => { if (!API.on()) return orig(b); if (!admGuard('invoice')) return; const v = ADM.invoices.find(x => x.id === b.dataset.id); if (!v || !tradeRowGuard(v,'invoices')) return;const current=staffSession();
+  rsnSheet(`驳回「${esc(v.title)}」的发票申请`, 'invoice', async why => { try {if(!current() || !tradeRowGuard(v,'invoices'))return false;await STAFF.req('POST', `/admin/invoices/${encodeURIComponent(v.id)}/decide`, {ok:false, reason:why});if(!current())return false;toast('已驳回', 'orange', 'x'); ivDone(v.id, {status:'rejected', reason:why});return true;}catch(e){if(current() && e.code!=='cancel'){tradeFailure(e);if(e.status===409)ladmDone('invoice');}return false;} }); });
 
 /* 看板：流水来自服务器 */
 const LLEDGER = {v:null, at:0, busy:false, mark:null, error:null};
@@ -12053,7 +12139,7 @@ const LLEDGER = {v:null, at:0, busy:false, mark:null, error:null};
 { const ds0 = ADMV.dash;
   ADMV.dash = () => { if (!API.on()) return ds0();
     if (!LADM.dash){ ladmGet('dash', '/admin/stats', r => r); return ladmWait('看板', '读取中'); }
-    const S = LADM.dash, L = ledger(), mon = monthOf(Date.now()), ML = L.filter(x => monthOf(x.ts) === mon), C = ADMCNT.v || admCnt();
+    const S = LADM.dash, L = ledger(), mon = monthOf(Date.now()), ML = L.filter(x => tradeAllowed('paidCheckout') && tradeSource(x) === 'mock' && monthOf(x.ts) === mon), C = ADMCNT.v || admCnt();
     const gmv = ML.filter(x => x.st !== 'refund').reduce((a, x) => a + x.amt, 0);
     const rev = ML.reduce((a, x) => a + (x.type === 'prod' && x.st === 'paid' ? x.amt*PLAT : 0), 0);
     const todo = [['review', '待审核'], ['avatars', '头像'], ['reports', '举报'], ['apply', '入驻'], ['refunds', '退款'], ['invoice', '发票']].filter(t => admCan(t[0])).map(([k, l]) => [k, l, C[k] || 0]);
@@ -12061,9 +12147,9 @@ const LLEDGER = {v:null, at:0, busy:false, mark:null, error:null};
     // 流水还没读到 / 读失败时不显示 ¥0.00（会像真的零成交）：金额写「—」，第一格说明正在读取或给「重试」
     const lok = !!LLEDGER.v, money = v => admCan('orders') && lok ? yuan2(v) : '—';
     const ldNote = LLEDGER.error ? `${esc(LLEDGER.error)} <button class="pill sm lt" data-act="lld-retry">重试</button>` : '读取中…';
-    return `${adH('看板', `${mon} · 数据来自服务器的订单流水`)}
-    <div class="kpis k3"><div class="kpi"><span class="lab">本月成交额</span><b class="num">${money(gmv)}</b><span class="d">${!admCan('orders') ? '财务 / 客服可见' : lok ? ML.length + ' 笔订单' : ldNote}</span></div>
-      <div class="kpi"><span class="lab">平台收入</span><b class="num">${money(rev)}</b><span class="d">商品 ${+(PLAT*100).toFixed(1)}%</span></div>
+    return `${adH('看板', `${mon} · 数据来自服务器的订单流水`)}${tradeSummaryNotice(tradeCaps()?.mode === 'mock')}
+    <div class="kpis k3"><div class="kpi"><span class="lab">本月模拟成交额</span><b class="num">${money(gmv)}</b><span class="d">${!admCan('orders') ? '财务 / 客服可见' : lok ? ML.length + ' 笔订单' : ldNote}</span></div>
+      <div class="kpi"><span class="lab">模拟平台收入</span><b class="num">${money(rev)}</b><span class="d">商品 ${+(PLAT*100).toFixed(1)}%</span></div>
       <div class="kpi"><span class="lab">用户 / 创作者</span><b class="num">${S.users} / ${S.creators}</b><span class="d">今天新增 ${S.newToday} · 在售商品 ${S.onSale}</span></div></div>
     ${todo.length ? `<div class="ad-todo">${todo.map(([k, l, n]) => `<button data-act="atab" data-v="${k}" class="${n ? 'on' : ''}"><b class="num">${n}</b><span>${l}</span></button>`).join('')}</div>` : ''}
     ${admCan('orders') && i >= 0 ? body.slice(i) : ''}`; }; }
@@ -12161,25 +12247,25 @@ RJ_REASON.payout = ['收款账户信息有误', '收款账户已注销 / 冻结'
   ADMV.payout = () => { if (!API.on()) return po0(); const want = UI.adf?.pm || '';
     if (!LADM.payout || LADM.pom !== want){ LADM.pom = want; LADM.payout = null; ladmGet('payout', '/admin/payouts' + (want ? '?month=' + want : ''), r => r); return ladmWait('结算打款', '读取中'); }
     const D = LADM.payout, m = D.month, rows = D.rows.map(r => { apiUser(r.seller); return r; }), Y = f => yuan2(f2y(f));
-    const sum = k => rows.reduce((a, r) => a + r[k], 0);
-    return `${adH('结算打款', '按订单流水自动计算；生成结算单后金额就定下来，线下打款后填流水号，结果会通知创作者', adSeg('pm', D.months.map(x => [x, x]), m))}
+    const sum = k => tradeAllowed('payouts') ? rows.filter(r => tradeSource(r) === 'mock').reduce((a, r) => a + r[k], 0) : 0;
+    return `${adH('结算打款', '查看订单与结算记录；模拟记录不代表真实收入或到账', adSeg('pm', D.months.map(x => [x, x]), m))}${tradeNotice('payouts',true)}${tradeSummaryNotice(D.simulation)}
     <div class="kpis"><div class="kpi"><span class="lab">商品成交</span><b class="num">${Y(sum('gross'))}</b><span class="d">${sum('n')} 单</span></div><div class="kpi"><span class="lab">平台收入</span><b class="num">${Y(sum('plat'))}</b><span class="d">商品抽成</span></div><div class="kpi"><span class="lab">支付手续费</span><b class="num">${Y(sum('fee'))}</b><span class="d">卖家承担</span></div><div class="kpi"><span class="lab">应打给创作者</span><b class="num">${Y(sum('net'))}</b><span class="d">${rows.length} 位创作者</span></div></div>
-    <div class="box"><div class="box-h"><h3>${m} · 按创作者</h3>${D.generated ? stTag('结算单已生成', 'green') : rows.length ? `<button class="pill sm" data-act="lpo-gen" data-v="${m}">生成结算单</button>` : ''}</div><div class="tw"><table class="t"><thead><tr><th>创作者</th><th class="r">单数</th><th class="r">商品成交</th><th class="r">手续费</th><th class="r">抽成</th><th class="r">应打款</th>${D.generated ? '<th>状态</th><th></th>' : ''}</tr></thead>
-      <tbody>${rows.map(r => `<tr><td><span class="ad-u">${uav(r.seller.id)}<span><b>${esc(r.seller.name)}</b><i>${r.payee ? esc(`${PAYEE_K[r.payee.kind]?.[0] || r.payee.kind} · ${r.payee.name}${r.payee.acct ? ' · ' + r.payee.acct : ''}`) : '<span style="color:var(--orange)">未绑定收款账户</span>'}</i></span></span></td><td class="r n">${r.n}</td><td class="r n">${Y(r.gross)}</td><td class="r n neg">−${Y(r.fee)}</td><td class="r n neg">−${Y(r.plat)}</td><td class="r n"><b>${Y(r.net)}</b></td>
-        ${D.generated ? `<td>${stTag(PAY_ST[r.status] || r.status, {pending:'yellow', paid:'green', failed:'orange'}[r.status])}${r.txn ? `<br><span class="mut2 n" style="font-size:11.5px">${esc(r.txn)}</span>` : r.reason ? `<br><span class="mut2" style="font-size:11.5px">${esc(r.reason)}</span>` : ''}</td><td class="r">${r.status !== 'paid' ? `<button class="pill sm" data-act="lpo-pay" data-id="${r.id}">标记已打款</button> <button class="pill sm lt" data-act="lpo-fail" data-id="${r.id}">失败</button>` : ''}</td>` : ''}</tr>`).join('') || `<tr><td colspan="6" class="mut">这个月没有可结算的订单</td></tr>`}</tbody></table></div></div>
-    <p class="mut2" style="font-size:12.5px;margin-top:10px">⚠️ 现在只记录打款状态；接入真实支付后，打款走支付渠道的分账 / 结算接口（微信支付电商收付通、支付宝直付通等）。</p>`; }; }
+    <div class="box"><div class="box-h"><h3>${m} · 按创作者</h3>${D.generated ? stTag('结算单已生成', 'green') : rows.length ? `<button class="pill sm" data-act="lpo-gen" data-v="${m}" ${tradeAllowed('payouts') ? '' : 'disabled aria-disabled="true"'}>生成模拟结算单</button>` : ''}</div><div class="tw"><table class="t"><thead><tr><th>创作者</th><th class="r">单数</th><th class="r">商品成交</th><th class="r">手续费</th><th class="r">抽成</th><th class="r">应打款</th>${D.generated ? '<th>状态</th><th></th>' : ''}</tr></thead>
+      <tbody>${rows.map(r => `<tr><td><span class="ad-u">${uav(r.seller.id)}<span><b>${esc(r.seller.name)}</b>${tradeOrderBadge(r)}<i>${r.payee ? esc(`${PAYEE_K[r.payee.kind]?.[0] || r.payee.kind} · ${r.payee.name}${r.payee.acct ? ' · ' + r.payee.acct : ''}`) : '<span style="color:var(--orange)">未绑定收款账户</span>'}</i></span></span></td><td class="r n">${r.n}</td><td class="r n">${Y(r.gross)}</td><td class="r n neg">−${Y(r.fee)}</td><td class="r n neg">−${Y(r.plat)}</td><td class="r n"><b>${Y(r.net)}</b></td>
+        ${D.generated ? `<td>${stTag((tradeSource(r) === 'mock' ? '模拟' : '')+(PAY_ST[r.status] || r.status), {pending:'yellow', paid:'green', failed:'orange'}[r.status])}${r.txn ? `<br><span class="mut2 n" style="font-size:11.5px">${esc(r.txn)}</span>` : r.reason ? `<br><span class="mut2" style="font-size:11.5px">${esc(r.reason)}</span>` : ''}</td><td class="r">${r.status !== 'paid' && tradeRowAllowed(r,'payouts') ? `<button class="pill sm" data-act="lpo-pay" data-id="${r.id}">标记模拟打款</button> <button class="pill sm lt" data-act="lpo-fail" data-id="${r.id}">失败</button>` : ''}</td>` : ''}</tr>`).join('') || `<tr><td colspan="6" class="mut">这个月没有可结算的订单</td></tr>`}</tbody></table></div></div>
+    <p class="mut2" style="font-size:12.5px;margin-top:10px">当前未接入真实资金渠道。模拟记录不构成真实打款，来源未确认的历史记录仅供查看。</p>`; }; }
 // 标记打款 / 失败：这一行先改成结果，再静默重读（列表不清空）
 const poDone = (id, fix) => ladmDone('payout', D => ({...D, rows:D.rows.map(r => r.id === id ? {...r, ...fix} : r)}));
 Object.assign(ACTIONS, {
-  'lpo-gen': async b => { if (!admGuard('payout')) return; b.disabled = true;
-    try { const r = await STAFF.req('POST', '/admin/payouts/generate', {month:b.dataset.v}); toast(`结算单已生成，已通知 ${r.count} 位创作者`, 'green', 'check'); LADM.payout = null; rerender(); } catch(e){ b.disabled = false; apiFail(e); } },
-  'lpo-pay': b => { if (!admGuard('payout')) return; const id = b.dataset.id;
-    sheet(`<h3>标记已打款</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">线下打款完成后，把银行 / 支付渠道的流水号填在这里，创作者会收到通知。</p><label class="ad-lab" for="poTx">打款流水号</label><input class="inp" id="poTx" autocomplete="off" maxlength="64"><button class="pill lg" data-act="lpo-pgo" data-id="${esc(id)}">确认已打款</button>`); },
-  'lpo-pgo': async b => { const t = $('#poTx').value.trim(); if (t.length < 4){ fxPop($('#poTx'), 'fx-shake', 300); return; } if (b.disabled) return; b.disabled = true;
-    const id = b.dataset.id;
-    try { await STAFF.req('POST', `/admin/payouts/${encodeURIComponent(id)}/mark`, {st:'paid', txn:t}); closeSheet(); toast('已标记打款，已通知创作者', 'green', 'check'); poDone(id, {status:'paid', txn:t}); } catch(e){ b.disabled = false; apiFail(e); } },
-  'lpo-fail': b => { if (!admGuard('payout')) return; const id = b.dataset.id,current=staffSession();
-    rsnSheet('打款失败的原因', 'payout', async why => { try {if(!current())return false;await STAFF.req('POST', `/admin/payouts/${encodeURIComponent(id)}/mark`, {st:'failed', reason:why});if(!current())return false;toast('已标记失败，已通知创作者', 'orange', 'x'); poDone(id, {status:'failed', reason:why});return true;}catch(e){if(current() && e.code!=='cancel')apiFail(e);return false;} }); }
+  'lpo-gen': async b => { if (!admGuard('payout') || b.disabled || !tradeGuard('payouts')) return; b.disabled = true; const current=staffSession();
+    try { const r = await STAFF.req('POST', '/admin/payouts/generate', {month:b.dataset.v}); if (!current()) return; toast(`模拟结算单已生成，涉及 ${r.count} 位创作者；未实际打款`, 'green', 'check'); LADM.payout = null; rerender(); } catch(e){ if(current())tradeFailure(e); } finally{if(b.isConnected)b.disabled=false;} },
+  'lpo-pay': b => { if (!admGuard('payout') || !tradeRowGuard(LADM.payout?.rows?.find(r => r.id === b.dataset.id),'payouts')) return; const id = b.dataset.id;
+    sheet(`<h3>标记模拟打款</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">仅记录内测模拟结果，不会向银行或支付渠道发起转账。</p><label class="ad-lab" for="poTx">模拟流水号</label><input class="inp" id="poTx" autocomplete="off" maxlength="64"><button class="pill lg" data-act="lpo-pgo" data-id="${esc(id)}">确认模拟记录</button>`); },
+  'lpo-pgo': async b => { if (!admGuard('payout') || b.disabled || !tradeRowGuard(LADM.payout?.rows?.find(r => r.id === b.dataset.id),'payouts')) return; const t = $('#poTx').value.trim(); if (t.length < 4){ fxPop($('#poTx'), 'fx-shake', 300); return; } b.disabled = true;
+    const id = b.dataset.id,current=staffSession();
+    try { await STAFF.req('POST', `/admin/payouts/${encodeURIComponent(id)}/mark`, {st:'paid', txn:t}); if (!current()) return; closeSheet(); toast('模拟打款已记录，未发生真实转账', 'green', 'check'); poDone(id, {status:'paid', txn:t}); } catch(e){ if(current())tradeFailure(e); } finally{if(b.isConnected)b.disabled=false;} },
+  'lpo-fail': b => { if (!admGuard('payout') || !tradeRowGuard(LADM.payout?.rows?.find(r => r.id === b.dataset.id),'payouts')) return; const id = b.dataset.id,current=staffSession();
+    rsnSheet('模拟打款失败的原因', 'payout', async why => { try {if(!current() || !tradeRowGuard(LADM.payout?.rows?.find(r => r.id === id),'payouts'))return false;await STAFF.req('POST', `/admin/payouts/${encodeURIComponent(id)}/mark`, {st:'failed', reason:why});if(!current())return false;toast('已记录模拟失败', 'orange', 'x'); poDone(id, {status:'failed', reason:why});return true;}catch(e){if(current() && e.code!=='cancel')tradeFailure(e);return false;} }); }
 });
 
 /* ================= 自助找回密码：恢复码（连着后端时） =================
@@ -12275,18 +12361,18 @@ wrapAct('nt', (orig, b, e) => { orig(b, e); if (liveUser()) API.req('PATCH', '/m
 /* 涉税信息报送（季度）：结算打款页上导出 */
 const taxQs = () => { const d = new Date(), out = []; let y = d.getFullYear(), q = Math.floor(d.getMonth() / 3) + 1; for (let i = 0; i < 6; i++){ out.push(`${y}-Q${q}`); if (--q < 1){ q = 4; y--; } } return out; };
 ACTIONS['tax-open'] = () => { if (!admGuard('payout')) return;
-  sheet(`<h3>导出涉税信息（季度）</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">按《互联网平台企业涉税信息报送规定》（国务院令第 810 号），平台要按季度报送经营者的身份和收入信息。这里按经营者汇总商品收入、退款、平台抽成和支付手续费，导出给财务报送。导出会记进操作日志。</p>
+  sheet(`<h3>导出季度统计</h3>${tradeSummaryNotice(tradeCaps()?.mode === 'mock')}<p class="mut" style="font-size:13.5px;margin-top:-6px">导出当前服务提供的资金统计，用于内测核对。模拟数据不能作为真实涉税报送材料；历史未确认交易不混入当前资金汇总。导出会记进操作日志。</p>
     <div class="seg ad-seg" id="taxQ">${taxQs().map((q, i) => `<button class="${i ? '' : 'on'}" data-act="tax-q" data-v="${q}">${q.replace('-', ' ')}</button>`).join('')}</div>
     <div id="taxR" class="mut2" style="font-size:13px"></div><button class="pill lg" data-act="tax-go">生成</button>`); };
 ACTIONS['tax-q'] = b => { $$('#taxQ button').forEach(x => x.classList.toggle('on', x === b)); $('#taxR').textContent = ''; const g = $('[data-act="tax-dl"]'); if (g){ g.dataset.act = 'tax-go'; g.textContent = '生成'; } };
-ACTIONS['tax-go'] = async b => { const q = $('#taxQ .on').dataset.v; b.disabled = true;
-  try { const r = await STAFF.req('GET', '/admin/tax?quarter=' + q), Y = f => (f/100).toFixed(2);
-    LADM.tax = [['季度', '经营者', 'ID', '用户名', '实名（打码）', '证件（打码）', '订单数', '商品收入', '退款', '平台抽成', '支付手续费', '应结净收入'],
-      ...r.rows.map(x => [q, x.seller.name, x.seller.id, x.username || '', x.real || '未入驻实名', x.idno || '', x.n, Y(x.gross), Y(x.refund), Y(x.plat), Y(x.fee), Y(x.net)])];
-    $('#taxR').textContent = `${q}：${r.rows.length} 位经营者`; b.disabled = false; b.dataset.act = 'tax-dl'; b.textContent = '下载 CSV'; }
-  catch(e){ b.disabled = false; apiFail(e); } };
+ACTIONS['tax-go'] = async b => { if (!admGuard('payout') || b.disabled) return; const q = $('#taxQ .on').dataset.v, current=staffSession(), sh=b.closest?.('.sheet'); b.disabled = true;
+  try { const r = await STAFF.req('GET', '/admin/tax?quarter=' + q), Y = f => (f/100).toFixed(2); if (!current() || !sh?.isConnected) return;
+    LADM.tax = [['统计范围', '季度', '经营者', 'ID', '用户名', '实名（打码）', '证件（打码）', '订单数', '商品收入', '退款', '平台抽成', '支付手续费', '应结净收入'],
+      ...r.rows.map(x => [r.simulation === true ? '内测模拟（非真实报送）' : '资金业务未开放', q, x.seller.name, x.seller.id, x.username || '', x.real || '未入驻实名', x.idno || '', x.n, Y(x.gross), Y(x.refund), Y(x.plat), Y(x.fee), Y(x.net)])];
+    $('#taxR').textContent = `${q}：${r.rows.length} 位经营者 · ${r.simulation === true ? '内测模拟，不能作为真实报送材料' : '当前真实资金业务未开放'}`; b.disabled = false; b.dataset.act = 'tax-dl'; b.textContent = '下载 CSV'; }
+  catch(e){ if (current() && sh?.isConnected){ b.disabled = false; apiFail(e); } } };
 ACTIONS['tax-dl'] = () => { if (LADM.tax) csvDownload(`ctrlz-tax-${$('#taxQ .on').dataset.v}.csv`, LADM.tax); };
-{ const po1 = ADMV.payout; ADMV.payout = () => { const h = po1(); return API.on() ? h.replace('<div class="kpis">', `<div class="ad-inl" style="justify-content:flex-end;margin:-6px 0 10px"><button class="pill sm lt" data-act="tax-open">${IC.dl}导出季度涉税信息</button></div><div class="kpis">`) : h; }; }
+{ const po1 = ADMV.payout; ADMV.payout = () => { const h = po1(); return API.on() ? h.replace('<div class="kpis">', `<div class="ad-inl" style="justify-content:flex-end;margin:-6px 0 10px"><button class="pill sm lt" data-act="tax-open">${IC.dl}导出季度统计</button></div><div class="kpis">`) : h; }; }
 
 /* ================= 翻页、搜索、话题、浏览统计、反馈问题、报错上报（连着后端时） =================
    · 首页 / 商城 / 别人主页的作品：到底部自动加载下一页（moreBox + IntersectionObserver），也可以点「加载更多」
@@ -12604,8 +12690,8 @@ ACTIONS['push-tg'] = async b => { if (PUSH.busy) return; PUSH.busy = true; b.dis
 const ACCOUNT_PAGES = {busy:new Map(), epoch:0};
 const accountSession = () => { const user = ME, epoch = ACCOUNT_PAGES.epoch; return () => ME === user && ACCOUNT_PAGES.epoch === epoch && liveUser(); };
 const accountMoreBox = k => `<div class="account-more" data-page="${k}" style="text-align:center;margin:24px 0"><button class="pill lt" data-act="account-more" data-v="${k}">${ACCOUNT_PAGES.busy.has(k) ? '加载中…' : '加载更多'}</button></div>`;
-const apiSale = o => ({id:o.id,no:o.no,buyer:apiUser(o.buyer).id,amt:f2y(o.price),cash:f2y(o.cashAmount ?? o.price),pay:PAY_N[o.payMethod] || o.payMethod,st:o.status === 'refunded' ? 'refund' : 'paid',time:o.paidAt ? ymdhm(o.paidAt).slice(5) : '',title:o.title});
-function liveSalesView(){ return `<div class="box" data-sales><div class="box-h"><h3>销售明细</h3></div><div class="tw"><table class="t"><thead><tr><th>资源 / 订单</th><th>买家</th><th>时间</th><th class="r">金额</th><th>状态</th></tr></thead><tbody>${SELLER_ORDERS.map(o => `<tr data-no="${o.no}"><td>${esc(o.title)}<div class="mut2">${o.no}</div></td><td>${esc(uname(o.buyer))}</td><td>${o.time}</td><td class="r n">${yuan2(o.amt)}</td><td>${o.st === 'refund' ? '已退款' : '已付款'}</td></tr>`).join('') || '<tr><td colspan="5" class="mut2">还没有销售记录</td></tr>'}</tbody></table></div></div>`; }
+const apiSale = o => ({tradeSource:tradeSource(o),id:o.id,no:o.no,buyer:apiUser(o.buyer).id,amt:f2y(o.price),cash:f2y(o.cashAmount ?? o.price),pay:tradePayName(o,o.payMethod),st:o.status === 'refunded' ? 'refund' : 'paid',time:o.paidAt ? ymdhm(o.paidAt).slice(5) : '',title:o.title});
+function liveSalesView(){ return `<div class="box" data-sales><div class="box-h"><h3>销售明细</h3></div><div class="tw"><table class="t"><thead><tr><th>资源 / 订单</th><th>买家</th><th>时间</th><th class="r">金额</th><th>状态</th></tr></thead><tbody>${SELLER_ORDERS.map(o => `<tr data-no="${o.no}"><td>${esc(o.title)} ${tradeOrderBadge(o)}<div class="mut2">${o.no}</div></td><td>${esc(uname(o.buyer))}</td><td>${o.time}</td><td class="r n">${yuan2(o.amt)}</td><td>${o.st === 'refund' ? '已退款' : '已付款'}</td></tr>`).join('') || '<tr><td colspan="5" class="mut2">还没有销售记录</td></tr>'}</tbody></table></div></div>`; }
 function libraryRemaining(){ return [...STATE.owned].filter(id => !P(id)); }
 async function loadLibraryChunk(retry = false){
   if (!liveUser() || !LSHOP.library) return; if (ACCOUNT_PAGES.busy.has('lib')) return ACCOUNT_PAGES.busy.get('lib');
@@ -12651,7 +12737,7 @@ ACTIONS['library-more'] = async b => { b.disabled = true; await loadLibraryChunk
   if (arg === 'lib'){ if (libraryRemaining().some(id => !LSHOP.libraryTried?.has(id))) onMount(() => loadLibraryChunk()); return h.replace(/<\/div>$/,libraryMoreBox() + '</div>'); }
   return arg === 'orders' && LSHOP.ordersNext ? h.replace(/<\/div>$/,accountMoreBox('orders') + '</div>') : h; }; }
 { const sellerPage = ROUTES.seller; ROUTES.seller = arg => { if (arg === 'collab' || arg === 'settle') arg = 'overview';   // 旧链接：在最外层改成概览，下面才会补上销售列表和加载更多
-  const h = sellerPage(arg); if (!liveUser() || !STATE.seller) return h;
+  const raw = sellerPage(arg); if (!liveUser() || !STATE.seller) return raw; const h=raw.replace(/(<div class="wrap[^"]*">)/, '$1'+tradePublishNote());
   if (!arg || arg === 'overview') return h.replace(/<\/div><\/div><\/div>$/,liveSalesView() + (LSHOP.salesNext ? accountMoreBox('sales') : '') + '</div></div></div>');
   return h; }; }
 async function ensureOrderDetails(no){ const o = STATE.orders.find(o => o.no === no); if (!o?.live) return o; const current = accountSession();
@@ -12659,7 +12745,7 @@ async function ensureOrderDetails(no){ const o = STATE.orders.find(o => o.no ===
   if (!P(o.pid)){ const p = await API.req('GET',`/products/${encodeURIComponent(o.pid)}`); if (!current()) return; apiProduct(p); } return o;
 }
 for (const action of ['ord-open','refund']) wrapAct(action,async (orig,b,e) => { if (!liveUser()) return orig(b,e); const current = accountSession(); b.disabled = true;
-  try { const o = await ensureOrderDetails(b.dataset.no); if (current() && o && b.isConnected) return orig(b,e); } catch(err){ if (current()) apiFail(err); } finally { b.disabled = false; } });
+  try { const o = await ensureOrderDetails(b.dataset.no); if (current() && o && b.isConnected){ if (action === 'refund' && !tradeOrderGuard(o,'canRefund')) return; return orig(b,e); } } catch(err){ if (current()) apiFail(err); } finally { b.disabled = false; } });
 { const resetAccount = liveReset; liveReset = function(){ ACCOUNT_PAGES.epoch++; ACCOUNT_PAGES.busy.clear(); LSHOP.library = null; LSHOP.libraryTried = new Set(); LSHOP.ordersNext = LSHOP.salesNext = null; return resetAccount(); }; }
 function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.tier || 'standard',body.useVoucher,body.payMethod,body.voucherId || null,body.confirmWaste === true]); let attempts = store.get('order-attempts',{}) || {};
   if (!attempts[signature]){ attempts[signature] = 'web-' + crypto.randomUUID(); store.set('order-attempts',attempts); }

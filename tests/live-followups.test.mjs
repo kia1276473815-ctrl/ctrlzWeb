@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import {installTrade} from './trade-fixture.mjs';
 const source=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 const section=(a,b)=>{const start=source.indexOf(a),end=source.indexOf(b,start+a.length);assert(start>=0 && end>start,a);return source.slice(start,end);};
 const tick=async()=>{for(let i=0;i<30;i++)await Promise.resolve();};
@@ -128,6 +129,7 @@ function admin(extra={}){
   const ctx=vm.createContext({console,Promise,Map,Set,JSON,UI:{adf:{}},ACTIONS:{},ADMV:{audit:()=>'原型'},CUR:{key:'admin|'},API:{on:()=>true},STAFF:{epoch:1},ADM_ROLES:{},IC:{dl:''},PAY_N:{},
     LADM:{busy:{},errors:{},reads:{},requests:{}},ladmShop(k){shops.push(k);ctx.LADM.busy[k]=true;},ladmQuiet(){},ladmWait:t=>'等待:'+t,ladmLoad(){},adH:(t,s,a)=>`<h>${t}|${s}|${a}</h>`,adQ:()=>'[搜索]',adSeg:()=>'[筛选]',stTag:a=>a,yuan2:x=>'¥'+x,f2y:x=>x,fq:()=>'',
     fmtDT:String,fmtDay:String,esc:String,uname:String,admCan:()=>true,csvDownload(){},wrapAct(){},staffSession:()=>()=>true,apiFail(){},rerender:()=>draws++,...extra});
+  installTrade(ctx);
   return {ctx,shops,get draws(){return draws;}};
 }
 const row=(no,status)=>({no,title:'T'+no,status,price:1,buyer:{name:'B'},seller:{name:'S'},createdAt:'2026-10-01'});
@@ -143,8 +145,8 @@ test('订单流水换状态：旧行、搜索和筛选条留着，后台读新�
 test('订单流水选「已退款 / 待付款」：沿用上次的合计，没有就显示 —，不显示 ¥0',()=>{
   const a=admin();vm.runInContext(section('const LORD_S =',"wrapAct('od-csv'"),a.ctx);a.ctx.UI.adf.os='refunded';
   Object.assign(a.ctx.LADM,{orders:{items:[row('2','refunded')],sum:{gmv:0,cash:0,voucher:0}},ordSt:'refunded'});
-  let html=a.ctx.liveOrdersView();assert.match(html,/成交 — · 实收现金 — · 代金券抵扣 —/);assert.doesNotMatch(html,/¥0/);
-  a.ctx.LADM.ordSum={gmv:7,cash:6,voucher:1};html=a.ctx.liveOrdersView();assert.match(html,/成交 ¥7 · 实收现金 ¥6/);
+  let html=a.ctx.liveOrdersView();assert.match(html,/成交 — · 现金记账 — · 代金券抵扣 —/);assert.doesNotMatch(html,/¥0/);
+  a.ctx.LADM.ordSum={gmv:7,cash:6,voucher:1};html=a.ctx.liveOrdersView();assert.match(html,/成交 ¥7 · 现金记账 ¥6/);
   a.ctx.UI.adf.os='paid';Object.assign(a.ctx.LADM,{orders:{items:[row('1','paid')],sum:{gmv:5,cash:5,voucher:0}},ordSt:'paid'});assert.match(a.ctx.liveOrdersView(),/成交 ¥5/);assert.equal(a.ctx.LADM.ordSum.gmv,5);
 });
 test('操作日志换成员：旧行和筛选条留着；切回已读到的成员时另一位的请求作废',async()=>{

@@ -1,6 +1,6 @@
 /* 后台原型页面按路由加载；实时 API 包装仍由主页面负责。 */
 (window.CtrlzViews ||= {}).admin = {"dash":() => {
-  const L = ledger(), now = NOW0, DAY = 864e5, mon = monthOf(now), ML = L.filter(x => monthOf(x.ts) === mon);
+  const L = ledger().filter(x => !API.on() || tradeAllowed('paidCheckout') && tradeSource(x) === 'mock'), now = API.on() ? Date.now() : NOW0, DAY = 864e5, mon = monthOf(now), ML = L.filter(x => monthOf(x.ts) === mon);
   const gmv = ML.filter(x => x.st !== 'refund').reduce((a, x) => a + x.amt, 0);
   const rev = ML.reduce((a, x) => a + (x.type === 'prod' && x.st === 'paid' ? x.amt*PLAT : 0), 0);
   const todo = [['review', '待审核', REVIEW.length], ['avatars', '头像', AVQ.length], ['reports', '举报', REPORTS.filter(r => r.st === '待处理').length], ['apply', '入驻', ADM.apps.filter(a => a.st === '待审核').length],

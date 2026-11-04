@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import {installTrade} from './trade-fixture.mjs';
 const source=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const section=(a,b)=>{const start=source.indexOf(a),end=source.indexOf(b,start+a.length);assert(start>=0&&end>start,a);return source.slice(start,end);};
 const defer=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};};
@@ -135,11 +136,12 @@ test('头像、入驻、发票、打款失败的原因回调返回false，失败
   const cases=[
     ['avatar',r=>{r.load(section('ACTIONS.lavq =','/* —— 收藏 —— */'));r.ctx.ACTIONS.lavq({dataset:{id:'id',v:'0'}});}],
     ['apply',r=>{r.ctx.ADM.apps=[{id:'id',name:'Name'}];r.load(section("wrapAct('ap-no',",'{ const iv0 = ADMV.invoice;'));r.changed[0][1](()=>{}, {dataset:{id:'id'}});}],
-    ['invoice',r=>{r.ctx.ADM.invoices=[{id:'id',title:'Title'}];r.load(section("wrapAct('inv-no',",'/* 看板：流水来自服务器 */'));r.changed[0][1](()=>{}, {dataset:{id:'id'}});}],
-    ['payout',r=>{r.load('Object.assign(ACTIONS,{'+section("  'lpo-fail': b",'\n});')+'\n});');r.ctx.ACTIONS['lpo-fail']({dataset:{id:'id'}});}]
+    ['invoice',r=>{installTrade(r.ctx);r.ctx.ADM.invoices=[{id:'id',title:'Title',tradeSource:'mock'}];r.load(section("wrapAct('inv-no',",'/* 看板：流水来自服务器 */'));r.changed[0][1](()=>{}, {dataset:{id:'id'}});}],
+    ['payout',r=>{installTrade(r.ctx);r.ctx.LADM.payout={rows:[{id:'id',tradeSource:'mock'}]};r.load('Object.assign(ACTIONS,{'+section("  'lpo-fail': b",'\n});')+'\n});');r.ctx.ACTIONS['lpo-fail']({dataset:{id:'id'}});}]
   ];
-  for(const [kind,start] of cases){const r=realm();let callback;r.ctx.rsnSheet=(title,k,go)=>callback=go;r.ctx.STAFF.req=async()=>{throw new Error(kind+' offline');};start(r);assert.equal(typeof callback,'function',kind);assert.equal(await callback('保留的原因'),false,kind);assert.equal(r.toasts.length,0,kind);assert.equal(r.closed,0,kind);assert.equal(r.errors.length,1,kind);
-    r.ctx.STAFF.epoch++;const calls=r.errors.length;assert.equal(await callback('新原因'),false,kind);assert.equal(r.errors.length,calls,kind);}
+  for(const [kind,start] of cases){const r=realm();let callback;r.ctx.rsnSheet=(title,k,go)=>callback=go;r.ctx.STAFF.req=async()=>{throw new Error(kind+' offline');};start(r);assert.equal(typeof callback,'function',kind);assert.equal(await callback('保留的原因'),false,kind);assert.equal(r.closed,0,kind);
+    const financial=['invoice','payout'].includes(kind);assert.equal(r.errors.length,financial?0:1,kind);assert.equal(r.toasts.length,financial?1:0,kind);if(financial)assert.match(r.toasts[0][0],/无法确认操作结果.*不要重复提交/);
+    r.ctx.STAFF.epoch++;const calls=r.errors.length,notices=r.toasts.length;assert.equal(await callback('新原因'),false,kind);assert.equal(r.errors.length,calls,kind);assert.equal(r.toasts.length,notices,kind);}
 });
 
 test('原因弹层失败保留输入和重试能力，重复点击不重发，成功才关闭',async()=>{
