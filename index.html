@@ -10766,7 +10766,7 @@ function tradeNotice(action='paidCheckout', retry=false){
 function tradeSource(row){ return ['free','mock'].includes(row?.tradeSource) ? row.tradeSource : 'legacy'; }
 function tradeOrderLabel(row){ return ({mock:'内测模拟',free:'免费领取',legacy:'历史记录 · 来源未确认'})[tradeSource(row)]; }
 function tradePayName(row,method){ return tradeSource(row) === 'mock' ? '模拟支付' : tradeSource(row) === 'free' ? '免费领取' : PAY_N[method] || method || '—'; }
-function tradeOrderBadge(row){ return API.on() || row?.live || Object.hasOwn(row || {},'tradeSource') ? `<span class="tag ${tradeSource(row) === 'mock' ? 'c-yellow' : ''}">${tradeOrderLabel(row)}</span>` : ''; }
+function tradeOrderBadge(row){ return API.on() || row?.live || Object.hasOwn(row || {},'tradeSource') ? `<span class="tag ${tradeSource(row) === 'mock' ? 'c-yellow' : 'k'}">${tradeOrderLabel(row)}</span>` : ''; }
 function tradeOrderCan(o, key){
   if (!API.on()) return true;
   if (!o?.live) return false;
