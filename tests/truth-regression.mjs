@@ -3,10 +3,11 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {webcrypto} from 'node:crypto';
+import {installTrade} from './trade-fixture.mjs';
 const source = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 for (const [, script] of source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)) if (script.trim()) new vm.Script(script);
 const section = (a, b) => { const start = source.indexOf(a), end = source.indexOf(b, start + a.length); assert(start >= 0 && end > start, a); return source.slice(start, end); };
-const realm = data => vm.createContext({console, crypto:webcrypto, Date, Map, Set, Blob, File, URL, setTimeout, clearTimeout, ...data});
+const realm = data => { const ctx=vm.createContext({console, crypto:webcrypto, Date, Map, Set, Blob, File, URL, setTimeout, clearTimeout, LIVE:{u:new Set()}, ACTIONS:{}, apiFail:e=>{throw e;}, ...data}); installTrade(ctx); return ctx; };
 const json = x => JSON.parse(JSON.stringify(x));
 
 // App 身份为 user，关联的后台会话仍必须调用服务器，禁止回退到本地发放。
@@ -63,7 +64,7 @@ for (const [name, end, path] of [['vc-send', "ACTIONS['lvc-off']", '/admin/vouch
 
 // 财务数据来自全量服务器统计；不会拿200条流水改写本月或宣称往月已到账。
 {
-  const ctx = realm({LSHOP:{stats:{currentMonth:{month:'2026-10', gross:10000, net:9620, paidCount:2, refundCount:1},
+  const ctx = realm({LSHOP:{stats:{simulation:true,currentMonth:{month:'2026-10', gross:10000, net:9620, paidCount:2, refundCount:1},
     monthly:[{month:'2026-10', gross:10000, net:9620, fee:80, platformFee:300, paidCount:2, refundCount:1}], views30d:null, previousViews30d:null, conversion:null}},
     payeeBox:() => '', f2y:x => x/100, yuan2:x => '¥' + x.toFixed(2), esc:x => x});
   vm.runInContext(section('function studioLiveOverview(){', "ACTIONS['studio-retry']"), ctx);

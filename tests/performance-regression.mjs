@@ -64,7 +64,7 @@ test('按需经典脚本能独立注册原有后台/试听入口与协议正文'
     const script=fs.readFileSync(new URL('../scripts/' + name,import.meta.url),'utf8');
     vm.runInContext(script,ctx,{filename:name});
   }
-  assert.equal(Object.keys(ctx.window.CtrlzViews.admin).length,19);
+  assert.deepEqual(Object.keys(ctx.window.CtrlzViews.admin),['dash','review','avatars','reports','apply','users','content','orders','refunds','payout','notice','ops','words','vouchers','invites','staff','params','audit']);
   assert.deepEqual(Object.keys(ctx.window.CtrlzViews.audio),['pvSample','pvPreset','pvVideo']);
   assert(ctx.window.CtrlzDocBodies.terms); assert(ctx.window.CtrlzDocBodies.privacy);
 });

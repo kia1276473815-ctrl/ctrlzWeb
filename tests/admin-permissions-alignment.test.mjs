@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import {installTrade} from './trade-fixture.mjs';
 
 const source = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8').replace(/\r\n/g,'\n');
 const permsSource = fs.readFileSync(new URL('../../ctrlz-server/src/modules/admin/perms.ts', import.meta.url), 'utf8');
@@ -24,6 +25,7 @@ function realm(fetch=async()=>response(), extra={}){
     protoOn:()=>false,admOn:()=>true,esc:String,adH:(title,sub)=>title+sub,apiUser:u=>{users.push(u.id);return u;},fq:()=>ctx.query || '',
     $:selector=>selector==='#luS'?box:null,ledger:()=>[],f2y:x=>x/100,
     ...extra});
+  installTrade(ctx);
   vm.runInContext(section('function requestTask(', 'const API = {'),ctx);
   vm.runInContext(section('const STAFF = {','STAFF.load();'),ctx);
   vm.runInContext(section('const ADM_TABS = [','// 后台页签之间切换'),ctx);
