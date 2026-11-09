@@ -10522,7 +10522,7 @@ wrapAct('save-prof', async (orig, b, e) => {
   finally { if (PROFILE_SAVES.get(key)===version) PROFILE_SAVES.delete(key); if (current() && b?.isConnected){ b.disabled=false; b.removeAttribute('aria-busy'); b.textContent=label; } }
 });
 wrapAct('sysbox', (orig, b, e) => { orig(b, e); if (liveUser()) API.req('POST', '/notifications/read-all').catch(() => {}); });
-wrapAct('do-logout', async (orig, b, e) => { if (API.tok) await API.req('POST', '/auth/logout').catch(() => {}); API.setTok(null); orig(b, e); rerender(); });
+wrapAct('do-logout', async (orig, b, e) => { if (API.tok) try { await API.req('POST', '/auth/logout', API.cookie ? {} : {refreshToken:API.tok.refresh}, false); } catch(e){ apiFail(e); return; } API.setTok(null); orig(b, e); rerender(); });
 wrapAct('export-me', async orig => {
   if (!liveUser()) return orig();
   try { const j = await API.req('GET', '/me/export'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(j, null, 2)], {type:'application/json'})); a.download = `ctrlz-my-data-${fmtDay(Date.now())}.json`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); toast('已导出'); }
@@ -10805,7 +10805,7 @@ function resetTrade(){ TRADE.seq++; TRADE.base=API.base; TRADE.status='unknown';
 API.tradeReset=resetTrade;
 LIVE.cfg = {phoneLogin:true, passwordLogin:true, wechatLogin:false, requirePhone:true, adminTotp:true,trade:null};
 async function liveCfg(){
-  const base=API.base, seq=++TRADE.seq; TRADE.base=base; TRADE.status='loading'; TRADE.value=null; LIVE.cfg.trade=null;
+  const base=API.base, seq=++TRADE.seq; TRADE.base=base; TRADE.status='loading'; TRADE.value=null; LIVE.cfg.trade=null; LIVE.cfg.registration='closed';
   try { const cfg=await API.req('GET','/config'); if (base !== API.base || seq !== TRADE.seq) return;
     const trade=normalizeTrade(cfg?.trade); Object.assign(LIVE.cfg,cfg,{trade}); TRADE.value=trade; TRADE.status=trade ? 'ready' : 'invalid';
   } catch(e){ if (base !== API.base || seq !== TRADE.seq) return; TRADE.status='failed'; }
@@ -10828,19 +10828,22 @@ const USER_RE = /^[A-Za-z0-9_]{3,20}$/;
     const b = $('#meBtn'); if (b && STATE.role === 'user' && !AVIMG[ME]) b.textContent = avIni(USERS[ME]); }; }   // 改了名字，侧栏的「我」头像也跟着换
 
 /* —— 登录面板 —— */
-const auLiveSeg = () => `<div class="au-seg" role="tablist">${[['pw', '登录'], ['reg', '注册'], ...(LIVE.cfg.phoneLogin ? [['phone', '手机号']] : [])].map(([k, l]) => `<button role="tab" aria-selected="${AUTH.lm === k}" class="${AUTH.lm === k ? 'on' : ''}" data-act="au-lm" data-v="${k}">${l}</button>`).join('')}</div>`;
+const auLiveSeg = () => `<div class="au-seg" role="tablist">${[['pw', '登录'], ...(['invite_email','password'].includes(LIVE.cfg.registration) ? [['reg','注册']] : []), ...(LIVE.cfg.phoneLogin ? [['phone', '手机号']] : [])].map(([k, l]) => `<button role="tab" aria-selected="${AUTH.lm === k}" class="${AUTH.lm === k ? 'on' : ''}" data-act="au-lm" data-v="${k}">${l}</button>`).join('')}</div>`;
 const auAgree = () => `<div class="au-ag ${AUTH.need ? 'need' : ''}"><button class="au-cb ${AUTH.agree ? 'on' : ''}" role="checkbox" aria-checked="${AUTH.agree}" data-act="au-agree" aria-label="同意协议">${IC.check}</button><span>已阅读并同意 <a data-act="au-doc" data-v="用户协议">《用户协议》</a><a data-act="au-doc" data-v="隐私政策">《隐私政策》</a></span>
   ${AUTH.need ? `<div class="au-tip" role="alert"><span>需要先同意协议</span><button class="pill sm" data-act="au-agree-go">同意并继续</button></div>` : ''}</div>`;
 { const render0 = auRender, sheet0 = loginSheet;
-  loginSheet = function(why){ AUTH.pw = AUTH.pw2 = AUTH.err = ''; return sheet0(why); };
+  loginSheet = function(why){ AUTH.pw = AUTH.pw2 = AUTH.err = ''; AUTH.signup = {}; return sheet0(why); };
   auRender = function(focus = true){
     if (!API.on() || AUTH.step !== 'start') return render0(focus);
-    AUTH.lm ||= 'pw'; if (AUTH.lm === 'phone' && !LIVE.cfg.phoneLogin) AUTH.lm = 'pw';
+    AUTH.lm ||= 'pw'; if (AUTH.lm === 'phone' && !LIVE.cfg.phoneLogin || AUTH.lm === 'reg' && !['invite_email','password'].includes(LIVE.cfg.registration)) AUTH.lm = 'pw';
     if (AUTH.lm === 'phone'){ AUTH.via = 'phone'; render0(focus); const sg = $('#au .au-seg'); if (sg) sg.outerHTML = auLiveSeg(); $('#au .au-rec')?.remove(); return; }
-    const box = $('#au'); if (!box) return; const reg = AUTH.lm === 'reg';
+    const box = $('#au'); if (!box) return; const reg = AUTH.lm === 'reg', email = reg && LIVE.cfg.registration === 'invite_email', fields = AUTH.signup ||= {};
     box.innerHTML = `<div class="au-step s-start s-pw">
       <div class="au-hd"><span class="au-mk">CTRL<b>Z</b></span><h3>${reg ? '注册' : '登录'}</h3>${AUTH.why ? `<p class="au-why">${AUTH.why}</p>` : ''}</div>
       ${auLiveSeg()}
+      ${email ? `<div class="au-in"><input id="auEmail" type="email" autocomplete="email" placeholder="邮箱" value="${esc(fields.email || '')}"></div>
+        <div class="au-in"><input id="auInvite" autocomplete="off" placeholder="注册邀请码" value="${esc(fields.inviteCode || '')}"></div>
+        <div class="au-in"><input id="auEmailCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="邮件验证码" value="${esc(fields.code || '')}"><button class="au-eye" type="button" data-act="au-email-send">发送验证码</button></div>` : ''}
       <div class="au-in"><input id="auU" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="20" placeholder="${reg ? '用户名（字母、数字、下划线）' : '用户名'}" value="${esc(AUTH.uname || '')}"></div>
       <div class="au-in"><input id="auPw" type="password" autocomplete="${reg ? 'new-password' : 'current-password'}" maxlength="72" placeholder="${reg ? '密码（至少 8 位）' : '密码'}" value="${esc(AUTH.pw || '')}"><button class="au-eye" type="button" data-act="au-eye" aria-label="显示密码" tabindex="-1">显示</button></div>
       ${reg ? `<div class="au-in"><input id="auPw2" type="password" autocomplete="new-password" maxlength="72" placeholder="再输一次密码" value="${esc(AUTH.pw2 || '')}"></div>` : ''}
@@ -10850,6 +10853,9 @@ const auAgree = () => `<div class="au-ag ${AUTH.need ? 'need' : ''}"><button cla
       ${reg ? '' : '<p class="au-fg">忘了密码？<button class="au-lnk" data-act="au-forgot">用恢复码重设</button>，没有恢复码就联系管理员</p>'}
       ${LIVE.cfg.wechatLogin ? `<div class="au-or"><span>其他方式</span></div><div class="au-alt"><button data-act="au-3p" data-v="wx"><span class="au-3i c-green">${IC.chat}</span>微信</button></div>` : ''}</div>`;
     const U = $('#auU'), P = $('#auPw'), P2 = $('#auPw2');
+    if (email) for (const [id,key] of [['auEmail','email'],['auInvite','inviteCode'],['auEmailCode','code']]) {
+      const input = document.getElementById(id); input.addEventListener('input', () => { fields[key] = input.value.trim(); });
+    }
     U.addEventListener('input', () => { AUTH.uname = U.value.trim(); });
     P.addEventListener('input', () => { AUTH.pw = P.value; }); P2 && P2.addEventListener('input', () => { AUTH.pw2 = P2.value; });
     [U, P, P2].forEach(x => x && x.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing){ e.preventDefault(); ACTIONS['au-pw'](); } }));
@@ -10859,7 +10865,8 @@ const auAgree = () => `<div class="au-ag ${AUTH.need ? 'need' : ''}"><button cla
 async function auPwGo(reg, username, password){
   if (AUTH.busy) return; AUTH.busy = true; const b = $('.au-go'), scope = credentialScope(b); if (b){ b.disabled = true; b.textContent = reg ? '正在注册…' : '正在登录…'; }
   try {
-    const r = credentialLoginResult(await credentialRequest(reg ? '/auth/register' : '/auth/login', {username, password}, scope), reg);
+    const r = credentialLoginResult(await credentialRequest(reg ? LIVE.cfg.registration === 'invite_email' ? '/auth/email/register' : '/auth/register' : '/auth/login',
+      reg && LIVE.cfg.registration === 'invite_email' ? { ...AUTH.signup, username, password, acceptTerms:true } : {username, password}, scope), reg);
     if (!scope.active()){ if (scope.same()){ API.setTok(null); if (STATE.role === 'user') signOut(true); toast(reg ? '账号已注册，请用刚设置的密码重新登录' : '验证已完成，请重新打开登录面板登录', 'blue'); rerender(); } return; }
     AUTH.busy = false; AUTH.pw = AUTH.pw2 = AUTH.err = '';
     API.setTok({access:r.accessToken, refresh:r.refreshToken}); apiUser(r.user);
@@ -10877,6 +10884,15 @@ async function auPwGo(reg, username, password){
 Object.assign(ACTIONS, {
   'au-lm': b => { AUTH.lm = b.dataset.v; AUTH.err = ''; AUTH.need = false; clearInterval(AUTH.timer); smsHide(); auRender(); },
   'au-eye': b => { const show = $('#auPw').type === 'password'; $$('#auPw, #auPw2').forEach(x => x.type = show ? 'text' : 'password'); b.textContent = show ? '隐藏' : '显示'; b.setAttribute('aria-label', show ? '隐藏密码' : '显示密码'); },
+  'au-email-send': async b => {
+    if (AUTH.lm !== 'reg' || LIVE.cfg.registration !== 'invite_email' || b.disabled) return;
+    const {email,inviteCode} = AUTH.signup || {};
+    if (!email || !inviteCode) return toast('请填写邮箱和注册邀请码','orange');
+    b.disabled = true;
+    try { await API.req('POST','/auth/email/send-code',{email,inviteCode},false); if (b.isConnected) toast('请到邮箱查收验证码','green'); }
+    catch(e){ if (b.isConnected) apiFail(e); }
+    finally { if (b.isConnected) b.disabled = false; }
+  },
   'au-pw': () => {
     const reg = AUTH.lm === 'reg', u = ($('#auU')?.value || '').trim(), p = $('#auPw')?.value || '', p2 = $('#auPw2')?.value || '';
     const err = (m, el) => { AUTH.err = m; $('#auM').innerHTML = `<span class="bad">${esc(m)}</span>`; auShake(el?.parentNode); el?.focus(); };
@@ -10885,6 +10901,7 @@ Object.assign(ACTIONS, {
     if (!p) return err('请输入密码', $('#auPw'));
     if (reg && p.length < 8) return err('密码至少 8 位', $('#auPw'));
     if (reg && p !== p2) return err('两次输入的密码不一样', $('#auPw2'));
+    if (reg && LIVE.cfg.registration === 'invite_email' && (!AUTH.signup?.email || !AUTH.signup.inviteCode || !/^\d{6}$/.test(AUTH.signup.code || ''))) return err('请填写邮箱、邀请码和邮件验证码', $('#auEmailCode'));
     const go = () => auPwGo(reg, u, p);
     if (!AUTH.agree){ AUTH.need = true; AUTH.queued = () => { auRender(false); go(); }; auRender(false); auShake($('.au-ag')); return; }   // 点「同意并继续」后先把勾画上再登录
     go();
@@ -11763,12 +11780,12 @@ wrapAct('do-pay', async (orig, b) => { const pr = P(b.dataset.id); if (!API.on()
     attempt.done(); liveApplyOrder(o); try { LSHOP.wallet = await API.req('GET', '/me/wallet'); } catch(e){}
     if (!current()) return; if (sh.isConnected) paidUI(pr, sh, o); else toast('订单已确认，请在资源库查看','green'); }
   catch(err){ if (!current()) return; if (sh.isConnected) closeSheet(); tradeFailure(err); if (/^voucher_/.test(err.code || '')) try { LSHOP.wallet = await API.req('GET', '/me/wallet'); } catch(e){} } });
-/* —— 下载：拿 15 分钟的签名地址直接下载 —— */
+/* —— 下载：从服务端领取短时效地址 —— */
 wrapAct('dl', async (orig, b) => { const id = b.dataset.id, pr = P(id); if (!pr?.live) return orig(b);
   const o = STATE.orders.find(x => x.pid === id && x.live && x.st === '已完成'), orderId = LSHOP.library?.get(id)?.orderId || o?.id; if (!orderId){ toast('购买后才能下载', 'orange', 'lock'); return; } if (o && !tradeOrderCan(o,'canDownload')){ toast('该订单暂不可下载，请重新读取订单状态','orange','lock'); return; }
   if (b.disabled) return; b.disabled = true;   // 拿地址期间再点不重复计下载次数（会影响极速退款）
   try { const r = await API.req('POST', `/orders/${orderId}/download`); STATE.dlc[id] = (STATE.dlc[id] || 0) + 1; if (o) o.dl = (o.dl || 0) + 1;
-    const a = Object.assign(document.createElement('a'), {href:r.url, download:r.fileName}); document.body.appendChild(a); a.click(); a.remove(); toast('开始下载：' + esc(r.fileName), 'blue', 'dl'); }
+    const a = Object.assign(document.createElement('a'), {href:new URL(r.url, API.base).href, download:r.fileName}); document.body.appendChild(a); a.click(); a.remove(); toast('开始下载：' + esc(r.fileName), 'blue', 'dl'); }
   catch(e){ apiFail(e); } finally { b.disabled = false; } });
 /* —— 退款：后端判断能不能极速退款 —— */
 wrapAct('do-refund', async (orig, b) => { const o = STATE.orders.find(x => x.no === b.dataset.no); if (!API.on()) return orig(b); if (!o?.live || !tradeOrderGuard(o,'canRefund')) return;
