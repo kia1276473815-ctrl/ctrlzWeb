@@ -2643,6 +2643,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 </style>
 
 <link rel="stylesheet" href="scripts/communication.css?v=20261111-r13">
+<link rel="stylesheet" href="scripts/favorites.css?v=20261111-2">
 </head>
 <body>
 
@@ -5522,7 +5523,7 @@ function syncInteraction(kind,id,feedback=false){
     const u = USERS[id], count = $(`[data-act="u-list"][data-id="${id}"][data-v="fans"] b`); if (count && u){ count.dataset.roll = u.fans; count.textContent = u.fans; }
     const mine = $('.mh-st [data-act="me-list"][data-v="follow"] b'); if (mine){ mine.dataset.roll = USERS[ME].follow + STATE.follows.size; mine.textContent = mine.dataset.roll; }
     if (CUR.key === 'home|' && UI.homeTab === 'fol') patchMoreList('home'); }
-  if (kind === 'fav'){ const count = $('[data-act="me-tab"][data-v="favs"] i'); if (count) count.textContent = STATE.favs.size;
+  if (kind === 'fav'){ const count = $('[data-act="me-tab"][data-v="favs"] i'); if (count) count.textContent = globalThis.CZFavorites?.total()??STATE.favs.size;
     if ((CUR.key === 'me|' && UI.meTab === 'favs') || CUR.key === 'me|favs') patchBookmarks(); }
   if (CUR.post) UI.dirty = true; if (RL.on) reelBar();
 }
@@ -8783,6 +8784,7 @@ function meHead(){
     </div></div>`;
 }
 function meTabBody(t){
+  if(t==='favs'&&globalThis.CZFavorites&&liveUser())return CZFavorites.profile();
   if (t === 'works'){ const ws = POSTS.filter(p => p.author === ME); return ws.length ? `<div class="mason">${ws.map(postCard).join('')}</div>` : `<div class="empty"><div class="x">空</div><span>还没有作品</span><button class="pill" data-act="compose">${IC.plus}发第一篇</button></div>`; }
   if (t === 'cmts'){ const cs = myComments(), s = myCmtState(); return (cs.length ? `<div class="mcl">${cs.map(({p, c}) => `<a class="mc" href="#${postHref(p)}${c.id ? '?comment='+encodeURIComponent(c.id) : ''}" data-act="goto-cmt" data-p="${esc(p.id)}" data-cid="${esc(c.id || '')}" data-t="${esc(c.t)}"><span class="mc-t"><p>${globalThis.CZCommunication ? CZCommunication.mentionText(c.t,c.mentions) : esc(c.t)}</p><span>${c.parentId ? '回复了评论' : '评论了 ' + esc(USERS[p.author]?.name || '创作者') + ' 的' + (inStream(p) ? '声音' : '帖子')} · ${c.time} · ♥ ${c.likes}${c.review ? ' · 审核中' : ''}${p.myStatus === 'taken_down' ? ' · 帖子已下架' : ''}</span></span>${miniThumb(p, 'mc-th')}</a>`).join('')}</div>` : !s || s.status === 'ready' ? `<div class="empty"><div class="x">空</div><span>还没有评论过</span></div>` : '')
     + myCmtStatusHtml() + (s?.next ? `<div class="msep"><button class="pill sm lt" data-act="my-cmt-more"${['pending','error'].includes(s.status) ? ' disabled' : ''}>${s.status === 'pending' && s.more ? '加载中…' : '更早的评论'}</button></div>` : ''); }
@@ -8799,7 +8801,7 @@ function meProfile(){
   const t = ['works','cmts','favs','hist'].includes(UI.meTab) ? UI.meTab : 'works';
   onMount(root => mountWaves(root));
   const mine = myCmtState(); if (mine && (mine.status === 'idle' || mine.status === 'ready' && Date.now()-mine.lastRead > 15000)) onMount(() => loadMyComments(false,mine.loaded));
-  const n = {works:POSTS.filter(p => p.author === ME).length, cmts:mine ? mine.count ?? '…' : myComments().length, favs:[...STATE.favs].length, hist:(STATE.hist || []).length};
+  const n = {works:POSTS.filter(p => p.author === ME).length, cmts:mine ? mine.count ?? '…' : myComments().length, favs:globalThis.CZFavorites?.total()??[...STATE.favs].length, hist:(STATE.hist || []).length};
   return `<div class="wrap mep">${meHead()}
     <div class="mtabs" role="tablist" aria-label="我的内容">${[['works','作品'],['cmts','评论'],['favs','收藏'],['hist','历史']].map(([k, l]) => `<button role="tab" aria-selected="${t === k}" aria-controls="me-content" tabindex="${t === k ? '0' : '-1'}" class="${t === k ? 'on' : ''}" data-act="me-tab" data-v="${k}">${l}<i>${n[k]}</i></button>`).join('')}</div>
     <div class="mtb" id="me-content" role="tabpanel">${meTabBody(t)}</div></div>`;
@@ -12059,8 +12061,9 @@ ACTIONS.lavq = b => { if (!admGuard('avatars')) return; const id = b.dataset.id;
 
 /* —— 收藏 —— */
 async function liveFavs(){
-  const current = accountSession();
-  try { const r = await API.req('GET', '/me/favs'); if (!current()) return; STATE.favs = new Set([...r.posts, ...r.products]);
+  if(globalThis.CZFavorites)return CZFavorites.boot();
+  const current = accountSession(),epoch=LIVE.favEpoch;
+  try { const r = await API.req('GET', '/me/favs'); if (!current()||epoch!==LIVE.favEpoch) return; STATE.favs = new Set([...r.posts, ...r.products]);
     // 收藏的帖子 / 商品详情在后台补取，不拖住 liveBoot（私信轮询、红点要等它结束才开始）；补完正在看收藏就重画
     dmRefs([...r.posts.map(ref => ({t:'post', ref})), ...r.products.map(ref => ({t:'prod', ref}))])
       .then(() => { if (current() && ((CUR.key === 'me|' && UI.meTab === 'favs') || CUR.key === 'me|favs')) rerender(); }).catch(() => {}); } catch(e){}
@@ -13174,6 +13177,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 </script>
 <script src="scripts/dm-expressions.js?v=20261111-2"></script>
 <script src="scripts/communication.js?v=20261111-r13"></script>
+<script src="scripts/favorites.js?v=20261111-4"></script>
 
 <script src="scripts/oauth-v1.js?v=20261110-1"></script>
 </body>

@@ -64,7 +64,7 @@ test('官方通知：有变化才更新，保留本地已读和已提交的反�
 
 test('dmRefs 分批并限制并发；收藏不等补取结束，补完只在收藏页重画',async()=>{
   let active=0,peak=0;const posts=new Map();
-  const ctx=vm.createContext({Map,Set,Promise,Array,ME:'me',STATE:{favs:new Set()},CUR:{key:'home|'},UI:{},POSTS:[],LDM:{miss:new Set()},dmSession:()=>()=>true,accountSession:()=>()=>true,rerender(){},
+  const ctx=vm.createContext({LIVE:{},Map,Set,Promise,Array,ME:'me',STATE:{favs:new Set()},CUR:{key:'home|'},UI:{},POSTS:[],LDM:{miss:new Set()},dmSession:()=>()=>true,accountSession:()=>()=>true,rerender(){},
     POST:id=>posts.get(id),P:()=>null,apiPost:p=>{posts.set(p.id,p);return p;},apiProduct(){},API:{req:async(m,p,body)=>{assert.equal(m,'POST');assert.equal(p,'/content/resolve');active++;peak=Math.max(peak,active);await tick();active--;return {posts:body.refs.map(r=>({id:r.id})),products:[],unavailable:[],retry:[]};}}});
   vm.runInContext(section('async function dmRefs(list','async function dmThreads(){'),ctx);
   await ctx.dmRefs(Array.from({length:120},(_,i)=>({t:'post',ref:'p'+i})));assert.equal(peak,2);assert.equal(posts.size,120);

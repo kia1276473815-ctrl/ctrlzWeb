@@ -1,0 +1,5 @@
+.fav-toolbar,.fav-pagination,.fav-status{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin:18px 0;line-height:1.6;font-size:14px;color:var(--ink-2)}
+.fav-toolbar>span,.fav-status>span{flex:1;min-width:160px}.fav-toolbar button,.fav-pagination button,.fav-status button{min-height:44px}.fav-pagination{border-top:1px solid var(--rule);padding-top:18px}.fav-status{justify-content:flex-start}
+.fav-unavailable{min-width:0;padding:20px 0;break-inside:avoid;color:var(--ink-2);font-size:14px;line-height:1.7;border-bottom:1px solid var(--rule)}.fav-unavailable b{color:var(--ink)}.fav-unavailable p{margin:8px 0;overflow-wrap:anywhere}.fav-unavailable button{min-height:44px}
+.pk-pane .mfs{margin-top:18px}.pk-pane .fav-page-items{margin-bottom:12px}.pk-pane .fav-unavailable{grid-column:1/-1}.pk-pane .fav-toolbar>span{min-width:140px}
+.mfs button[data-act="favs-kind"]{min-height:44px}
