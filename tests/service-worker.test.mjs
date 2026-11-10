@@ -56,7 +56,7 @@ test('联网成功采用新页面并更新统一主页缓存，未命中离线�
 
 test('安装缓存HTML与四个经典脚本，私密签名文件和接口请求不被主页策略接管',async()=>{
   const w=worker(),waits=[];w.listeners.get('install')({waitUntil:value=>waits.push(value)});await Promise.all(waits);
-  assert.deepEqual(w.precache.map(x=>typeof x==='string'?x:x.url),["./","./scripts/communication.js?v=20261110-r8","./scripts/communication.css?v=20261110-r8","./scripts/audio-cache.js?v=20261011","./scripts/dm-outbox.js","./scripts/harmony-loader.js?v=20261012","./scripts/views-admin-v1.js?v=20261030-2","./scripts/views-payments-v1.js?v=20261111-1","./scripts/views-audio-v1.js?v=20261030-sec","./scripts/docs-v1.js?v=20261110-oauth","./scripts/oauth-v1.js?v=20261110-1","./vendor/qrcodegen.js"]);
+  assert.deepEqual(w.precache.map(x=>typeof x==='string'?x:x.url),["./","./scripts/communication.js?v=20261110-r8","./scripts/communication.css?v=20261110-r8","./scripts/audio-cache.js?v=20261011","./scripts/dm-outbox.js","./scripts/harmony-loader.js?v=20261012","./scripts/native-video-v1.js?v=20261110-1","./scripts/views-admin-v1.js?v=20261030-2","./scripts/views-payments-v1.js?v=20261111-1","./scripts/views-audio-v1.js?v=20261030-sec","./scripts/docs-v1.js?v=20261110-oauth","./scripts/oauth-v1.js?v=20261110-1","./vendor/qrcodegen.js"]);
   // 首页跳过旧HTTP副本，保证新缓存离线启动使用当前脚本；有版本号的资源复用HTTP缓存。
   assert.equal(w.precache.find(x=>x.url==='./').cache,'reload');
   assert.deepEqual(w.precache.filter(x=>typeof x==='string'),['./scripts/dm-outbox.js','./vendor/qrcodegen.js']);assert(w.precache.filter(x=>typeof x!=='string'&&x.url!=='./').every(x=>x.cache==='force-cache'));

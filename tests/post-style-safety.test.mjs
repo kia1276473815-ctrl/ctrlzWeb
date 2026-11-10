@@ -16,6 +16,7 @@ function mapper(){
   return raw => vm.runInContext('apiPost(fixture)',Object.assign(ctx,{fixture:{id:'p_abc',author:{id:'u'},title:'标题',body:'正文',likeCount:0,commentCount:0,createdAt:new Date(0).toISOString(),...raw}}));
 }
 const XSS = '<img src=x onerror=alert(1)>';
+test('原生视频按服务器媒体映射，派生封面用于分享缩略图，优先于外链和模板',()=>{const map=mapper(),p=map({type:'video',media:[{kind:'video',url:'/files/clip.webm'},{kind:'image',url:'/files/poster.jpg'}],style:{h:.5625,dur:2,url:'https://b23.tv/old'}});assert.equal(p.nativeVideo,true);assert.equal(p.vurl,'/files/clip.webm');assert.equal(p.poster,'/files/poster.jpg');assert.equal(p.h,.5625);assert.equal(p.vdur,2);assert.equal(p.tcover,undefined);const ctx=vm.createContext({cover:()=>{throw Error('真实封面不应合成模板');}});vm.runInContext(section('const thumbOf =','// 小缩略图')+';this.thumbOf=thumbOf;',ctx);assert.equal(ctx.thumbOf(p),'/files/poster.jpg');});
 
 test('apiPost：能拼进页面的 qn、plat、h 一律收窄成安全值',()=>{
   const map=mapper();

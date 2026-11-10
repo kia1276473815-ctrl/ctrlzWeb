@@ -1097,6 +1097,14 @@ canvas[data-wave]:focus-visible{box-shadow:0 0 0 2px var(--on)}
 .cp-audio-error{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;font-size:14px;line-height:1.5;color:var(--ink-2)}
 .cp-audio-error span{flex:1 1 180px;overflow-wrap:anywhere}.cp-audio-error button{min-height:44px;flex:none}
 .cp-media-note{margin:8px 0 0;color:var(--ink-2);font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.native-video{width:100%;min-width:0;background:#0d0d10;border-radius:12px;overflow:hidden;position:relative}
+.native-video video{display:block;width:100%;max-height:70dvh;object-fit:contain;background:#0d0d10}
+.native-video-feedback{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;padding:8px;color:#fff;font-size:14px;line-height:1.5;flex:none}
+.native-video-feedback:has([data-video-status][hidden]):has([data-video-retry][hidden]){display:none}.native-video .native-video-feedback .pill{min-height:44px;color:#fff;border-color:rgba(255,255,255,.5);background:transparent}
+.post .media .native-video{height:100%;display:flex;flex-direction:column;justify-content:center}.post .media .native-video video{max-height:100%;min-height:0}
+.post .media>[data-vbox]{height:100%;min-height:0}.post .media>[data-vbox]>img{height:100%;object-fit:cover}
+.native-draft .native-video video{max-height:320px}.cp-add{min-height:44px;height:auto;padding-block:10px}
+.cp-pv:not([inert]) [data-native-box]{pointer-events:auto}
 .cp.has-aud .cp-demo{display:none}
 .cp-add svg{width:18px;height:18px}
 .cp-imgs{display:flex;gap:8px;flex-wrap:wrap}
@@ -2675,6 +2683,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 <script src="scripts/dm-outbox.js"></script>
 <script src="vendor/qrcodegen.js"></script>
 <script src="scripts/harmony-loader.js?v=20261012"></script>
+<script src="scripts/native-video-v1.js?v=20261110-1"></script>
 <script>
 "use strict";
 /* ================= 示例数据（全部虚构） ================= */
@@ -5807,13 +5816,14 @@ function postCard(p, i, list){
   if (p.type === 'image' && p.tcover) cv = `<div class="cv">${textCover(p)}</div>`;
   else if (p.type === 'image' && p.img) cv = `<div class="cv"><img src="${esc(p.img)}" alt=""${pimgAttr(p, i, list)} style="aspect-ratio:1/${+p.h > 0 ? +p.h : 1};object-fit:cover">${p.imgs && p.imgs.length > 1 ? `<span class="tag k" style="position:absolute;right:10px;top:10px">1/${p.imgs.length}</span>` : ''}</div>`;
   else if (p.type === 'image') cv = `<div class="cv"><img src="${cover(p.cover, hash(p.id) % 50, 480, Math.round(480*(p.h||1)))}" alt="" width="480" height="${Math.round(480*(p.h||1))}"></div>`;
+  else if (p.nativeVideo) cv = p.id === 'draft' ? `<div class="cv native-draft">${nativeVideoHTML(p)}</div>` : `<div class="cv vcard"><img src="${esc(p.poster || cover('wave', hash(p.id)%50, 480, Math.round(480*(p.h||1))))}" alt="" loading="lazy" style="aspect-ratio:1/${+p.h||1};object-fit:cover"><span class="vbadge">${IC.play}${esc(p.dur)}</span></div>`;
   else if (p.type === 'video' && p.vis) cv = `<div class="cv vcard" data-qbox="v:${p.id}"><img src="${cover({...p.vis, txt:p.title}, 1, 480, 600)}" alt="" width="480" height="600">${p.id === 'draft' ? `<span class="pv"><button class="pbtn" data-act="qplay" data-id="v:draft" aria-label="试听预览">${IC.play}</button></span>` : `<span class="vbadge">${IC.play}${p.dur}</span>`}</div>`;
   else if (p.type === 'video') cv = `<div class="cv vcard ${p.failed ? 'failed' : ''}"><img src="${cover(p.cover, hash(p.id) % 50, 480, Math.round(480*Math.max(1.15, p.h||1)))}" alt="" width="480" height="${Math.round(480*Math.max(1.15, p.h||1))}">${p.failed ? '<span class="vgone">视频已失效</span>' : `<span class="vbadge">${IC.play}${p.dur}</span>`}</div>`;
   else if (p.type === 'audio'){ const pr = p.attach[0] && P(p.attach[0]); cv = `<div class="cv grain"><div class="acv"><div class="row"><span class="tag k">声音 · <span data-wt="${p.id}">${p.dur}</span></span></div><canvas data-wave="${p.id}" data-seed="${p.seed}" tabindex="0" role="slider" aria-label="播放进度"></canvas><div class="row"><span class="t">${esc(pr ? pr.en.split(' ')[0] : (p.word || 'SOUND'))}</span><button class="pbtn" data-act="aplay" data-id="${p.id}" aria-label="试听">${IC.play}</button></div></div></div>`; }
   else { const s = isSolved(p); cv = `<div class="cv grain"><div class="qcv"><div style="display:flex;justify-content:space-between;align-items:flex-start"><span class="q">?</span>${s ? '<span class="stamp">SOLVED<small>已解决</small></span>' : `<span class="tag k">Q.${esc(p.qn)}</span>`}</div><p>${esc(p.ex)}</p></div></div>`; }
   const onCv = p.attach.length && (p.type === 'image' || p.type === 'video') && !p.failed && cv && attachChip(p.attach[0]);   // 图片 / 视频封面：商品条做成毛玻璃压在封面下沿
   if (onCv) cv = cv.replace(/^<div class="cv/, '<div class="cv has-att').replace(/<\/div>$/, onCv + '</div>');
-  return `<article class="card ${postCls(p)} ${p.tcover && p.type === 'image' ? 'tpost' : ''}" data-t="${p.type}" data-go="${p.failed ? 'post-' + p.id : postHref(p)}" data-flip="p-${p.id}">${modBtn(p)}${cv}<div class="bd">${p.review ? '<span class="tag c-yellow pend-t">审核中</span>' : ''}<h3>${esc(p.title)}</h3>${p.attach.length && !onCv ? attachChip(p.attach[0]) : ''}<div class="meta"><a class="who" data-go="user-${u.id}">${av(u.id,'sm')}<span>${esc(u.name)}</span></a>${likeBtn(p)}</div></div></article>`;
+  return `<article class="card ${postCls(p)} ${p.tcover && p.type === 'image' ? 'tpost' : ''}" data-t="${p.type}"${p.id==='draft'&&typeof API!=='undefined'&&API.on()?'':` data-go="${p.failed ? 'post-' + p.id : postHref(p)}"`} data-flip="p-${p.id}">${modBtn(p)}${cv}<div class="bd">${p.review ? '<span class="tag c-yellow pend-t">审核中</span>' : ''}<h3>${esc(p.title)}</h3>${p.attach.length && !onCv ? attachChip(p.attach[0]) : ''}<div class="meta"><a class="who" data-go="user-${u.id}">${av(u.id,'sm')}<span>${esc(u.name)}</span></a>${likeBtn(p)}</div></div></article>`;
 }
 function sleeve(pr){ return sleeveHtml(pr, cover(pr.cover, hash(pr.id) % 50)); }
 const sleeveSig = pr => sleeveHtml(pr, JSON.stringify(pr.cover));   // 比较用的签名：内容和卡片一样，只是封面换成参数，不用真的画
@@ -6428,10 +6438,22 @@ document.addEventListener('gen', () => {
 
 /* 外链视频：就地播放（原型中以模拟画面代替第三方播放器） */
 const VID = {box:null};
+const NATIVE_VIDEO = CZVideo.createPlayer({scope:()=>JSON.stringify([API.base,API.epoch,ME]),getPost:POST,
+  refresh:async(id,signal)=>{const base=API.base,epoch=API.epoch,user=ME,data=await API.req('GET','/posts/'+encodeURIComponent(id),undefined,{signal});if(signal.aborted||API.base!==base||API.epoch!==epoch||ME!==user)throw Object.assign(Error('会话已变化'),{code:'cancel'});const np=apiPost(data),old=POST(id);if(old)Object.assign(old,np);return np.nativeVideo ? np.vurl:null;},
+  interrupt:video=>{if(quickPlayPending!=null){quickPlayNonce++;quickPlayCtrl?.abort();quickPlayCtrl=null;quickPlayPending=null;}if(PEND.id!=null){PEND.n++;PEND.ctrl?.abort();PEND.ctrl=null;PEND.id=null;}if(GEN.pending)GEN.stop();else if(GEN.on)GEN.pause();for(const other of $$('audio,video'))if(other!==video&&!other.paused)other.pause();},
+  intent:()=>document.dispatchEvent(new CustomEvent('audio-intent')),priority:()=>document.dispatchEvent(new CustomEvent('audio-priority-change')),audioActive:()=>GEN.on||GEN.pending});
+function nativeVideoHTML(p){
+  const safe=url=>{if(typeof url!=='string'||!url)return '';try{const u=new URL(url,location.href);return ['http:','https:'].includes(u.protocol)||(p.id==='draft'&&u.protocol==='blob:')?url:'';}catch(_){return '';}};
+  const src=safe(p.vurl),poster=safe(p.poster),ratio=+p.h>=.3&&+p.h<=3?+p.h:1;return `<div class="native-video" data-native-box><video controls playsinline preload="none" data-native-video="${esc(p.id)}" aria-label="${esc(p.title)}" style="aspect-ratio:1/${ratio}"${src?` src="${esc(src)}"`:''}${poster?` poster="${esc(poster)}"`:''}></video><div class="native-video-feedback"><span data-video-status role="status"${src?' hidden':''}>${src?'':'视频地址暂不可用，请重试'}</span><button class="pill sm lt" data-video-retry${src?' hidden':''}>重试播放</button></div></div>`;
+}
+function nativeVideoRestore(host,previous){const next=host?.querySelector('video[data-native-video]');if(previous&&next&&previous.dataset.nativeVideo===next.dataset.nativeVideo&&previous.getAttribute('src')===next.getAttribute('src')){for(const key of ['aria-label','style','poster']){const value=next.getAttribute(key);if(value!==null)previous.setAttribute(key,value);else previous.removeAttribute(key);}next.closest('[data-native-box]').replaceWith(previous.closest('[data-native-box]'));}if(host)NATIVE_VIDEO.mount(host);}
+function externalVideoURL(value){if(typeof value!=='string'||!value.trim()||/[\u0000-\u001f\u007f]/.test(value))return '';try{const url=new URL(/^[a-z][a-z0-9+.-]*:/i.test(value)?value:'https://'+value);return ['http:','https:'].includes(url.protocol)&&!url.username&&!url.password?url.href:'';}catch(_){return '';}}
+function externalVideoHTML(p){const real=p.live||p.linked;return `<div data-vbox="${esc(p.id)}" style="width:100%;position:relative"><img src="${cover(p.cover,hash(p.id)%50,960,560)}" alt="" style="width:100%"><span class="plat" style="position:absolute;left:14px;bottom:14px;font:700 11px/1 var(--f-b);padding:6px 9px;border-radius:999px;background:var(--paper);color:var(--ink)">${esc(p.plat||'视频链接')}</span><span class="pv big"><button class="${real?'pill lg':'pbtn'}" data-act="vplay" data-id="${esc(p.id)}" aria-label="${real?'在原网站观看':'播放示例'}">${real?'在原网站观看 '+IC.arrow:IC.play}</button></span></div>`;}
 function playVideo(id, box){
   const p = POST(id); box = box || $(`[data-vbox="${id}"]`); if (!box) return;
   if (VID.box && VID.box !== box) stopVideo(VID.box);
   if (p.failed){ const img = box.querySelector('img'); const gone = document.createElement('div'); gone.className = 'gone'; gone.innerHTML = `<span class="x">GONE</span><span>原视频已被作者删除</span>`; box.appendChild(gone); box.querySelector('.pv')?.remove(); return; }
+  if(p.live||p.linked){const url=externalVideoURL(p.url);if(!url){toast('视频链接无效，请检查原地址','orange');return;}NATIVE_VIDEO.pause();if(GEN.pending)GEN.stop();else if(GEN.on)GEN.pause();window.open(url,'_blank','noopener,noreferrer');return;}
   const img = box.querySelector('img'), h = img?.getBoundingClientRect().height || 260;
   const cv = document.createElement('canvas'); cv.className = 'vcv'; cv.style.height = h + 'px'; img.after(cv); img.hidden = true;
   const b = box.querySelector('[data-act="vplay"]'); if (b){ b.dataset.act = 'vstop'; b.classList.add('on'); b.innerHTML = IC.pause; b.setAttribute('aria-label', '暂停'); }
@@ -6464,7 +6486,7 @@ function openPost(id){
     $('#post .side').animate([{opacity:0},{opacity:1}], {duration:260, delay:220, fill:'backwards'}); $('#post .pback').animate([{opacity:0},{opacity:1}], {duration:200, delay:300, fill:'backwards'}); }
   else UI.from = null;
 }
-function closePostLayer(){ inputDraftSave($('#cmtIn')); PCLEAN.forEach(f => { try { f(); } catch(e){} }); PCLEAN = []; $('#post').innerHTML = ''; document.documentElement.style.overflow = ''; document.body.classList.remove('post-open'); CUR.post = null; fabUpdate(); if (UI.dirty){ UI.dirty = false; const run = () => { if (CUR.post) return; const {r, arg} = parseHash(); renderBase(r, arg, true); }; window.requestIdleCallback ? requestIdleCallback(run, {timeout:400}) : setTimeout(run, 60); } }   // 列表刷新放到空闲时，关帖子那一帧不卡
+function closePostLayer(){ NATIVE_VIDEO.release($('#post')); inputDraftSave($('#cmtIn')); PCLEAN.forEach(f => { try { f(); } catch(e){} }); PCLEAN = []; $('#post').innerHTML = ''; document.documentElement.style.overflow = ''; document.body.classList.remove('post-open'); CUR.post = null; fabUpdate(); if (UI.dirty){ UI.dirty = false; const run = () => { if (CUR.post) return; const {r, arg} = parseHash(); renderBase(r, arg, true); }; window.requestIdleCallback ? requestIdleCallback(run, {timeout:400}) : setTimeout(run, 60); } }   // 列表刷新放到空闲时，关帖子那一帧不卡
 /* ===== 输入框聚焦：右（左）边的图标被输入框挤走，弹到输入栏上沿变成会滚的小球
    · 重力方向跟着手机倾斜（共用 GRAV 陀螺仪；iOS 首次聚焦时请求权限，拒绝就只有向下的重力）
    · 打字时小球被震得轻轻跳一下；点小球照常能用（不收键盘）；失焦后弹簧回到原位
@@ -6613,6 +6635,7 @@ function dockEnd(S, smooth){
 }
 function renderPost(id, fresh){
   if (!POST(id)) return;   // 帖子刚被删除 / 下架
+  const native = !fresh ? $('#post video[data-native-video]') : null;
   const ci0 = $('#cmtIn'), csnap = ci0 && !fresh && CUR.post === id ? {v:ci0.value, f:document.activeElement === ci0 || DK.tap>0 && performance.now() - DK.tap < 450, b:dockSnap(ci0)} : null; inputDraftSave(ci0); DK.tap = 0;
   if (DK.st && DK.st.t === ci0){ cancelAnimationFrame(DK.st.raf); DK.st = null; }
   PCLEAN.forEach(f => { try { f(); } catch(e){} }); PCLEAN = [];
@@ -6624,7 +6647,8 @@ function renderPost(id, fresh){
   else if (p.type === 'image' && p.img) media = `<img src="${esc(p.img)}" alt=""${p.live ? ` data-pimg="${p.id}"` : ''}>${p.imgs && p.imgs.length > 1 ? `<span class="tag k" style="position:absolute;right:16px;bottom:16px;z-index:2">共 ${p.imgs.length} 张</span>` : ''}`;
   else if (p.type === 'image') media = `<img src="${cover(p.cover, hash(p.id)%50, 1000, Math.round(1000*(p.h||1)))}" alt="">`;
   if (p.type === 'video' && p.vis) media = `<div data-qbox="v:${p.id}" style="position:absolute;inset:0"><img src="${cover({...p.vis, txt:p.title}, 1, 960, 960)}" alt="" style="width:100%;height:100%;object-fit:cover"><span class="pv"><button class="pbtn" data-act="qplay" data-id="v:${p.id}" aria-label="播放">${IC.play}</button></span></div>`;
-  else   if (p.type === 'video') media = `<div data-vbox="${p.id}" style="width:100%;position:relative"><img src="${cover(p.cover, hash(p.id)%50, 960, 560)}" alt="" style="width:100%"><span class="plat" style="position:absolute;left:14px;bottom:14px;font:700 11px/1 var(--f-b);padding:6px 9px;border-radius:999px;background:var(--paper);color:var(--ink)">${esc(p.plat)}</span><span class="pv big"><button class="pbtn" data-act="vplay" data-id="${p.id}" aria-label="播放">${IC.play}</button></span></div>`;
+  else if (p.nativeVideo) media = nativeVideoHTML(p);
+  else if (p.type === 'video') media = externalVideoHTML(p);
   if (p.type === 'audio'){ const pr = p.attach[0] && P(p.attach[0]); media = `<div class="grain" style="position:absolute;inset:0;padding:clamp(18px,3vw,36px);display:flex;flex-direction:column;justify-content:space-between"><span class="tag k" style="align-self:flex-start;position:relative;z-index:2">声音 · <span data-wt="${p.id}">${p.dur}</span></span><canvas data-wave="${p.id}" data-seed="${p.seed}" data-bars="72" tabindex="0" role="slider" aria-label="播放进度" style="width:100%;height:34%;position:relative;z-index:2"></canvas><div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;position:relative;z-index:2"><span class="x" style="font-size:clamp(44px,6vw,92px);mix-blend-mode:multiply">${esc(pr ? pr.en : 'SOUND')}</span><button class="pbtn" data-act="aplay" data-id="${p.id}" style="width:76px;height:76px" aria-label="播放">${IC.play}</button></div></div>`; }
   if (p.type === 'question') media = `<div class="grain" style="position:absolute;inset:0;padding:clamp(18px,3vw,36px);display:flex;flex-direction:column;justify-content:space-between"><span class="x" style="font-size:clamp(130px,18vw,240px);line-height:.8;mix-blend-mode:multiply;position:relative;z-index:2">?</span>
     <div style="position:relative;z-index:2;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap"><span class="x" style="font-size:clamp(34px,4vw,56px)">Q.${esc(p.qn)}</span>
@@ -6658,7 +6682,7 @@ function renderPost(id, fresh){
   const fl = $('.cmt.flash', root); if (fl){ UI.flashCmt = null; setTimeout(() => { if(fl.isConnected && CUR.post===id) fl.scrollIntoView({block:'center', behavior:reduced() ? 'auto' : 'smooth'}); }, 380); }
   const fc = $('.cmt.fresh', root); if (fc && !fresh){ const r = fc.getBoundingClientRect(); if (r.bottom > innerHeight - 80 || r.top < 0) fc.scrollIntoView({block:'center', behavior:reduced() ? 'auto' : 'smooth'}); }
   PCLEAN.push(waveLoop($$('canvas[data-wave]', root)));
-  syncLive();
+  nativeVideoRestore($('#post'), native); syncLive();
   document.dispatchEvent(new CustomEvent('gen'));
   const inp = $('#cmtIn'); composer(inp, () => ACTIONS.cmt($('[data-act="cmt"]'))); inputDraftBind(inp,'comment',id);globalThis.CZCommunication?.attachEditor?.(inp);
   // 点赞 / 收藏等重绘后：保留没发出去的文字和焦点，小球接着在原来的位置滚
@@ -7816,7 +7840,7 @@ document.addEventListener('input', e => { const i = e.target.closest?.('[data-op
 const isVid = p => p && p.type === 'video';
 const durSec = d => { const m = String(d || '').match(/(\d+):(\d+)/); return m ? +m[1]*60 + +m[2] : 60; };
 const ago = ts => { const s = (Date.now() - ts)/1000; if (s < 60) return '刚刚'; if (s < 3600) return Math.floor(s/60) + ' 分钟前'; if (s < 86400) return Math.floor(s/3600) + ' 小时前'; if (s < 172800) return '昨天'; const d = new Date(ts); return (d.getMonth() + 1) + '-' + d.getDate(); };
-const thumbOf = p => p.tcover ? null : p.img ? p.img : p.vis ? cover({...p.vis, txt:p.title}, 1, 240, 240) : p.type === 'audio' ? cover('wave', p.seed || 1, 240, 240) : p.type === 'question' ? null : cover(p.cover, hash(p.id) % 50, 240, Math.round(240*(p.h || 1)));
+const thumbOf = p => p.tcover ? null : p.poster || p.img || (p.vis ? cover({...p.vis, txt:p.title}, 1, 240, 240) : p.type === 'audio' ? cover('wave', p.seed || 1, 240, 240) : p.type === 'question' ? null : cover(p.cover, hash(p.id) % 50, 240, Math.round(240*(p.h || 1))));
 // 小缩略图：有图用图，没图（文字 / 提问）用一块带字的色块
 function miniThumb(p, cls=''){ const s = thumbOf(p); if (s) return `<img class="${cls}" src="${esc(s)}" alt="">`; const P = TC_PALS[p.tcover?.pal || (p.type === 'question' ? 'yellow' : 'paper')]; return `<span class="mth ${cls}" style="background:${P[0]};color:#141418">${p.type === 'question' ? '?' : esc((p.title || '').slice(0, 6))}</span>`; }
 /* 声音流：声音帖和音频可视化帖（都有真实音频）；外链视频按普通帖子打开 */
@@ -9464,6 +9488,7 @@ function cpBody(){ return ($('#cBody')?.value || '').trim(); }
 function cpRest(){ const b = cpBody().replace(URL_RE, '').trim(), t = cpTitle(); return !($('#cTitle')?.value || '').trim() && t && b.startsWith(t) ? b.slice(t.length).trim() : b; }
 function cpLink(){ const C = UI.cp; return C.link || (cpBody().match(URL_RE) || [])[0] || ''; }
 function cpKind(){ const C = UI.cp;
+  if (C.video) return 'video';
   if (C.audio) return C.acov === 'vis' ? 'vis' : 'audio';
   if (detectPlat(cpLink())) return 'video';
   if (C.imgs.length && !C.ttext) return 'image';
@@ -9475,7 +9500,7 @@ function cpDraft(){
   if (k === 'text') Object.assign(d, {type:'image', tcover:{pal:C.pal}});
   else if (k === 'image'){ const im = C.imgs[C.ci] || C.imgs[0]; Object.assign(d, {type:'image', img:im.url, imgs:C.imgs.map(x => x.url), h:im.h}); }
   else if (k === 'question') d.type = 'question';
-  else if (k === 'video') Object.assign(d, {type:'video', plat:detectPlat(cpLink()), url:cpLink(), cover:['wave','grid','topo','rings'][hash(cpLink()) % 4], dur:'--:--', h:1});
+  else if (k === 'video') Object.assign(d, C.video ? {type:'video',nativeVideo:true,vurl:C.video.url,poster:C.video.posterUrl,dur:C.video.duration?fmtT(C.video.duration):'--:--',h:clamp((C.video.h||1)/(C.video.w||1),.3,3)} : {type:'video',linked:API.on(),plat:detectPlat(cpLink()),url:cpLink(),cover:['wave','grid','topo','rings'][hash(cpLink()) % 4],dur:'--:--',h:1});
   else { const tr = TRACKS['post:draft']; Object.assign(d, {type: k === 'vis' ? 'video' : 'audio', dur: tr ? fmtT(tr.dur) : '0:00', vis: k === 'vis' ? {...C.vis} : undefined}); }
   return UI.cpDraft = d;
 }
@@ -9504,6 +9529,7 @@ function cpCapture(C = UI.cp){
   if (UI.cp === C && $('#cpWrap')){ C.title = $('#cTitle')?.value ?? C.title ?? ''; C.body = $('#cBody')?.value ?? C.body ?? ''; }
   return {title:C.title || '', body:C.body || '', imgs:C.imgs.map(x => ({file:x.file, h:x.h, uploadId:x.uploadId})).filter(x => x.file),
     ci:C.ci, audio:C.audio ? {name:C.audio.name, file:C.audio.file, demo:!C.audio.file, uploadId:C.audio.uploadId, uploadSource:C.audio.uploadSource} : null,
+    video:C.video ? {file:C.video.file,name:C.video.name,mime:C.video.mime,poster:C.video.poster,duration:C.video.duration,w:C.video.w,h:C.video.h,uploadId:C.video.uploadId,uploadSource:C.video.uploadSource,posterUploadId:C.video.posterUploadId} : null,
     link:C.link, pal:C.pal, q:C.q, ttext:C.ttext, acov:C.acov, vis:{...C.vis}, attach:[...C.attach], res:!!C.res, requestKey:C.requestKey, requestSignature:C.requestSignature,mentions:C.mentions || [], savedAt:Date.now()};
 }
 function cpSave(C = UI.cp){
@@ -9524,17 +9550,19 @@ async function cpRestore(C){
   if (UI.cp !== C || !panel || $('#cpWrap') !== panel || C.closed || C.key !== cpStoreKey()){ C.restoring = false; return; }
   if (C.userEdited){ C.restoring = false; cpRender(); return; }
   if (d){ Object.assign(C, d, {imgs:(d.imgs || []).map(x => ({...x, url:URL.createObjectURL(x.file)})), attach:new Set(d.attach || []), restoring:false});
-    const audio = d.audio; C.audio = null; drawCompose(); if (audio) await cpAddAudio(audio.file, audio.demo, {restored:true, uploadId:audio.uploadId, uploadSource:audio.uploadSource});
+    const audio = d.audio, video = d.video; C.audio = C.video = null; drawCompose();
+    const media=[]; if(audio)media.push(cpAddAudio(audio.file,audio.demo,{restored:true,uploadId:audio.uploadId,uploadSource:audio.uploadSource}));if(video)media.push(cpAddVideo(video.file,{...video,restored:true}));await Promise.all(media);
     if (UI.cp === C && !C.closed && $('#cpWrap') === panel && C.key === cpStoreKey()) toast('已恢复未发布的草稿', 'blue'); }
   C.restoring = false; if (UI.cp === C && !C.closed && $('#cpWrap') === panel && C.key === cpStoreKey()) cpRender();
 }
 function composeSheet(mode){
   if (UI.cp?.busy){ toast('作品正在发布，完成后可以继续', 'blue'); return; }
-  if (UI.cp) cpCancelAudio(UI.cp);
+  if (UI.cp){cpCancelAudio(UI.cp);cpCancelVideo(UI.cp);}
   const C = UI.cp = {mode:'post', imgs:[], ci:0, audio:null, link:'', pal:'paper', q:null, ttext:false, acov:'wave', vis:{tpl:'dots', pal:'pb'}, attach:new Set(), title:'', body:'', key:cpStoreKey(), restoring:true};
   delete TRACKS['post:draft'];
   sheet(`<div class="cp-top"><h3>发布</h3></div><div id="cpWrap"></div>`,
-    () => () => { C.closed = true; cpCancelAudio(C); clearTimeout(C.saveTimer); cpSave(C); if (cpRender._wl){ cpRender._wl(); cpRender._wl = null; }
+    () => () => { C.closed = true; cpCancelAudio(C); cpCancelVideo(C,false); clearTimeout(C.saveTimer); cpSave(C); if (cpRender._wl){ cpRender._wl(); cpRender._wl = null; }
+      setTimeout(()=>cpReleaseVideo(C.video),1000);
       // 草稿存的是 File，下次打开重新生成地址，这批可以放掉：等面板退场播完（影子还在显示），发布中的不动，原型发布后帖子还在用的也不动
       setTimeout(() => { if (!C.busy) C.imgs.forEach(im => { if (!POSTS.some(p => p.img === im.url || p.imgs?.includes(im.url))) URL.revokeObjectURL(im.url); }); }, 1000); });
   $('#layer .sheet').classList.add('cp'); drawCompose(); cpRestore(C);
@@ -9552,6 +9580,7 @@ function drawCompose(){
     <div class="cp-att">
       <label class="cp-add" title="加图片">${IC.img}<span>图片</span><input type="file" id="cpImg" accept="image/*" multiple hidden></label>
       <label class="cp-add" title="加音频">${IC.wave}<span>音频</span><input type="file" id="cpAud" accept="audio/*" hidden></label>
+      <label class="cp-add" title="加视频">${IC.play}<span>视频</span><input type="file" id="cpVid" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" hidden></label>
       <button class="cp-add" data-act="cp-link" title="视频链接">${IC.link}<span>视频链接</span></button>
       <button class="cp-demo" data-act="cp-demo">没有音频？用示例</button>
     </div>
@@ -9567,6 +9596,7 @@ function drawCompose(){
   $('#cLink').addEventListener('input', e => { C.link = e.target.value.trim(); upd(); });
   $('#cpImg').addEventListener('change', e => cpAddImages([...e.target.files]));
   $('#cpAud').addEventListener('change', e => { const file = e.target.files[0]; e.target.value = ''; if (file) cpAddAudio(file); });
+  $('#cpVid').addEventListener('change', e => { const file=e.target.files[0];e.target.value='';if(file)cpAddVideo(file); });
   setTimeout(() => $('#cBody')?.focus(), 80); cpRender(); cpResRender();
 }
 /* 附上用到的素材：开关打开后才展开；站内搜索 + 紧凑列表（小封面 + 名字），已购买的排在最前 */
@@ -9600,6 +9630,19 @@ function cpResListRender(){
   el.scrollTop = st;
 }
 function cpAudioSource(file, demo){ return JSON.stringify(demo ? ['demo-lofi', 1] : [file?.name, file?.type, file?.size, file?.lastModified]); }
+function cpReleaseVideo(video){if(!video)return;for(const key of ['url','posterUrl']){if(video[key]&&POSTS.some(p=>p.vurl===video[key]||p.poster===video[key]))continue;if(video[key])URL.revokeObjectURL(video[key]);video[key]=null;}}
+function cpCancelVideo(C,release=true){C.videoJob?.abort();C.videoJob=null;if(UI.cp===C)NATIVE_VIDEO.release($('#cpCover'));if(release)cpReleaseVideo(C.video);}
+async function cpAddVideo(file,{restored=false,uploadId,uploadSource,posterUploadId,poster}={}){
+  const C=UI.cp,panel=$('#cpWrap');if(!C||!file||!panel||C.closed||C.busy||C.published||C.key!==cpStoreKey())return;
+  cpCancelVideo(C);if(!restored)C.userEdited=true;const sameSource=uploadSource===CZVideo.source(file),mime=CZVideo.mime(file);
+  const video=C.video={file,name:file.name,mime,ld:true,url:URL.createObjectURL(file),...(sameSource?{uploadId,uploadSource,posterUploadId,poster}:{})};if(video.poster)video.posterUrl=URL.createObjectURL(video.poster);
+  const controller=C.videoJob=new AbortController(),scope=cpStoreKey(),epoch=API.epoch;
+  const current=()=>!controller.signal.aborted&&UI.cp===C&&C.video===video&&!C.closed&&!C.published&&$('#cpWrap')===panel&&panel.isConnected&&scope===cpStoreKey()&&API.epoch===epoch;
+  cpRender();try{if(!mime)throw Error('支持MP4、MOV和WebM视频，请换一个文件');if(file.size>500*1024*1024)throw Error('视频不能超过500MB，请换一个较小的文件');if(!file.size)throw Error('视频文件是空的，请重新选择');
+    const data=await CZVideo.inspect(file,{signal:controller.signal});if(!current())return;Object.assign(video,{duration:data.duration,w:data.w,h:data.h,ld:false});if(!video.poster&&data.poster){video.poster=data.poster;video.posterUrl=URL.createObjectURL(data.poster);}
+  }catch(error){if(!current())return;video.ld=false;video.error=error.message||'视频读取失败，请重试';}
+  finally{if(C.videoJob===controller)C.videoJob=null;}if(current())cpRender();
+}
 function cpAddImages(files){ const C = UI.cp;
   if (!C || C.closed || C.busy || C.published || C.key !== cpStoreKey()) return;
   const picked = files.filter(f => /^image\//.test(f.type)).slice(0, 9 - C.imgs.length); if (!picked.length) return; C.userEdited = true;
@@ -9633,12 +9676,13 @@ async function cpAddAudio(file, demo, {restored = false, uploadId, uploadSource}
 function cpRender(){
   const C = UI.cp, box = $('#cpCover'), att = $('#cpAtt'); if (!box) return;
   const k = cpKind(), d = cpDraft(), [kn, kc] = KIND[k]; $('#layer .sheet')?.classList.toggle('has-aud', !!C.audio);
-  const mediaConflict = !!C.audio && C.imgs.length > 0;
+  const mediaConflict = [C.audio,C.video,C.imgs.length,detectPlat(cpLink())].filter(Boolean).length>1;
   // 附件
   att.innerHTML = (C.imgs.length ? `<div class="cp-imgs">${C.imgs.map((im, i) => `<div class="cp-im ${i === C.ci && !C.ttext ? 'on' : ''}"><button data-act="cp-ci" data-i="${i}" aria-label="设为封面"><img src="${im.url}" alt=""></button><button class="x" data-act="cp-rmimg" data-i="${i}" aria-label="移除">${IC.x}</button></div>`).join('')}</div>` : '')
     + (C.audio ? `<div class="cp-chip">${IC.wave}<span>${esc(C.audio.name)}</span>${C.audio.ld ? '<i class="spin" role="status" aria-label="正在读取音频"></i>' : C.audio.error ? '' : `<em>${d.dur}</em>`}<button class="x" data-act="cp-rmaud" aria-label="移除音频">${IC.x}</button></div>${C.audio.error ? `<div class="cp-audio-error" role="status"><span>${esc(C.audio.error)}</span><button class="chip" data-act="cp-retryaud">重试读取</button></div>` : ''}` : '')
     + (detectPlat(cpLink()) ? `<div class="cp-chip">${IC.link}<span>${detectPlat(cpLink())} · ${esc(cpLink().replace(/^https?:\/\//, '').slice(0, 34))}</span><button class="x" data-act="cp-rmlink" aria-label="移除">${IC.x}</button></div>` : '');
-  if (mediaConflict) att.innerHTML += '<p class="cp-media-note" id="cpMediaConflict" role="status">这篇草稿同时有图片和声音，请移除其中一种后再发布。</p>';
+  if(C.video)att.innerHTML+=`<div class="cp-chip">${IC.play}<span>${esc(C.video.name)}</span>${C.video.ld?'<i class="spin" role="status" aria-label="正在读取视频"></i>':C.video.error?'':`<em>${d.dur}</em>`}<button class="x" data-act="cp-rmvid" aria-label="移除视频">${IC.x}</button></div>${C.video.error?`<div class="cp-audio-error" role="status"><span>${esc(C.video.error)}，原文件仍在草稿里</span><button class="chip" data-act="cp-retryvid">重试读取</button></div>`:''}`;
+  if (mediaConflict) att.innerHTML += '<p class="cp-media-note" id="cpMediaConflict" role="status">草稿中有多种媒体，请只保留图片组、声音、视频或视频链接中的一种后再发布。</p>';
   // 封面选项
   let opts = '';
   if (k === 'text') opts = `<div class="cp-pals">${Object.entries(TC_PALS).map(([key, [bg, ac, n]]) => `<button class="${C.pal === key ? 'on' : ''}" data-act="cp-pal" data-v="${key}" style="--b:${bg};--a:${INK[ac]}" aria-label="${n}"><i></i></button>`).join('')}</div>`;
@@ -9646,10 +9690,11 @@ function cpRender(){
   if (k === 'audio' || k === 'vis') opts = `<div class="cmode"><button class="${k === 'audio' ? 'on' : ''}" data-act="cp-acov" data-v="wave">波形</button><button class="${k === 'vis' ? 'on' : ''}" data-act="cp-acov" data-v="vis">可视化视频</button></div>`
     + (k === 'vis' ? `<div class="cvp">${visQuick(C.vis.tpl).map(key => `<button class="${C.vis.tpl === key ? 'on' : ''}" data-act="cp-vis" data-k="tpl" data-v="${key}" title="${COVER_TPLS[key]}"><img src="${cover({tpl:key, pal:C.vis.pal, txt:d.title}, 1, 96, 96)}" alt=""></button>`).join('')}<button class="cvp-all" data-act="cp-vlab" title="全部可视化"><b>${Object.keys(VIS).length}</b><span>全部</span></button></div><div class="palp">${Object.entries(COVER_PALS).map(([key, p]) => `<button class="${C.vis.pal === key ? 'on' : ''}" data-act="cp-vis" data-k="pal" data-v="${key}"><i style="background:${INK[p.a]}"></i><i style="background:${INK[p.b]}"></i>${p.n}</button>`).join('')}</div>` : '');
   if (k === 'question' || (k === 'text' && C.q === false)) opts += `<button class="chip" data-act="cp-q" data-v="${k === 'question' ? 0 : 1}">${k === 'question' ? '不是提问，按图文发' : '其实是提问'}</button>`;
-  if (k === 'video') opts = `<span class="mut2 cp-note">封面和时长会从链接里取</span>`;
-  const empty = !cpTitle() && !C.imgs.length && !C.audio && !detectPlat(cpLink());
-  const audioUnavailable = C.audio && (C.audio.ld || C.audio.error);
+  if (k === 'video') opts = `<span class="mut2 cp-note">${C.video?'保留原视频，封面自动截取':'封面和时长会从链接里取'}</span>`;
+  const empty = !cpTitle() && !C.imgs.length && !C.audio && !C.video && !detectPlat(cpLink());
+  const audioUnavailable = (C.audio && (C.audio.ld || C.audio.error)) || (C.video && (C.video.ld || C.video.error)),native=box.querySelector('video[data-native-video]');
   box.innerHTML = `<div class="cp-pv"${audioUnavailable ? ' inert aria-disabled="true"' : ''}>${postCard(d)}</div><div class="cp-side"><span class="cp-kind c-${kc}"><i></i>${empty ? '封面预览' : kn}</span>${empty ? '' : opts}</div>`;
+  nativeVideoRestore(box,native);
   if (cpRender._wl){ cpRender._wl(); cpRender._wl = null; } if (C.audio && !audioUnavailable) PCLEAN_CP();
   const pub = $('#cpPub'); if (pub){ pub.disabled = empty || !!audioUnavailable || mediaConflict || C.busy || C.restoring; if (mediaConflict) pub.setAttribute('aria-describedby', 'cpMediaConflict'); else pub.removeAttribute('aria-describedby'); pub.textContent = C.busy ? C.progress || '发布中…' : C.restoring ? '正在读取草稿…' : empty ? '发布' : '发布' + kn; }
   cpAutosave();
@@ -9665,6 +9710,8 @@ Object.assign(ACTIONS, {
   'cp-rmimg': b => { const C = UI.cp, i = +b.dataset.i; if (C.busy || !C.imgs[i]) return; C.userEdited = true; URL.revokeObjectURL(C.imgs[i].url); C.imgs.splice(i, 1); C.ci = Math.min(C.ci, Math.max(0, C.imgs.length - 1)); cpRender(); },
   'cp-rmaud': () => { const C = UI.cp; if (!C || C.busy) return; C.userEdited = true; cpCancelAudio(C); C.audio = null; cpRender(); },
   'cp-retryaud': () => { const a = UI.cp?.audio; if (a?.error) return cpAddAudio(a.file, !a.file, {uploadId:a.uploadId, uploadSource:a.uploadSource}); },
+  'cp-rmvid':()=>{const C=UI.cp;if(!C||C.busy)return;C.userEdited=true;cpCancelVideo(C);C.video=null;cpRender();},
+  'cp-retryvid':()=>{const video=UI.cp?.video;if(video?.error)return cpAddVideo(video.file,video);},
   'cp-demo': () => cpAddAudio(null, true),
   'cp-pal': b => { UI.cp.pal = b.dataset.v; cpRender(); },
   'cp-ttext': () => { UI.cp.ttext = !UI.cp.ttext; cpRender(); },
@@ -9679,7 +9726,7 @@ Object.assign(ACTIONS, {
   'cp-prod': b => { const g = b.dataset.v; UI.up.cat = g === 'visual' ? 'visual' : 'sample'; UI.up.tpl = CATS[UI.up.cat].tpl; UI.up.group = g; closeSheet(); UI.sellerTab = 'upload'; go('seller-upload'); },
   'cp-publish': () => {
     const C = UI.cp, d = cpDraft(), k = cpKind(), n = POSTS.length + 1, id = 's' + (90 + n);
-    if (C.audio?.ld || C.audio?.error || (C.audio && C.imgs.length)) return;
+    if(C.audio?.ld||C.audio?.error||C.video?.ld||C.video?.error||[C.audio,C.video,C.imgs.length,detectPlat(cpLink())].filter(Boolean).length>1)return;
     const ck = speakOk(d.title + ' ' + (d.ex || '') + ' ' + cpRest()); if (!ck) return;
     const p = {...d, id, qn:String(18 + n).padStart(3, '0'), tags:[k === 'question' ? '提问' : '新作品'], seed:n};
     if (p.tcover) p.tcover = {...p.tcover};
@@ -9852,6 +9899,7 @@ document.addEventListener('keydown', e => {
 function harmonyAudioBlocked(){
   if(document.hidden || navigator.onLine===false || PEND.id || quickPlayPending)return true;
   if(typeof reviewAudioBlocked === 'function' && reviewAudioBlocked())return true;
+  if(NATIVE_VIDEO.blocked())return true;
   const a=GEN.media;if(!a)return false;if(GEN.pending)return true;if(!GEN.on)return false;
   const at=a.currentTime || 0,needed=Number.isFinite(a.duration) ? Math.min(12,Math.max(0,a.duration-at-.05)) : 12;
   for(let i=0;i<a.buffered.length;i++)if(a.buffered.start(i)<=at && a.buffered.end(i)>at && a.buffered.end(i)-at>=needed)return false;
@@ -9931,7 +9979,7 @@ const API = {
     if (this.cookie && this.tok?.refresh && this.tok.refresh !== 'cookie') this.setTok(this.tok, true);
   },
   on(){ return !!this.base; },
-  setTok(t, refreshing = false){ if (t && this.cookie) t = {...t, refresh:'cookie'}; if (!refreshing){ this.epoch++; this._ref = null; this.credentialReset?.(); } if (!t && this.tok) this.sessionReset?.(); this.tok = t; store.set('apiTok', t); },
+  setTok(t, refreshing = false){ if (t && this.cookie) t = {...t, refresh:'cookie'}; if (!refreshing){ this.epoch++; this._ref = null; this.credentialReset?.(); if(typeof NATIVE_VIDEO!=='undefined')NATIVE_VIDEO.sync(); } if (!t && this.tok) this.sessionReset?.(); this.tok = t; store.set('apiTok', t); },
   async req(method, path, body, retry = true, options = {}){
     if (typeof retry === 'object'){ options = retry; retry = true; }
     const base = this.base, token = this.tok, epoch = this.epoch;
@@ -10216,9 +10264,10 @@ function apiPost(p){
   const cmtsRev = apiPost.cmtsRev = (apiPost.cmtsRev || 0) + 1;
   const o = {id, author:p.author.id, title:p.title, ex:body[0] || p.title, tags:p.tags || [], likes:p.likeCount - (liked ? 1 : 0), favs:0, cmts:p.commentCount, cmtsRev, time:ago(t), ts:t,
     attach:[], seed:hash(id) % 50, qn:/^[A-Za-z0-9]{1,6}$/.test(s.qn) ? s.qn : id.slice(-3).toUpperCase(), solved:!!p.solved, commentsClosed:!!p.commentsClosed,pinnedCommentId:p.pinnedCommentId || null,discussionVersion:p.discussionVersion || 0,mentions:p.mentions || [],rawBody:p.body || '',serverMedia:p.media || [],serverStatus:p.status,takedownReason:p.takedownReason || '', h, word:s.word || 'SOUND', edited:p.edited, live:true, review:p.status === 'review'};
-  const imgs = (p.media || []).filter(m => m.kind === 'image' && m.url).map(m => m.url);
+  const imgs = (p.media || []).filter(m => m.kind === 'image' && m.url).map(m => m.url),video=(p.media||[]).find(m=>m.kind==='video');
   if (p.type === 'image' && imgs.length) Object.assign(o, {type:'image', img:imgs[0], imgs, h});
   else if (p.type === 'question') o.type = 'question';
+  else if (p.type === 'video' && video) Object.assign(o,{type:'video',nativeVideo:true,vurl:video.url||null,poster:imgs[0]||null,vdur:+s.dur||0,dur:+s.dur?fmtT(+s.dur):'--:--',videoAt:Date.now(),h});
   else if (p.type === 'video' && s.url && typeof s.url === 'string') Object.assign(o, {type:'video', plat:['BILIBILI', 'YOUTUBE', 'VIMEO'].includes(s.plat) ? s.plat : '', url:s.url, cover:has(COVER_PAL, s.cover) || has(COVER_TPLS, s.cover) ? s.cover : 'wave', dur:'--:--'});
   else if (p.type === 'audio'){ const au = (p.media || []).find(m => m.kind === 'audio' && m.url), v = s.vis && typeof s.vis === 'object' ? s.vis : null;
     Object.assign(o, v ? {type:'video', vis:{tpl:has(VIS, v.tpl) || has(COVER_TPLS, v.tpl) ? v.tpl : 'dots', pal:has(COVER_PALS, v.pal) ? v.pal : 'pb'}, h:1} : {type:'audio', cover:has(COVER_TPLS, s.cover) ? s.cover : 'wave'},
@@ -10521,24 +10570,28 @@ wrapAct('cmt-dgo', async (orig, b, e) => {
 /* 发帖：声音 / 可视化帖子把音频真的传上去（浏览器认不出的格式转成 WAV），封面样式和时长放在 style 里 */
 wrapAct('cp-publish', async (orig, b, e) => {
   if (!liveUser()){ const C = UI.cp, first = POSTS[0]; orig(b, e); if (POSTS[0] !== first && C) await cpForget(C); return; }
-  const C = UI.cp; if (!C || C.busy || C.restoring || C.audio?.ld || C.audio?.error || (C.audio && C.imgs.length) || !canSpeak()) return;
+  const C = UI.cp; if (!C || C.busy || C.restoring || C.audio?.ld || C.audio?.error || C.video?.ld || C.video?.error || [C.audio,C.video,C.imgs.length,detectPlat(cpLink())].filter(Boolean).length>1 || !canSpeak()) return;
   const panel = $('#cpWrap'), scope = cpStoreKey(), epoch = API.epoch;
   const current = () => UI.cp === C && !C.closed && $('#cpWrap') === panel && panel?.isConnected !== false && scope === cpStoreKey() && API.epoch === epoch && liveUser();
   if (C.key !== scope || !current()) return;
   cpCapture(C); const p = cpDraft(), k = cpKind(), afile = C.audio?.file, snd = k === 'audio' || k === 'vis', tr = snd ? TRACKS['post:draft'] : null;
-  if (!cpTitle() && !C.imgs.length && !C.audio && !detectPlat(cpLink())) return;
+  if (!cpTitle() && !C.imgs.length && !C.audio && !C.video && !detectPlat(cpLink())) return;
   const type = snd ? 'audio' : p.tcover ? 'text' : p.type === 'question' ? 'question' : p.type === 'image' ? 'image' : 'video';
-  const style = snd ? {dur:Math.round(tr?.dur || 0), ...(k === 'vis' ? {vis:{tpl:p.vis?.tpl, pal:p.vis?.pal}} : {cover:p.cover || 'wave'})}
+  const style = C.video ? {dur:C.video.duration||0,h:clamp((C.video.h||1)/(C.video.w||1),.3,3)} : snd ? {dur:Math.round(tr?.dur || 0), ...(k === 'vis' ? {vis:{tpl:p.vis?.tpl, pal:p.vis?.pal}} : {cover:p.cover || 'wave'})}
     : p.tcover ? {pal:p.tcover.pal} : p.type === 'video' ? {url:p.url, plat:p.plat, cover:p.cover} : p.type === 'image' ? {h:p.h} : {qn:p.qn};
   const text = cpRest() || p.title, tags = [k === 'question' ? '提问' : '新作品'];
   const mentions=globalThis.CZCommunication?.postMentions(text) || [];
-  const signature = JSON.stringify([type, p.title, text, tags, style, mentions, C.ci, C.imgs.map(x => [x.file?.name, x.file?.size, x.file?.lastModified]), afile ? [afile.name, afile.size, afile.lastModified] : C.audio?.name]);
+  const signature = JSON.stringify([type, p.title, text, tags, style, mentions, C.ci, C.imgs.map(x => [x.file?.name, x.file?.size, x.file?.lastModified]), afile ? [afile.name, afile.size, afile.lastModified] : C.audio?.name,...(C.video?[CZVideo.source(C.video.file),C.video.poster?.size]:[])]);
   if (C.requestSignature !== signature){ C.requestKey = crypto.randomUUID(); C.requestSignature = signature; }
   C.busy = true; $('#cpWrap')?.setAttribute('inert', ''); b.disabled = true;
   const progress = t => { C.progress = t; if (current() && b.isConnected) b.textContent = t; };
   try {
     await cpSave(C); if (!current()) return;
     const uploadIds = [];
+    if(C.video){const video=C.video;if(video.uploadId&&!await liveEnsureUpload(video.uploadId))video.uploadId=null;if(!current())return;progress('正在上传视频…');
+      video.uploadId ||= (await liveUpload(video.file.type===video.mime?video.file:video.file.slice(0,video.file.size,video.mime),'post_video',undefined,{current})).id;video.uploadSource=CZVideo.source(video.file);await cpSave(C);if(!current())return;uploadIds.push(video.uploadId);
+      if(video.poster){if(video.posterUploadId&&!await liveEnsureUpload(video.posterUploadId))video.posterUploadId=null;if(!current())return;progress('正在上传视频封面…');video.posterUploadId ||= (await liveUpload(video.poster,'post_image',undefined,{current})).id;await cpSave(C);if(!current())return;uploadIds.push(video.posterUploadId);}
+    }
     if (snd){ if (C.audio.uploadId && !await liveEnsureUpload(C.audio.uploadId)) C.audio.uploadId = null;
       if (!current()) return;
       if (!tr?.buffer && !C.audio.uploadId) throw new Error('音频还没处理好，稍等一下再发'); progress('正在上传音频…');

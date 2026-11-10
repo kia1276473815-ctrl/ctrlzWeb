@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),source=html.slice(html.indexOf('function harmonyAudioBlocked(){'),html.indexOf('const HARMONY='));
 function gate({at=0,duration=22,ranges=[],pending=false,on=true}={}){
   const ctx=vm.createContext({document:{hidden:false},navigator:{onLine:true},PEND:{id:null},quickPlayPending:null,
-    GEN:{pending,on,media:{currentTime:at,duration,buffered:{length:ranges.length,start:i=>ranges[i][0],end:i=>ranges[i][1]}}}});
+    NATIVE_VIDEO:{blocked:()=>false},GEN:{pending,on,media:{currentTime:at,duration,buffered:{length:ranges.length,start:i=>ranges[i][0],end:i=>ranges[i][1]}}}});
   vm.runInContext(source,ctx);return {ctx,blocked:()=>ctx.harmonyAudioBlocked()};
 }
 test('真实音频加载、缓冲不足、签名请求期间始终让出字体带宽',()=>{
@@ -21,3 +21,4 @@ test('拖动到未缓冲区立即门控，暂停释放媒体后恢复，隐藏�
   h.ctx.GEN.media=null;h.ctx.GEN.on=false;assert.equal(h.blocked(),false);h.ctx.document.hidden=true;assert(h.blocked());
   h.ctx.document.hidden=false;h.ctx.navigator.onLine=false;assert(h.blocked());
 });
+test('原生视频正在缓冲时同样让出字体带宽，足量缓冲后恢复',()=>{const h=gate({ranges:[[0,22]]});h.ctx.NATIVE_VIDEO.blocked=()=>true;assert(h.blocked());h.ctx.NATIVE_VIDEO.blocked=()=>false;assert.equal(h.blocked(),false);});
