@@ -21,3 +21,5 @@ button.dm-quote{min-height:44px;cursor:pointer}.dm-quote span{display:-webkit-bo
 .msg.me:has(.comm-message-menu)>:is(.bub,.bcard,.bimg,.dm-content){max-width:calc(100% - 52px)}
 .msg:has(.comm-message-menu) .bimg img,.dm-content .bcard{max-width:100%}
 .dm-send-actions button{min-height:44px}
+.dm-delivery{align-self:flex-end;font-size:12px;line-height:1.5;white-space:nowrap;color:var(--ink-2);padding:0 3px}
+.comm-receipt-setting{padding-top:12px;border-top:1px solid var(--rule)}

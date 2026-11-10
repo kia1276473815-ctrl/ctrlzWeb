@@ -27,7 +27,7 @@ test('隐藏页面与受限登录不启动私密轮询',async()=>{
 });
 test('修订未变时只拉轻量同步头，聊天页使用4秒间隔',async()=>{
   const h=harness();Object.assign(h.state(),{version:'v1',versions:{dm:1,activity:2,official:3},lastFull:Date.now()});
-  h.ctx.CUR.key='msg|b';h.ctx.LDM.full.add('b');await h.ctx.poll();assert.deepEqual(h.requests,['/me/communication/sync?since=v1']);assert.deepEqual(h.paints,[]);assert.equal(h.timers.at(-1).ms,4000);
+  h.ctx.CUR.key='msg|b';h.ctx.LDM.full.add('b');await h.ctx.poll();assert.deepEqual(h.requests,['/me/communication/sync?since=v1&peerId=b']);assert.deepEqual(h.paints,[]);assert.equal(h.timers.at(-1).ms,4000);
 });
 test('失败退避到60秒，成功后恢复并清零',async()=>{
   const h=harness();h.ctx.API.req=async()=>{throw Error('offline');};
