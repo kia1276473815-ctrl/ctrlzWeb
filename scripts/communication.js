@@ -59,6 +59,27 @@
     }
   }
   function schedule(ms){clearTimeout(LDM.timer);clearInterval(LDM.timer);LDM.timer=0;if(!document.hidden && allowed() && liveUser() && API.on() && API.tok)LDM.timer=setTimeout(()=>void poll(),ms);}
+  async function refreshReferences(uid,staleOnly=false){
+    const key=scope(),now=Date.now(),ids=[...new Set((CHATS[uid] || []).filter(m=>m.id&&!m.pend&&!m.rc&&['post','prod'].includes(m.t)&&(!staleOnly||!m._refCheckedAt||now<m._refCheckedAt||now-m._refCheckedAt>=30000)).map(m=>m.id))];
+    const paint=()=>{
+      if(CUR.key!=='msg|'+uid)return;const box=$('#cvB'),top=box?.getBoundingClientRect().top,keep=box&&box.scrollHeight-box.scrollTop-box.clientHeight>=120;
+      const anchor=keep?[...box.children].find(el=>{const rect=el.getBoundingClientRect();return el.dataset.dm?.startsWith('msg-')&&rect.top>=top&&rect.top<top+box.clientHeight;}):null,id=anchor?.dataset.dm,offset=anchor?anchor.getBoundingClientRect().top-top:0;
+      LDM.sig[uid]=null;dmPaint(uid);
+      const restored=id&&box.isConnected&&$('#cvB')===box?[...box.children].find(el=>el.dataset.dm===id):null;
+      if(restored)box.scrollTop+=restored.getBoundingClientRect().top-box.getBoundingClientRect().top-offset;
+    };
+    for(let i=0;i<ids.length;i+=200){
+      if(!same(key))return;const batch=ids.slice(i,i+200),requested=new Set(batch),r=await API.req('POST',`/dm/with/${encodeURIComponent(uid)}/references`,{ids:batch});if(!same(key))return;
+      const byId=new Map(r.items.map(m=>[m.id,m]));
+      CHATS[uid]=(CHATS[uid] || []).flatMap(m=>{
+        if(!requested.has(m.id))return [m];const raw=byId.get(m.id);if(!raw||raw.hidden)return [];if(m.rc)return [m];
+        if(raw.ref)LDM.miss.delete(raw.ref);
+        return [{...m,ref:raw.recalled||raw.refState==='unavailable'?undefined:raw.ref || undefined,text:raw.recalled?'':raw.body,refState:raw.refState,rc:!!raw.recalled,_refCheckedAt:Date.now()}];
+      });
+      paint();
+    }
+    await dmRefs(CHATS[uid] || []);if(same(key))paint();
+  }
   async function poll(){
     const s=current();if(s.running || !allowed() || document.hidden || !liveUser() || !API.on() || !API.tok)return;s.running=true;
     let wait=30000;
@@ -70,6 +91,7 @@
       if(dmChanged || force){await dmThreads();if(!same(s.scope))return;await requests();if(!same(s.scope))return;}
       if(open && s.context?.uid!==open && (dmChanged || !LDM.full.has(open)))await dmConv(open);
       if(!same(s.scope))return;
+      if(open && force){await refreshReferences(open,true);if(!same(s.scope))return;}
       if(!previous || previous.activity!==r.versions.activity || force){const loaded=await actLoad(true);if(!same(s.scope))return;if(loaded===false)throw Error('互动通知暂未同步完成');}
       if(!previous || previous.official!==r.versions.official || force){const loaded=await sysLoad(true);if(!same(s.scope))return;if(loaded===false)throw Error('官方通知暂未同步完成');}
       if(!same(s.scope))return;s.version=r.version;s.versions=r.versions;if(r.unread)s.unread=r.unread;if(force)s.lastFull=Date.now();s.failures=0;
@@ -79,7 +101,7 @@
     finally{s.running=false;if(same(s.scope))schedule(Math.round(wait*(.95+Math.random()*.1)));}
   }
   async function start(){if(!allowed())return;clearInterval(LDM.timer);clearTimeout(LDM.timer);LDM.timer=0;await restoreComments();await poll();}
-  const comm=globalThis.CZCommunication={get threads(){return current().threads;},contextFor(uid){return current().context?.uid===uid;},incomingRequest,absorb,controls,poll,start,
+  const comm=globalThis.CZCommunication={get threads(){return current().threads;},contextFor(uid){return current().context?.uid===uid;},incomingRequest,absorb,controls,poll,start,refreshReferences,
     threadPage(r,cursor){const s=current();s.next=r.next;if(!cursor && !r.next){const ids=new Set(r.items.map(t=>t.peer.id));for(const uid of Object.keys(s.threads))if(!ids.has(uid) && !incomingRequest(uid) && CUR.key!=='msg|'+uid && !CHATS[uid]?.some(m=>m.pend)){delete CHATS[uid];delete CHAT_UNREAD[uid];}}},
     activityToken(k,t){if(t)current().tokens[k]=t;},officialToken(t){if(t)current().tokens.official=t;},
     async saveComment(pid,c){try{const row={key:'comment|'+JSON.stringify([API.base,ME,c._client]),scope:'comment|'+JSON.stringify([API.base,ME]),pid,comment:{...c,sendState:'failed',_counted:false}};await drafts.put(row);return true;}catch(e){c.sendState='failed';c.sendError=e.message || '本机草稿未保存，请检查存储空间';cmtPaint(pid);return false;}},

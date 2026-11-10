@@ -37,8 +37,8 @@ test('付款二维码组件离线从预缓存读取，不向外部二维码服�
 
 test('交流样式离线直接从版本缓存读取，不发网络请求',async()=>{
   let requests=0;const w=worker({online:false,fetchImpl:async()=>{requests++;throw Error('offline');}});
-  w.cache.set(w.key('/scripts/communication.css?v=20261110-r2'),new Response('.comm-picker{}'));
-  assert.equal(await(await w.dispatch('/scripts/communication.css?v=20261110-r2').response).text(),'.comm-picker{}');assert.equal(requests,0);
+  w.cache.set(w.key('/scripts/communication.css?v=20261110-r3'),new Response('.comm-picker{}'));
+  assert.equal(await(await w.dispatch('/scripts/communication.css?v=20261110-r3').response).text(),'.comm-picker{}');assert.equal(requests,0);
 });
 
 test('联网但请求挂起时四秒取消并回缓存，完成后清理计时器',async()=>{
@@ -56,7 +56,7 @@ test('联网成功采用新页面并更新统一主页缓存，未命中离线�
 
 test('安装缓存HTML与四个经典脚本，私密签名文件和接口请求不被主页策略接管',async()=>{
   const w=worker(),waits=[];w.listeners.get('install')({waitUntil:value=>waits.push(value)});await Promise.all(waits);
-  assert.deepEqual(w.precache.map(x=>typeof x==='string'?x:x.url),["./","./scripts/communication.js?v=20261110-r2","./scripts/communication.css?v=20261110-r2","./scripts/audio-cache.js?v=20261011","./scripts/dm-outbox.js","./scripts/harmony-loader.js?v=20261012","./scripts/views-admin-v1.js?v=20261030-2","./scripts/views-payments-v1.js?v=20261111-1","./scripts/views-audio-v1.js?v=20261030-sec","./scripts/docs-v1.js?v=20261110-oauth","./scripts/oauth-v1.js?v=20261110-1","./vendor/qrcodegen.js"]);
+  assert.deepEqual(w.precache.map(x=>typeof x==='string'?x:x.url),["./","./scripts/communication.js?v=20261110-r3","./scripts/communication.css?v=20261110-r3","./scripts/audio-cache.js?v=20261011","./scripts/dm-outbox.js","./scripts/harmony-loader.js?v=20261012","./scripts/views-admin-v1.js?v=20261030-2","./scripts/views-payments-v1.js?v=20261111-1","./scripts/views-audio-v1.js?v=20261030-sec","./scripts/docs-v1.js?v=20261110-oauth","./scripts/oauth-v1.js?v=20261110-1","./vendor/qrcodegen.js"]);
   // 页面和带版本号的脚本复用 HTTP 缓存；没版本号的 dm-outbox.js 可能是旧副本，照常走网络
   assert.deepEqual(w.precache.filter(x=>typeof x==='string'),['./scripts/dm-outbox.js','./vendor/qrcodegen.js']);assert(w.precache.filter(x=>typeof x!=='string').every(x=>x.cache==='force-cache'));
   for(const path of ['/files/post_audio/u/202610/f_1.wav?sig=secret','/avatars/photo.png','/s/p_1','/dm/with/u','/posts'])assert.equal(w.dispatch(path).response,undefined,path);

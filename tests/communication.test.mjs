@@ -13,8 +13,8 @@ function harness(){
     API:{base:'https://qa.invalid',epoch:1,tok:'synthetic',on:()=>true,req:async(method,path)=>{requests.push(path);return {version:'v2',versions:{dm:1,activity:2,official:3},changed:false};}},
     ME:'a',LIVE:{cfg:{verifiedAccessRequired:false},me:{accessState:'full'}},liveUser:()=>true,
     document:{hidden:false},DmOutboxStore:{create:()=>({})},CUR:{key:'home'},DMOUT:{rows:new Map()},dmScope:()=> 'scope',
-    CHATS:{},CHAT_UNREAD:{},LDM:{timer:0,full:new Set(),since:{},before:{},sig:{}},
-    controls(){},apiUser(){},dmThreads:async()=>paints.push('threads'),dmConv:async()=>paints.push('conversation'),actLoad:async()=>paints.push('activity'),sysLoad:async()=>paints.push('official'),msgBadge(){},dmPaint(){},
+    CHATS:{},CHAT_UNREAD:{},LDM:{timer:0,full:new Set(),since:{},before:{},sig:{},miss:new Set()},dmRefs:async()=>{},
+    controls(){},apiUser(){},dmThreads:async()=>paints.push('threads'),dmConv:async()=>paints.push('conversation'),actLoad:async()=>paints.push('activity'),sysLoad:async()=>paints.push('official'),msgBadge(){},dmPaint(){},$:()=>null,
     clearTimeout(){},clearInterval(){},setTimeout:(fn,ms)=>{timers.push({fn,ms});return timers.length;},esc:escape,
   });
   vm.runInContext(part('  const scope=','  function controls(){')+part('  function schedule(ms){','  async function start(){')+part('  function mentionText(','  function postMentions('),ctx);
@@ -67,4 +67,11 @@ test('定期全量校对不携带旧修订，刷新不产生修订事件的未�
 
 test('通知函数报告读取失败时保留原修订，以便下一轮重试',async()=>{
   for(const section of ['activity','official']){const h=harness();Object.assign(h.state(),{version:'old',versions:{dm:1,activity:section==='activity'?1:2,official:section==='official'?2:3},lastFull:Date.now()});h.ctx[section==='activity'?'actLoad':'sysLoad']=async()=>false;await h.ctx.poll();assert.equal(h.state().version,'old',section);assert.equal(h.state().failures,1,section);}
+});
+
+test('没有新私信时也定期校对已打开的历史分享，保持阅读位置和原未读状态',async()=>{
+  const h=harness();Object.assign(h.state(),{version:'old',versions:{dm:1,activity:2,official:3},lastFull:1,context:{uid:'b',after:'older'}});
+  h.ctx.CUR.key='msg|b';h.ctx.LDM.full.add('b');h.ctx.CHATS.b=[{id:'shared',t:'post',ref:'deleted-post',read:false},{id:'text',t:'text',text:'保留历史上下文',read:false}];
+  h.ctx.API.req=async(method,path)=>{h.requests.push(path);if(path.endsWith('/references'))return {items:[{id:'shared',kind:'post',ref:null,body:'',refState:'unavailable',read:true}]};return path.startsWith('/dm/requests')?{items:[],next:null}:{version:'old',versions:{dm:1,activity:2,official:3}};};
+  await h.ctx.poll();assert.equal(h.ctx.CHATS.b[0].ref,undefined);assert.equal(h.ctx.CHATS.b[0].refState,'unavailable');assert.equal(h.ctx.CHATS.b[0].read,false);assert.equal(h.ctx.CHATS.b[1].text,'保留历史上下文');assert.equal(h.state().context.after,'older');assert.equal(h.paints.includes('conversation'),false);assert(h.requests.includes('/dm/with/b/references'));
 });
