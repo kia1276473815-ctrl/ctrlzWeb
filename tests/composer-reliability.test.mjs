@@ -65,9 +65,12 @@ function comments(overrides={}){
   vm.runInContext(section('function cmtSendFeedback(pid,c){',"wrapAct('cmt',"),ctx);
   return {ctx,posts,c,paint,set active(v){active=v;},set alive(v){alive=v;}};
 }
-test('评论断网保留失败文字与操作，失败不算已发布，另一个帖子不重绘',async()=>{
+test('评论断网保留待确认文字与操作，不提前累计发布数，另一个帖子不重绘',async()=>{
   const r=comments();r.active='b';await r.ctx.liveCmtSent('a',0);assert.equal(r.ctx.UI.newCmts.a[0],r.c);assert.equal(r.c.t,'失败文字');assert.equal(r.c.sendState,'failed');assert.equal(r.posts.a.cmts,0);assert.deepEqual(r.paint,[]);
-  const html=r.ctx.cmtSendFeedback('a',r.c);for(const text of ['未发送','重试','编辑','移除'])assert(html.includes(text));
+  const html=r.ctx.cmtSendFeedback('a',r.c);for(const text of ['发送结果待确认','重试','编辑','移除'])assert(html.includes(text));assert.equal(r.c._unknown,true);assert.match(html,/disabled title="请先重试确认原提交结果"/);
+});
+test('明确拒绝的评论显示未发送并可编辑，不与结果未知混淆',async()=>{
+  const r=comments();r.ctx.API.req=async()=>{throw Object.assign(Error('拒绝'),{status:400});};await r.ctx.liveCmtSent('a',0);assert.equal(r.c._unknown,false);const html=r.ctx.cmtSendFeedback('a',r.c);assert.match(html,/未发送/);assert.doesNotMatch(html,/disabled/);
 });
 test('评论并发重试只发一次，失败计数不叠加，成功后清理发送状态',async()=>{
   const r=comments();await r.ctx.liveCmtSent('a',0);let resolve,calls=0;r.ctx.API.req=()=>{calls++;return new Promise(v=>resolve=v);};

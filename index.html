@@ -2626,7 +2626,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 }
 </style>
 
-<link rel="stylesheet" href="scripts/communication.css?v=20261110-r6">
+<link rel="stylesheet" href="scripts/communication.css?v=20261110-r7">
 </head>
 <body>
 
@@ -6470,7 +6470,7 @@ function composer(t, send){
   t.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229){ e.preventDefault(); send(); } });
   if (!dk) return;
   t.addEventListener('focus', () => { gravAsk(); dockOn(box, t, dk); });
-  t.addEventListener('blur', () => setTimeout(() => { if (document.activeElement === t || !t.isConnected) return; if (performance.now() - DK.tap < 450 && DK.st && DK.st.t === t){ DK.tap = 0; t.focus({preventScroll:true}); return; } dockOff(); }, 0));
+  t.addEventListener('blur', () => setTimeout(() => { if (document.activeElement === t || !t.isConnected) return; if (DK.tap>0 && performance.now() - DK.tap < 450 && DK.st && DK.st.t === t){ DK.tap = 0; t.focus({preventScroll:true}); return; } dockOff(); }, 0));
   // 点浮起来的小球：不抢输入框的焦点（键盘不收）
   dk.addEventListener('pointerdown', e => { if (DK.st && DK.st.dk === dk){ DK.tap = performance.now(); if (e.pointerType === 'mouse') e.preventDefault(); } });
   dk.addEventListener('mousedown', e => { if (DK.st && DK.st.dk === dk) e.preventDefault(); });
@@ -6502,6 +6502,7 @@ ACTIONS['cmt-reply-cancel']=b=>{
   t._reply=null; commentReplyPaint(t); inputDraftSave(t); if(t.tagName==='TEXTAREA') autoGrow(t); t.focus();
 };
 function inputDraftKey(kind, id){ return 'ctrlz-input:' + JSON.stringify([typeof API !== 'undefined' && API.on() ? API.base : 'demo', ME, kind, id]); }
+function inputDraftMentions(t){const live=globalThis.CZCommunication?.editorDraft?.(t);if(live)return live.mentions||[];return(Array.isArray(t._draftMentions)?t._draftMentions:[]).slice(0,10).filter(m=>typeof m?.userId==='string'&&typeof m.label==='string'&&Number.isInteger(m.start)&&Number.isInteger(m.end)&&m.start>=0&&m.end>m.start&&m.end<=t.value.length&&t.value.slice(m.start,m.end)===m.label);}
 function inputDraftRead(key){
   if (INPUT_DRAFTS.has(key)) return INPUT_DRAFTS.get(key);
   try { const value = JSON.parse(sessionStorage.getItem(key) || 'null'); if (value && typeof value.text === 'string'){ INPUT_DRAFTS.set(key,value); return value; } } catch(_){}
@@ -6509,17 +6510,18 @@ function inputDraftRead(key){
 }
 function inputDraftSave(t){
   if (!t?._draftKey) return;
-  const value = {text:t.value, start:t.selectionStart, end:t.selectionEnd, focus:document.activeElement === t, balls:dockSnap(t), reply:t._reply || null};
-  if (value.text){ INPUT_DRAFTS.set(t._draftKey,value); try { sessionStorage.setItem(t._draftKey,JSON.stringify({text:value.text,start:value.start,end:value.end,reply:value.reply})); } catch(_){} }
+  const value = {text:t.value, start:t.selectionStart, end:t.selectionEnd, focus:document.activeElement === t, balls:dockSnap(t), reply:t._reply || null, mentions:inputDraftMentions(t)};
+  if (value.text){ INPUT_DRAFTS.set(t._draftKey,value); try { sessionStorage.setItem(t._draftKey,JSON.stringify({text:value.text,start:value.start,end:value.end,reply:value.reply,mentions:value.mentions})); } catch(_){} }
   else inputDraftClear(t);
 }
 function inputDraftClear(t, expected){
   if (!t?._draftKey) return; const value = inputDraftRead(t._draftKey); if (expected !== undefined && value && value.text.trim() !== expected) return;
   INPUT_DRAFTS.delete(t._draftKey); try { sessionStorage.removeItem(t._draftKey); } catch(_){}
+  t._draftMentions=[];globalThis.CZCommunication?.clearEditorDraft?.(t);
   t._reply=null; commentReplyPaint(t);
 }
 function inputDraftBind(t, kind, id, keepFocus=false){
-  if (!t) return; t._draftKey = inputDraftKey(kind,id); const value = inputDraftRead(t._draftKey);
+  if (!t) return; t._draftKey = inputDraftKey(kind,id); const value = inputDraftRead(t._draftKey);t._draftMentions=kind==='comment'&&Array.isArray(value?.mentions)?value.mentions:[];
   if (value){ t.value = value.text; if (t.tagName === 'TEXTAREA') autoGrow(t); t.setSelectionRange(value.start ?? t.value.length,value.end ?? t.value.length);
     if(kind==='comment' && typeof value.reply?.id==='string' && typeof value.reply?.name==='string') t._reply={id:value.reply.id,name:value.reply.name}; commentReplyPaint(t);
     if (keepFocus && value.focus){ t.focus({preventScroll:true}); if (value.balls && DK.st?.t === t){ dockEnd(DK.st); dockOn(t.parentNode,t,$('.cdock',t.parentNode),value.balls); } } }
@@ -6594,7 +6596,7 @@ function dockEnd(S, smooth){
 }
 function renderPost(id, fresh){
   if (!POST(id)) return;   // 帖子刚被删除 / 下架
-  const ci0 = $('#cmtIn'), csnap = ci0 && !fresh && CUR.post === id ? {v:ci0.value, f:document.activeElement === ci0 || performance.now() - DK.tap < 450, b:dockSnap(ci0)} : null; inputDraftSave(ci0); DK.tap = 0;
+  const ci0 = $('#cmtIn'), csnap = ci0 && !fresh && CUR.post === id ? {v:ci0.value, f:document.activeElement === ci0 || DK.tap>0 && performance.now() - DK.tap < 450, b:dockSnap(ci0)} : null; inputDraftSave(ci0); DK.tap = 0;
   if (DK.st && DK.st.t === ci0){ cancelAnimationFrame(DK.st.raf); DK.st = null; }
   PCLEAN.forEach(f => { try { f(); } catch(e){} }); PCLEAN = [];
   const keep = !fresh && postScroller() ? postScroller().scrollTop : 0; // 点赞 / 评论 / 关注后重绘不跳回顶部
@@ -10411,8 +10413,8 @@ wrapAct('follow', async (orig, b, e) => {
 });
 /* 评论保留发送反馈与失败文字；迟到的响应只更新所属帖子，不能清空另一页的新输入。 */
 function cmtSendFeedback(pid,c){
-  if (!c.sendState) return ''; const pending = c.sendState === 'sending';
-  return `<div class="dm-send-state" role="status">${pending ? '正在发送…' : esc(c.sendError || '未发送，文字已保留')}</div>${pending ? '' : `<div class="dm-send-actions" style="justify-content:flex-start"><button data-act="cmt-retry" data-p="${esc(pid)}" data-id="${esc(c._client)}">重试</button><button data-act="cmt-edit" data-p="${esc(pid)}" data-id="${esc(c._client)}">编辑</button><button data-act="cmt-remove" data-p="${esc(pid)}" data-id="${esc(c._client)}">移除</button></div>`}`;
+  if (!c.sendState) return ''; const pending = c.sendState === 'sending'||c._savingEdit;
+  return `<div class="dm-send-state" role="status">${c._savingEdit ? '正在保存修改…' : pending ? '正在发送…' : esc(c.sendError || '未发送，文字已保留')}</div>${pending ? '' : `<div class="dm-send-actions" style="justify-content:flex-start"><button data-act="cmt-retry" data-p="${esc(pid)}" data-id="${esc(c._client)}">重试</button><button data-act="cmt-edit" data-p="${esc(pid)}" data-id="${esc(c._client)}"${c._unknown ? ' disabled title="请先重试确认原提交结果"':''}>编辑</button><button data-act="cmt-remove" data-p="${esc(pid)}" data-id="${esc(c._client)}">移除</button></div>`}`;
 }
 function cmtPaint(pid){
   if (CUR.post === pid) renderPost(pid);
@@ -10420,7 +10422,7 @@ function cmtPaint(pid){
 }
 async function liveCmtSent(pid, before, saved){
   const L = UI.newCmts[pid] || [], c = saved || L[before], p = POST(pid);
-  if (!c || !L.includes(c) || !liveUser() || !p?.live || c.sendState === 'sending') return;
+  if (!c || !L.includes(c) || !liveUser() || !p?.live || c.sendState === 'sending'||c._savingEdit) return;
   globalThis.CZCommunication?.claimCommentMentions(pid,c);
   const current = accountSession(); c._client ||= crypto.randomUUID();
   if(globalThis.CZCommunication && !await CZCommunication.saveComment(pid,c))return;
@@ -10431,18 +10433,21 @@ async function liveCmtSent(pid, before, saved){
     c.likes=r.likeCount || 0;c.liked=!!r.liked;
     if (r.status === 'review'){ c.review = true; if (c._counted){ p.cmts = Math.max(0,p.cmts - 1); c._counted = false; } toast('评论已提交审核，通过后大家才能看到', 'orange'); }
     if(commentVisible(pid)){commentRouteTarget(pid,c.id);UI.flashCmt={p:pid,id:c.id};} cmtPaint(pid);
-  } catch(err){ if (!current() || c._acknowledged) return; c._unknown=!err.status || err.status>=500;c.sendState = 'failed';void globalThis.CZCommunication?.saveComment(pid,c); c.sendError = err.code === 'bad_parent' ? '原评论已不可回复，文字已保留；可编辑为普通评论' : '未发送，文字已保留 · ' + (err.message || '请重试');
+  } catch(err){ if (!current() || c._acknowledged) return; c._unknown=!err.status || err.status>=500;c.sendState = 'failed';void globalThis.CZCommunication?.saveComment(pid,c); c.sendError = c._unknown ? '发送结果待确认，重试不会重复发布' : err.code === 'bad_parent' ? '原评论已不可回复，文字已保留；可编辑为普通评论' : '未发送，文字已保留 · ' + (err.message || '请重试');
     if (c._counted){ p.cmts = Math.max(0,p.cmts - 1); c._counted = false; } cmtPaint(pid);
   }
 }
 const pendingCmt = b => (UI.newCmts[b.dataset.p] || []).find(c => c._client === b.dataset.id && c.u === ME);
-ACTIONS['cmt-retry'] = b => { const c = pendingCmt(b); if (c) void liveCmtSent(b.dataset.p,0,c); };
-ACTIONS['cmt-remove'] = b => { const c = pendingCmt(b), L = UI.newCmts[b.dataset.p]; if (!c || c.sendState === 'sending') return; void globalThis.CZCommunication?.forgetComment(c);L.splice(L.indexOf(c),1); cmtPaint(b.dataset.p); };
-ACTIONS['cmt-edit'] = b => { const c = pendingCmt(b); if (!c || c.sendState === 'sending') return;
+ACTIONS['cmt-retry'] = b => { const c = pendingCmt(b); if (c&&!c._savingEdit) void liveCmtSent(b.dataset.p,0,c); };
+ACTIONS['cmt-remove'] = b => { const c = pendingCmt(b), L = UI.newCmts[b.dataset.p]; if (!c || c.sendState === 'sending'||c._savingEdit) return; void globalThis.CZCommunication?.forgetComment(c);L.splice(L.indexOf(c),1); cmtPaint(b.dataset.p); };
+ACTIONS['cmt-edit'] = b => { const c = pendingCmt(b); if (!c || c.id || c.sendState!=='failed'||c._savingEdit) return;
   if(c._unknown){toast('请先重试确认原提交结果，避免重复发布','orange');return;}
-  sheet(`<h3>编辑未发送评论</h3>${c.parentId ? `<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><input type="checkbox" id="cmtEditReply" checked>继续回复 ${esc(c.replyName || '原评论')}</label>` : ''}<textarea class="inp" id="cmtEdit" rows="4" maxlength="1000">${esc(c.t)}</textarea><button class="pill lg" data-act="cmt-edit-save" data-p="${esc(b.dataset.p)}" data-id="${esc(c._client)}">保存修改</button>`,d=>$('#cmtEdit',d)?.focus());
+  sheet(`<h3>编辑未发送评论</h3>${c.parentId ? `<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><input type="checkbox" id="cmtEditReply" checked>继续回复 ${esc(c.replyName || '原评论')}</label>` : ''}<textarea class="inp" id="cmtEdit" rows="4" maxlength="1000">${esc(c.t)}</textarea><button class="pill lg" data-act="cmt-edit-save" data-p="${esc(b.dataset.p)}" data-id="${esc(c._client)}">保存修改</button>`,d=>{const input=$('#cmtEdit',d);globalThis.CZCommunication?.bindCommentEditor?.(input,c);input?.focus();});
 };
-ACTIONS['cmt-edit-save'] = b => { const c = pendingCmt(b), text = $('#cmtEdit')?.value.trim(); if (!c || c.sendState === 'sending' || !text || !speakOk(text)) return; void globalThis.CZCommunication?.forgetComment(c);c._client=crypto.randomUUID();c.mentions=[]; c.t = text; if(c.parentId && $('#cmtEditReply')?.checked===false){ c.parentId=null; delete c.replyName; } c.sendError = '已修改，点击重试发送'; closeSheet(); cmtPaint(b.dataset.p); };
+ACTIONS['cmt-edit-save'] = async b => { const c = pendingCmt(b), input=$('#cmtEdit'),text = input?.value.trim(); if (!c || c.id || c.sendState!=='failed'||c._savingEdit || !text || !speakOk(text)) return;if(c._unknown){toast('请先重试确认原提交结果，避免重复发布','orange');return;}
+  const current=accountSession(),paneEpoch=closeSheet.epoch||0,next={...c,_client:crypto.randomUUID(),mentions:globalThis.CZCommunication?.commentEditorMentions?.(input)||[],t:text,sendError:'已修改，点击重试发送'};if(next.parentId&&$('#cmtEditReply')?.checked===false){next.parentId=null;delete next.replyName;}c._savingEdit=true;b.disabled=true;b.setAttribute?.('aria-busy','true');
+  try{await globalThis.CZCommunication?.replaceComment?.(b.dataset.p,c,next);if(!current()||pendingCmt(b)!==c)return;Object.assign(c,next);if(!next.parentId)delete c.replyName;c._savingEdit=false;if((closeSheet.epoch||0)===paneEpoch&&input.isConnected!==false)closeSheet();cmtPaint(b.dataset.p);}catch(error){if(current()&&(closeSheet.epoch||0)===paneEpoch&&input.isConnected!==false)apiFail(error);}finally{c._savingEdit=false;if(b.isConnected!==false){b.disabled=false;b.removeAttribute?.('aria-busy');}}
+};
 wrapAct('cmt', (orig, b, e) => { const pid = b.dataset.id, n = (UI.newCmts[pid] || []).length; orig(b, e); liveCmtSent(pid, n); });
 wrapAct('rl-send', (orig, b, e) => { const pid = reelCur()?.id, n = (UI.newCmts[pid] || []).length; orig(b, e); pid && liveCmtSent(pid, n); });
 wrapAct('clike',(orig,b,e)=>cmtLikeToggle(b,orig,e));
@@ -13028,7 +13033,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { coverFontDrop(); if (!CUR.post) rerender(); });
 })();
 </script>
-<script src="scripts/communication.js?v=20261110-r6"></script>
+<script src="scripts/communication.js?v=20261110-r7"></script>
 
 <script src="scripts/oauth-v1.js?v=20261110-1"></script>
 </body>
