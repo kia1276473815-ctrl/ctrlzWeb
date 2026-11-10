@@ -68,7 +68,7 @@ function searches(){
     USERS:{},CHATS:{},ME:'fixture_reader',STATE:{follows:new Set()},LIVE:{u:new Set()},AVIMG:{},UI:{},ACTIONS:{},IC:{back:'',x:'',arrow:'<svg></svg>'},
     document:{activeElement:null,documentElement:{style:{}},createElement:()=>el,body:{appendChild(node){node.isConnected=true;}}},
     $:sel=>sel==='#srch'?(el.isConnected?el:null):sel==='#sq'?q:sel==='#sres'?results:sel==='#sOptions'&&results.innerHTML.includes('id="sOptions"')?{}:null,$$:()=>[],
-    setTimeout:fn=>{timers.set(++timer,fn);return timer;},clearTimeout:id=>timers.delete(id),esc:v=>String(v??''),av:id=>'<i>'+id+'</i>',hash:()=>0,nameIni:name=>name[0],clamp:(v,l,h)=>Math.max(l,Math.min(h,v)),SHIST:{list:()=>[],add(){}},
+    setTimeout:fn=>{timers.set(++timer,fn);return timer;},clearTimeout:id=>timers.delete(id),esc:v=>String(v??''),av:id=>'<i>'+id+'</i>',ago:()=> '刚刚',hash:()=>0,nameIni:name=>name[0],clamp:(v,l,h)=>Math.max(l,Math.min(h,v)),SHIST:{list:()=>[],add(){}},
   });
   vm.runInContext(part('const LIVE_COLS =','function apiPost('),ctx);
   vm.runInContext(part('const SCOPES =','/* 当前页面属于哪个板块的搜索'),ctx);
@@ -83,4 +83,10 @@ for(const query of ['public_handle_123','private_login_alias'])test(`私信搜�
   h.requests[0].resolve({items:[peer]});h.requests[1].resolve({items:[],next:null});await tick();assert.equal(h.ctx.USERS.u_match.handle,peer.handle);assert.equal('username' in peer,false);
   assert.match(h.html(),/data-sgo="msg-u_match"/);assert.doesNotMatch(h.html(),/没找到/);
   h.input('unrelated');assert.doesNotMatch(h.html(),/data-sgo="msg-u_match"/,'换词等待期间也不能带入旧服务器命中');await h.flush();h.requests[2].resolve({items:[]});h.requests[3].resolve({items:[],next:null});await tick();assert.doesNotMatch(h.html(),/data-sgo="msg-u_match"/,'旧查询命中不能借LSRCH缓存继续混入新查询');
+});
+
+test('服务器历史消息纳入聊天记录页签计数、键盘结果和分页，不显示矛盾空状态',async()=>{
+  const h=searches();h.input('历史正文');await h.flush();h.requests[0].resolve({items:[]});h.requests[1].resolve({items:[{id:'m_remote',from:'unknown_peer',to:h.ctx.ME,kind:'text',body:'历史正文',createdAt:'2026-11-10T00:00:00Z'}],next:'m_cursor'});await tick();
+  assert.match(h.html(),/聊天记录<i>1\+<\/i>/);assert.match(h.html(),/data-message-id="m_remote"/);assert.match(h.html(),/role="listbox"/);assert.match(h.html(),/comm-search-more/);assert.doesNotMatch(h.html(),/没找到/);
+  h.ctx.UI.stabs.msg='contact';h.el._draw();assert.doesNotMatch(h.html(),/data-message-id=/);assert.doesNotMatch(h.html(),/comm-search-more/);assert.match(h.html(),/data-v="chat"/);
 });

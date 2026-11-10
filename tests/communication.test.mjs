@@ -50,3 +50,21 @@ test('提及按UTF16范围渲染且转义正文、标签与用户ID，重叠坏�
   const h=harness(),text='🎵 @<甲> &尾';const html=h.ctx.mentionText(text,[{userId:'u"x',start:3,end:7},{userId:'bad',start:4,end:8}]);
   assert.equal(html,'🎵 <a class="comm-mention" data-go="user-u&quot;x">@&lt;甲&gt;</a> &amp;尾');assert.equal(h.ctx.mentionText('<script>',[{userId:'x',start:-1,end:80}]),'&lt;script&gt;');
 });
+
+test('下游读取失败不提前确认修订，下一轮继续请求同一变化',async()=>{
+  const h=harness();Object.assign(h.state(),{version:'v1',versions:{dm:0,activity:2,official:3},lastFull:Date.now()});let attempts=0;
+  h.ctx.dmThreads=async()=>{if(++attempts===1)throw Error('offline');};
+  await h.ctx.poll();assert.equal(h.state().version,'v1');assert.equal(h.state().versions.dm,0);
+  h.ctx.API.req=async(method,path)=>{h.requests.push(path);return path.startsWith('/dm/requests')?{items:[],next:null}:{version:'v2',versions:{dm:1,activity:2,official:3}};};
+  await h.ctx.poll();assert.equal(attempts,2);assert.equal(h.state().version,'v2');
+});
+
+test('定期全量校对不携带旧修订，刷新不产生修订事件的未读可见性变化',async()=>{
+  const h=harness();Object.assign(h.state(),{version:'old',versions:{dm:1,activity:2,official:3},lastFull:1,unread:{dm:9}});
+  h.ctx.API.req=async(method,path)=>{h.requests.push(path);return path.startsWith('/dm/requests')?{items:[],next:null}:{version:'old',versions:{dm:1,activity:2,official:3},unread:{dm:0}};};
+  await h.ctx.poll();assert.equal(h.requests[0],'/me/communication/sync');assert.equal(h.ctx.LDM.unread,0);
+});
+
+test('通知函数报告读取失败时保留原修订，以便下一轮重试',async()=>{
+  for(const section of ['activity','official']){const h=harness();Object.assign(h.state(),{version:'old',versions:{dm:1,activity:section==='activity'?1:2,official:section==='official'?2:3},lastFull:Date.now()});h.ctx[section==='activity'?'actLoad':'sysLoad']=async()=>false;await h.ctx.poll();assert.equal(h.state().version,'old',section);assert.equal(h.state().failures,1,section);}
+});

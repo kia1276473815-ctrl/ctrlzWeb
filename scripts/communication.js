@@ -63,15 +63,16 @@
     const s=current();if(s.running || !allowed() || document.hidden || !liveUser() || !API.on() || !API.tok)return;s.running=true;
     let wait=30000;
     try{
-      const r=await API.req('GET','/me/communication/sync'+(s.version ? '?since='+encodeURIComponent(s.version):''));if(!same(s.scope))return;
-      const force=Date.now()-s.lastFull>=30000,previous=s.versions;s.version=r.version;s.versions=r.versions;if(r.unread)s.unread=r.unread;
+      const force=Date.now()-s.lastFull>=30000,previous=s.versions;
+      const r=await API.req('GET','/me/communication/sync'+(s.version && !force ? '?since='+encodeURIComponent(s.version):''));if(!same(s.scope))return;
       for(const setting of r.settings || [])absorb(setting.peerId,setting);
       const open=CUR.key?.startsWith('msg|') ? CUR.key.slice(4):'',dmChanged=!previous || previous.dm!==r.versions.dm;
-      if(dmChanged || force){await dmThreads();await requests();if(!same(s.scope))return;}
+      if(dmChanged || force){await dmThreads();if(!same(s.scope))return;await requests();if(!same(s.scope))return;}
       if(open && s.context?.uid!==open && (dmChanged || !LDM.full.has(open)))await dmConv(open);
-      if(!previous || previous.activity!==r.versions.activity || force)await actLoad(true);
-      if(!previous || previous.official!==r.versions.official || force)await sysLoad();
-      if(!same(s.scope))return;if(force)s.lastFull=Date.now();s.failures=0;
+      if(!same(s.scope))return;
+      if(!previous || previous.activity!==r.versions.activity || force){const loaded=await actLoad(true);if(!same(s.scope))return;if(loaded===false)throw Error('互动通知暂未同步完成');}
+      if(!previous || previous.official!==r.versions.official || force){const loaded=await sysLoad(true);if(!same(s.scope))return;if(loaded===false)throw Error('官方通知暂未同步完成');}
+      if(!same(s.scope))return;s.version=r.version;s.versions=r.versions;if(r.unread)s.unread=r.unread;if(force)s.lastFull=Date.now();s.failures=0;
       if(s.unread)LDM.unread=s.unread.dm;msgBadge();if(CUR.key?.startsWith('msg|'))dmPaint(open);controls();
       wait=open ? 4000:CUR.key?.startsWith('msg|') ? 10000:30000;
     }catch(e){if(same(s.scope)){s.failures++;wait=Math.min(60000,4000*2**Math.min(s.failures,4));if(CUR.key?.startsWith('msg|') && !s.versions){LDM.listState='error';dmPaint(CUR.key.slice(4));}}}
@@ -99,7 +100,7 @@
   const oldList=msgList;msgList=function(uid){const s=current(),html=oldList(uid);if(!liveUser())return html;return html.replace('<div class="m-list">',`<div class="comm-list-actions"><button class="pill sm lt" data-act="comm-requests">消息请求${s.unread?.requests ? ' · '+s.unread.requests:''}</button><button class="pill sm lt" data-act="comm-search">搜索聊天记录</button></div><div class="m-list">`)+(s.next ? '<button class="pill sm lt comm-more" data-act="comm-threads-more">加载更多会话</button>':'');};
   const oldBubble=bubble;bubble=function(m,uid){const html=oldBubble(m,uid);if(!dmLive(uid) || m.me || !m.id || m.pend || m.rc)return html;return html.replace(/<\/div>$/,`<button class="comm-report" data-act="report" data-k="message" data-id="${esc(m.id)}" aria-label="举报这条消息">举报</button></div>`);};
   const oldSend=sendMsg;sendMsg=async function(uid,message){
-    if(!dmLive(uid))return oldSend(uid,message);let c=current().threads[uid];if(!c){await dmConv(uid);c=current().threads[uid];}
+    if(!dmLive(uid))return oldSend(uid,message);const key=scope();let c=current().threads[uid];if(!c){await dmConv(uid);if(!same(key))return false;c=current().threads[uid];}
     if(!c?.canSend || message.t!=='text' && !c.canSendMedia){toast(c?.state==='pending' || c?.localRequest ? '等待首条请求确认或对方接受后再发送':c?.state==='rejected' ? '对方暂不接收消息':'先发送一条文字请求','orange');return false;}
     const firstRequest=c.state==='none' && !c.canSendMedia;
     if(firstRequest){c.localRequest=true;c.canSend=false;controls();}
@@ -115,7 +116,7 @@
   const oldMore=ACTIONS['cv-more'];ACTIONS['cv-more']=b=>{if(!dmLive(b.dataset.id))return oldMore(b);const uid=b.dataset.id,c=current().threads[uid] || {};sheet(`<h3>${esc(uname(uid))}</h3><button class="pill lt lg" data-act="comm-setting" data-id="${esc(uid)}" data-key="pinned">${c.pinned ? '取消置顶':'置顶会话'}</button><button class="pill lt lg" data-act="comm-setting" data-id="${esc(uid)}" data-key="muted">${c.muted ? '关闭免打扰':'开启免打扰'}</button><p class="mut2">免打扰保留未读计数，关闭弹出提示和系统推送。</p><button class="pill lt lg" data-act="cv-clear" data-id="${esc(uid)}">清空我的聊天记录</button><button class="pill lt lg" data-act="report" data-k="user" data-id="${esc(uid)}">举报用户</button><button class="pill lt lg" data-act="blk" data-id="${esc(uid)}">${STATE.blocks.has(uid) ? '解除拉黑':'拉黑'}</button>`);};
   ACTIONS['comm-setting']=b=>busy(b,async ok=>{const uid=b.dataset.id,key=b.dataset.key,r=await API.req('PATCH',`/dm/with/${encodeURIComponent(uid)}/settings`,{[key]:!current().threads[uid]?.[key]});if(!ok())return;absorb(uid,r);current().version=null;closeSheet();await poll();});
   const oldClear=ACTIONS['cv-cgo'];ACTIONS['cv-cgo']=b=>{if(!dmLive(b.dataset.id))return oldClear(b);return busy(b,async ok=>{const uid=b.dataset.id,r=await API.req('POST',`/dm/with/${encodeURIComponent(uid)}/clear`);if(!ok())return;absorb(uid,r);current().version=null;closeSheet();refreshConv(uid);await poll();toast('已清空你的聊天记录，对方记录不受影响');});};
-  ACTIONS['dm-readall']=b=>busy(b,async ok=>{let cursor=null,items=[],seen=new Set();do{const r=await API.req('GET','/dm/threads?limit=50'+(cursor ? '&cursor='+encodeURIComponent(cursor):''));if(!ok())return;items.push(...r.items.filter(t=>t.unread>0).map(t=>({peerId:t.peer.id,through:t.readThrough})));cursor=r.next;if(cursor && seen.has(cursor))throw Error('会话分页未前进，请刷新后重试');seen.add(cursor);}while(cursor);for(let i=0;i<items.length;i+=100)await API.req('POST','/dm/read',{items:items.slice(i,i+100)});if(!ok())return;current().version=null;await poll();toast('已读范围已同步');});
+  ACTIONS['dm-readall']=b=>busy(b,async ok=>{let cursor=null,items=[],seen=new Set();do{const r=await API.req('GET','/dm/threads?limit=50'+(cursor ? '&cursor='+encodeURIComponent(cursor):''));if(!ok())return;items.push(...r.items.filter(t=>t.unread>0).map(t=>({peerId:t.peer.id,through:t.readThrough})));cursor=r.next;if(cursor && seen.has(cursor))throw Error('会话分页未前进，请刷新后重试');seen.add(cursor);}while(cursor);for(let i=0;i<items.length;i+=100){if(!ok())return;await API.req('POST','/dm/read',{items:items.slice(i,i+100)});}if(!ok())return;current().version=null;await poll();if(ok())toast('已读范围已同步');});
   document.addEventListener('rendered',()=>{controls();if(liveUser() && API.on())schedule(0);});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){clearTimeout(LDM.timer);clearInterval(LDM.timer);LDM.timer=0;}else if(liveUser())schedule(0);});
   window.addEventListener('pagehide',()=>{clearTimeout(LDM.timer);clearInterval(LDM.timer);});
@@ -134,10 +135,16 @@
   }
   for(const name of ['cmt','rl-send']){const original=ACTIONS[name];ACTIONS[name]=function(b,e){const input=name==='cmt' ? $('#cmtIn'):$('#rlIn'),pid=name==='cmt' ? b.dataset.id:reelCur()?.id,p=POST(pid);if(p?.live && p.commentsClosed){toast('作者已关闭评论，草稿已保留','orange');return;}if(input && pid){const data=editors.get(input),text=input.value.trim(),leading=input.value.length-input.value.trimStart().length;commentMentions.set(pid,{text,mentions:(data?.mentions || []).filter(m=>m.start>=leading && m.end<=leading+text.length).map(m=>({...m,start:m.start-leading,end:m.end-leading}))});}return original(b,e);};}
 
-  function searchRows(el,remote){el.querySelector('.comm-search-results')?.remove();if(!remote.messages)return;const target=el.querySelector('#sres');if(!target)return;const box=document.createElement('section');box.className='comm-search-results';box.innerHTML=`<h3>历史消息</h3>${remote.messages.map(m=>`<button class="comm-search-row" data-act="comm-jump-message" data-id="${esc(m.id)}" data-peer="${esc(m.from===ME ? m.to:m.from)}"><b>${esc(m.body || (m.kind==='post' ? '分享的帖子':'分享的商品'))}</b><span>${esc(ago(+new Date(m.createdAt)))}</span></button>`).join('') || '<p class="mut2">没有匹配的历史消息</p>'}${remote.messageNext ? `<button class="pill sm lt" data-act="comm-search-more" data-query="${esc(remote.query)}" data-cursor="${esc(remote.messageNext)}">加载更多消息</button>`:''}`;target.append(box);}
+  function searchRows(el,remote){if(el._remote?.query===remote.query)el._draw?.();}
   ACTIONS['comm-search']=()=>openSearch('msg');
-  ACTIONS['comm-search-more']=b=>busy(b,async ok=>{const r=await API.req('GET','/dm/search?q='+encodeURIComponent(b.dataset.query)+'&cursor='+encodeURIComponent(b.dataset.cursor));if(!ok())return;const el=$('#srch');if(!el)return;el._remote.messages.push(...r.items);el._remote.messageNext=r.next;searchRows(el,el._remote);});
-  ACTIONS['comm-jump-message']=b=>busy(b,async ok=>{const r=await API.req('GET',`/dm/messages/${encodeURIComponent(b.dataset.id)}/context`);if(!ok())return;const uid=r.peer.id;apiUser(r.peer);current().context={uid,after:r.after};LDM.full.add(uid);dmMerge(uid,r.items,true);LDM.before[uid]=r.before;closeSearch(false);closeSheet();go('msg-'+uid);LDM.sig[uid]=null;dmPaint(uid);requestAnimationFrame(()=>{const el=[...document.querySelectorAll('[data-dm]')].find(el=>el.dataset.dm==='msg-'+r.target);el?.scrollIntoView({block:'center'});el?.classList.add('flash');});});
+  ACTIONS['comm-search-more']=b=>busy(b,async ok=>{
+    const el=$('#srch'),remote=el?._remote,query=b.dataset.query,cursor=b.dataset.cursor;
+    if(!el?.isConnected || !remote || remote.query!==query || remote.messageNext!==cursor)return;
+    const r=await API.req('GET','/dm/search?q='+encodeURIComponent(query)+'&cursor='+encodeURIComponent(cursor));
+    if(!ok() || $('#srch')!==el || !el.isConnected || el._remote!==remote || remote.messageNext!==cursor)return;
+    remote.messages.push(...r.items);remote.messageNext=r.next;searchRows(el,remote);
+  });
+  ACTIONS['comm-jump-message']=b=>busy(b,async ok=>{const r=await API.req('GET',`/dm/messages/${encodeURIComponent(b.dataset.id || b.dataset.messageId)}/context`);if(!ok())return;const uid=r.peer.id;apiUser(r.peer);current().context={uid,after:r.after};LDM.full.add(uid);dmMerge(uid,r.items,true);LDM.before[uid]=r.before;closeSearch(false);closeSheet();go('msg-'+uid);LDM.sig[uid]=null;dmPaint(uid);requestAnimationFrame(()=>{const el=[...document.querySelectorAll('[data-dm]')].find(el=>el.dataset.dm==='msg-'+r.target);el?.scrollIntoView({block:'center'});el?.classList.add('flash');});});
   ACTIONS['comm-context-next']=b=>busy(b,async ok=>{const r=await API.req('GET',`/dm/messages/${encodeURIComponent(b.dataset.id)}/context`);if(!ok())return;dmMerge(r.peer.id,r.items);current().context={uid:r.peer.id,after:r.after};LDM.sig[r.peer.id]=null;dmPaint(r.peer.id);});
   ACTIONS['comm-latest']=b=>busy(b,async ok=>{const uid=b.dataset.id;current().context=null;LDM.full.delete(uid);await dmConv(uid);if(!ok())return;LDM.sig[uid]=null;dmPaint(uid);const box=$('#cvB');if(box)box.scrollTop=box.scrollHeight;});
 
@@ -152,8 +159,8 @@
     try{await actLoad(true);if(!same(key))return;const token=current().tokens[kind];if(!token)throw Error('通知快照未读取成功，请重试');await API.req('POST','/me/activity/read',{kind,through:token});if(!same(key))return;current().version=null;await actLoad(true);await poll();}catch(err){if(same(key)){apiFail(err);actPanelPaint();}}
   };
   const oldAtMark=atMark;atMark=function(id){if(!liveUser() || !/^ac_/.test(id))return oldAtMark(id);if(AT_READ.has(id))return;const key=scope();void API.req('POST','/me/activity/read',{ids:[id]}).then(async()=>{if(!same(key))return;AT_READ.add(id);const item=(NOTES.at || []).find(n=>n.id===id);if(item)item.read=true;current().version=null;await actLoad(true);msgBadge();}).catch(e=>{if(same(key))apiFail(e);});};
-  ACTIONS['at-all']=b=>busy(b,async ok=>{if(!current().tokens.at)await actLoad(true);const through=current().tokens.at;if(!through)throw Error('通知尚未读取成功，请重试');await API.req('POST','/me/activity/read',{kind:'at',through});if(!ok())return;current().version=null;await actLoad(true);await poll();});
-  comm.openOfficial=async function(orig,b,e){const key=scope(),old=(ADM.inbox[ME] || []).map(n=>[n,n.read]);orig(b,e);old.forEach(([n,read])=>n.read=read);msgBadge();try{LDM.sysMark=null;await sysLoad();const through=current().tokens.official;if(!through)throw Error('官方通知尚未读取成功，请重试');await API.req('POST','/notifications/read-all?through='+encodeURIComponent(through));if(!same(key))return;current().version=null;LDM.sysMark=null;await sysLoad();await poll();}catch(err){if(same(key))apiFail(err);}};
+  ACTIONS['at-all']=b=>busy(b,async ok=>{if(!current().tokens.at){const loaded=await actLoad(true);if(!ok())return;if(loaded===false)throw Error('通知尚未读取成功，请重试');}if(!ok())return;const through=current().tokens.at;if(!through)throw Error('通知尚未读取成功，请重试');await API.req('POST','/me/activity/read',{kind:'at',through});if(!ok())return;current().version=null;await actLoad(true);if(ok())await poll();});
+  comm.openOfficial=async function(orig,b,e){const key=scope(),old=(ADM.inbox[ME] || []).map(n=>[n,n.read]);orig(b,e);old.forEach(([n,read])=>n.read=read);msgBadge();try{LDM.sysMark=null;const loaded=await sysLoad();if(!same(key))return;const through=current().tokens.official;if(loaded===false || !through)throw Error('官方通知尚未读取成功，请重试');await API.req('POST','/notifications/read-all?through='+encodeURIComponent(through));if(!same(key))return;current().version=null;LDM.sysMark=null;await sysLoad();if(same(key))await poll();}catch(err){if(same(key))apiFail(err);}};
 
   let editing=null;
   const oldEdit=ACTIONS['post-edit'];ACTIONS['post-edit']=b=>{const p=POST(b.dataset.id);if(!p?.live)return oldEdit(b);if(p.author!==ME)return;if(p.serverStatus==='taken_down')return ACTIONS['comm-appeal'](b);
@@ -162,13 +169,14 @@
     sheet(`<h3>编辑帖子</h3><label class="ad-lab" for="peT">标题</label><input class="inp" id="peT" value="${esc(p.title)}" maxlength="60"><label class="ad-lab" for="peB">正文</label><textarea class="inp" id="peB" rows="6" maxlength="5000">${esc(p.rawBody || '')}</textarea>${media ? '<div class="comm-media-list">'+media+'</div>':''}${['image','audio'].includes(p.serverMedia?.[0]?.kind) ? `<label class="ad-lab" for="commMedia">追加或替换媒体</label><input class="inp" id="commMedia" type="file" ${p.serverMedia[0].kind==='image' ? 'accept="image/*" multiple':'accept="audio/*"'}><p class="mut2">替换时取消勾选原媒体，最多9个文件。图片和音频改动可能重新送审。</p>`:''}<p class="comm-editor-note">需要复审时，整帖暂时仅自己可见。保存失败会保留当前输入。</p><button class="pill lg" data-act="post-esave" data-id="${esc(p.id)}">保存修改</button>`,d=>{attachEditor($('#peB',d));const data=editors.get($('#peB',d));if(data)data.mentions=[...(p.mentions || [])];$('#commMedia',d)?.addEventListener('change',e=>{editing.files=[...e.target.files].map(file=>({file,uploadId:null}));});});
   };
   const oldSave=ACTIONS['post-esave'];ACTIONS['post-esave']=b=>{const p=POST(b.dataset.id);if(!p?.live)return oldSave(b);return busy(b,async ok=>{
-    const title=$('#peT')?.value.trim(),text=$('#peB')?.value || '';if(!title){toast('请填写标题','orange');return;}const editor=editing;if(!editor || editor.id!==p.id || editor.scope!==scope())return;
+    const title=$('#peT')?.value.trim(),input=$('#peB'),text=input?.value || '';if(!title){toast('请填写标题','orange');return;}const editor=editing;if(!input || !editor || editor.id!==p.id || editor.scope!==scope())return;
+    const active=()=>ok() && editing===editor && $('#peB')===input && input.isConnected;
     const retained=[...document.querySelectorAll('[data-comm-retain]:checked')].map(el=>el.dataset.commRetain),uploadIds=[];
     if(retained.length+editor.files.length>9){toast('最多保留或上传9个文件','orange');return;}
-    for(const entry of editor.files){entry.uploadId ||= (await liveUpload(entry.file,entry.file.type.startsWith('image/') ? 'post_image':'post_audio')).id;uploadIds.push(entry.uploadId);}
-    const input=$('#peB'),mentions=editors.get(input)?.mentions || [],body={title,body:text,mentions};
+    for(const entry of editor.files){if(!active())return;entry.uploadId ||= (await liveUpload(entry.file,entry.file.type.startsWith('image/') ? 'post_image':'post_audio')).id;if(!active())return;uploadIds.push(entry.uploadId);}
+    if(!active())return;const mentions=editors.get(input)?.mentions || [],body={title,body:text,mentions};
     if(p.serverMedia?.length || uploadIds.length)Object.assign(body,{uploadIds,retainedMediaKeys:retained});
-    const raw=await API.req('PATCH',`/posts/${encodeURIComponent(p.id)}`,body);if(!ok())return;Object.assign(p,apiPost(raw));editing=null;closeSheet();softRefresh();toast(p.review ? '修改已提交复审，通过前仅自己可见':'修改已保存');
+    const raw=await API.req('PATCH',`/posts/${encodeURIComponent(p.id)}`,body);if(!active())return;Object.assign(p,apiPost(raw));editing=null;closeSheet();softRefresh();toast(p.review ? '修改已提交复审，通过前仅自己可见':'修改已保存');
   });};
 
   // 后续发布管理与通知操作均在当前账号完成服务器确认后才更新页面。

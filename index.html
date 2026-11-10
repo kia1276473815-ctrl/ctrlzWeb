@@ -2626,7 +2626,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 }
 </style>
 
-<link rel="stylesheet" href="scripts/communication.css?v=20261110">
+<link rel="stylesheet" href="scripts/communication.css?v=20261110-r2">
 </head>
 <body>
 
@@ -9690,7 +9690,9 @@ function openSearch(scope, tab){
     if (scope === 'msg'){
       G.contact = contactIds().filter(id => (USERS[id].name + USERS[id].role + (USERS[id].handle || '')).toLowerCase().includes(v) || (el._remote?.query === v && el._remote.contacts?.has(id)))
         .map(id => ({go:'msg-' + id, av:id, t:hl(USERS[id].name), s:CHATS[id] ? USERS[id].role : USERS[id].role + ' · 发起私信'}));
-      G.chat = Object.keys(CHATS).filter(id => USERS[id]).flatMap(id => CHATS[id].map(m => ({id, m, txt:msgPreview({...m, me:false})})))
+      const history=el._remote;
+      if(history?.query===v && Array.isArray(history.messages))G.chat=history.messages.map(m=>{const peer=m.from===ME ? m.to:m.from,text=m.body || (m.kind==='post' ? '分享的帖子':m.kind==='prod' ? '分享的商品':'消息');return {go:'msg-'+peer,messageId:m.id,av:peer,t:esc(USERS[peer]?.name || '历史会话')+` <small style="font-weight:500;color:var(--ink-3)">${ago(+new Date(m.createdAt))}</small>`,sh:(m.from===ME ? '我：':'')+hl(text)};});
+      else G.chat = Object.keys(CHATS).filter(id => USERS[id]).flatMap(id => CHATS[id].map(m => ({id, m, txt:msgPreview({...m, me:false})})))
         .filter(x => x.txt.toLowerCase().includes(v)).sort((a, b) => b.m.ts - a.m.ts)
         .map(x => { const i = x.txt.toLowerCase().indexOf(v), st = Math.max(0, i - 12); return {go:'msg-' + x.id, av:x.id, t:esc(USERS[x.id].name) + ` <small style="font-weight:500;color:var(--ink-3)">${ago(x.m.ts)}</small>`, sh:(x.m.me ? '我：' : '') + (st ? '…' : '') + hl(x.txt.slice(st))}; });
     } else {
@@ -9704,22 +9706,23 @@ function openSearch(scope, tab){
     }
     const keys = S.tabs.map(([k]) => k), tab = keys.includes(UI.stabs[scope]) ? UI.stabs[scope] : (keys.find(k => G[k].length) || keys[0]), rows = G[tab];
     const kept = keepRow ? rows.findIndex(r => r.go === keepRow) : -1; sel = clamp(kept >= 0 ? kept : sel, 0, Math.max(0, rows.length - 1));
-    const tabs = keys.length < 2 ? '' : `<div class="s-tabs" role="tablist" aria-label="搜索结果分类">${S.tabs.map(([k,l]) => `<button role="tab" aria-selected="${k === tab}" tabindex="${k === tab ? 0 : -1}" class="${k === tab ? 'on' : ''} ${G[k].length ? '' : 'nil'}" data-act="srtab" data-v="${k}">${l}<i>${G[k].length}</i></button>`).join('')}</div>`;
+    const tabs = keys.length < 2 ? '' : `<div class="s-tabs" role="tablist" aria-label="搜索结果分类">${S.tabs.map(([k,l]) => `<button role="tab" aria-selected="${k === tab}" tabindex="${k === tab ? 0 : -1}" class="${k === tab ? 'on' : ''} ${G[k].length ? '' : 'nil'}" data-act="srtab" data-v="${k}">${l}<i>${G[k].length}${scope==='msg' && k==='chat' && el._remote?.query===v && el._remote.messageNext ? '+':''}</i></button>`).join('')}</div>`;
     let body;
     if (!rows.length){
       const alt = keys.find(k => G[k].length);
       body = `<div class="empty" style="align-items:flex-start;padding-inline:0"><span class="x" style="font-size:44px">没找到</span><span>${alt ? `<button class="pill" data-act="srtab" data-v="${alt}">看 ${G[alt].length} ${S.unit[alt]}</button>` : S.none ? `换个词，或者<a href="${S.none[1]}" style="text-decoration:underline">${S.none[0]}</a>` : '换个词试试'}</span></div>`;
-    } else body = `<div class="s-list" id="sOptions" role="listbox" aria-label="搜索结果">` + rows.map((r, k) => `<a class="sr-row ${k === sel ? 'kb-on' : ''}" id="srow-${k}" href="#${r.go}" role="option" aria-selected="${k === sel}" data-sgo="${r.go}">${r.av ? av(r.av) : r.img ? `<img src="${r.img}" alt="">` : `<span class="av c-yellow" style="border-radius:10px;font:900 26px/1 var(--f-x)">?</span>`}<div style="min-width:0"><b>${r.t}</b><span>${r.sh || esc(r.s)}</span></div>${IC.arrow.replace('<svg','<svg width="16" height="16"')}</a>`).join('') + `</div>`;
+    } else body = `<div class="s-list" id="sOptions" role="listbox" aria-label="搜索结果">` + rows.map((r, k) => `<a class="sr-row ${r.messageId ? 'comm-search-row ':''}${k === sel ? 'kb-on' : ''}" id="srow-${k}" href="#${r.go}" role="option" aria-selected="${k === sel}" data-sgo="${r.go}"${r.messageId ? ` data-message-id="${esc(r.messageId)}"`:''}>${r.av ? av(r.av) : r.img ? `<img src="${r.img}" alt="">` : `<span class="av c-yellow" style="border-radius:10px;font:900 26px/1 var(--f-x)">?</span>`}<div style="min-width:0"><b>${r.t}</b><span>${r.sh || esc(r.s)}</span></div>${IC.arrow.replace('<svg','<svg width="16" height="16"')}</a>`).join('') + `</div>`;
     const remote = el._remote;
     if (remote?.pending) { const status = '<div class="request-note" role="status">正在搜索…</div>'; body = rows.length ? status + body : status; }
     else if (remote?.error){ const status = `<div class="request-note" role="status"><span>${esc(remote.error)}</span><button class="pill sm lt" data-act="sretry">重试</button></div>`; body = rows.length ? status + body : status; }
+    if(scope==='msg' && tab==='chat' && remote?.query===v && remote.messageNext)body+=`<button class="pill sm lt" data-act="comm-search-more" data-query="${esc(remote.query)}" data-cursor="${esc(remote.messageNext)}">加载更多消息</button>`;
     $('#sres').innerHTML = tabs + body;
     if ($('#sOptions', el)){ q.setAttribute('aria-expanded', 'true'); q.setAttribute('aria-activedescendant', 'srow-' + sel); }
     if (keepTab) $(`.s-tabs [data-v="${keepTab}"]`, el)?.focus({preventScroll:true});
     else if (keepRow) ($$('.sr-row', el).find(r => r.dataset.sgo === keepRow) || $('.sr-row.kb-on', el) || q).focus({preventScroll:true});
   };
   const reveal = focus => { const row = $('.sr-row.kb-on', el); if (!row) return; row.scrollIntoView({block:'nearest', inline:'nearest', behavior:'instant'}); if (focus) row.focus({preventScroll:true}); };
-  const enter = row => { if (!row) return; SHIST.add(q.value); closeSearch(false); go(row.dataset.sgo); };
+  const enter = row => { if (!row) return; SHIST.add(q.value); if(row.dataset.messageId && ACTIONS['comm-jump-message']){ACTIONS['comm-jump-message'](row);return;}closeSearch(false); go(row.dataset.sgo); };
   q.addEventListener('input', () => { sel = 0; draw(); });
   q.addEventListener('keydown', e => { if (e.isComposing || e.keyCode === 229) return; const rows = $$('.sr-row', el); if (e.key === 'ArrowDown'){ sel = Math.min(rows.length - 1, sel + 1); draw(); reveal(false); e.preventDefault(); } if (e.key === 'ArrowUp'){ sel = Math.max(0, sel - 1); draw(); reveal(false); e.preventDefault(); } if (e.key === 'Enter'){ e.preventDefault(); enter(rows[sel]); } if (e.key === 'Escape' && q.value){ e.preventDefault(); e.stopPropagation(); ACTIONS.sclear(); } });
   el.addEventListener('keydown', e => { if (e.isComposing || e.keyCode === 229) return;
@@ -9754,7 +9757,7 @@ const typeTagCN = {image:'图文', audio:'声音', video:'视频', question:'提
               if (API.tok) jobs.push(API.req('GET', '/users?q=' + encodeURIComponent(v), undefined, {signal}).then(r => { if (my === seq && el.isConnected) r.items.forEach(u => apiUser(u)); })); }
             jobs.push(API.req('GET', '/products?limit=30&q=' + encodeURIComponent(v), undefined, {signal}).then(r => { if (my === seq && el.isConnected) r.items.forEach(apiProduct); }));
           }
-          await Promise.all(jobs); if (my !== seq || !el.isConnected) return; el._remote = {...remote,pending:false,error:null}; el._draw?.();globalThis.CZCommunication?.searchRows(el,remote);
+          await Promise.all(jobs); if (my !== seq || !el.isConnected) return; el._remote = {...remote,pending:false,error:null}; el._draw?.();
         } catch(e){ if (my !== seq || !el.isConnected || e.code === 'cancel') return; el._remote = {...remote,pending:false,error:e.message || '搜索失败，请重试'}; el._draw?.(); }
       }, 250);
     };
@@ -11207,9 +11210,9 @@ async function dmThreads(){
   const cursor=arguments[0];
   const current = dmSession();
   let r; try { r = await API.req('GET', '/dm/threads?limit=50'+(cursor ? '&cursor='+encodeURIComponent(cursor):'')); } catch(e){ if (current() && LDM.listState !== 'ready') LDM.listState = 'error'; throw e; }
-  globalThis.CZCommunication?.threadPage(r,cursor);
   const fresh = [], open = CUR.key?.startsWith('msg|') ? CUR.key.slice(4) : '';
   if (!current()) return fresh; LDM.listState = 'ready'; LDM.listAt = Date.now(); LDM.unread = r.items.reduce((n, t) => n + t.unread, 0);
+  globalThis.CZCommunication?.threadPage(r,cursor);
   for (const t of r.items){
     apiUser(t.peer); const uid = t.peer.id;globalThis.CZCommunication?.absorb(uid,t.conversation); const m = dmMap(t.last); if (dmCut(uid, m.ts)) continue;
     const had = LDM.last[uid]; LDM.last[uid] = m.id;
@@ -11756,14 +11759,14 @@ function actMore(k){ if(!liveUser() || !['likes','fans','at'].includes(k))return
 }
 ACTIONS['activity-more']=b=>actMore(b.dataset.v);
 async function actLoad(force){
-  if (document.hidden || (LACT.busy && LACT.me === ME) || !API.on() || !API.tok || STATE.role !== 'user') return;
+  if (document.hidden || (LACT.busy && LACT.me === ME) || !API.on() || !API.tok || STATE.role !== 'user') return false;
   if(LACT.me!==ME){actPagesReset();LACT.loaded=false;LACT.error=null;LACT.sig='';} LACT.busy = true; LACT.me = ME; LACT.status='pending'; actPanelPaint();
   const session=dmSession(), revision=LACT.readRevision, current=()=>session() && revision===LACT.readRevision, request = {}; LACT.request = request;
   try {
-    const u = await API.req('GET', '/me/activity/unread'), sig = JSON.stringify(u); if (document.hidden || !current()) return;
-    if (!force && sig === LACT.sig){LACT.status='ready';actPanelPaint();return;}
+    const u = await API.req('GET', '/me/activity/unread'), sig = JSON.stringify(u); if (document.hidden || !current()) return false;
+    if (!force && sig === LACT.sig){LACT.status='ready';actPanelPaint();return true;}
     const [lk, fn, at] = await Promise.all(['likes', 'fans', 'at'].map(k => API.req('GET', `/me/activity?kind=${k}&limit=30`)));
-    if (document.hidden || !current()) return; LACT.sig = sig;
+    if (document.hidden || !current()) return false; LACT.sig = sig;
     const fresh = at.items.filter(n => !n.read && !LACT.ids.has(n.id) && LACT.ids.size);   // 第一次加载不弹
     at.items.forEach(n => LACT.ids.add(n.id));
     for(const [k,r] of [['likes',lk],['fans',fn],['at',at]]){globalThis.CZCommunication?.activityToken(k,r.readToken);const page=actPage(k),keep=page.expanded || !!page.task;actMerge(k,r.items,keep);
@@ -11771,23 +11774,25 @@ async function actLoad(force){
     }
     NOTE_NEW.likes = u.likes; NOTE_NEW.fans = u.fans; actSetAt(u.at);
     await dmRefs([...NOTES.likes, ...NOTES.at].filter(n => n.ref).map(n => ({t:'post', ref:n.ref})));   // 提到的帖子本地没有就去取，链接才点得进去
-    if (document.hidden || !current()) return;
+    if (document.hidden || !current()) return false;
     LACT.loaded=true;LACT.status='ready';LACT.error=null;actPanelPaint();
     fresh.slice(0, 2).forEach(n => toast(`${esc(n.actor.name)} ${n.kind === 'reply' ? '回复了你' : '评论了你的帖子'}：${esc(n.body.slice(0, 30))}`, 'blue'));
-    noteSync(); msgBadge(); if (CUR.key === 'msg|') dmPaint('');
-  } catch(e){if(current()){LACT.status='error';LACT.error=e.message || '通知读取失败';actPanelPaint();}} finally { if (LACT.request === request){ LACT.busy = false; LACT.request = null;if(session() && revision!==LACT.readRevision && LACT.status==='pending'){LACT.status=LACT.loaded ? 'ready' : 'idle';actPanelPaint();} } }
+    noteSync(); msgBadge(); if (CUR.key === 'msg|') dmPaint('');return true;
+  } catch(e){if(current()){LACT.status='error';LACT.error=e.message || '通知读取失败';actPanelPaint();}return false;} finally { if (LACT.request === request){ LACT.busy = false; LACT.request = null;if(session() && revision!==LACT.readRevision && LACT.status==='pending'){LACT.status=LACT.loaded ? 'ready' : 'idle';actPanelPaint();} } }
 }
 /* 官方通知（「CTRL Z 官方」）：和互动提醒同一节奏重读，会话期间也能看到新通知；只有内容变了才更新红点和列表。
    本地刚标的已读、已提交的反通知（done）保留，免得请求赛跑时又冒出来 */
 async function sysLoad(){ const current = dmSession(), mark = r => JSON.stringify([r.items[0]?.id, r.unread]);
-  try { if (LDM.sysMark){ const head = await API.req('GET', '/notifications?limit=1'); if (!current() || mark(head) === LDM.sysMark) return; }   // 最新一条和未读数都没变（新通知、别的设备标已读都会变）：不拉全量
-    const nt = await API.req('GET', '/notifications?limit=50');globalThis.CZCommunication?.officialToken(nt.readToken); if (!current()) return; LDM.sysMark = mark(nt);
+  const force=arguments[0]===true;
+  try { if (LDM.sysMark && !force){ const head = await API.req('GET', '/notifications?limit=1'); if (!current())return false;if(mark(head) === LDM.sysMark)return true; }   // 完整同步时也校对旧通知的处理状态；轻量读取仍复用列表标记。
+    const nt = await API.req('GET', '/notifications?limit=50'); if (!current()) return false;globalThis.CZCommunication?.officialToken(nt.readToken); LDM.sysMark = mark(nt);
     const old = new Map((ADM.inbox[ME] || []).map(m => [m.id, m])), L = nt.items.map(n => { const o = old.get(n.id);
       return {id:n.id, title:n.title, text:n.body, ts:+new Date(n.createdAt), read:n.read || !!o?.read, ...n.extra, ...(o?.done ? {done:true} : {})}; });
     const sig = x => JSON.stringify(x.map(m => [m.id, m.read, !!m.done]));
-    if (sig(L) === sig(ADM.inbox[ME] || [])) return;
+    if (sig(L) === sig(ADM.inbox[ME] || [])) return true;
     ADM.inbox[ME] = L; msgBadge(); if (CUR.key?.startsWith('msg|')){ LDM.side = ''; dmPaint(CUR.key.slice(4)); }
-  } catch(e){ /* 下一轮再试 */ } }
+    return true;
+  } catch(e){return false;} }
 { const poll0 = dmPoll; dmPoll = async function(){ if (document.hidden || !API.on() || !API.tok || STATE.role !== 'user') return; const resume = LACT.resume; LACT.resume = false; await poll0(); if (document.hidden) return; if (resume || LACT.tick++ % 3 === 0) await Promise.all([actLoad(resume), sysLoad()]); }; }
 { const after2 = liveAfterLogin; liveAfterLogin = async function(){ actPagesReset();LACT.sig = ''; LACT.ids.clear(); LACT.status='idle';LACT.loaded=false;LACT.error=null;LACT.panel=null; await after2(); actLoad(true); }; }
 wrapAct('note', (orig, b, e) => { const k = b.dataset.v;if(liveUser() && k!=='at' && globalThis.CZCommunication)return CZCommunication.openActivity(orig,b,e); orig(b, e); if(liveUser()){ const list=$('#layer .m-list'); if(list){LACT.panel={k,list,current:dmSession()};actPanelPaint();if(!LACT.busy && (!LACT.loaded || LACT.status==='error'))void actLoad(true);} if(k==='at')void cmtNoticeLikes(); }
@@ -12976,7 +12981,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { coverFontDrop(); if (!CUR.post) rerender(); });
 })();
 </script>
-<script src="scripts/communication.js?v=20261110"></script>
+<script src="scripts/communication.js?v=20261110-r2"></script>
 
 <script src="scripts/oauth-v1.js?v=20261110-1"></script>
 </body>
