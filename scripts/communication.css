@@ -23,3 +23,12 @@ button.dm-quote{min-height:44px;cursor:pointer}.dm-quote span{display:-webkit-bo
 .dm-send-actions button{min-height:44px}
 .dm-delivery{align-self:flex-end;font-size:12px;line-height:1.5;white-space:nowrap;color:var(--ink-2);padding:0 3px}
 .comm-receipt-setting{padding-top:12px;border-top:1px solid var(--rule)}
+.comm-video-editor{display:flex;flex-direction:column;gap:12px;min-width:0}
+.comm-video-editor input{min-width:0;max-width:100%}
+.comm-video-editor>.ad-lab{font-size:14px;color:var(--ink-2)}
+.comm-video-editor .mut2{color:var(--ink-2)}
+.comm-video-editor .pill{min-height:44px}
+.comm-video-editor .native-video video{max-height:260px}
+.comm-video-choice{font-size:14px;line-height:1.6;overflow-wrap:anywhere}
+#commVideoPreview{display:flex;flex-direction:column;gap:12px;min-width:0}
+.comm-edit-status{font-size:14px;line-height:1.6;white-space:pre-line;overflow-wrap:anywhere}

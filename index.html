@@ -1580,6 +1580,9 @@ html.rm .vcw-cut,.rm .vcw-cut{opacity:.45}
 .rl-vw{flex:1 1 0;min-height:90px;display:grid;place-items:center;container-type:size}
 .rl-vis{position:relative;width:min(100cqw,100cqh,520px);aspect-ratio:1;border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5);background:#141418}
 .rl-vis > img{width:100%;height:100%;display:block;object-fit:cover}
+.rl-native{display:flex;justify-content:center;overflow:hidden;min-height:0}
+.rl-native .native-video{height:100%;max-width:760px;display:flex;flex-direction:column;border-radius:16px}
+.rl-native .native-video video{flex:1;min-height:0;height:100%;max-height:100%;object-fit:contain}
 .rl-vis .rl-pz{z-index:3}
 .rl-vis.paused .rl-pz{opacity:1;transform:none}
 .rl-ld{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:3px solid #fff;border-right-color:transparent;z-index:4;opacity:0;animation:spin .8s linear infinite;pointer-events:none}
@@ -2639,7 +2642,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 }
 </style>
 
-<link rel="stylesheet" href="scripts/communication.css?v=20261111-r10">
+<link rel="stylesheet" href="scripts/communication.css?v=20261111-r11">
 </head>
 <body>
 
@@ -2684,7 +2687,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 <script src="scripts/dm-outbox.js"></script>
 <script src="vendor/qrcodegen.js"></script>
 <script src="scripts/harmony-loader.js?v=20261012"></script>
-<script src="scripts/native-video-v1.js?v=20261110-1"></script>
+<script src="scripts/native-video-v1.js?v=20261111-2"></script>
 <script>
 "use strict";
 /* ================= 示例数据（全部虚构） ================= */
@@ -6450,12 +6453,13 @@ const VID = {box:null};
 const NATIVE_VIDEO = CZVideo.createPlayer({scope:()=>JSON.stringify([API.base,API.epoch,ME]),getPost:POST,
   refresh:async(id,signal)=>{const base=API.base,epoch=API.epoch,user=ME,data=await API.req('GET','/posts/'+encodeURIComponent(id),undefined,{signal});if(signal.aborted||API.base!==base||API.epoch!==epoch||ME!==user)throw Object.assign(Error('会话已变化'),{code:'cancel'});const np=apiPost(data),old=POST(id);if(old)Object.assign(old,np);return np.nativeVideo ? np.vurl:null;},
   interrupt:video=>{if(quickPlayPending!=null){quickPlayNonce++;quickPlayCtrl?.abort();quickPlayCtrl=null;quickPlayPending=null;}if(PEND.id!=null){PEND.n++;PEND.ctrl?.abort();PEND.ctrl=null;PEND.id=null;}if(GEN.pending)GEN.stop();else if(GEN.on)GEN.pause();for(const other of $$('audio,video'))if(other!==video&&!other.paused)other.pause();},
-  intent:()=>document.dispatchEvent(new CustomEvent('audio-intent')),priority:()=>document.dispatchEvent(new CustomEvent('audio-priority-change')),audioActive:()=>GEN.on||GEN.pending});
+  intent:()=>document.dispatchEvent(new CustomEvent('audio-intent')),priority:()=>document.dispatchEvent(new CustomEvent('audio-priority-change')),audioActive:()=>GEN.on||GEN.pending,
+  canPlay:video=>{const slide=video.closest('.rl-s');return !slide||(RL.on&&RL.el?.contains(video)&&+slide.dataset.k===RL.i);}});
 function nativeVideoHTML(p){
   const safe=url=>{if(typeof url!=='string'||!url)return '';try{const u=new URL(url,location.href);return ['http:','https:'].includes(u.protocol)||(p.id==='draft'&&u.protocol==='blob:')?url:'';}catch(_){return '';}};
-  const src=safe(p.vurl),poster=safe(p.poster),ratio=+p.h>=.3&&+p.h<=3?+p.h:1;return `<div class="native-video" data-native-box><video controls playsinline preload="none" data-native-video="${esc(p.id)}" aria-label="${esc(p.title)}" style="aspect-ratio:1/${ratio}"${src?` src="${esc(src)}"`:''}${poster?` poster="${esc(poster)}"`:''}></video><div class="native-video-feedback"><span data-video-status role="status"${src?' hidden':''}>${src?'':'视频地址暂不可用，请重试'}</span><button class="pill sm lt" data-video-retry${src?' hidden':''}>重试播放</button></div></div>`;
+  const src=safe(p.vurl),poster=safe(p.poster),ratio=+p.h>=.3&&+p.h<=3?+p.h:1,key=p.serverMedia?.find(m=>m.kind==='video')?.key||'';return `<div class="native-video" data-native-box><video controls playsinline preload="none" data-native-video="${esc(p.id)}" data-native-key="${esc(key)}" aria-label="${esc(p.title)}" style="aspect-ratio:1/${ratio}"${src?` src="${esc(src)}"`:''}${poster?` poster="${esc(poster)}"`:''}></video><div class="native-video-feedback"><span data-video-status role="status"${src?' hidden':''}>${src?'':'视频地址暂不可用，请重试'}</span><button class="pill sm lt" data-video-retry${src?' hidden':''}>重试播放</button></div></div>`;
 }
-function nativeVideoRestore(host,previous){const next=host?.querySelector('video[data-native-video]');if(previous&&next&&previous.dataset.nativeVideo===next.dataset.nativeVideo&&previous.getAttribute('src')===next.getAttribute('src')){for(const key of ['aria-label','style','poster']){const value=next.getAttribute(key);if(value!==null)previous.setAttribute(key,value);else previous.removeAttribute(key);}next.closest('[data-native-box]').replaceWith(previous.closest('[data-native-box]'));}if(host)NATIVE_VIDEO.mount(host);}
+function nativeVideoRestore(host,previous,preserveSource=false){const next=host?.querySelector('video[data-native-video]'),sameKey=previous?.dataset.nativeKey&&previous.dataset.nativeKey===next?.dataset.nativeKey&&NATIVE_VIDEO.owns(previous);if(previous&&next&&previous.dataset.nativeVideo===next.dataset.nativeVideo&&(previous.getAttribute('src')===next.getAttribute('src')||preserveSource&&sameKey)){for(const key of ['aria-label','style','poster']){const value=next.getAttribute(key);if(value!==null)previous.setAttribute(key,value);else previous.removeAttribute(key);}next.closest('[data-native-box]').replaceWith(previous.closest('[data-native-box]'));}if(host)NATIVE_VIDEO.mount(host);}
 function externalVideoURL(value){if(typeof value!=='string'||!value.trim()||/[\u0000-\u001f\u007f]/.test(value))return '';try{const url=new URL(/^[a-z][a-z0-9+.-]*:/i.test(value)?value:'https://'+value);return ['http:','https:'].includes(url.protocol)&&!url.username&&!url.password?url.href:'';}catch(_){return '';}}
 function externalVideoHTML(p){const real=p.live||p.linked;return `<div data-vbox="${esc(p.id)}" style="width:100%;position:relative"><img src="${cover(p.cover,hash(p.id)%50,960,560)}" alt="" style="width:100%"><span class="plat" style="position:absolute;left:14px;bottom:14px;font:700 11px/1 var(--f-b);padding:6px 9px;border-radius:999px;background:var(--paper);color:var(--ink)">${esc(p.plat||'视频链接')}</span><span class="pv big"><button class="${real?'pill lg':'pbtn'}" data-act="vplay" data-id="${esc(p.id)}" aria-label="${real?'在原网站观看':'播放示例'}">${real?'在原网站观看 '+IC.arrow:IC.play}</button></span></div>`;}
 function playVideo(id, box){
@@ -6729,7 +6733,7 @@ function modSheet(id){ const s = modActor(), p = POST(id); if (!s || !p) return;
     <div class="ad-acts"><button class="pill pk" data-act="mod-do" data-v="take" data-id="${p.id}">下架</button><button class="pill lt" data-act="mod-do" data-v="warn" data-id="${p.id}">警告作者</button><button class="pill lt" data-act="mod-do" data-v="both" data-id="${p.id}">下架并警告</button></div>
     <p class="mut2" style="font-size:12px;margin:0">以「${esc(s.name)} · ${ADM_ROLES[s.role][0]}」的身份操作，会记进操作日志。</p>`); }
 // 视频流里下架当前这条：从列表里拿掉，接着放下一条；没有了就关掉视频流
-function reelDrop(){ const track = $('.rl-track', RL.el); $$('.rl-s', track).forEach(s => { const k = +s.dataset.k; RL.wl[k] && RL.wl[k](); delete RL.wl[k]; s.remove(); });
+function reelDrop(){ const track = $('.rl-track', RL.el); $$('.rl-s', track).forEach(s => { const k = +s.dataset.k; RL.wl[k] && RL.wl[k](); delete RL.wl[k]; reelRelease(s); s.remove(); });
   RL.list.splice(RL.i, 1); if (!RL.list.length){ closeReels(); navUp(CUR.hash); } else goReel(Math.min(RL.i, RL.list.length - 1), true); }
 Object.assign(ACTIONS, {
   'mod-post': b => modSheet(b.dataset.id),
@@ -7853,8 +7857,8 @@ const ago = ts => { const s = (Date.now() - ts)/1000; if (s < 60) return '刚刚
 const thumbOf = p => p.tcover ? null : p.poster || p.img || (p.vis ? cover({...p.vis, txt:p.title}, 1, 240, 240) : p.type === 'audio' ? cover('wave', p.seed || 1, 240, 240) : p.type === 'question' ? null : cover(p.cover, hash(p.id) % 50, 240, Math.round(240*(p.h || 1))));
 // 小缩略图：有图用图，没图（文字 / 提问）用一块带字的色块
 function miniThumb(p, cls=''){ const s = thumbOf(p); if (s) return `<img class="${cls}" src="${esc(s)}" alt="">`; const P = TC_PALS[p.tcover?.pal || (p.type === 'question' ? 'yellow' : 'paper')]; return `<span class="mth ${cls}" style="background:${P[0]};color:#141418">${p.type === 'question' ? '?' : esc((p.title || '').slice(0, 6))}</span>`; }
-/* 声音流：声音帖和音频可视化帖（都有真实音频）；外链视频按普通帖子打开 */
-const inStream = p => !!p && !p.failed && (p.type === 'audio' || (p.type === 'video' && !!p.vis));
+/* 声音和本机上传视频共用连续浏览；外链仍前往原网站，不制造假画面或声音。 */
+const inStream = p => !!p && !p.failed && (p.type === 'audio' || (p.type === 'video' && (!!p.vis || !!p.nativeVideo)));
 const postHref = p => (inStream(p) ? 'v-' : 'post-') + p.id;
 
 /* —— 浏览历史 —— */
@@ -7913,15 +7917,18 @@ document.addEventListener('rendered', () => { if (!UI.homeFocus) return; const t
 /* ================= 短视频：全屏，上下滑切换 ================= */
 const RL = {on:false, list:[], i:0, st:null, off:null, el:null, lock:0, cm:false, wl:{}};
 const reelList = () => POSTS.filter(inStream);
+const reelVideo = () => $(`.rl-s[data-k="${RL.i}"] video[data-native-video]`,RL.el);
+function reelRelease(host){if(host?.querySelector?.('video[data-native-video]'))NATIVE_VIDEO.release(host);}
 function openReels(id, refresh=false){
   const list = reelList(); let i = list.findIndex(p => p.id === id); if (!list.length || (API.on() && id && i < 0)) return; if (i < 0) i = 0;
   const keepPlaying = RL.on && reelCur()?.id === list[i].id;
+  const native=keepPlaying&&RL.st?.p.nativeVideo?reelVideo():null;
   if (RL.on && refresh){ Object.values(RL.wl).forEach(f => f()); RL.wl = {}; $('.rl-track', RL.el).innerHTML = ''; }
   if (!RL.on){ RL.on = true; document.documentElement.style.overflow = 'hidden'; document.body.classList.add('reels-open'); buildReels(); }
-  RL.list = list; if (keepPlaying && RL.st) RL.st.p = list[i]; goReel(i, true, keepPlaying);
+  RL.list = list; if (keepPlaying && RL.st) RL.st.p = list[i]; goReel(i, true, keepPlaying,native);
 }
 function closeReels(){
-  if (!RL.on) return; inputDraftSave($('#rlIn')); reelStop(); Object.values(RL.wl).forEach(f => f()); RL.wl = {}; RL.on = false; RL.cm = false; $('#reels').innerHTML = ''; document.body.classList.remove('reels-open'); if (!CUR.post) document.documentElement.style.overflow = ''; UI.dirty = true; fabUpdate();
+  if (!RL.on) return; inputDraftSave($('#rlIn')); reelStop(); reelRelease(RL.el); Object.values(RL.wl).forEach(f => f()); RL.wl = {}; RL.on = false; RL.cm = false; $('#reels').innerHTML = ''; document.body.classList.remove('reels-open'); if (!CUR.post) document.documentElement.style.overflow = ''; UI.dirty = true; fabUpdate();
 }
 const RIC = {
   up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14l6-6 6 6"/></svg>',
@@ -7935,7 +7942,7 @@ const RIC = {
 };
 function buildReels(){
   const el = RL.el = $('#reels');
-  el.innerHTML = `<div class="rl" role="dialog" aria-label="声音流">
+  el.innerHTML = `<div class="rl" role="dialog" aria-label="声音与视频流">
     <div class="rl-col">
       <div class="rl-top"><button class="rl-ic" data-act="rl-close" aria-label="返回">${IC.back}</button><span class="rl-pos"></span><span style="flex:1"></span>${modActor() ? `<button class="rl-ic" data-act="rl-mod" aria-label="管理员操作：下架或警告">${SHIELD}</button>` : ''}<button class="rl-ic" data-act="search" data-v="all" aria-label="搜索">${IC.search}</button><button class="rl-ic" data-act="rl-share" aria-label="转发">${RIC.fwd}</button></div>
       <div class="rl-view"><div class="rl-track"></div></div>
@@ -7952,29 +7959,31 @@ function buildReels(){
 function reelSlide(p, k){
   const u = USERS[p.author], pr = p.attach.map(P).find(onSale), ex = (BODY[p.id] || [p.ex]).join(' '), look = streamLook(p);
   return `<section class="rl-s ${postCls(p)}" data-k="${k}" style="top:${k*100}%">
-    <div class="rl-vw"><div class="rl-vis" data-qbox="v:${p.id}"><img src="${cover({...look, txt:p.title}, 1, 720, 720)}" alt=""><span class="rl-pz">${IC.play}</span><i class="rl-ld"></i></div></div>
+    ${p.nativeVideo ? `<div class="rl-vw rl-native">${nativeVideoHTML(p)}</div>`:`<div class="rl-vw"><div class="rl-vis" data-qbox="v:${p.id}"><img src="${cover({...look, txt:p.title}, 1, 720, 720)}" alt=""><span class="rl-pz">${IC.play}</span><i class="rl-ld"></i></div></div>`}
     <div class="rl-info">
       <div class="rl-u"><a data-go="user-${u.id}">${av(u.id, 'md')}<b>${esc(u.name)}</b></a>${p.author !== ME ? `<button class="rl-fo ${STATE.follows.has(u.id) ? 'on' : ''}" data-act="rl-follow" data-id="${u.id}">${STATE.follows.has(u.id) ? '已关注' : '关注'}</button>` : ''}</div>
       <h3>${esc(p.title)}</h3>
       <p class="rl-d" data-act="rl-more"><span>${esc(ex)}</span> ${p.tags.map(t => `<i>#${esc(t)}</i>`).join(' ')}</p>
       ${pr ? `<a class="rl-att" data-go="item-${pr.id}"><img src="${cover(pr.cover, hash(pr.id) % 50, 96, 96)}" alt=""><span>用到的素材 · ${esc(pr.title)}</span>${IC.arrow}</a>` : ''}
     </div>
-    <div class="rl-wv"><canvas data-wave="${p.id}" data-bars="${IS_MOBILE ? 56 : 72}" data-on="#ffffff" data-off="rgba(255,255,255,.26)" data-hv="rgba(255,255,255,.6)" tabindex="0" role="slider" aria-label="播放进度，可点击或拖动跳转"></canvas><span class="rl-tc" data-wt="${p.id}">${p.dur}</span></div>
+    ${p.nativeVideo ? '':`<div class="rl-wv"><canvas data-wave="${p.id}" data-bars="${IS_MOBILE ? 56 : 72}" data-on="#ffffff" data-off="rgba(255,255,255,.26)" data-hv="rgba(255,255,255,.6)" tabindex="0" role="slider" aria-label="播放进度，可点击或拖动跳转"></canvas><span class="rl-tc" data-wt="${p.id}">${p.dur}</span></div>`}
   </section>`;
 }
-function goReel(i, jump, keepPlaying=false){
+function goReel(i, jump, keepPlaying=false,previousNative=null){
   const n = RL.list.length; if (!n) return; i = clamp(i, 0, n - 1);
   const changed = i !== RL.i || jump; RL.i = i;
   const track = $('.rl-track', RL.el);
   // 只渲染当前和前后各一个，保持轻量
   const want = [i - 1, i, i + 1].filter(k => k >= 0 && k < n);
-  $$('.rl-s', track).forEach(s => { if (!want.includes(+s.dataset.k)){ const k = +s.dataset.k; RL.wl[k] && RL.wl[k](); delete RL.wl[k]; s.remove(); } });
-  want.forEach(k => { if (!$(`.rl-s[data-k="${k}"]`, track)){ track.insertAdjacentHTML('beforeend', reelSlide(RL.list[k], k)); RL.wl[k] = waveLoop([$(`.rl-s[data-k="${k}"] canvas[data-wave]`, track)]); } });
+  $$('.rl-s', track).forEach(s => { if (!want.includes(+s.dataset.k)){ const k = +s.dataset.k; RL.wl[k] && RL.wl[k](); delete RL.wl[k]; reelRelease(s); s.remove(); } });
+  want.forEach(k => { if (!$(`.rl-s[data-k="${k}"]`, track)){ track.insertAdjacentHTML('beforeend', reelSlide(RL.list[k], k)); if(!RL.list[k].nativeVideo)RL.wl[k] = waveLoop([$(`.rl-s[data-k="${k}"] canvas[data-wave]`, track)]); } });
+  if(previousNative)nativeVideoRestore($(`.rl-s[data-k="${i}"]`,track),previousNative,true);
+  for(const section of $$('.rl-s',track)){const current=+section.dataset.k===i;section.inert=!current;section.setAttribute?.('aria-hidden',String(!current));if(RL.list[+section.dataset.k]?.nativeVideo)NATIVE_VIDEO.mount(section);}
   track.style.transition = jump ? 'none' : ''; track.style.transform = `translateY(${-i*100}%)`;
   $('.rl-pos', RL.el).textContent = `${i + 1} / ${n}`;
   $('.rl-nav [data-act="rl-prev"]', RL.el).disabled = i === 0; $('.rl-nav [data-act="rl-next"]', RL.el).disabled = i === n - 1;
   if (changed){ const p = RL.list[i], h='#v-' + p.id + commentRouteSuffix(p.id); history.replaceState(history.state, '', h); HST.stk[HST.d] = h; reelBar();
-    if (!keepPlaying){ closeReelCm(); reelPlay(); addHist('video', p.id); } else { reelPaused(!RL.st?.playing); syncLive(); } }
+    if (!keepPlaying){ closeReelCm(); reelPlay(); addHist('video', p.id); } else { if(p.nativeVideo)syncReelPlayback();reelPaused(!RL.st?.playing); syncLive(); } }
   if(UI.commentJump?.p===RL.list[i].id) commentJumpReady(RL.list[i].id);
 }
 const reelCur = () => RL.list[RL.i];
@@ -7990,11 +7999,12 @@ function reelBar(){
 const reelOwn = p => 'post:' + p.id;
 const reelMeta = p => ({title:p.title, sub:USERS[p.author].name + ' · ' + p.dur, c:postCls(p).slice(2), go:'v-' + p.id});
 function reelPaused(on){ const v = $(`.rl-s[data-k="${RL.i}"] .rl-vis`, RL.el); v && v.classList.toggle('paused', !!on); }
-function reelStop(){ const p = RL.st?.p; if (p && GEN.owner === reelOwn(p)) GEN.stop();
+function reelStop(){ const p = RL.st?.p; if(p?.nativeVideo){const video=RL.st.video||reelVideo();if(video)NATIVE_VIDEO.pause(video);}if (p && GEN.owner === reelOwn(p)) GEN.stop();
   if (p && PEND.id === p.id){ PEND.n++; PEND.id = null; PEND.ctrl?.abort(); PEND.ctrl = null; $$(`[data-act="aplay"][data-id="${p.id}"]`).forEach(b => b.classList.remove('ld')); document.dispatchEvent(new CustomEvent('audio-priority-change')); } RL.st = null; }
 async function reelPlay(){
   reelStop(); const p = reelCur(); if (!p) return; const st = RL.st = {p, playing:true, loading:false}, own = reelOwn(p);
-  const nx = RL.list[RL.i + 1]; nx && queueTrack(nx.id);
+  if(p.nativeVideo){const video=reelVideo();st.playing=false;if(video){st.video=video;await NATIVE_VIDEO.play(video);if(RL.st!==st||!RL.on)return;syncReelPlayback();}return;}
+  const nx = RL.list[RL.i + 1]; nx && !nx.nativeVideo && queueTrack(nx.id);
   // 同一条从首页进入详情，接管已有媒体或待播请求，保留播放、暂停与当前进度。
   if ((GEN.owner === own && ['playing','buffering','loading','paused'].includes(GEN.state)) || (p.live && PEND.id === p.id)){
     syncReelPlayback(); syncLive(); return; }
@@ -8009,6 +8019,7 @@ async function reelPlay(){
   syncLive();
 }
 async function reelToggle(){ const st = RL.st; if (!st) return; const own = reelOwn(st.p);
+  if(st.p.nativeVideo){const video=reelVideo();if(!video)return;if(!video.paused&&!video.ended)NATIVE_VIDEO.pause(video);else{if(video.ended)video.currentTime=0;await NATIVE_VIDEO.play(video);}if(RL.st===st&&RL.on)syncReelPlayback();return;}
   if (st.loading){ if (st.p.live){ st.pos = GEN.owner === own ? GEN.pos() : (st.pos || 0); st.playing = st.loading = false; await toggleAudio(st.p.id); if (RL.st !== st || !RL.on) return; $(`.rl-s[data-k="${RL.i}"] .rl-vis`,RL.el)?.classList.remove('ld'); reelPaused(true); }
     else { st.playing = !st.playing; reelPaused(!st.playing); } return; } // 加载中可以取消；合成曲则保留最新播放意图
   if (GEN.on && GEN.owner === own){ st.pos = GEN.pos(); st.playing = false; GEN.pause(); }
@@ -8023,6 +8034,7 @@ async function reelToggle(){ const st = RL.st; if (!st) return; const own = reel
 // 波形上的点选 / 拖动会直接启动或跳转播放，这里同步暂停态
 // 签名请求也同步加载状态；系统暂停保存最新位置。
 function syncReelPlayback(){ const st = RL.st; if (!RL.on || !st || (st.loading && !st.p.live)) return; const own = GEN.owner === reelOwn(st.p), on = GEN.on && own;
+  if(st.p.nativeVideo){if(st.p.id!==reelCur()?.id)return;const video=reelVideo();st.video=video;st.playing=!!video&&!video.paused&&!video.ended;st.loading=st.playing&&video.readyState<3;st.pos=video?.currentTime||0;return;}
   if (own) st.pos = GEN.pos();
   if (st.p.live){ st.loading = (own && GEN.pending) || PEND.id === st.p.id; $(`.rl-s[data-k="${RL.i}"] .rl-vis`,RL.el)?.classList.toggle('ld',!!st.loading); } st.playing = on; reelPaused(!on); }
 document.addEventListener('gen', syncReelPlayback); document.addEventListener('audio-priority-change', syncReelPlayback);
@@ -8038,7 +8050,8 @@ function bindReelGestures(el){
   view.addEventListener('pointerdown', e => {
     if (d && stale(d)) d = null;
     if (d || e.button > 0 || e.target.closest('canvas[data-wave], .rl-cm')) return;
-    d = {y:e.clientY, x:e.clientX, t:performance.now(), dy:0, drag:false, id:e.pointerId, st:RL.st, noTap:!!e.target.closest('.rl-info,a,button')};
+    const video=e.target.closest('video');if(video&&e.clientY>=video.getBoundingClientRect().bottom-56)return;
+    d = {y:e.clientY, x:e.clientX, t:performance.now(), dy:0, drag:false, id:e.pointerId, st:RL.st, noTap:!!e.target.closest('video,.native-video-feedback,.rl-info,a,button')};
   });
   view.addEventListener('pointermove', e => {
     if (!d || e.pointerId !== d.id) return; if (stale(d)){ d = null; return; } const dy = e.clientY - d.y, dx = e.clientX - d.x;
@@ -8064,12 +8077,13 @@ function bindReelGestures(el){
 }
 document.addEventListener('keydown', e => {
   if (!RL.on || e.defaultPrevented || (HST.ov && topOverlay()?.kind !== 'rlcm') || e.isComposing || e.keyCode === 229) return;
+  if(e.target.closest('video'))return;
   if (e.key === 'Escape'){ e.preventDefault(); if (RL.cm) closeReelCm(); else ACTIONS['rl-close'](); return; }
   if (e.target.closest('input,textarea,select,button,a[href],[contenteditable="true"],[role="button"],[role="tab"]')) return;
   if (e.key === 'ArrowDown' || e.key === 'j'){ e.preventDefault(); goReel(RL.i + 1); }
   else if (e.key === 'ArrowUp' || e.key === 'k'){ e.preventDefault(); goReel(RL.i - 1); }
   else if (e.key === ' '){ e.preventDefault(); reelToggle(); }
-  else if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && RL.st && !e.target.closest('canvas[data-wave]')){ e.preventDefault(); const own = reelOwn(RL.st.p), cur = GEN.owner === own ? GEN.pos() : (RL.st.pos || 0); toggleAudio(RL.st.p.id, Math.max(0, cur + (e.key === 'ArrowRight' ? 5 : -5))); }
+  else if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && RL.st && !e.target.closest('canvas[data-wave]')){ e.preventDefault();const step=e.key==='ArrowRight'?5:-5;if(RL.st.p.nativeVideo){const video=reelVideo();if(video?.readyState)video.currentTime=clamp((video.currentTime||0)+step,0,Number.isFinite(video.duration)?video.duration:Number.MAX_SAFE_INTEGER);return;}const own = reelOwn(RL.st.p), cur = GEN.owner === own ? GEN.pos() : (RL.st.pos || 0); toggleAudio(RL.st.p.id, Math.max(0, cur + step)); }
 });
 /* 评论面板：从底部升起，盖住下半屏，视频继续在上半屏播放 */
 function reelCmList(p){ const cm = cmtsOf(p.id), status=p.live ? cmtStatusHtml(p.id) : '', more=p.live ? cmtMoreHtml(p.id) : '';
@@ -8483,7 +8497,7 @@ Object.assign(ACTIONS, {
   'post-del': b => { const p = POST(b.dataset.id); if (!p || p.author !== ME) return;
     sheet(`<h3>删除这篇帖子？</h3><p class="mut" style="font-size:14px;margin-top:-6px">删除后所有人都看不到，评论和点赞也会一起删除，不能恢复。</p><button class="pill lg au-lo" data-act="post-dgo" data-id="${p.id}">删除</button>`); },
   'post-dgo': b => { const id = b.dataset.id, i = POSTS.findIndex(p => p.id === id); if (i < 0) return; POSTS.splice(i, 1); MINE.del.push(id); delete MINE.ed[id]; mineSave(); closeSheet();
-    if (CUR.post === id) ACTIONS.pclose(); toast('已删除', 'blue'); setTimeout(rerender, 60); },
+    if (RL.on && reelCur()?.id === id) reelDrop(); else if (CUR.post === id) ACTIONS.pclose(); toast('已删除', 'blue'); setTimeout(rerender, 60); },
   // 评论：本人删除 / 他人举报
   'cmt-del': b => { const pid = b.dataset.p, k = b.dataset.k; if (CDEL_PEND.has(k)) return;
     const c = (COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || []).find(c => cmtKey(pid, c) === k); if (!c || !cmtMine(c) || POST(pid)?.live && (!c.id || c.sendState)) return;
@@ -10275,7 +10289,7 @@ function apiPost(p){
   liked ? STATE.liked.add(id) : STATE.liked.delete(id);
   // 权威计数回写带版本，删除失败不能把旧回滚叠到刚读回的服务器计数上。
   const cmtsRev = apiPost.cmtsRev = (apiPost.cmtsRev || 0) + 1;
-  const o = {id, author:p.author.id, title:p.title, ex:body[0] || p.title, tags:p.tags || [], likes:p.likeCount - (liked ? 1 : 0), favs:0, cmts:p.commentCount, cmtsRev, time:ago(t), ts:t,
+  const o = {id,serverType:p.type,serverStyle:{...s}, author:p.author.id, title:p.title, ex:body[0] || p.title, tags:p.tags || [], likes:p.likeCount - (liked ? 1 : 0), favs:0, cmts:p.commentCount, cmtsRev, time:ago(t), ts:t,
     attach:[], seed:hash(id) % 50, qn:/^[A-Za-z0-9]{1,6}$/.test(s.qn) ? s.qn : id.slice(-3).toUpperCase(), solved:!!p.solved, commentsClosed:!!p.commentsClosed,pinnedCommentId:p.pinnedCommentId || null,discussionVersion:p.discussionVersion || 0,mentions:p.mentions || [],rawBody:p.body || '',serverMedia:p.media || [],serverStatus:p.status,takedownReason:p.takedownReason || '', h, word:s.word || 'SOUND', edited:p.edited, live:true, review:p.status === 'review'};
   const imgs = (p.media || []).filter(m => m.kind === 'image' && m.url).map(m => m.url),video=(p.media||[]).find(m=>m.kind==='video');
   if (p.type === 'image' && imgs.length) Object.assign(o, {type:'image', img:imgs[0], imgs, h});
@@ -13155,7 +13169,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { coverFontDrop(); if (!CUR.post) rerender(); });
 })();
 </script>
-<script src="scripts/communication.js?v=20261111-r10"></script>
+<script src="scripts/communication.js?v=20261111-r11"></script>
 
 <script src="scripts/oauth-v1.js?v=20261110-1"></script>
 </body>

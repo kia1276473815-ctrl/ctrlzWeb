@@ -1,0 +1,25 @@
+async(page)=>{
+ const config={};
+ const ids=await page.evaluate(()=>window.__flowIds);if(!ids)throw Error('先运行本轮媒体fixture');await page.reload();await page.waitForFunction(()=>STATE.role==='user'&&!!CZCommunication);await page.evaluate(ids=>window.__flowIds=ids,ids);
+ const bytes=await(await page.request.get(new URL('/tests/fixtures/native-video.webm',page.url()).href)).body(),sizes=[[320,740],[375,812],[393,852],[430,932],[844,390],[744,1133],[820,1180],[1024,1366],[1180,820],[1366,1024],[1280,800],[1920,1080]],results=[],errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const selected='#reels .rl-s[aria-hidden="false"] video',settle=()=>page.evaluate(async()=>{await Promise.all(document.getAnimations().filter(a=>a.effect?.getComputedTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{})));});
+ const close=async()=>{await page.evaluate(()=>{closeSheet();closeReels();});await page.waitForFunction(()=>!document.querySelector('body > .sov[aria-hidden="true"]'));};
+ const saveFail=route=>route.request().method()==='PATCH'?route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'qa_visual_save',message:'保存暂未完成，请重试'}})}):route.continue();
+ try{
+  for(const surface of config.surfaces||['stream','stream-error','edit-original','edit-replacement','edit-save-failed']){
+   await close();
+   if(surface.startsWith('stream')){await page.evaluate(id=>openReels(id,true),ids.a);await page.waitForSelector(selected);await page.locator(selected).evaluate(async v=>{v.muted=true;await NATIVE_VIDEO.play(v);});await page.waitForFunction(()=>reelVideo().readyState>=2);await page.locator(selected).evaluate(v=>{NATIVE_VIDEO.pause(v);v.currentTime=.2;});if(surface==='stream-error'){await page.route('**/posts/'+ids.a,saveFail);const deny=route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'qa_visual_media',message:'合成暂不可用'}})});await page.route('**/posts/'+ids.a,deny);await page.locator(selected).evaluate(v=>v.dispatchEvent(new Event('error')));await page.waitForFunction(()=>document.querySelector('#reels [data-video-status]')?.textContent.includes('视频暂时无法播放'));await page.unroute('**/posts/'+ids.a,deny);await page.unroute('**/posts/'+ids.a,saveFail);}}
+   else{await page.evaluate(id=>ACTIONS['post-edit']({dataset:{id}}),ids.a);await page.waitForSelector('#commVideo');if(surface!=='edit-original'){await page.locator('#commVideo').setInputFiles({name:'保留完整文件名与封面_原生视频更换检查_这是一个比较长的中文视频文件名称.webm',mimeType:'video/webm',buffer:bytes});await page.waitForSelector('#commVideoPreview video');}if(surface==='edit-save-failed'){await page.route('**/posts/'+ids.a,saveFail);await page.locator('[data-act="post-esave"]').click();await page.waitForFunction(()=>!document.querySelector('[data-act="post-esave"]').disabled);await page.waitForSelector('[data-edit-status]:not([hidden])');await page.unroute('**/posts/'+ids.a,saveFail);}}
+   for(const [w,h]of config.surfaceSizes?.[surface]||sizes)for(const theme of ['light','dark']){
+    await page.setViewportSize({width:w,height:h});await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme);
+    if(surface.startsWith('edit')){if(surface==='edit-save-failed')await page.locator('[data-act="post-esave"]').scrollIntoViewIfNeeded();else await page.locator('#commVideo').scrollIntoViewIfNeeded();}
+    await settle();const metrics=await page.evaluate(()=>{
+     const visible=el=>el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden'&&!el.closest('[inert]'),roots=[document.documentElement,...document.querySelectorAll('#layer .sheet,.comm-video-editor,#commVideoPreview,.rl-col,.rl-s[aria-hidden="false"] .native-video')].filter(visible),overflow=roots.filter(el=>el.scrollWidth>el.clientWidth+2).map(el=>({tag:el.className||el.tagName,scroll:el.scrollWidth,client:el.clientWidth}));
+     const outside=[...document.querySelectorAll('#layer .sheet,.comm-video-editor,.rl-s[aria-hidden="false"] video')].filter(visible).map(el=>({el,r:el.getBoundingClientRect()})).filter(({r})=>r.left < -2||r.right>innerWidth+2).map(({el,r})=>({tag:el.className||el.tagName,left:r.left,right:r.right}));
+     const smallTargets=[...document.querySelectorAll('.comm-video-editor button,[data-video-retry]')].filter(visible).map(el=>({text:el.textContent,height:el.getBoundingClientRect().height})).filter(el=>el.height<40);return {overflow,outside,smallTargets,font:getComputedStyle(document.body).fontFamily};
+    });const file=`D:/ctrlz/output/playwright/communication-video-flow-20261111/${config.prefix||''}${surface}-${w}x${h}-${theme}.png`;await page.screenshot({path:file,animations:'disabled'});results.push({surface,w,h,theme,...metrics,file});
+   }
+  }
+  await close();await page.setViewportSize({width:1280,height:800});return {passed:!errors.length&&!results.some(r=>r.overflow.length||r.outside.length||r.smallTargets.length),surfaces:results.length,viewportThemes:24,errors,violations:results.filter(r=>r.overflow.length||r.outside.length||r.smallTargets.length),results};
+ }finally{await page.unroute('**/posts/'+ids.a,saveFail);}
+}

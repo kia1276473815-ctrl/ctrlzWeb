@@ -28,7 +28,11 @@ test('按钮和输入区拥有自己的空格与方向键，正常详情快捷�
   h.send(' ');h.send('ArrowDown');h.send('ArrowRight');assert.deepEqual(h.calls,[['toggle'],['reel',2],['seek','b',12]]);
 });
 test('评论输入区 Escape 只收起评论，不退出详情或丢弃草稿',()=>{
-  const h=handler('reel');h.ctx.RL.cm=true;const e=h.send('Escape',{target:{closest:()=>({})}});assert.deepEqual(h.calls,[['comment-close']]);assert.equal(e.defaultPrevented,true);
+  const h=handler('reel');h.ctx.RL.cm=true;const e=h.send('Escape',{target:{closest:sel=>sel==='video'?null:({})}});assert.deepEqual(h.calls,[['comment-close']]);assert.equal(e.defaultPrevented,true);
+});
+
+test('原生视频控件的键盘由浏览器处理，不切条、不触发合成声音',()=>{
+ const h=handler('reel');for(const key of ['Escape',' ','ArrowRight','ArrowDown'])h.send(key,{target:{closest:sel=>sel==='video'?{}:null}});assert.deepEqual(h.calls,[]);
 });
 test('普通帖子在弹层或原生控件上不响应背景跳转，正常方向键保留',()=>{
   const h=handler('post');h.ctx.HST.ov=true;h.send('Escape');h.send('ArrowRight');h.ctx.HST.ov=false;h.send('ArrowLeft',{target:{closest:sel=>sel.includes('button')?{}:null}});assert.deepEqual(h.calls,[]);
