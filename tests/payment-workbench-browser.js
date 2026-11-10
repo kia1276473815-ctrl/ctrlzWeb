@@ -1,7 +1,7 @@
 // playwright-cli run-code --filename tests/payment-workbench-browser.js
 // 隔离DTO验证实际后台；不连接支付渠道，不读取真实财务数据。
 async page => {
-  const origin='http://127.0.0.1:8797',errors=[],checks=[];
+  const origin='http://127.0.0.1:8807',errors=[],checks=[];
   const sizes=[[320,740],[375,812],[393,852],[430,932],[844,390],[744,1133],[820,1180],[1024,1366],[1180,820],[1366,1024],[1280,800],[1920,1080]];
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto(origin+'/?api=&demo=1#shop');
@@ -19,7 +19,7 @@ async page => {
       candidates:[{...base,id:'candidate-fixture',orderId:'candidate-fixture',amount:6800,cashAmount:6800,platformFeeAmount:204,status:'paid',settlementEligibleAt:at}],
       settlements:[{...base,id:'settlement-fixture',kind:'split',amount:204,status:'unknown',providerId:null,lastError:'channel_unconfirmed'}],
       merchants:[{...base,sellerId:'creator-sound-library',status:'active',reason:null},{...base,sellerId:'creator-visual-workshop',channel:'alipay',merchantId:null,status:'pending',reason:'渠道正在核实签约资料'}],
-      runs:[{id:'run-fixture',channel:'wechat',billDate:date,billType:'trade',credentialVersion:'wechat-production-2026-11-v1',status:'retry',attempts:3,nextAttemptAt:at,leaseUntil:null,coverage:['payment','refund'],result:{localEntries:42,providerEntries:42,differences:1},errorCode:'bill_incomplete',errorMessage:'渠道完整账单尚未生成，等待下一次核对',createdAt:at,updatedAt:at,completedAt:null}],
+      runs:[{id:'run-fixture',channel:'wechat',billDate:date,billType:'trade',credentialVersion:'wechat-production-2026-11-v1',status:'retry',attempts:3,nextAttemptAt:at,leaseUntil:null,coverage:['payment','refund'],result:{localEntries:42,providerEntries:42,differences:1,fees:{matchedEntries:42,charges:388,credits:60,fileSha256:"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},errorCode:'bill_incomplete',errorMessage:'渠道完整账单尚未生成，等待下一次核对',createdAt:at,updatedAt:at,completedAt:null}],
       differences:[{id:'difference-fixture',channel:'wechat',billDate:date,orderNo:'CZ20261110-10001',kind:'refund',status:'open',expectedAmount:6800,actualAmount:0,detail:{code:'provider_only'},updatedAt:at}]};
     window.__financeFixture={data,calls:[],mode:'normal'};
     API.req=async()=>({items:[],next:null});
@@ -52,8 +52,9 @@ async page => {
       });
       if(layout.rootWidth>width+1||layout.left < -1||layout.right>width+1||layout.outside.length)throw Error(JSON.stringify({tab,kind,theme,width,height,layout}));
       if(!layout.text.includes('旧的模拟月结记录')||layout.text.includes('undefined'))throw Error('工作台显示了不完整数据');
+      if(kind==='runs'&&(!layout.text.includes('已匹配费用条目')||!layout.text.includes('已记录渠道手续费')||!layout.text.includes('3.88')||!layout.text.includes('费用仅涵盖已匹配条目')||!layout.text.includes('银行到账另行核实')))throw Error('已记录费用与银行到账边界缺失');
       checks.push({kind,theme,width,height});
-      if([393,1280].includes(width)&&['attempts','candidates','runs','merchants'].includes(kind))await page.screenshot({path:`output/playwright/payment-workbench-${kind}-${theme}-${width}x${height}.png`});
+      if([393,1280].includes(width)&&['attempts','candidates','runs','merchants'].includes(kind))await page.screenshot({path:`output/playwright/company-unified42-20261111/payment-workbench-${kind}-${theme}-${width}x${height}.png`});
     }
   }
   await page.evaluate(async()=>{const f=CtrlzFinance;f.state.tab='settlements';f.state.kind='settlements';await f.load('settlements',{force:true});f.select('settlements','settlement-fixture');renderBase('admin','payments',false);__financeFixture.mode='unknown';});
@@ -67,7 +68,7 @@ async page => {
     const layout=await page.evaluate(()=>{const s=document.querySelector('#layer .sheet'),r=s.getBoundingClientRect();return {root:document.documentElement.scrollWidth,left:r.left,right:r.right,client:s.clientWidth,scroll:s.scrollWidth};});
     if(layout.root>width+1||layout.left < -1||layout.right>width+1||layout.scroll>layout.client+1)throw Error(JSON.stringify({kind:'confirmation',theme,width,height,layout}));
     checks.push({kind:'confirmation',theme,width,height});
-    if([393,1280].includes(width))await page.screenshot({path:`output/playwright/payment-workbench-confirmation-${theme}-${width}x${height}.png`});
+    if([393,1280].includes(width))await page.screenshot({path:`output/playwright/company-unified42-20261111/payment-workbench-confirmation-${theme}-${width}x${height}.png`});
   }
   await page.getByRole('button',{name:'只刷新记录',exact:true}).click();
   const unknown=await page.evaluate(()=>({posts:__financeFixture.calls.filter(c=>c.method==='POST'),locked:document.querySelector('[data-act="pfin-confirm"]').disabled,message:document.querySelector('[data-pfin-result]').textContent}));

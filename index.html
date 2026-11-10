@@ -5402,7 +5402,7 @@ function drawTpl(g, w, h, look, t, L){
 let CLEAN = [], MOUNTS = [], PCLEAN = [];
 const onMount = f => MOUNTS.push(f), onClean = f => CLEAN.push(f);
 /* 路由代码使用原生经典脚本，保留共享状态和无构建部署；失败可重试。 */
-const BUNDLES = {admin:{src:'scripts/views-admin-v1.js?v=20261030-2'},finance:{src:'scripts/views-payments-v1.js?v=20261111-1'},audio:{src:'scripts/views-audio-v1.js?v=20261030-sec'},docs:{src:'scripts/docs-v1.js?v=20261110-oauth'}};
+const BUNDLES = {admin:{src:'scripts/views-admin-v1.js?v=20261030-2'},finance:{src:'scripts/views-payments-v1.js?v=20261111-2'},audio:{src:'scripts/views-audio-v1.js?v=20261030-sec'},docs:{src:'scripts/docs-v1.js?v=20261110-oauth'}};
 let liveRefreshFrame = 0;
 function scheduleLiveRefresh(){ if (liveRefreshFrame) return; liveRefreshFrame = requestAnimationFrame(() => { liveRefreshFrame = 0; rerender(); }); }
 function loadBundle(name){ const state = BUNDLES[name]; if (state.ready) return Promise.resolve(); if (state.task) return state.task;
