@@ -10120,7 +10120,7 @@ const US_WRITES = new Set();
     finally { US_WRITES.delete(key); if (b.isConnected) b.disabled = false; }
   }; }
 const LIVE = {u:new Set(), prof:{}, cmts:{}, pendingId:null, pend:{}, feed:{status:'pending',error:null,seq:0}};   // pend：自己审核中的帖子（信息流里没有，要自己补上）
-const apiFail = e => { if (e?.code === 'cancel') return; toast(esc(e?.message || '出错了，请稍后再试'), 'orange', 'x'); if (e?.code === 'phone_required') setTimeout(() => ACTIONS['live-bind'](), 500); };   // 没绑手机号：直接弹出绑定
+const apiFail = e => { if (e?.code === 'cancel') return; if (e?.code === 'phone_required' && LIVE.cfg.phoneBinding === false){ toast('手机验证暂未开放，暂不能发布内容；领取和下载不受影响', 'orange', 'x'); return; } toast(esc(e?.message || '出错了，请稍后再试'), 'orange', 'x'); if (e?.code === 'phone_required') setTimeout(() => ACTIONS['live-bind'](), 500); };
 const liveUser = () => API.on() && STATE.role === 'user';
 
 /* —— 后端数据 → 原型的数据结构 —— */
@@ -10560,7 +10560,7 @@ wrapAct('acc-pgo', async (orig, b) => {
 /* 微信新用户：先绑手机号才能发布（复用换绑面板） */
 const accPhone0 = ACTIONS['acc-phone'];
 ACTIONS['acc-phone'] = b => { LIVE.bind = false; accPhone0(b); };
-ACTIONS['live-bind'] = () => { accPhone0(); LIVE.bind = true; const h = $('#layer .sheet h3'); if (h) h.textContent = '绑定手机号'; const p = $('#layer .sheet h3 + p'); if (p) p.textContent = '按照规定，发布内容前需要绑定手机号。'; };
+ACTIONS['live-bind'] = () => { if (LIVE.cfg.phoneBinding === false){ toast('手机验证暂未开放，领取和下载不受影响', 'blue'); return; } accPhone0(); LIVE.bind = true; const h = $('#layer .sheet h3'); if (h) h.textContent = '绑定手机号'; const p = $('#layer .sheet h3 + p'); if (p) p.textContent = '发布内容前需要完成手机验证。'; };
 /* 自己 / 别人的关注和粉丝：用后端的名单 */
 async function liveRelSheet(uid, k){
   try { const r = await API.req('GET', `/users/${uid}/${k === 'fans' ? 'followers' : 'following'}?limit=50`), u = USERS[uid];
