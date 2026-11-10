@@ -27,10 +27,11 @@
 <meta name="twitter:description" content="声音 · 视觉 · 资源 · 创作者店铺。采样、预设、.tox 与视觉素材。">
 <meta name="twitter:image" content="https://kia1276473815-ctrl.github.io/ctrlzWeb/og.jpg">
 <!-- 图标 -->
-<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="icons/favicon-32.png" type="image/png" sizes="32x32">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png?v=20261111" type="image/png" sizes="32x32">
+<link rel="icon" href="icons/favicon.svg?v=20261111" type="image/svg+xml" sizes="any">
+<link rel="icon" href="icons/favicon-dark.svg?v=20261111" type="image/svg+xml" sizes="any" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=20261111">
+<link rel="manifest" href="manifest.webmanifest?v=20261111">
 <meta name="apple-mobile-web-app-title" content="CTRL Z">
 <!-- 展示字体 Archivo 随站点自托管（不依赖 Google Fonts，国内网络也能正常加载、不阻塞首屏） -->
 <link rel="preload" href="fonts/Archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -2528,7 +2529,7 @@ html.rm .fx-em *{animation:none}
 .ann-i svg{width:18px;height:18px}
 .ann-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1} .ann-t b{font-size:14px} .ann-t span{font-size:12.5px;color:var(--ink-2)}
 .ann-x{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none;color:var(--ink-2)} .ann-x svg{width:16px;height:16px}
-.sys-av{background:var(--ink);color:var(--paper);font:900 16px/1 var(--f-x)}
+.sys-av{background:#F2F2EE}
 .sysbox{display:flex;flex-direction:column;gap:8px;max-height:min(50vh,420px);overflow:auto}
 .sysm{padding:12px 14px;border-radius:14px;background:var(--paper)} .sysm.new{box-shadow:inset 3px 0 0 var(--pink)}
 .sysm b{font-size:14px} .sysm p{font-size:13.5px;line-height:1.6;margin-top:4px;color:var(--ink-2)} .sysm time{display:block;font-size:11.5px;color:var(--ink-3);margin-top:6px}
@@ -8153,7 +8154,7 @@ function annBar(){ if (STATE.role === 'admin') return ''; const seen = store.get
   const a = ADM.ann.find(x => x.on && !seen.includes(x.id) && (x.aud === 'all' || STATE.seller));
   return limitBar() + (a ? `<div class="ann"><span class="ann-i">${MEGA}</span><span class="ann-t"><b>${esc(a.title)}</b>${a.body ? `<span>${esc(a.body)}</span>` : ''}</span><button class="ann-x" data-act="ann-x" data-id="${a.id}" aria-label="关闭公告">${IC.x}</button></div>` : ''); }
 function sysRow(){ const L = ADM.inbox[ME] || [], n = inboxUnread(), m = L[0];
-  return `<a class="mrow sysrow" data-act="sysbox"><span class="av md sys-av" aria-hidden="true">Z</span><span class="mt"><b>CTRL Z 官方</b><span>${esc(m ? m.title + '：' + m.text : '审核结果、结算和平台通知会发在这里')}</span></span><span class="mr">${m ? `<time>${ago(m.ts)}</time>` : ''}${n ? `<i class="bdg">${n}</i>` : ''}</span></a>`; }
+  return `<a class="mrow sysrow" data-act="sysbox"><span class="av md sys-av" aria-hidden="true"><img src="icons/icon-192.png?v=20261111" alt="" width="44" height="44"></span><span class="mt"><b>CTRL Z 官方</b><span>${esc(m ? m.title + '：' + m.text : '审核结果、结算和平台通知会发在这里')}</span></span><span class="mr">${m ? `<time>${ago(m.ts)}</time>` : ''}${n ? `<i class="bdg">${n}</i>` : ''}</span></a>`; }
 Object.assign(ACTIONS, {
   'ann-x': b => { const s = store.get('annSeen', []); s.push(b.dataset.id); store.set('annSeen', s); const el = b.closest('.ann'); if (el && !reduced()){ el.animate([{opacity:1, transform:'none'}, {opacity:0, transform:'translateY(-8px) scale(.98)'}], {duration:200, easing:'cubic-bezier(.23,1,.32,1)'}).onfinish = () => rerender(); } else rerender(); },
   sysbox: () => { const L = ADM.inbox[ME] || [];
