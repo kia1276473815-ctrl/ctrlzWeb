@@ -2448,6 +2448,15 @@ html.rm .fx-em *{animation:none}
 /* 详情面板 */
 .ad-lab{display:block;font:700 12px/1 var(--f-b);color:var(--ink-3);letter-spacing:.04em;margin:6px 0 -6px}
 .ad-acts{display:flex;gap:6px;flex-wrap:wrap}
+/* 真实支付工作台沿用后台表单与字体；明细在窄屏上下排列，不隐藏关键金额。 */
+.pfin{font-family:var(--f-b);min-width:0}.pfin-tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;scrollbar-width:thin}.pfin-tabs .pill{flex:none;white-space:nowrap}.pfin-tabs .on{background:var(--yellow);color:#141418;border-color:transparent}
+.pfin-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:8px 0 18px}.pfin-tools label{display:flex;flex-direction:column;gap:5px;flex:1 1 140px;min-width:0;font-size:14px}.pfin-tools .inp{width:100%;min-width:0}.pfin-tools .pill{min-height:42px}
+.pfin-summary{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 18px;color:var(--ink-2);font-size:14px}.pfin-summary b{color:var(--ink)}.pfin-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,.95fr);gap:20px;align-items:start}.pfin-grid>section{min-width:0}
+.pfin-list{display:flex;flex-direction:column;border-block:1px solid var(--rule)}.pfin-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px;padding:14px 10px;border:0;border-bottom:1px solid var(--rule);text-align:left;min-width:0;background:transparent;color:var(--ink);font:inherit;cursor:pointer}.pfin-row:last-child{border-bottom:0}.pfin-row:hover{background:var(--card)}.pfin-row[aria-pressed="true"]{background:var(--yellow-t)}.pfin-row>span{min-width:0;overflow-wrap:anywhere}.pfin-row b{display:block;font-size:14px;line-height:1.5}.pfin-row small{display:block;font-size:13px;color:var(--ink-2);line-height:1.6}.pfin-row .pfin-money{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}.pfin-row .tag{font-size:12px}
+.pfin-detail{padding:18px;border:1px solid var(--rule);border-radius:14px;background:var(--card);overflow-wrap:anywhere}.pfin-detail h3{font:800 18px/1.4 var(--f-b);margin:0 0 16px}.pfin-detail dl,.pfin-confirm dl{margin:0 0 18px;display:grid;gap:10px}.pfin-detail dl>div,.pfin-confirm dl>div{display:grid;grid-template-columns:minmax(80px,.65fr) minmax(0,1.35fr);gap:12px}.pfin-detail dt,.pfin-confirm dt{font-size:14px;color:var(--ink-2)}.pfin-detail dd,.pfin-confirm dd{margin:0;font-size:14px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.pfin-detail .ad-acts,.pfin-confirm .ad-acts{gap:10px}.pfin-detail .pill,.pfin-confirm .pill{min-height:42px}.pfin-note{font-size:14px;line-height:1.7;color:var(--ink-2);margin:12px 0}.pfin-feedback{padding:12px 14px;background:var(--yellow-t);border-radius:12px;font-size:14px;line-height:1.7;margin:14px 0;overflow-wrap:anywhere}.pfin-empty{padding:24px 12px;font-size:14px;line-height:1.8;color:var(--ink-2)}.pfin-skeleton{height:64px;margin:8px 0;background:var(--card);border-radius:10px}.pfin-section-title{font:700 17px/1.4 var(--f-b);margin:18px 0 12px}.pfin-confirm textarea{min-height:100px;resize:vertical}.pfin-confirm [hidden]{display:none!important}
+.pfin-confirm{display:flex;flex-direction:column;gap:14px}.pfin-confirm h3{padding-right:34px}.pfin-confirm dl,.pfin-confirm .pfin-note,.pfin-confirm .pfin-feedback{margin:0}
+@media(max-width:1100px){.pfin-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:420px){.pfin-tools label{flex-basis:120px}.pfin-row{padding-inline:6px;gap:8px}.pfin-detail{padding:14px}.pfin-detail dl>div,.pfin-confirm dl>div{grid-template-columns:84px minmax(0,1fr)}}
 .ad-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,84px),1fr));gap:8px}
 .ad-kv span{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:12px;background:var(--paper);font-size:12px;color:var(--ink-3)}
 .ad-kv b{font:800 16px/1.2 var(--f-b);color:var(--ink);overflow-wrap:anywhere}
@@ -5375,7 +5384,7 @@ function drawTpl(g, w, h, look, t, L){
 let CLEAN = [], MOUNTS = [], PCLEAN = [];
 const onMount = f => MOUNTS.push(f), onClean = f => CLEAN.push(f);
 /* 路由代码使用原生经典脚本，保留共享状态和无构建部署；失败可重试。 */
-const BUNDLES = {admin:{src:'scripts/views-admin-v1.js?v=20261030-2'},audio:{src:'scripts/views-audio-v1.js?v=20261030-sec'},docs:{src:'scripts/docs-v1.js?v=20261030-2'}};
+const BUNDLES = {admin:{src:'scripts/views-admin-v1.js?v=20261030-2'},finance:{src:'scripts/views-payments-v1.js?v=20261111-1'},audio:{src:'scripts/views-audio-v1.js?v=20261030-sec'},docs:{src:'scripts/docs-v1.js?v=20261030-2'}};
 let liveRefreshFrame = 0;
 function scheduleLiveRefresh(){ if (liveRefreshFrame) return; liveRefreshFrame = requestAnimationFrame(() => { liveRefreshFrame = 0; rerender(); }); }
 function loadBundle(name){ const state = BUNDLES[name]; if (state.ready) return Promise.resolve(); if (state.task) return state.task;
@@ -7184,6 +7193,7 @@ const ADM_TABS = [
   ['content', '内容', '用户与内容', ['super', 'mod']],
   ['orders', '订单流水', '交易', ['super', 'cs', 'fin']],
   ['refunds', '退款', '交易', ['super', 'cs', 'fin']],
+  ['payments', '支付工作台', '交易', ['super', 'fin']],
   ['payout', '结算打款', '交易', ['super', 'fin']],
   ['vouchers', '代金券', '交易', ['super']],
   ['notice', '公告与站内信', '运营', ['super', 'ops', 'cs']],
@@ -7196,14 +7206,14 @@ const ADM_TABS = [
 ];
 // 当前后台账号：连着后端时就是登录的后台账号（角色以后端为准）；纯原型演示用本地的成员列表
 const admMe = () => API.on() ? (STAFF.me || {id:'-', name:'未登录', role:'none', on:false}) : ADM.staff.find(s => s.id === ADM.me && s.on) || ADM.staff.find(s => s.on) || ADM.staff[0];
-const ADM_TAB_PERMS = {review:'content.act', avatars:'content.act', reports:'reports.manage', apply:'apply.manage', users:'users.read', content:'content.read', orders:'orders.read', refunds:'refunds.manage', payout:'payout.manage', vouchers:'vouchers.manage', notice:'notify.send', ops:'site.manage', words:'words.manage', invites:'invites.manage', staff:'staff.manage', params:'params.manage', audit:'audit.read', invoice:'invoice.manage', feedback:'feedback.manage'};
+const ADM_TAB_PERMS = {review:'content.act', avatars:'content.act', reports:'reports.manage', apply:'apply.manage', users:'users.read', content:'content.read', orders:'orders.read', refunds:'refunds.manage', payments:'pay.reconcile', payout:'payout.manage', vouchers:'vouchers.manage', notice:'notify.send', ops:'site.manage', words:'words.manage', invites:'invites.manage', staff:'staff.manage', params:'params.manage', audit:'audit.read', invoice:'invoice.manage', feedback:'feedback.manage'};
 const ADM_PERM_ROLES = {'users.read':['super','mod','cs','fin'], 'users.act':['super','mod','cs'], 'content.read':['super','mod','cs','ops'], 'content.act':['super','mod'], 'notify.send':['super','cs','ops'], 'notify.broadcast':['super','ops'], 'orders.read':['super','cs','fin'], 'dm.read':['super','mod','cs'], 'staff.manage':['super']};
 function staffCan(perm){
   if (API.on()) return !!STAFF.validated && !!STAFF.me && Array.isArray(STAFF.perms) && STAFF.perms.includes(perm);
   const roles = ADM_PERM_ROLES[perm] || (ADM_TABS.find(t => ADM_TAB_PERMS[t[0]] === perm) || [,,,[]])[3];
   return roles.includes(admMe().role);
 }
-const admCan = tab => API.on() && ADM_TAB_PERMS[tab] ? staffCan(ADM_TAB_PERMS[tab]) : (ADM_TABS.find(t => t[0] === tab) || [, , , []])[3].includes(admMe().role);
+const admCan = tab => tab === 'payments' ? API.on() && (staffCan('pay.reconcile') || staffCan('pay.settle')) : API.on() && ADM_TAB_PERMS[tab] ? staffCan(ADM_TAB_PERMS[tab]) : (ADM_TABS.find(t => t[0] === tab) || [, , , []])[3].includes(admMe().role);
 const admGuard = (tab, perm) => { if (admOn() && admCan(tab) && (!perm || staffCan(perm))) return true; toast('当前角色没有这个权限', 'orange', 'x'); return false; };
 const admUserCan = action => staffCan('users.act') && (!['ban7','ban0','verify'].includes(action) || ['super','mod'].includes(admMe().role));
 // 后台页签之间切换 = 页内页签：原地换网址、不新增返回记录、不播翻页动画（同 stab / doc-tab）
@@ -7378,6 +7388,7 @@ ADMV.refunds = (...args) => lazyView('admin',"refunds",args);
 
 /* 结算打款 */
 ADMV.payout = (...args) => lazyView('admin',"payout",args);
+ADMV.payments = (...args) => lazyView('finance','payments',args);
 
 /* 公告与站内信 */
 ADMV.notice = (...args) => lazyView('admin',"notice",args);
@@ -9942,6 +9953,7 @@ function staffSession(){ const epoch = STAFF.epoch, token = STAFF.tok, base = AP
 }
 function staffCacheReset(){
   if ($('#layer [data-staff-secret]')) closeSheet({instant:true});
+  try { window.CtrlzFinance?.reset(); } catch(e){}
   try { for (const k in LADM) LADM[k] = ['busy','errors','reads','requests'].includes(k) ? {} : null; } catch(e){}
   try { Object.assign(ADMCNT, {v:{},at:0,busy:false,mark:null}); } catch(e){}
   try { Object.assign(LLEDGER, {v:null,at:0,busy:false,mark:null,error:null}); } catch(e){}
