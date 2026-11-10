@@ -35,6 +35,12 @@ test('付款二维码组件离线从预缓存读取，不向外部二维码服�
   assert.equal(requests,0);
 });
 
+test('交流样式离线直接从版本缓存读取，不发网络请求',async()=>{
+  let requests=0;const w=worker({online:false,fetchImpl:async()=>{requests++;throw Error('offline');}});
+  w.cache.set(w.key('/scripts/communication.css?v=20261110'),new Response('.comm-picker{}'));
+  assert.equal(await(await w.dispatch('/scripts/communication.css?v=20261110').response).text(),'.comm-picker{}');assert.equal(requests,0);
+});
+
 test('联网但请求挂起时四秒取消并回缓存，完成后清理计时器',async()=>{
   let aborted=false;const w=worker({fetchImpl:(request,{signal})=>new Promise((resolve,reject)=>signal.addEventListener('abort',()=>{aborted=true;reject(Error('aborted'));}))});
   const {response}=w.dispatch('/',{mode:'navigate'});await tick();assert.equal(w.timers.length,1);assert.equal(w.timers[0].ms,4000);
@@ -50,13 +56,19 @@ test('联网成功采用新页面并更新统一主页缓存，未命中离线�
 
 test('安装缓存HTML与四个经典脚本，私密签名文件和接口请求不被主页策略接管',async()=>{
   const w=worker(),waits=[];w.listeners.get('install')({waitUntil:value=>waits.push(value)});await Promise.all(waits);
-  assert.deepEqual(w.precache.map(x=>typeof x==='string'?x:x.url),['./','./scripts/audio-cache.js?v=20261011','./scripts/dm-outbox.js','./scripts/harmony-loader.js?v=20261012','./scripts/views-admin-v1.js?v=20261030-2','./scripts/views-payments-v1.js?v=20261111-1','./scripts/views-audio-v1.js?v=20261030-sec','./scripts/docs-v1.js?v=20261030-2','./vendor/qrcodegen.js']);
+  assert.deepEqual(w.precache.map(x=>typeof x==='string'?x:x.url),["./","./scripts/communication.js?v=20261110","./scripts/communication.css?v=20261110","./scripts/audio-cache.js?v=20261011","./scripts/dm-outbox.js","./scripts/harmony-loader.js?v=20261012","./scripts/views-admin-v1.js?v=20261030-2","./scripts/views-payments-v1.js?v=20261111-1","./scripts/views-audio-v1.js?v=20261030-sec","./scripts/docs-v1.js?v=20261110-oauth","./scripts/oauth-v1.js?v=20261110-1","./vendor/qrcodegen.js"]);
   // 页面和带版本号的脚本复用 HTTP 缓存；没版本号的 dm-outbox.js 可能是旧副本，照常走网络
   assert.deepEqual(w.precache.filter(x=>typeof x==='string'),['./scripts/dm-outbox.js','./vendor/qrcodegen.js']);assert(w.precache.filter(x=>typeof x!=='string').every(x=>x.cache==='force-cache'));
   for(const path of ['/files/post_audio/u/202610/f_1.wav?sig=secret','/avatars/photo.png','/s/p_1','/dm/with/u','/posts'])assert.equal(w.dispatch(path).response,undefined,path);
 });
 
 const nextTurn=()=>new Promise(resolve=>setImmediate(resolve));
+
+test('OAuth回调及完成导航永不读写首页缓存；旧页面可核验worker支持',()=>{
+  const w=worker({online:false});
+  for(const path of ['/auth/oauth/wechat/callback?code=private&state=private','/auth/oauth/qq/callback?code=private','/?oauth=complete'])assert.equal(w.dispatch(path,{mode:'navigate'}).response,undefined,path);
+  assert.equal(w.puts.length,0);let version;w.listeners.get('message')({data:'ctrlz-oauth-version',ports:[{postMessage:v=>version=v}]});assert.equal(version,'ctrlz-oauth-v1');
+});
 test('字体 / vendor 进独立缓存且升 V 时保留；后台刷新内容没变不重写，变了才写',async()=>{
   const headers={etag:'"a"','content-length':'3'},w=worker({keys:['ctrlz-static-v4','ctrlz-assets-v1'],fetchImpl:async()=>new Response('new',{headers})});
   const waits=[];w.listeners.get('activate')({waitUntil:value=>waits.push(value)});await Promise.all(waits);assert.deepEqual(w.deleted,['ctrlz-static-v4']);
@@ -102,7 +114,7 @@ test('ASSETS 升级时清掉旧的字体 / vendor 缓存，当前这份保留',a
   assert.deepEqual(w.deleted,['ctrlz-static-v4','ctrlz-assets-v0']);
 });
 test('旧标签页按旧 ?v= 请求脚本：不挤掉预缓存的新版本，离线时新页面还能打开',async()=>{
-  const name=source.match(/views-admin-v1\.js\?v=[^']+/)[0],w=worker();w.cache.set(w.key('/scripts/'+name),new Response('precached'));
+  const name=source.match(/views-admin-v1\.js\?v=[^'"]+/)[0],w=worker();w.cache.set(w.key('/scripts/'+name),new Response('precached'));
   const e=w.dispatch('/scripts/views-admin-v1.js?v=old');await e.response;await Promise.all(e.waits);
   assert.equal(w.cache.has(w.key('/scripts/'+name)),true);assert.equal(w.cache.has(w.key('/scripts/views-admin-v1.js?v=old')),true);
 });

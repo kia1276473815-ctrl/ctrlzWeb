@@ -2626,6 +2626,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 }
 </style>
 
+<link rel="stylesheet" href="scripts/communication.css?v=20261110">
 </head>
 <body>
 
@@ -3097,7 +3098,7 @@ REPORTS.forEach(r => { if (r.kind === 'cmt' && !r.key) r.key = r.ref + ':' + has
 Object.keys(ADM.taken.post).forEach(id => { const i = POSTS.findIndex(p => p.id === id); if (i >= 0) TAKEN_P[id] = POSTS.splice(i, 1)[0]; });
 /* 评论：真实评论优先按 ID，原型按「帖子 + 作者 + 内容」识别；被下架的评论在各处过滤。 */
 const cmtKey = (pid, c) => pid + ':' + (c.id || hash(c.u + '|' + c.t));
-const cmtsOf = pid => (COMMENTS[pid] || COMMENTS._default).concat(UI.newCmts[pid] || []).filter(c => !(typeof CDEL_PEND !== 'undefined' && CDEL_PEND.get(cmtKey(pid, c))?.scope === cdelScope()) && (c.id && POST(pid)?.live || !ADM.taken.cmt[cmtKey(pid, c)] && !STATE.cdel?.has(cmtKey(pid, c))) && !blocked(c.u));
+const cmtsOf = pid => (COMMENTS[pid] || COMMENTS._default).concat(UI.newCmts[pid] || []).filter(c => !(typeof CDEL_PEND !== 'undefined' && CDEL_PEND.get(cmtKey(pid, c))?.scope === cdelScope()) && (c.id && POST(pid)?.live || !ADM.taken.cmt[cmtKey(pid, c)] && !STATE.cdel?.has(cmtKey(pid, c))) && !blocked(c.u)).sort((a,b)=>Number(b.id===POST(pid)?.pinnedCommentId)-Number(a.id===POST(pid)?.pinnedCommentId));
 function cmtFlash(pid,c){ const f=UI.flashCmt; return !!(f && f.p===pid && (f.id ? c.id===f.id : c.t===f.t && (!f.u || c.u===f.u))); }
 /* 账号状态 */
 const acctOf = uid => ADM.acct[uid] ||= {warns:[]};
@@ -5384,7 +5385,7 @@ function drawTpl(g, w, h, look, t, L){
 let CLEAN = [], MOUNTS = [], PCLEAN = [];
 const onMount = f => MOUNTS.push(f), onClean = f => CLEAN.push(f);
 /* 路由代码使用原生经典脚本，保留共享状态和无构建部署；失败可重试。 */
-const BUNDLES = {admin:{src:'scripts/views-admin-v1.js?v=20261030-2'},finance:{src:'scripts/views-payments-v1.js?v=20261111-1'},audio:{src:'scripts/views-audio-v1.js?v=20261030-sec'},docs:{src:'scripts/docs-v1.js?v=20261030-2'}};
+const BUNDLES = {admin:{src:'scripts/views-admin-v1.js?v=20261030-2'},finance:{src:'scripts/views-payments-v1.js?v=20261111-1'},audio:{src:'scripts/views-audio-v1.js?v=20261030-sec'},docs:{src:'scripts/docs-v1.js?v=20261110-oauth'}};
 let liveRefreshFrame = 0;
 function scheduleLiveRefresh(){ if (liveRefreshFrame) return; liveRefreshFrame = requestAnimationFrame(() => { liveRefreshFrame = 0; rerender(); }); }
 function loadBundle(name){ const state = BUNDLES[name]; if (state.ready) return Promise.resolve(); if (state.task) return state.task;
@@ -6622,13 +6623,13 @@ function renderPost(id, fresh){
         ${me !== p.author ? `<button class="pill sm ${STATE.follows.has(u.id) ? 'lt' : ''}" data-act="follow" data-id="${u.id}" style="">${STATE.follows.has(u.id) ? '已关注' : '关注'}</button>` : ''}</div>
       <div class="scroll">
         <h1>${esc(p.title)}</h1>${p.review ? '<p class="ad-warn y" style="margin:8px 0 0">审核中：通过后大家才能看到，现在只有你自己看得到</p>' : ''}
-        <div class="body">${(BODY[p.id] || [p.ex]).map(t => `<p>${esc(t)}</p>`).join('')}${CODE[p.id] && p.type !== 'question' ? `<pre>${esc(CODE[p.id])}</pre>` : ''}</div>
+        <div class="body">${p.live && p.mentions?.length && globalThis.CZCommunication ? `<p style="white-space:pre-line">${CZCommunication.mentionText(p.rawBody || '',p.mentions)}</p>` : (BODY[p.id] || [p.ex]).map(t => `<p>${esc(t)}</p>`).join('')}${CODE[p.id] && p.type !== 'question' ? `<pre>${esc(CODE[p.id])}</pre>` : ''}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px">${p.tags.map(t => `<a class="chip" data-act="tagjump" data-v="${esc(t)}" style="height:28px;font-size:12.5px">#${esc(t)}</a>`).join('')}</div>
         ${p.attach.filter(a => onSale(P(a))).length ? `<div class="used"><span class="lab">这件作品用到</span>${p.attach.filter(a => onSale(P(a))).map(pid => { const pr = P(pid); return `<a class="c-${CATS[pr.cat].c}" data-go="item-${pid}"><img src="${cover(pr.cover, hash(pr.id)%50, 160, 160)}" alt=""><span style="min-width:0"><b style="font-size:13px;display:block">${esc(pr.en)}</b><span style="font-size:13.5px">${esc(pr.title)}</span></span><span class="pill sm cc">${yuan(pr.price)}</span></a>`; }).join('')}</div>` : ''}
         <div style="margin-top:22px"><span class="lab">${p.type === 'question' ? '回答' : '评论'} ${p.live ? Math.max(p.cmts || 0,cm.filter(c=>c.sendState !== 'failed').length) : cm.filter(c=>c.sendState !== 'failed').length}</span>
-        ${p.live ? cmtStatusHtml(p.id) : ''}${cm.map((c, ci) => `<div class="cmt ${c.best ? 'best' : ''} ${UI.freshCmt === p.id && ci === cm.length - 1 ? 'fresh' : ''} ${cmtFlash(p.id,c) ? 'flash' : ''}" data-cmt-id="${esc(c.id || '')}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">楼主</span>' : ''}${c.best ? '<span class="tag c-green" style="height:18px;font-size:10px">最佳</span>' : ''}${c.review ? '<span class="tag c-yellow" style="height:18px;font-size:10px">审核中</span>' : ''}<span>${c.time}</span></div>${cmtReplyRef(p.id,c)}<p>${esc(c.t)}</p>${c.code ? `<pre class="code">${esc(CODE[c.code])}</pre>` : ''}<div class="ctl">${cmtLikeHtml(p.id,c,'clike') || `<button data-act="clike" data-k="${p.id}:${ci}" class="${STATE.clikes.has(p.id + ':' + ci) ? 'on' : ''}" aria-pressed="${STATE.clikes.has(p.id + ':' + ci)}"><i class="hk">${STATE.clikes.has(p.id + ':' + ci) ? '♥' : '♡'}</i><span>${c.likes + (STATE.clikes.has(p.id + ':' + ci) ? 1 : 0)}</span></button>`}<button data-act="reply" data-v="${esc(USERS[c.u]?.name || '')}" ${p.live && (!c.id || c.review || c.sendState) ? 'disabled title="发布后才能回复"' : ''}>回复</button>${cmtCtl(p.id, c)}</div>${cmtSendFeedback(p.id,c)}</div></div>`).join('')}${p.live ? cmtMoreHtml(p.id) : ''}</div>
+        ${p.live ? cmtStatusHtml(p.id) : ''}${cm.map((c, ci) => `<div class="cmt ${c.best ? 'best' : ''} ${UI.freshCmt === p.id && ci === cm.length - 1 ? 'fresh' : ''} ${cmtFlash(p.id,c) ? 'flash' : ''}" data-cmt-id="${esc(c.id || '')}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">楼主</span>' : ''}${c.best ? '<span class="tag c-green" style="height:18px;font-size:10px">最佳</span>' : ''}${c.review ? '<span class="tag c-yellow" style="height:18px;font-size:10px">审核中</span>' : ''}<span>${c.time}</span></div>${cmtReplyRef(p.id,c)}<p>${globalThis.CZCommunication ? CZCommunication.mentionText(c.t,c.mentions) : esc(c.t)}</p>${c.code ? `<pre class="code">${esc(CODE[c.code])}</pre>` : ''}<div class="ctl">${cmtLikeHtml(p.id,c,'clike') || `<button data-act="clike" data-k="${p.id}:${ci}" class="${STATE.clikes.has(p.id + ':' + ci) ? 'on' : ''}" aria-pressed="${STATE.clikes.has(p.id + ':' + ci)}"><i class="hk">${STATE.clikes.has(p.id + ':' + ci) ? '♥' : '♡'}</i><span>${c.likes + (STATE.clikes.has(p.id + ':' + ci) ? 1 : 0)}</span></button>`}<button data-act="reply" data-v="${esc(USERS[c.u]?.name || '')}" ${p.live && (!c.id || c.review || c.sendState) ? 'disabled title="发布后才能回复"' : ''}>回复</button>${cmtCtl(p.id, c)}</div>${cmtSendFeedback(p.id,c)}</div></div>`).join('')}${p.live ? cmtMoreHtml(p.id) : ''}</div>
       </div>
-      <div class="foot"><textarea id="cmtIn" rows="1" placeholder="${STATE.role === 'guest' ? '登录后参与' : p.type === 'question' ? '你会怎么解决？' : '说点什么…'}" autocomplete="off" enterkeyhint="send"></textarea><button class="pill sm ic" data-act="cmt" data-id="${p.id}" aria-label="发送">${IC.arrow}</button>
+      <div class="foot"><textarea id="cmtIn" rows="1" placeholder="${STATE.role === 'guest' ? '登录后参与' : p.type === 'question' ? '你会怎么解决？' : '说点什么…'}" autocomplete="off" enterkeyhint="send"></textarea><button class="pill sm ic" data-act="cmt" data-id="${p.id}" ${p.live && p.commentsClosed ? 'disabled title="作者已关闭评论"':''} aria-label="发送">${IC.arrow}</button>
         <span class="cdock"><button class="pill sm ic lt" data-act="like" data-id="${p.id}" aria-label="喜欢" style="${STATE.liked.has(p.id) ? 'color:var(--pink)' : ''}">${STATE.liked.has(p.id) ? IC.heartF : IC.heart}</button>
         <button class="pill sm ic lt" data-act="fav" data-id="${p.id}" aria-label="收藏" style="${STATE.favs.has(p.id) ? 'color:var(--blue)' : ''}">${STATE.favs.has(p.id) ? IC.saveF : IC.save}</button>
         <button class="pill sm ic lt" data-act="more-post" data-id="${p.id}" aria-label="更多"><span>⋯</span></button></span></div>
@@ -8019,7 +8020,7 @@ document.addEventListener('keydown', e => {
 });
 /* 评论面板：从底部升起，盖住下半屏，视频继续在上半屏播放 */
 function reelCmList(p){ const cm = cmtsOf(p.id), status=p.live ? cmtStatusHtml(p.id) : '', more=p.live ? cmtMoreHtml(p.id) : '';
-  return status + (cm.map(c => `<div class="cmt ${cmtFlash(p.id,c) ? 'flash' : ''}" data-cmt-id="${esc(c.id || '')}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">作者</span>' : ''}${c.review ? '<span class="tag c-yellow" style="height:18px;font-size:10px">审核中</span>' : ''}<span>${c.time}</span></div>${cmtReplyRef(p.id,c)}<p>${esc(c.t)}</p><div class="ctl">${cmtLikeHtml(p.id,c,'rl-cl') || `<button data-act="rl-cl">♥ ${c.likes}</button>`}<button data-act="rl-re" data-v="${esc(USERS[c.u]?.name || '')}" ${p.live && (!c.id || c.review || c.sendState) ? 'disabled title="发布后才能回复"' : ''}>回复</button>${cmtCtl(p.id, c)}</div>${cmtSendFeedback(p.id,c)}</div></div>`).join('') || (status ? '' : '<div class="rnone">还没有评论，来说第一句</div>')) + more; }
+  return status + (cm.map(c => `<div class="cmt ${cmtFlash(p.id,c) ? 'flash' : ''}" data-cmt-id="${esc(c.id || '')}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">作者</span>' : ''}${c.review ? '<span class="tag c-yellow" style="height:18px;font-size:10px">审核中</span>' : ''}<span>${c.time}</span></div>${cmtReplyRef(p.id,c)}<p>${globalThis.CZCommunication ? CZCommunication.mentionText(c.t,c.mentions) : esc(c.t)}</p><div class="ctl">${cmtLikeHtml(p.id,c,'rl-cl') || `<button data-act="rl-cl">♥ ${c.likes}</button>`}<button data-act="rl-re" data-v="${esc(USERS[c.u]?.name || '')}" ${p.live && (!c.id || c.review || c.sendState) ? 'disabled title="发布后才能回复"' : ''}>回复</button>${cmtCtl(p.id, c)}</div>${cmtSendFeedback(p.id,c)}</div></div>`).join('') || (status ? '' : '<div class="rnone">还没有评论，来说第一句</div>')) + more; }
 function openReelCm(focus){
   const p = reelCur(), box = $('.rl-cm', RL.el); if (!p) return; const wasOpen=RL.cm; if(p.live) loadLiveCmts(p.id,false,!wasOpen); RL.cm = true;
   const old = $('#rlIn',box), keepFocus = old?._draftKey === inputDraftKey('comment',p.id) && document.activeElement === old; inputDraftSave(old);
@@ -8241,6 +8242,7 @@ function setExtra(){ const cl = closingOf(ME);
     <div class="box"><div class="box-h"><h3>账号与隐私</h3></div><div class="box-b set-l">
       <label class="set-r set-2"><span>个性化推荐<span class="mut2" style="display:block;font-size:12.5px">关掉后「推荐」按发布时间排列，不再参考你的关注和互动</span></span>${swBtn(STATE.settings.pers, 'pers')}</label>
       ${API.on() ? `<button class="set-r" data-act="pw-set">${LIVE.me?.hasPassword ? '修改密码' : '设置用户名和密码'}<span class="mut2">${LIVE.me?.username ? esc(LIVE.me.username) + ' ' : ''}›</span></button>` : ''}
+      ${API.on() && typeof oauthSettingsRows === 'function' ? oauthSettingsRows() : ''}
       ${API.on() && LIVE.me?.username && canRecoverAccount() ? `<button class="set-r" data-act="rc-new">找回密码用的恢复码<span class="mut2">${LIVE.me.hasRecovery ? '已生成 · 重新生成' : '还没有 · 去生成'} ›</span></button>` : ''}
       <button class="set-r" data-act="acc-phone">换绑手机号<span class="mut2">${(() => { const a = ACC.list.find(x => x.id === ME); return a?.phone ? '+86 ' + mask(a.phone) : '未绑定'; })()} ›</span></button>
       <button class="set-r" data-act="acc-devs">登录设备<span class="mut2">${API.on() ? "" : DEVS.length + 1 + " 台 "}›</span></button>
@@ -8533,7 +8535,7 @@ ADMV.invoice = () => { const f = UI.adf?.iv || 'todo', L = ADM.invoices.filter(v
   <div class="ad-list">${L.map(v => `<div class="ad-row ${v.st === '待开具' ? '' : 'dim'}"><div class="ad-rm"><b>${esc(v.title)} · ${yuan2(v.amt)}</b>${tradeOrderBadge(v)}<span class="mut">${v.kind}${v.tax ? ' · 税号 ' + esc(v.tax) : ''} · ${esc(v.mail)} · ${v.no} · ${esc(v.item)} · @${esc(uname(v.uid))}</span>${v.st !== '待开具' ? `<span class="mut2">${v.st}${v.invNo ? ' · ' + v.invNo : ''}${v.why ? ' · ' + esc(v.why) : ''}</span>` : ''}</div>
     <div class="ad-ra">${v.st === '待开具' && (!API.on() || tradeRowAllowed(v,'invoices')) ? `<button class="pill sm lt" data-act="inv-no" data-id="${v.id}">驳回</button><button class="pill sm" data-act="inv-done" data-id="${v.id}">已开具</button>` : ''}</div></div>`).join('') || adEmpty('ALL CLEAR', '没有待开的发票')}</div>`; };
 function msgList(sel){
-  const ids = Object.keys(CHATS).filter(id => USERS[id] && !blocked(id)).sort((a, b) => lastTs(b) - lastTs(a));
+  const ids = Object.keys(CHATS).filter(id => USERS[id] && !blocked(id) && (!globalThis.CZCommunication || !CZCommunication.incomingRequest(id))).sort((a, b) => Number(!!globalThis.CZCommunication?.threads[b]?.pinned)-Number(!!globalThis.CZCommunication?.threads[a]?.pinned) || lastTs(b) - lastTs(a));
   return `<div class="m-quick">${[['likes','喜欢','pink',IC.heartF],['fans','新粉丝','blue','<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.4-7 8-7s7 2.5 8 7z"/></svg>'],['at','回复与@','yellow',RIC.cm]].map(([k,l,c,ic]) => { const n = NOTE_NEW[k] || 0; return `<button class="mq c-${c} mq-${k} ${n ? 'live' : ''}" data-act="note" data-v="${k}" data-n="${n}" aria-label="${l}${n ? '，' + n + ' 条新的' : ''}"><span class="mq-h"><span class="g">${ic}</span><b>${l}</b></span><span class="mq-n">${n}</span></button>`; }).join('')}</div>
   <div class="m-list">${STATE.role === 'user' ? sysRow() : ''}${ids.map(id => { const m = CHATS[id][CHATS[id].length - 1], u = USERS[id]; return `<a class="mrow ${sel === id ? 'on' : ''}" data-go="msg-${id}">${av(id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>${m ? esc(msgPreview(m)) : '还没有消息，打个招呼吧'}</span></span><span class="mr"><time>${m ? ago(m.ts) : ''}</time>${CHAT_UNREAD[id] ? `<i class="bdg">${CHAT_UNREAD[id]}</i>` : ''}</span></a>`; }).join('') || (liveUser() && STATE.role === 'user' && LDM.listState !== 'ready' ? dmListNote() : '<div class="rnone">还没有私信</div>')}</div>`;
 }
@@ -8709,7 +8711,7 @@ function meHead(){
 }
 function meTabBody(t){
   if (t === 'works'){ const ws = POSTS.filter(p => p.author === ME); return ws.length ? `<div class="mason">${ws.map(postCard).join('')}</div>` : `<div class="empty"><div class="x">空</div><span>还没有作品</span><button class="pill" data-act="compose">${IC.plus}发第一篇</button></div>`; }
-  if (t === 'cmts'){ const cs = myComments(), s = myCmtState(); return (cs.length ? `<div class="mcl">${cs.map(({p, c}) => `<a class="mc" href="#${postHref(p)}${c.id ? '?comment='+encodeURIComponent(c.id) : ''}" data-act="goto-cmt" data-p="${esc(p.id)}" data-cid="${esc(c.id || '')}" data-t="${esc(c.t)}"><span class="mc-t"><p>${esc(c.t)}</p><span>${c.parentId ? '回复了评论' : '评论了 ' + esc(USERS[p.author]?.name || '创作者') + ' 的' + (inStream(p) ? '声音' : '帖子')} · ${c.time} · ♥ ${c.likes}${c.review ? ' · 审核中' : ''}${p.myStatus === 'taken_down' ? ' · 帖子已下架' : ''}</span></span>${miniThumb(p, 'mc-th')}</a>`).join('')}</div>` : !s || s.status === 'ready' ? `<div class="empty"><div class="x">空</div><span>还没有评论过</span></div>` : '')
+  if (t === 'cmts'){ const cs = myComments(), s = myCmtState(); return (cs.length ? `<div class="mcl">${cs.map(({p, c}) => `<a class="mc" href="#${postHref(p)}${c.id ? '?comment='+encodeURIComponent(c.id) : ''}" data-act="goto-cmt" data-p="${esc(p.id)}" data-cid="${esc(c.id || '')}" data-t="${esc(c.t)}"><span class="mc-t"><p>${globalThis.CZCommunication ? CZCommunication.mentionText(c.t,c.mentions) : esc(c.t)}</p><span>${c.parentId ? '回复了评论' : '评论了 ' + esc(USERS[p.author]?.name || '创作者') + ' 的' + (inStream(p) ? '声音' : '帖子')} · ${c.time} · ♥ ${c.likes}${c.review ? ' · 审核中' : ''}${p.myStatus === 'taken_down' ? ' · 帖子已下架' : ''}</span></span>${miniThumb(p, 'mc-th')}</a>`).join('')}</div>` : !s || s.status === 'ready' ? `<div class="empty"><div class="x">空</div><span>还没有评论过</span></div>` : '')
     + myCmtStatusHtml() + (s?.next ? `<div class="msep"><button class="pill sm lt" data-act="my-cmt-more"${['pending','error'].includes(s.status) ? ' disabled' : ''}>${s.status === 'pending' && s.more ? '加载中…' : '更早的评论'}</button></div>` : ''); }
   if (t === 'favs'){ const fs = POSTS.filter(p => STATE.favs.has(p.id)), fp = PRODUCTS.filter(p => STATE.favs.has(p.id) && onSale(p)); const sub = UI.favSub || 'post';
     return `<div class="seg mfs"><button class="${sub === 'post' ? 'on' : ''}" data-act="fav-sub" data-v="post">帖子 ${fs.length}</button><button class="${sub === 'prod' ? 'on' : ''}" data-act="fav-sub" data-v="prod">商品 ${fp.length}</button></div>`
@@ -9482,7 +9484,7 @@ function cpCapture(C = UI.cp){
   if (UI.cp === C && $('#cpWrap')){ C.title = $('#cTitle')?.value ?? C.title ?? ''; C.body = $('#cBody')?.value ?? C.body ?? ''; }
   return {title:C.title || '', body:C.body || '', imgs:C.imgs.map(x => ({file:x.file, h:x.h, uploadId:x.uploadId})).filter(x => x.file),
     ci:C.ci, audio:C.audio ? {name:C.audio.name, file:C.audio.file, demo:!C.audio.file, uploadId:C.audio.uploadId} : null,
-    link:C.link, pal:C.pal, q:C.q, ttext:C.ttext, acov:C.acov, vis:{...C.vis}, attach:[...C.attach], res:!!C.res, requestKey:C.requestKey, requestSignature:C.requestSignature, savedAt:Date.now()};
+    link:C.link, pal:C.pal, q:C.q, ttext:C.ttext, acov:C.acov, vis:{...C.vis}, attach:[...C.attach], res:!!C.res, requestKey:C.requestKey, requestSignature:C.requestSignature,mentions:C.mentions || [], savedAt:Date.now()};
 }
 function cpSave(C = UI.cp){
   if (!C || C.restoring || C.published) return Promise.resolve(); const data = cpCapture(C), key = C.key;
@@ -9744,13 +9746,15 @@ const typeTagCN = {image:'图文', audio:'声音', video:'视频', question:'提
       t = setTimeout(async () => {
         try {
           const jobs = [];
-          if (dm) jobs.push(API.req('GET', '/dm/contacts?q=' + encodeURIComponent(v), undefined, {signal}).then(r => { if (my === seq && el.isConnected){ remote.contacts = new Set(r.items.map(u => u.id)); r.items.forEach(u => { apiUser(u); LSRCH.add(u.id); }); } }));
+          if (dm){jobs.push(API.req('GET', '/dm/contacts?q=' + encodeURIComponent(v), undefined, {signal}).then(r => { if (my === seq && el.isConnected){ remote.contacts = new Set(r.items.map(u => u.id)); r.items.forEach(u => { apiUser(u); LSRCH.add(u.id); }); } }));
+            if(v.trim().length>=2)jobs.push(API.req('GET','/dm/search?q='+encodeURIComponent(v)).then(r=>{if(my===seq && el.isConnected){remote.messages=r.items;remote.messageNext=r.next;}}));}
+
           else {
             if (el.dataset.s === 'all') { jobs.push(API.req('GET', '/posts?limit=30&q=' + encodeURIComponent(v), undefined, {signal}).then(r => { if (my === seq && el.isConnected) addPosts(r.items); }));
               if (API.tok) jobs.push(API.req('GET', '/users?q=' + encodeURIComponent(v), undefined, {signal}).then(r => { if (my === seq && el.isConnected) r.items.forEach(u => apiUser(u)); })); }
             jobs.push(API.req('GET', '/products?limit=30&q=' + encodeURIComponent(v), undefined, {signal}).then(r => { if (my === seq && el.isConnected) r.items.forEach(apiProduct); }));
           }
-          await Promise.all(jobs); if (my !== seq || !el.isConnected) return; el._remote = {...remote,pending:false,error:null}; el._draw?.();
+          await Promise.all(jobs); if (my !== seq || !el.isConnected) return; el._remote = {...remote,pending:false,error:null}; el._draw?.();globalThis.CZCommunication?.searchRows(el,remote);
         } catch(e){ if (my !== seq || !el.isConnected || e.code === 'cancel') return; el._remote = {...remote,pending:false,error:e.message || '搜索失败，请重试'}; el._draw?.(); }
       }, 250);
     };
@@ -10138,7 +10142,7 @@ const US_WRITES = new Set();
     finally { US_WRITES.delete(key); if (b.isConnected) b.disabled = false; }
   }; }
 const LIVE = {u:new Set(), prof:{}, cmts:{}, pendingId:null, pend:{}, feed:{status:'pending',error:null,seq:0}};   // pend：自己审核中的帖子（信息流里没有，要自己补上）
-const apiFail = e => { if (e?.code === 'cancel') return; if (e?.code === 'phone_required' && LIVE.cfg.phoneBinding === false){ toast('手机验证暂未开放，暂不能发布内容；领取和下载不受影响', 'orange', 'x'); return; } toast(esc(e?.message || '出错了，请稍后再试'), 'orange', 'x'); if (e?.code === 'phone_required') setTimeout(() => ACTIONS['live-bind'](), 500); };
+const apiFail = e => { if (e?.code === 'cancel') return; if (['verification_required','phone_required'].includes(e?.code) && typeof oauthVerificationSheet === 'function' && (LIVE.cfg?.verifiedAccessRequired || LIVE.cfg?.qqLogin || LIVE.cfg?.wechatLogin)){ oauthVerificationSheet(); return; } if (e?.code === 'phone_required' && LIVE.cfg.phoneBinding === false){ toast('手机验证暂未开放，暂不能发布内容；领取和下载不受影响', 'orange', 'x'); return; } toast(esc(e?.message || '出错了，请稍后再试'), 'orange', 'x'); if (e?.code === 'phone_required') setTimeout(() => ACTIONS['live-bind'](), 500); };
 const liveUser = () => API.on() && STATE.role === 'user';
 
 /* —— 后端数据 → 原型的数据结构 —— */
@@ -10160,7 +10164,7 @@ function apiPost(p){
   // 权威计数回写带版本，删除失败不能把旧回滚叠到刚读回的服务器计数上。
   const cmtsRev = apiPost.cmtsRev = (apiPost.cmtsRev || 0) + 1;
   const o = {id, author:p.author.id, title:p.title, ex:body[0] || p.title, tags:p.tags || [], likes:p.likeCount - (liked ? 1 : 0), favs:0, cmts:p.commentCount, cmtsRev, time:ago(t), ts:t,
-    attach:[], seed:hash(id) % 50, qn:/^[A-Za-z0-9]{1,6}$/.test(s.qn) ? s.qn : id.slice(-3).toUpperCase(), solved:false, h, word:s.word || 'SOUND', edited:p.edited, live:true, review:p.status === 'review'};
+    attach:[], seed:hash(id) % 50, qn:/^[A-Za-z0-9]{1,6}$/.test(s.qn) ? s.qn : id.slice(-3).toUpperCase(), solved:!!p.solved, commentsClosed:!!p.commentsClosed,pinnedCommentId:p.pinnedCommentId || null,discussionVersion:p.discussionVersion || 0,mentions:p.mentions || [],rawBody:p.body || '',serverMedia:p.media || [],serverStatus:p.status,takedownReason:p.takedownReason || '', h, word:s.word || 'SOUND', edited:p.edited, live:true, review:p.status === 'review'};
   const imgs = (p.media || []).filter(m => m.kind === 'image' && m.url).map(m => m.url);
   if (p.type === 'image' && imgs.length) Object.assign(o, {type:'image', img:imgs[0], imgs, h});
   else if (p.type === 'question') o.type = 'question';
@@ -10176,7 +10180,7 @@ function apiPost(p){
   if (o.review) LIVE.pend[id] = o; else delete LIVE.pend[id];   // 先审后发：审核中的只有作者自己看得到
   return o;
 }
-const apiCmt = c => (apiUser(c.author), {id:c.id, parentId:c.parentId || null, u:c.author.id, t:c.body, time:ago(+new Date(c.createdAt)), likes:c.likeCount || 0, liked:!!c.liked, review:c.status === 'review'});
+const apiCmt = c => (apiUser(c.author),globalThis.CZCommunication?.ackComment(c), {id:c.id,mentions:c.mentions || [],clientCommentId:c.clientCommentId || null, parentId:c.parentId || null, u:c.author.id, t:c.body, time:ago(+new Date(c.createdAt)), likes:c.likeCount || 0, liked:!!c.liked, review:c.status === 'review'});
 
 /* 普通帖子与声音流共用真实评论；加载中不是空列表，下一页与通知定位沿服务器游标读取。 */
 const cmtScope = () => JSON.stringify([API.base,API.epoch,ME,STATE.role]);
@@ -10355,12 +10359,9 @@ function liveReset(){
 }
 async function liveBoot(){
   try {
-    const q = new URLSearchParams(location.search);
-    if (q.get('code') && q.get('state')){   // 微信授权回来
-      history.replaceState(history.state, '', location.pathname + location.hash);
-      const r = await API.req('POST', '/auth/wechat/login', {scene:/MicroMessenger/i.test(navigator.userAgent) ? 'mp' : 'web', code:q.get('code'), state:q.get('state')});
-      API.setTok({access:r.accessToken, refresh:r.refreshToken}); toast(r.isNew ? '欢迎来到 CTRL Z' : `欢迎回来，${esc(r.user.name)}`, 'pink', 'check');
-      if (r.needsPhone) setTimeout(() => ACTIONS['live-bind'](), 600);
+    if (new URLSearchParams(location.search).get('oauth') === 'complete'){
+      if (typeof oauthResume !== 'function') await new Promise((resolve, reject) => { const timer = setTimeout(() => reject(new Error('登录组件未加载，请刷新页面重试')), 8000); document.addEventListener('ctrlz-oauth-ready', () => { clearTimeout(timer); resolve(); }, {once:true}); });
+      await oauthResume();
     }
     const shopFirst = /^(shop|item)\|/.test(CUR.key || ''), first = shopFirst ? liveShop : liveFeed, later = shopFirst ? liveFeed : liveShop, epoch = API.epoch, me0 = ME;
     // 当前页面一到就显示，其它板块不占首屏关键路径；失败分别处理。内容不等账号，和 /me、后台校验同时发出（令牌过期时 API.req 先共用一次刷新再发，不会拿到游客结果）。
@@ -10415,25 +10416,28 @@ function cmtPaint(pid){
 async function liveCmtSent(pid, before, saved){
   const L = UI.newCmts[pid] || [], c = saved || L[before], p = POST(pid);
   if (!c || !L.includes(c) || !liveUser() || !p?.live || c.sendState === 'sending') return;
+  globalThis.CZCommunication?.claimCommentMentions(pid,c);
   const current = accountSession(); c._client ||= crypto.randomUUID();
+  if(globalThis.CZCommunication && !await CZCommunication.saveComment(pid,c))return;
   if (c._counted === false) p.cmts++; c._counted = true; c.sendState = 'sending'; c.sendError = ''; cmtPaint(pid);
-  try { const r = await API.req('POST', `/posts/${pid}/comments`, {body:c.t,...(c.parentId ? {parentId:c.parentId} : {})}); if (!current()) return;
-    c.id = r.id; c.sendState = ''; c.sendError = ''; myCmtInvalidate();
+  try { const r = await API.req('POST', `/posts/${pid}/comments`, {body:c.t,clientCommentId:c._client,mentions:c.mentions || [],...(c.parentId ? {parentId:c.parentId} : {})}); if (!current()) return;
+    c.id = r.id; c.mentions=r.mentions || [];c._unknown=false;void globalThis.CZCommunication?.forgetComment(c); c.sendState = ''; c.sendError = ''; myCmtInvalidate();
     if ('parentId' in r) c.parentId=r.parentId;
     c.likes=r.likeCount || 0;c.liked=!!r.liked;
     if (r.status === 'review'){ c.review = true; if (c._counted){ p.cmts = Math.max(0,p.cmts - 1); c._counted = false; } toast('评论已提交审核，通过后大家才能看到', 'orange'); }
     if(commentVisible(pid)){commentRouteTarget(pid,c.id);UI.flashCmt={p:pid,id:c.id};} cmtPaint(pid);
-  } catch(err){ if (!current()) return; c.sendState = 'failed'; c.sendError = err.code === 'bad_parent' ? '原评论已不可回复，文字已保留；可编辑为普通评论' : '未发送，文字已保留 · ' + (err.message || '请重试');
+  } catch(err){ if (!current() || c._acknowledged) return; c._unknown=!err.status || err.status>=500;c.sendState = 'failed';void globalThis.CZCommunication?.saveComment(pid,c); c.sendError = err.code === 'bad_parent' ? '原评论已不可回复，文字已保留；可编辑为普通评论' : '未发送，文字已保留 · ' + (err.message || '请重试');
     if (c._counted){ p.cmts = Math.max(0,p.cmts - 1); c._counted = false; } cmtPaint(pid);
   }
 }
 const pendingCmt = b => (UI.newCmts[b.dataset.p] || []).find(c => c._client === b.dataset.id && c.u === ME);
 ACTIONS['cmt-retry'] = b => { const c = pendingCmt(b); if (c) void liveCmtSent(b.dataset.p,0,c); };
-ACTIONS['cmt-remove'] = b => { const c = pendingCmt(b), L = UI.newCmts[b.dataset.p]; if (!c || c.sendState === 'sending') return; L.splice(L.indexOf(c),1); cmtPaint(b.dataset.p); };
+ACTIONS['cmt-remove'] = b => { const c = pendingCmt(b), L = UI.newCmts[b.dataset.p]; if (!c || c.sendState === 'sending') return; void globalThis.CZCommunication?.forgetComment(c);L.splice(L.indexOf(c),1); cmtPaint(b.dataset.p); };
 ACTIONS['cmt-edit'] = b => { const c = pendingCmt(b); if (!c || c.sendState === 'sending') return;
+  if(c._unknown){toast('请先重试确认原提交结果，避免重复发布','orange');return;}
   sheet(`<h3>编辑未发送评论</h3>${c.parentId ? `<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><input type="checkbox" id="cmtEditReply" checked>继续回复 ${esc(c.replyName || '原评论')}</label>` : ''}<textarea class="inp" id="cmtEdit" rows="4" maxlength="1000">${esc(c.t)}</textarea><button class="pill lg" data-act="cmt-edit-save" data-p="${esc(b.dataset.p)}" data-id="${esc(c._client)}">保存修改</button>`,d=>$('#cmtEdit',d)?.focus());
 };
-ACTIONS['cmt-edit-save'] = b => { const c = pendingCmt(b), text = $('#cmtEdit')?.value.trim(); if (!c || c.sendState === 'sending' || !text || !speakOk(text)) return; c.t = text; if(c.parentId && $('#cmtEditReply')?.checked===false){ c.parentId=null; delete c.replyName; } c.sendError = '已修改，点击重试发送'; closeSheet(); cmtPaint(b.dataset.p); };
+ACTIONS['cmt-edit-save'] = b => { const c = pendingCmt(b), text = $('#cmtEdit')?.value.trim(); if (!c || c.sendState === 'sending' || !text || !speakOk(text)) return; void globalThis.CZCommunication?.forgetComment(c);c._client=crypto.randomUUID();c.mentions=[]; c.t = text; if(c.parentId && $('#cmtEditReply')?.checked===false){ c.parentId=null; delete c.replyName; } c.sendError = '已修改，点击重试发送'; closeSheet(); cmtPaint(b.dataset.p); };
 wrapAct('cmt', (orig, b, e) => { const pid = b.dataset.id, n = (UI.newCmts[pid] || []).length; orig(b, e); liveCmtSent(pid, n); });
 wrapAct('rl-send', (orig, b, e) => { const pid = reelCur()?.id, n = (UI.newCmts[pid] || []).length; orig(b, e); pid && liveCmtSent(pid, n); });
 wrapAct('clike',(orig,b,e)=>cmtLikeToggle(b,orig,e));
@@ -10469,7 +10473,8 @@ wrapAct('cp-publish', async (orig, b, e) => {
   const style = snd ? {dur:Math.round(tr?.dur || 0), ...(k === 'vis' ? {vis:{tpl:p.vis?.tpl, pal:p.vis?.pal}} : {cover:p.cover || 'wave'})}
     : p.tcover ? {pal:p.tcover.pal} : p.type === 'video' ? {url:p.url, plat:p.plat, cover:p.cover} : p.type === 'image' ? {h:p.h} : {qn:p.qn};
   const text = cpRest() || p.title, tags = [k === 'question' ? '提问' : '新作品'];
-  const signature = JSON.stringify([type, p.title, text, tags, style, C.ci, C.imgs.map(x => [x.file?.name, x.file?.size, x.file?.lastModified]), afile ? [afile.name, afile.size, afile.lastModified] : C.audio?.name]);
+  const mentions=globalThis.CZCommunication?.postMentions(text) || [];
+  const signature = JSON.stringify([type, p.title, text, tags, style, mentions, C.ci, C.imgs.map(x => [x.file?.name, x.file?.size, x.file?.lastModified]), afile ? [afile.name, afile.size, afile.lastModified] : C.audio?.name]);
   if (C.requestSignature !== signature){ C.requestKey = crypto.randomUUID(); C.requestSignature = signature; }
   C.busy = true; $('#cpWrap')?.setAttribute('inert', ''); b.disabled = true;
   const progress = t => { C.progress = t; if (b.isConnected) b.textContent = t; };
@@ -10488,7 +10493,7 @@ wrapAct('cp-publish', async (orig, b, e) => {
       uploadIds.push(im.uploadId); await cpSave(C);
     }
     progress('正在提交作品…');
-    const r = await API.req('POST', '/posts', {type, title:p.title, body:text, tags, uploadIds, style, requestKey:C.requestKey});
+    const r = await API.req('POST', '/posts', {type, title:p.title, body:text, tags, uploadIds, style, mentions, requestKey:C.requestKey});
     const np = apiPost(r); const exists = POSTS.findIndex(x => x.id === np.id); if (exists >= 0) POSTS.splice(exists, 1); POSTS.unshift(np);
     if (snd && tr){ TRACKS['post:' + np.id] = tr; delete TRACKS['post:draft']; }
     await cpForget(C); C.imgs.forEach(im => URL.revokeObjectURL(im.url));
@@ -10539,8 +10544,8 @@ wrapAct('save-prof', async (orig, b, e) => {
   } catch(err){ if (current()) apiFail(err); }
   finally { if (PROFILE_SAVES.get(key)===version) PROFILE_SAVES.delete(key); if (current() && b?.isConnected){ b.disabled=false; b.removeAttribute('aria-busy'); b.textContent=label; } }
 });
-wrapAct('sysbox', (orig, b, e) => { orig(b, e); if (liveUser()) API.req('POST', '/notifications/read-all').catch(() => {}); });
-wrapAct('do-logout', async (orig, b, e) => { if (API.tok) try { await API.req('POST', '/auth/logout', API.cookie ? {} : {refreshToken:API.tok.refresh}, false); } catch(e){ apiFail(e); return; } API.setTok(null); orig(b, e); rerender(); });
+wrapAct('sysbox', (orig, b, e) => {if(liveUser() && globalThis.CZCommunication)return CZCommunication.openOfficial(orig,b,e); orig(b, e); if (liveUser()) API.req('POST', '/notifications/read-all').catch(() => {}); });
+wrapAct('do-logout', async (orig, b, e) => { if (API.tok || API.cookie) try { await API.req('POST', '/auth/logout', API.cookie ? {} : {refreshToken:API.tok.refresh}, false); } catch(e){ apiFail(e); return; } API.setTok(null); orig(b, e); rerender(); });
 wrapAct('export-me', async orig => {
   if (!liveUser()) return orig();
   try { const j = await API.req('GET', '/me/export'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(j, null, 2)], {type:'application/json'})); a.download = `ctrlz-my-data-${fmtDay(Date.now())}.json`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); toast('已导出'); }
@@ -10572,7 +10577,11 @@ wrapAct('acc-code', async (orig, b) => {
 wrapAct('acc-pgo', async (orig, b) => {
   if (!liveUser()) return orig(b);
   const c = $('#auC').value.trim(); if (!AUTH.pnum || $('#apN2').value.trim() !== AUTH.pnum){ toast('先给这个号码发验证码', 'orange', 'x'); return; }
-  try { await API.req('POST', '/me/phone', {phone:AUTH.pnum, code:c, purpose:LIVE.bind ? 'bind' : 'change_phone'}); liveMe(await API.req('GET', '/me')); LIVE.bind = false; closeSheet(); toast('手机号已绑定', 'green'); rerender(); }
+  const changing=!LIVE.bind,ticket=typeof OAuthUI!=='undefined' ? OAuthUI.phoneTicket:null,scope=credentialScope(b);
+  if(changing && (!ticket || !oauthSame(ticket.scope))){toast('请先验证当前登录方式，再换绑手机','orange');ACTIONS['acc-phone']();return;}
+  try { const r=await API.req('POST', '/me/phone', {phone:AUTH.pnum, code:c, purpose:changing ? 'change_phone':'bind',...(changing ? {reauthTicket:ticket.ticket}:{})},false);if(!scope.same())return;if(r?.ok!==true)throw credentialUncertain();
+    if(changing){credentialStaffRevoked(ME,LIVE.staffEmail);API.setTok(null);closeSheet();signOut();rerender();toast('手机号已换绑，请重新登录','green');return;}
+    liveMe(await API.req('GET', '/me')); LIVE.bind = false; closeSheet(); toast('手机号已绑定', 'green'); rerender(); }
   catch(err){ fxPop($('#auC'), 'fx-shake', 300); apiFail(err); }
 });
 /* 微信新用户：先绑手机号才能发布（复用换绑面板） */
@@ -10591,12 +10600,7 @@ wrapAct('u-list', (orig, b) => LIVE.u.has(b.dataset.id) ? liveRelSheet(b.dataset
 /* 登录：只开放手机号和微信；验证码由后端发和校验 */
 wrapAct('au-via', (orig, b, e) => { if (b.dataset.v !== 'phone'){ toast('邮箱登录暂未开放，请用手机号', 'blue'); return; } orig(b, e); });
 wrapAct('au-quick', () => toast('请用手机号登录', 'blue'));
-wrapAct('au-3p', async (orig, b) => {
-  if (b.dataset.v !== 'wx'){ toast('Apple 登录暂未开放', 'blue'); return; }
-  try { const scene = /MicroMessenger/i.test(navigator.userAgent) ? 'mp' : 'web';
-    const r = await API.req('GET', `/auth/wechat/authorize?scene=${scene}&redirect=${encodeURIComponent(location.origin + location.pathname + location.hash)}`); location.href = r.url; }
-  catch(err){ apiFail(err); }
-});
+wrapAct('au-3p', (orig, b) => oauthBegin(b.dataset.v === 'wx' ? 'wechat' : 'qq', 'login'));
 { const send0 = auSendCode, verify0 = auVerify, create0 = auCreate;
   auSendCode = function(){
     if (!API.on()) return send0();
@@ -10823,13 +10827,14 @@ function tradeFailure(e){
 }
 function resetTrade(){ TRADE.seq++; TRADE.base=API.base; TRADE.status='unknown'; TRADE.value=null; if (LIVE.cfg) LIVE.cfg.trade=null; }
 API.tradeReset=resetTrade;
-LIVE.cfg = {phoneLogin:true, passwordLogin:true, wechatLogin:false, requirePhone:true, adminTotp:true,trade:null};
+LIVE.cfg = {phoneLogin:false, passwordLogin:true, wechatLogin:false, qqLogin:false, oauth:null, requirePhone:true, adminTotp:true,trade:null};
 async function liveCfg(){
   const base=API.base, seq=++TRADE.seq; TRADE.base=base; TRADE.status='loading'; TRADE.value=null; LIVE.cfg.trade=null; LIVE.cfg.registration='closed';
   try { const cfg=await API.req('GET','/config'); if (base !== API.base || seq !== TRADE.seq) return;
     const trade=normalizeTrade(cfg?.trade); Object.assign(LIVE.cfg,cfg,{trade}); TRADE.value=trade; TRADE.status=trade ? 'ready' : 'invalid';
   } catch(e){ if (base !== API.base || seq !== TRADE.seq) return; TRADE.status='failed'; }
   if (base !== API.base || seq !== TRADE.seq) return;
+  if (typeof auRender === 'function' && $('#au')) auRender(false);
   const box=$('#payBox'), pr=box?.dataset?.productId && P(box.dataset.productId); if (pr?.live) box.innerHTML=payBox(pr);
   if (API.on()) rerender();
 }
@@ -11034,7 +11039,7 @@ const auAgree = () => `<div class="au-ag ${AUTH.need ? 'need' : ''}"><button cla
       <button class="pill lg au-go" data-act="au-pw">${reg ? '注册并登录' : '登录'}</button>
       ${auAgree()}
       ${reg ? '' : '<p class="au-fg">忘了密码？<button class="au-lnk" data-act="au-forgot">用恢复码重设</button>，没有恢复码就联系管理员</p>'}
-      ${LIVE.cfg.wechatLogin ? `<div class="au-or"><span>其他方式</span></div><div class="au-alt"><button data-act="au-3p" data-v="wx"><span class="au-3i c-green">${IC.chat}</span>微信</button></div>` : ''}</div>`;
+      ${LIVE.cfg.wechatLogin || LIVE.cfg.qqLogin ? `<div class="au-or"><span>其他方式</span></div><div class="au-alt">${LIVE.cfg.wechatLogin ? '<button data-act="au-3p" data-v="wx">微信登录</button>' : ''}${LIVE.cfg.qqLogin ? '<button data-act="au-3p" data-v="qq"><img src="icons/qq-connect.png" width="16" height="16" alt="">QQ 登录</button>' : ''}</div>` : ''}</div>`;
     const U = $('#auU'), P = $('#auPw'), P2 = $('#auPw2');
     if (email) for (const [id,key] of [['auEmail','email'],['auInvite','inviteCode'],['auEmailCode','code']]) {
       const input = document.getElementById(id); input.addEventListener('input', () => { fields[key] = input.value.trim(); });
@@ -11093,6 +11098,7 @@ Object.assign(ACTIONS, {
 
 /* —— 设置：用户名、修改密码 —— */
 ACTIONS['pw-set'] = () => { const me = LIVE.me || {}, has = me.hasPassword, un = me.username;
+  if (!has && typeof OAuthUI !== 'undefined' && !OAuthUI.ticket) { oauthVerify('set_password'); return; }
   sheet(`<h3>${has ? '修改密码' : '设置用户名和密码'}</h3><p class="mut" style="font-size:13.5px;margin-top:-6px">${has ? '改完以后，其它设备上的登录会失效，要用新密码重新登录。' : '设置好以后，就可以用用户名和密码登录。用户名设好后不能改。'}</p>
     ${un ? `<label class="ad-lab">用户名</label><input class="inp" value="${esc(un)}" disabled>` : `<label class="ad-lab" for="pwU">用户名</label><input class="inp" id="pwU" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="20" placeholder="字母、数字、下划线，3–20 位">`}
     ${has ? `<label class="ad-lab" for="pwO">现在的密码</label><input class="inp" id="pwO" type="password" autocomplete="current-password" maxlength="72">` : ''}
@@ -11106,7 +11112,8 @@ ACTIONS['pw-go'] = async b => { const U = $('#pwU'), O = $('#pwO'), N = $('#pwN'
   if (N.value.length < 8) return bad(N, '新密码至少 8 位');
   if (N.value !== N2.value) return bad(N2, '两次输入的新密码不一样');
   b.disabled = true; const scope = credentialScope(b), uid = ME, email = LIVE.staffEmail, username = U?.value.trim() || LIVE.me?.username;
-  try { const r = await credentialRequest('/me/password', {password:N.value, ...(O ? {oldPassword:O.value} : {}), ...(U ? {username} : {})}, scope); if (!scope.same()) return; if (r?.ok !== true) throw credentialUncertain();
+  try { const reauthTicket = !O && typeof OAuthUI !== 'undefined' ? OAuthUI.ticket : undefined; if (typeof OAuthUI !== 'undefined') OAuthUI.ticket = null;
+    const r = await credentialRequest('/me/password', {password:N.value, ...(O ? {oldPassword:O.value} : {}), ...(U ? {username} : {}), ...(reauthTicket ? {reauthTicket} : {})}, scope); if (!scope.same()) return; if (r?.ok !== true) throw credentialUncertain();
     credentialStaffRevoked(uid, email); if (LIVE.me?.id === uid){ LIVE.me.hasPassword = true; if (username) LIVE.me.username = username; }
     if (scope.active()) closeSheet(); toast('密码已保存，其它设备需要重新登录', 'green', 'check'); rerender();
   } catch(e){ if (!scope.active()) return; b.disabled = false; if (credentialUnknown(e)){ toast('暂时无法确认密码是否已保存，请先用新密码确认登录', 'orange', 'x'); credentialLoginButton(b, username); } else credentialFailure(e, O); return; }
@@ -11176,9 +11183,9 @@ function dmReset(){ LDM.epoch++; clearInterval(LDM.timer); LDM.timer = 0; LDM.bu
 API.sessionReset = dmReset;
 /* 私信类型只认这几种，其它一律归成 other：列表和气泡显示占位，也没有撤回入口 */
 const DM_KINDS = new Set(['text', 'image', 'post', 'prod']);
-const dmMap = m => ({id:m.id, clientMessageId:m.clientMessageId || null, me:m.from === ME, t:m.kind === 'image' ? 'img' : DM_KINDS.has(m.kind) ? m.kind : 'other', text:m.body, url:m.url || undefined, ref:m.ref || undefined, ts:+new Date(m.createdAt), rc:m.recalled, read:m.read});
+const dmMap = m => ({id:m.id,createdRevision:m.createdRevision || 0,hidden:!!m.hidden,refState:m.refState, clientMessageId:m.clientMessageId || null, me:m.from === ME, t:m.kind === 'image' ? 'img' : DM_KINDS.has(m.kind) ? m.kind : 'other', text:m.body, url:m.url || undefined, ref:m.ref || undefined, ts:+new Date(m.createdAt), rc:m.recalled, read:m.read});
 const dmLive = uid => API.on() && STATE.role === 'user' && LIVE.u.has(uid);
-const dmCut = (uid, ts) => DELC[uid] && ts <= DELC[uid];   // 自己删过聊天记录：删之前的不再显示
+const dmCut = (uid, ts) => !API.on() && DELC[uid] && ts <= DELC[uid];   // 自己删过聊天记录：删之前的不再显示
 /* 分享来的帖子 / 商品本地没有：去后端取一次 */
 async function dmRefs(list){
   const current = dmSession(), seen = new Set(), todo = [];
@@ -11197,12 +11204,14 @@ async function dmRefs(list){
   await Promise.all(Array.from({length:Math.min(3, todo.length)}, work));
 }
 async function dmThreads(){
+  const cursor=arguments[0];
   const current = dmSession();
-  let r; try { r = await API.req('GET', '/dm/threads'); } catch(e){ if (current() && LDM.listState !== 'ready') LDM.listState = 'error'; throw e; }
+  let r; try { r = await API.req('GET', '/dm/threads?limit=50'+(cursor ? '&cursor='+encodeURIComponent(cursor):'')); } catch(e){ if (current() && LDM.listState !== 'ready') LDM.listState = 'error'; throw e; }
+  globalThis.CZCommunication?.threadPage(r,cursor);
   const fresh = [], open = CUR.key?.startsWith('msg|') ? CUR.key.slice(4) : '';
   if (!current()) return fresh; LDM.listState = 'ready'; LDM.listAt = Date.now(); LDM.unread = r.items.reduce((n, t) => n + t.unread, 0);
   for (const t of r.items){
-    apiUser(t.peer); const uid = t.peer.id, m = dmMap(t.last); if (dmCut(uid, m.ts)) continue;
+    apiUser(t.peer); const uid = t.peer.id;globalThis.CZCommunication?.absorb(uid,t.conversation); const m = dmMap(t.last); if (dmCut(uid, m.ts)) continue;
     const had = LDM.last[uid]; LDM.last[uid] = m.id;
     if (had !== m.id && had && !m.me && uid !== open && !m.rc) fresh.push([uid, m]);
     dmAcknowledge([t.last]);
@@ -11211,7 +11220,7 @@ async function dmThreads(){
   }
   return fresh;
 }
-function dmMerge(uid, items, replace=false){ dmAcknowledge(items); const next = items.map(dmMap).filter(m => !dmCut(uid, m.ts)), old = CHATS[uid] || [], byId = new Map();
+function dmMerge(uid, items, replace=false){ dmAcknowledge(items); const next = items.map(dmMap).filter(m => !m.hidden && !dmCut(uid, m.ts)), old = CHATS[uid] || [], byId = new Map();
   (replace ? [] : old.filter(m => !m.pend)).forEach(m => byId.set(m.id, m)); next.forEach(m => byId.set(m.id,m));
   const list = [...byId.values()].sort((a,b) => a.ts - b.ts || a.id.localeCompare(b.id));
   CHATS[uid] = [...list, ...old.filter(m => m.pend)]; if (list.length) LDM.last[uid] = list[list.length - 1].id; return next; }
@@ -11220,10 +11229,10 @@ function dmConv(uid){ if (LDM.inflight.has(uid)) return LDM.inflight.get(uid);
   const task = (async () => { let pages = 0, more = false;
     do { const incremental = LDM.full.has(uid) && LDM.since[uid], r = await API.req('GET', `/dm/with/${encodeURIComponent(uid)}?limit=200${incremental ? '&since=' + encodeURIComponent(LDM.since[uid]) : ''}`);
       if (!current()) return;
-      apiUser(r.peer); const list = dmMerge(uid, r.items, !incremental); LDM.full.add(uid); LDM.blk[uid] = r.blocked;
+      apiUser(r.peer);globalThis.CZCommunication?.absorb(uid,r.conversation); const list = dmMerge(uid, r.items, !incremental); LDM.full.add(uid); LDM.blk[uid] = r.blocked;
       if (!incremental) LDM.before[uid] = r.nextBefore; if (r.nextSince) LDM.since[uid] = r.nextSince;
-      if (!document.hidden && CUR.key === 'msg|' + uid && (CHAT_UNREAD[uid] > 0 || (CHATS[uid] || []).some(m => !m.me && !m.read))){
-        await API.req('POST', `/dm/with/${encodeURIComponent(uid)}/read`); if (!current()) return; CHATS[uid].forEach(m => { if (!m.me) m.read = true; }); CHAT_UNREAD[uid] = 0;
+      if (!document.hidden && !globalThis.CZCommunication?.contextFor(uid) && CUR.key === 'msg|' + uid && (CHAT_UNREAD[uid] > 0 || (CHATS[uid] || []).some(m => !m.me && !m.read))){
+        await API.req('POST', `/dm/with/${encodeURIComponent(uid)}/read`,{through:r.nextSince}); if (!current()) return; CHATS[uid].forEach(m => { if (!m.me) m.read = true; }); CHAT_UNREAD[uid] = 0;
       }
       // 下一次增量即使没有新消息，也重试已缓存消息中暂时没读到的分享；成功/确实404的不会重复取。
       await dmRefs(CHATS[uid] || list); if (!current()) return; more = !!(incremental && r.hasMore);
@@ -11602,7 +11611,7 @@ function luSheet(r){ const u = r.user, c = r.counts, uid = u.id, yuanF = f => '�
   return `<div class="ad-us" id="luS" data-uid="${esc(uid)}"><div class="ad-u big">${uav(uid, 'md')}<span><b>${esc(u.name)}</b><i>${u.username ? '用户名 ' + esc(u.username) + ' · ' : ''}@${esc(u.handle)} · 注册于 ${fmtDay(+new Date(u.createdAt))}</i></span>${stt}</div>
     ${banned ? `<p class="ad-warn">封禁${u.banUntil ? '至 ' + fmtDay(+new Date(u.banUntil)) : '（永久）'}</p>` : ''}${muted ? `<p class="ad-warn y">禁言至 ${fmtDay(+new Date(u.muteUntil))}</p>` : ''}
     <div class="ad-kv lu-kv"><span>帖子<b>${c.posts}</b></span><span>评论<b>${c.comments}</b></span><span>粉丝<b>${c.followers}</b></span><span>关注<b>${c.following}</b></span><span>买过<b>${c.bought}</b><i>${yuanF(c.boughtAmount)}</i></span><span>卖出<b>${c.sold}</b><i>${yuanF(c.soldAmount)}</i></span><span>退款<b>${c.refunds}</b></span><span>被举报<b>${c.reportsAgainst}</b></span></div>${tradeSummaryNotice(r.simulation)}
-    <p class="mut2" style="font-size:12.5px;margin:2px 0 0">登录方式：${[u.username ? '用户名密码' : '', u.phone ? '手机 ' + esc(u.phone) : '', u.wechat ? '微信' : ''].filter(Boolean).join(' · ') || '—'}</p>
+    <p class="mut2" style="font-size:12.5px;margin:2px 0 0">登录方式：${[u.username ? '用户名密码' : '', u.phone ? '手机 ' + esc(u.phone) : '', u.wechat ? '微信' : '', u.qq ? 'QQ' : ''].filter(Boolean).join(' · ') || '—'}</p>
     <div class="seg ad-seg lu-tabs">${acts ? luTab('act', '处置') : ''}${luTab('posts', '帖子')}${luTab('orders', '订单')}${r.dmVisible ? luTab('dm', '私信对象') : ''}${luTab('dev', '登录设备')}${luTab('log', '处置记录')}</div>
     ${pane('act', `${staffCan('users.act') ? `<label class="ad-lab">处理原因（会发给用户）</label><input class="inp" id="usWhy" placeholder="例如：多次发布引流广告">
       <div class="ad-acts"><button class="pill sm lt" data-act="us-do" data-v="warn" data-id="${esc(uid)}">警告</button><button class="pill sm lt" data-act="us-do" data-v="mute1" data-id="${esc(uid)}">禁言 1 天</button><button class="pill sm lt" data-act="us-do" data-v="mute7" data-id="${esc(uid)}">禁言 7 天</button>
@@ -11704,7 +11713,7 @@ UI.opS = null; applySlides();
    每 3 次私信轮询（约 12 秒）问一次未读数，变了才拉列表；新的评论 / 回复弹个提示。
    喜欢 / 新粉丝 打开就全部已读；回复与@ 按条读（atMark），和原来的交互一样 */
 const LACT = {sig:'', ids:new Set(), tick:0, busy:false, resume:false, request:null, me:null, status:'idle', loaded:false, error:null, panel:null, pages:{}, unreadAt:null, readRevision:0, bulk:null, bulkError:null};
-const actAt = n => ({id:n.id, commentId:n.commentId, u:n.actor.id, k:n.kind === 'reply' ? '回复了你的评论' : '评论了你的帖子', text:n.body, ref:n.post?.id, ts:+new Date(n.createdAt), read:!!n.read});
+const actAt = n => ({id:n.id, commentId:n.commentId, u:n.actor.id, k:n.kind === 'reply' ? '回复了你的评论' : n.kind==='mention' ? '提到了你' : '评论了你的帖子', text:n.body, ref:n.post?.id, ts:+new Date(n.createdAt), read:!!n.read});
 function actSetAt(n){ LACT.unreadAt=Math.max(0,Number(n)||0); const d=Object.getOwnPropertyDescriptor(NOTE_NEW,'at');
   if(d?.get)Object.defineProperty(NOTE_NEW,'at',{enumerable:true,configurable:true,get(){return liveUser() && LACT.unreadAt!=null ? LACT.unreadAt : atUnread();},set(){}}); else NOTE_NEW.at=LACT.unreadAt;
 }
@@ -11757,7 +11766,7 @@ async function actLoad(force){
     if (document.hidden || !current()) return; LACT.sig = sig;
     const fresh = at.items.filter(n => !n.read && !LACT.ids.has(n.id) && LACT.ids.size);   // 第一次加载不弹
     at.items.forEach(n => LACT.ids.add(n.id));
-    for(const [k,r] of [['likes',lk],['fans',fn],['at',at]]){const page=actPage(k),keep=page.expanded || !!page.task;actMerge(k,r.items,keep);
+    for(const [k,r] of [['likes',lk],['fans',fn],['at',at]]){globalThis.CZCommunication?.activityToken(k,r.readToken);const page=actPage(k),keep=page.expanded || !!page.task;actMerge(k,r.items,keep);
       if(!keep || (force && page.invalid)){page.next=r.next || null;page.seen.clear();page.invalid=false;page.more='idle';page.error=null;}
     }
     NOTE_NEW.likes = u.likes; NOTE_NEW.fans = u.fans; actSetAt(u.at);
@@ -11772,7 +11781,7 @@ async function actLoad(force){
    本地刚标的已读、已提交的反通知（done）保留，免得请求赛跑时又冒出来 */
 async function sysLoad(){ const current = dmSession(), mark = r => JSON.stringify([r.items[0]?.id, r.unread]);
   try { if (LDM.sysMark){ const head = await API.req('GET', '/notifications?limit=1'); if (!current() || mark(head) === LDM.sysMark) return; }   // 最新一条和未读数都没变（新通知、别的设备标已读都会变）：不拉全量
-    const nt = await API.req('GET', '/notifications?limit=50'); if (!current()) return; LDM.sysMark = mark(nt);
+    const nt = await API.req('GET', '/notifications?limit=50');globalThis.CZCommunication?.officialToken(nt.readToken); if (!current()) return; LDM.sysMark = mark(nt);
     const old = new Map((ADM.inbox[ME] || []).map(m => [m.id, m])), L = nt.items.map(n => { const o = old.get(n.id);
       return {id:n.id, title:n.title, text:n.body, ts:+new Date(n.createdAt), read:n.read || !!o?.read, ...n.extra, ...(o?.done ? {done:true} : {})}; });
     const sig = x => JSON.stringify(x.map(m => [m.id, m.read, !!m.done]));
@@ -11781,7 +11790,7 @@ async function sysLoad(){ const current = dmSession(), mark = r => JSON.stringif
   } catch(e){ /* 下一轮再试 */ } }
 { const poll0 = dmPoll; dmPoll = async function(){ if (document.hidden || !API.on() || !API.tok || STATE.role !== 'user') return; const resume = LACT.resume; LACT.resume = false; await poll0(); if (document.hidden) return; if (resume || LACT.tick++ % 3 === 0) await Promise.all([actLoad(resume), sysLoad()]); }; }
 { const after2 = liveAfterLogin; liveAfterLogin = async function(){ actPagesReset();LACT.sig = ''; LACT.ids.clear(); LACT.status='idle';LACT.loaded=false;LACT.error=null;LACT.panel=null; await after2(); actLoad(true); }; }
-wrapAct('note', (orig, b, e) => { const k = b.dataset.v; orig(b, e); if(liveUser()){ const list=$('#layer .m-list'); if(list){LACT.panel={k,list,current:dmSession()};actPanelPaint();if(!LACT.busy && (!LACT.loaded || LACT.status==='error'))void actLoad(true);} if(k==='at')void cmtNoticeLikes(); }
+wrapAct('note', (orig, b, e) => { const k = b.dataset.v;if(liveUser() && k!=='at' && globalThis.CZCommunication)return CZCommunication.openActivity(orig,b,e); orig(b, e); if(liveUser()){ const list=$('#layer .m-list'); if(list){LACT.panel={k,list,current:dmSession()};actPanelPaint();if(!LACT.busy && (!LACT.loaded || LACT.status==='error'))void actLoad(true);} if(k==='at')void cmtNoticeLikes(); }
   if (liveUser() && k !== 'at') API.req('POST', '/me/activity/read', {kind:k}).then(() => { LACT.sig = ''; }).catch(() => {}); });
 wrapAct('at-all', async(orig,b,e)=>{if(!liveUser())return orig(b,e);if(LACT.bulk)return;const session=dmSession(), mark=LACT.bulk={}, current=()=>session() && LACT.bulk===mark;LACT.bulkError=null;b.disabled=true;b.setAttribute('aria-busy','true');actPanelPaint();
   try{await API.req('POST','/me/activity/read',{kind:'at'});if(!current())return;LACT.readRevision++;(NOTES.at || []).forEach(n=>{AT_READ.add(n.id);n.read=true;});actSetAt(0);LACT.sig='';noteSync();msgBadge();fxPop(b,'fx-jelly',500);}
@@ -12967,6 +12976,8 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { coverFontDrop(); if (!CUR.post) rerender(); });
 })();
 </script>
+<script src="scripts/communication.js?v=20261110"></script>
 
+<script src="scripts/oauth-v1.js?v=20261110-1"></script>
 </body>
 </html>

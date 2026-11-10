@@ -79,8 +79,8 @@ function searches(){
 }
 const peer={id:'u_match',name:'张三',handle:'public_handle_123',bio:'',city:'',role:'creator',avatarUrl:null,rel:['following']};
 for(const query of ['public_handle_123','private_login_alias'])test(`私信搜索保留服务器按 ${query.includes('private')?'登录用户名':'公开handle'} 匹配的联系人，即使昵称不同`,async()=>{
-  const h=searches();h.input(query);await h.flush();assert.equal(h.requests.length,1);assert.match(h.requests[0].path,/\/dm\/contacts\?q=/);
-  h.requests[0].resolve({items:[peer]});await tick();assert.equal(h.ctx.USERS.u_match.handle,peer.handle);assert.equal('username' in peer,false);
+  const h=searches();h.input(query);await h.flush();assert.equal(h.requests.length,2);assert.match(h.requests[0].path,/\/dm\/contacts\?q=/);assert.match(h.requests[1].path,/\/dm\/search\?q=/);
+  h.requests[0].resolve({items:[peer]});h.requests[1].resolve({items:[],next:null});await tick();assert.equal(h.ctx.USERS.u_match.handle,peer.handle);assert.equal('username' in peer,false);
   assert.match(h.html(),/data-sgo="msg-u_match"/);assert.doesNotMatch(h.html(),/没找到/);
-  h.input('unrelated');assert.doesNotMatch(h.html(),/data-sgo="msg-u_match"/,'换词等待期间也不能带入旧服务器命中');await h.flush();h.requests[1].resolve({items:[]});await tick();assert.doesNotMatch(h.html(),/data-sgo="msg-u_match"/,'旧查询命中不能借LSRCH缓存继续混入新查询');
+  h.input('unrelated');assert.doesNotMatch(h.html(),/data-sgo="msg-u_match"/,'换词等待期间也不能带入旧服务器命中');await h.flush();h.requests[2].resolve({items:[]});h.requests[3].resolve({items:[],next:null});await tick();assert.doesNotMatch(h.html(),/data-sgo="msg-u_match"/,'旧查询命中不能借LSRCH缓存继续混入新查询');
 });
