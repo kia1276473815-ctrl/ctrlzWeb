@@ -2626,7 +2626,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 }
 </style>
 
-<link rel="stylesheet" href="scripts/communication.css?v=20261110-r5">
+<link rel="stylesheet" href="scripts/communication.css?v=20261110-r6">
 </head>
 <body>
 
@@ -10205,7 +10205,7 @@ function commentRouteTarget(pid,id){
   UI.commentRouteSeen=id ? cmtScope()+'|'+pid+'|'+id : null;
 }
 function cmtReplyRef(pid,c){
-  if(!c.parentId) return ''; const parent=cmtsOf(pid).find(p=>p.id===c.parentId), name=USERS[parent?.u]?.name || c.replyName || '一条评论';
+  if(!c.parentId) return ''; const parent=c.parentAvailable===false?null:cmtsOf(pid).find(p=>p.id===c.parentId) || (c.parentAvailable===true?globalThis.CZCommunication?.commentReference?.(pid,c.parentId):null), name=c.parentAvailable===false?'暂不可查看的评论':USERS[parent?.u]?.name || c.replyName || '一条评论';
   return `<button class="cmt-parent" data-act="cmt-parent" data-p="${esc(pid)}" data-id="${esc(c.parentId)}" aria-label="查看回复的原评论">回复 ${esc(name)}${parent ? '：'+esc(parent.t) : ''}</button>`;
 }
 ACTIONS['cmt-parent']=b=>{UI.commentJump={p:b.dataset.p,id:b.dataset.id};commentRouteTarget(b.dataset.p,b.dataset.id);void commentJumpReady(b.dataset.p);};
@@ -10217,13 +10217,13 @@ function cmtLikeHtml(pid,c,act){
   return `<button data-act="${act}" data-p="${esc(pid)}" data-cid="${esc(c.id || '')}" class="${c.liked ? 'on' : ''}" aria-label="给评论点赞" aria-pressed="${!!c.liked}"${!c.id || c.review || c.sendState ? ' disabled' : ''}><i class="hk">${c.liked ? '♥' : '♡'}</i><span>${c.likes || 0}</span></button>`;
 }
 function cmtLikePaint(pid,id,s){
-  const c=(COMMENTS[pid] || []).concat(UI.newCmts[pid] || []).find(c=>c.id===id); if(!c) return;
+  const c=(COMMENTS[pid] || []).concat(UI.newCmts[pid] || []).find(c=>c.id===id) || globalThis.CZCommunication?.commentReference?.(pid,id); if(!c) return;
   c.liked=s.desired; c.likes=Math.max(0,s.count+Number(s.desired)-Number(s.confirmed));
   $$(`[data-act="clike"][data-p="${pid}"][data-cid="${id}"],[data-act="rl-cl"][data-p="${pid}"][data-cid="${id}"],[data-act="at-like"][data-p="${pid}"][data-cid="${id}"]`).forEach(b=>{b.classList.toggle('on',c.liked);b.setAttribute('aria-pressed',String(c.liked));b.removeAttribute('aria-busy');b.innerHTML=b.dataset.act==='at-like' ? (c.liked ? IC.heartF : IC.heart) : `<i class="hk">${c.liked ? '♥' : '♡'}</i><span>${c.likes}</span>`;});
 }
 async function cmtLikeToggle(b,orig,e){
   const pid=b.dataset.p || reelCur()?.id, p=POST(pid); if(!p?.live) return orig(b,e); if(needLogin()) return;
-  const id=b.dataset.cid; if(!id) return; const c=cmtsOf(pid).find(c=>c.id===id); if(!c || c.review || c.sendState) return;
+  const id=b.dataset.cid; if(!id) return; const c=cmtsOf(pid).find(c=>c.id===id) || globalThis.CZCommunication?.commentReference?.(pid,id); if(!c || c.review || c.sendState) return;
   const scope=cmtScope(), key=scope+'|'+id, current=()=>cmtScope()===scope && liveUser(); let s=CMT_LIKES.get(key);
   if(!s){s={confirmed:!!c.liked,count:c.likes || 0,desired:!!c.liked,seq:0,tail:Promise.resolve()};CMT_LIKES.set(key,s);}
   const desired=s.desired=!s.desired, seq=++s.seq; cmtLikePaint(pid,id,s);
@@ -10240,12 +10240,13 @@ async function cmtForNotice(pid,id,force=false){
 async function cmtNoticeLike(b,orig,e){
   if(!b.dataset.cid)return orig(b,e);if(!liveUser()){needLogin();return;}if(b._cmtReading)return;const scope=cmtScope(),reading={};b._cmtReading=reading;b.setAttribute('aria-busy','true');
   const clear=()=>{if(b._cmtReading===reading){b._cmtReading=null;b.removeAttribute('aria-busy');}};
-  try{const c=await cmtForNotice(b.dataset.p,b.dataset.cid);clear();if(cmtScope()!==scope)return;if(!c){toast('这条评论暂时无法查看，请稍后重试','blue');return;}atMark(b.dataset.id);await cmtLikeToggle(b,orig,e);}
+  try{const c=await cmtForNotice(b.dataset.p,b.dataset.cid);clear();if(cmtScope()!==scope)return;if(!c){toast('这条评论暂时无法查看，请稍后重试','blue');return;}b.title='';atMark(b.dataset.id);await cmtLikeToggle(b,orig,e);}
+  catch(err){if(b.isConnected&&cmtScope()===scope){b.title='评论状态读取失败，点按重试';apiFail(err);}}
   finally{clear();}
 }
 async function cmtNoticeLikes(){
   const buttons=$$('[data-act="at-like"][data-cid]').filter(b=>b.dataset.cid),scope=cmtScope(), refreshed=new Set();let next=0;
-  const worker=async()=>{let b;while((b=buttons[next++])){if(!b.isConnected || cmtScope()!==scope)return;b.setAttribute('aria-busy','true');const force=!refreshed.has(b.dataset.p);refreshed.add(b.dataset.p);const c=await cmtForNotice(b.dataset.p,b.dataset.cid,force);if(c && b.isConnected && cmtScope()===scope)cmtLikePaint(b.dataset.p,b.dataset.cid,{desired:c.liked,confirmed:c.liked,count:c.likes});else b.removeAttribute('aria-busy');}};
+  const worker=async()=>{let b;while((b=buttons[next++])){if(!b.isConnected || cmtScope()!==scope)return;b.setAttribute('aria-busy','true');try{const force=!refreshed.has(b.dataset.p);refreshed.add(b.dataset.p);const c=await cmtForNotice(b.dataset.p,b.dataset.cid,force);if(c && b.isConnected && cmtScope()===scope){b.title='';cmtLikePaint(b.dataset.p,b.dataset.cid,{desired:c.liked,confirmed:c.liked,count:c.likes});}}catch{if(b.isConnected&&cmtScope()===scope)b.title='评论状态读取失败，点按重试';}finally{b.removeAttribute('aria-busy');}}};
   await Promise.all([worker(),worker()]);
 }
 function liveCmtState(id){
@@ -11774,10 +11775,10 @@ async function actRefreshReferences(k,exclude=new Set()){
 function actRowsHTML(k){
   return (NOTES[k] || []).map(n => { const unavailable=['deleted','unavailable'].includes(n.targetState),p=!unavailable&&n.ref&&POST(n.ref),href=p?postHref(p):n.ref?'post-'+n.ref:'user-'+n.u;
     if(unavailable){const reason=n.targetState==='deleted'?(n.commentId?'原评论已删除':'原帖子已删除'):'原内容暂不可查看';return `<div class="mrow ${k==='at'?'at '+(AT_READ.has(n.id)?'':'unread'):''} comm-activity-unavailable" data-activity-id="${esc(n.id)}" data-target-state="${esc(n.targetState)}"><a data-go="user-${esc(n.u)}" aria-label="查看互动用户">${av(n.u,'md')}</a><span class="mt"><b>${esc(USERS[n.u]?.name || '用户')}</b><span>${esc(n.k || '互动提醒')} · ${reason}</span><time>${ago(n.ts)}</time></span>${k==='at'&&!AT_READ.has(n.id)?`<button class="pill sm lt" data-act="activity-read" data-id="${esc(n.id)}">标为已读</button>`:''}</div>`;}
-    if(k==='at'){ const lk=n.commentId ? !!(COMMENTS[n.ref] || []).find(c=>c.id===n.commentId)?.liked : STATE.clikes.has('at:'+n.id);
+    if(k==='at'){ const lk=n.commentId ? !!((COMMENTS[n.ref] || []).find(c=>c.id===n.commentId) || globalThis.CZCommunication?.commentReference?.(n.ref,n.commentId))?.liked : STATE.clikes.has('at:'+n.id);
       return `<a class="mrow at ${AT_READ.has(n.id) ? '' : 'unread'}" data-act="at-open" data-id="${esc(n.id)}" data-p="${esc(n.ref || '')}" data-cid="${esc(n.commentId || '')}" data-href="${esc(href+(n.ref&&n.commentId?'?comment='+encodeURIComponent(n.commentId):''))}">${av(n.u,'md')}<span class="mt"><b>${esc(USERS[n.u]?.name || '用户')}</b><span>${esc(n.k)}：${esc(n.text)}</span><time>${ago(n.ts)}</time></span>${!liveUser()||n.commentId?`<button class="at-lk ${lk ? 'on' : ''}" data-act="at-like" data-id="${esc(n.id)}" data-p="${esc(n.ref || '')}" data-cid="${esc(n.commentId || '')}" aria-label="给这条回复点赞" aria-pressed="${lk}"${liveUser()&&!p?.live?' disabled':''}>${lk ? IC.heartF : IC.heart}</button>`:''}</a>`;
     }
-    return `<a class="mrow" ${p && n.commentId ? `data-act="like-open" data-href="${postHref(p)}?comment=${encodeURIComponent(n.commentId)}"` : `data-go="${p ? postHref(p) : 'user-'+n.u}"`}>${av(n.u,'md')}<span class="mt"><b>${esc(USERS[n.u]?.name || '用户')}</b><span>${k==='fans' ? '开始关注你了' : esc(n.k)+(n.text ? '：'+esc(n.text) : '')} · ${ago(n.ts)}</span></span>${p ? miniThumb(p,'nth') : k==='fans' ? `<button class="pill sm ${STATE.follows.has(n.u) ? 'lt' : ''}" data-act="follow" data-id="${esc(n.u)}" data-follow-on="互相关注" data-follow-off="回关">${STATE.follows.has(n.u) ? '互相关注' : '回关'}</button>` : ''}</a>`;
+    return `<a class="mrow" ${n.ref && n.commentId ? `data-act="like-open" data-href="${esc(href+'?comment='+encodeURIComponent(n.commentId))}"` : `data-go="${esc(href)}"`}>${av(n.u,'md')}<span class="mt"><b>${esc(USERS[n.u]?.name || '用户')}</b><span>${k==='fans' ? '开始关注你了' : esc(n.k)+(n.text ? '：'+esc(n.text) : '')} · ${ago(n.ts)}</span></span>${p ? miniThumb(p,'nth') : k==='fans' ? `<button class="pill sm ${STATE.follows.has(n.u) ? 'lt' : ''}" data-act="follow" data-id="${esc(n.u)}" data-follow-on="互相关注" data-follow-off="回关">${STATE.follows.has(n.u) ? '互相关注' : '回关'}</button>` : ''}</a>`;
   }).join('');
 }
 function actPanelPaint(){
@@ -13027,7 +13028,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { coverFontDrop(); if (!CUR.post) rerender(); });
 })();
 </script>
-<script src="scripts/communication.js?v=20261110-r5"></script>
+<script src="scripts/communication.js?v=20261110-r6"></script>
 
 <script src="scripts/oauth-v1.js?v=20261110-1"></script>
 </body>

@@ -16,6 +16,7 @@ async(page)=>{
   await page.locator('#cmtIn').press('End');await page.locator('#cmtIn').pressSequentially(' '+mentionLabel);await page.locator('#post [data-act="cmt"]').click();
   await page.waitForFunction(label=>cmtsOf(CUR.post).some(c=>c.t.includes(label) && c.id && !c.sendState),mentionLabel);
   assert(await page.locator('#post .comm-mention').count()>0,'提及没有安全渲染成用户链接');cases.push('mention-selector-real-http-comment');
+  await page.evaluate(id=>go('post-'+id+'?comment=c_browser_000'),pid);await page.waitForSelector('[data-cmt-id="c_browser_000"].flash');
   const pin=page.locator('[data-cmt-id="c_browser_000"] [data-act="comm-pin-comment"]');await pin.click();await page.waitForFunction(()=>POST(CUR.post)?.pinnedCommentId==='c_browser_000');cases.push('comment-pin-real-http');
   // 丢失已提交响应后重试，真实HTTP仍只产生一条评论。
   let dropped=false;

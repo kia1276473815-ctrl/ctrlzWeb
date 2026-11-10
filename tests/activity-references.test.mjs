@@ -16,6 +16,9 @@ test('通知保留删除/不可见状态，去掉正文、假跳转和点赞入�
 test('帖子提及不显示无效评论点赞，卡片未补读成功时仍定位帖子而非作者主页',()=>{
   const h=harness();h.ctx.POST=()=>null;h.ctx.actMerge('at',[{...raw('post-mention'),kind:'mention',commentId:null}],false);const out=h.ctx.actRowsHTML('at');assert.match(out,/data-href="post-post"/);assert.doesNotMatch(out,/data-act="at-like"/);
 });
+test('喜欢通知在帖子卡片暂未读回时仍正确定位帖子或评论，粉丝通知保留用户主页',()=>{
+  const h=harness();h.ctx.POST=()=>null;h.ctx.actMerge('likes',[{...raw('comment-like'),kind:'like'},{...raw('post-like'),kind:'like',commentId:null}],false);const out=h.ctx.actRowsHTML('likes');assert.match(out,/data-href="post-post\?comment=c_comment-like"/);assert.match(out,/data-go="post-post"/);h.ctx.actMerge('fans',[{...raw('follow'),kind:'follow',post:null,commentId:null}],false);assert.match(h.ctx.actRowsHTML('fans'),/data-go="user-actor"/);
+});
 test('旧页200项批量校对删除/恢复和撤掉的提醒，保持游标、已读与已有新对象',async()=>{
   const h=harness();h.seed(['old','removed','restored']);h.ctx.actMerge('at',[raw('restored','unavailable')],true);h.ctx.API.req=async(method,path,body)=>{h.calls.push({method,path,body});return {items:[raw('old','deleted'),raw('restored')]};};await h.ctx.actRefreshReferences('at');
   assert.equal(h.calls.length,1);assert.equal(h.calls[0].path,'/me/activity/references');assert.deepEqual(plain(h.ctx.NOTES.at.map(n=>n.id).sort()),['old','restored']);assert.equal(h.ctx.NOTES.at.find(n=>n.id==='old').text,'');assert.equal(h.ctx.NOTES.at.find(n=>n.id==='restored').text,'原通知正文');assert.equal(h.ctx.LACT.pages.at.next,'old-cursor');assert.equal(h.ctx.LACT.readRevision,1);assert.equal(h.ctx.AT_READ.size,0);

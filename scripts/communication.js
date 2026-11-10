@@ -182,8 +182,60 @@
   const oldSolve=ACTIONS.solve;ACTIONS.solve=b=>POST(b.dataset.id)?.live ? busy(b,()=>discussion(b.dataset.id,{solved:!POST(b.dataset.id).solved})):oldSolve(b);
   ACTIONS['comm-close-comments']=b=>busy(b,()=>discussion(b.dataset.id,{commentsClosed:!POST(b.dataset.id)?.commentsClosed}));
   ACTIONS['comm-pin-comment']=b=>busy(b,()=>discussion(b.dataset.id,{pinnedCommentId:POST(b.dataset.id)?.pinnedCommentId===b.dataset.cid ? null:b.dataset.cid}));
-  const oldForNotice=cmtForNotice;cmtForNotice=async function(pid,id,force){if(!POST(pid)?.live)return oldForNotice(pid,id,force);const key=scope();try{const r=await API.req('GET',`/posts/${encodeURIComponent(pid)}/comments/context?target=${encodeURIComponent(id)}`);if(!same(key))return null;const old=COMMENTS[pid] ||= [],byId=new Map(old.map(c=>[c.id,c]));for(const raw of [...(r.parent ? [r.parent]:[]),...r.items])byId.set(raw.id,apiCmt(raw));COMMENTS[pid]=[...byId.values()];cmtPaint(pid);return COMMENTS[pid].find(c=>c.id===id) || null;}catch(e){if([403,404].includes(e.status))return null;throw e;}};
-  const oldJump=commentJumpReady;commentJumpReady=async function(pid){const target=UI.commentJump?.p===pid && UI.commentJump.id;if(target && POST(pid)?.live && !cmtsOf(pid).some(c=>c.id===target))await cmtForNotice(pid,target);return oldJump(pid);};
+  const oldForNotice=cmtForNotice;
+  const commentRefKey=(pid,id)=>JSON.stringify([pid,id]);
+  function commentReference(pid,id){return current().commentReferences?.get(commentRefKey(pid,id));}
+  function cacheCommentReference(pid,raw){const refs=current().commentReferences ||=new Map(),key=commentRefKey(pid,raw.id),prior=refs.get(key),c=cmtLikeHydrate(apiCmt(raw));if(prior?.parentId===c.parentId&&prior?.parentAvailable!==undefined)c.parentAvailable=prior.parentAvailable;refs.delete(key);refs.set(key,c);while(refs.size>512)refs.delete(refs.keys().next().value);return c;}
+  comm.commentReference=commentReference;
+  const fetchCommentContext=(pid,target,signal)=>API.req('GET',`/posts/${encodeURIComponent(pid)}/comments/context?target=${encodeURIComponent(target)}`,undefined,true,{signal});
+  function validCommentContext(r,pid,target){const valid=c=>c?.postId===pid&&typeof c.id==='string'&&typeof c.body==='string'&&c.author?.id&&Number.isFinite(+new Date(c.createdAt));return r&&r.target===target&&Array.isArray(r.items)&&r.items.length<=101&&new Set(r.items.map(c=>c.id)).size===r.items.length&&r.items.some(c=>c.id===target)&&r.items.every(valid)&&(!r.parent||valid(r.parent))&&[r.before,r.after].every(id=>id===null||typeof id==='string');}
+  // 通知补读与可见评论分开，既不重排正在阅读的列表，也不推进其分页游标。
+  cmtForNotice=function(pid,id,force){
+    if(!POST(pid)?.live)return oldForNotice(pid,id,force);const key=scope(),registry=current().commentFlights ||=new Map(),ref=commentRefKey(pid,id);if(registry.has(ref))return registry.get(ref);
+    const task=Promise.resolve().then(()=>fetchCommentContext(pid,id)).then(r=>{if(!same(key))return null;if(!validCommentContext(r,pid,id))throw Error('评论定位结果不完整，请重试');if(r.parent)cacheCommentReference(pid,r.parent);const c=cacheCommentReference(pid,r.items.find(c=>c.id===id));if(c.parentId){c.parentAvailable=!!r.parent;const visible=cmtsOf(pid).find(v=>v.id===id);if(visible&&visible.parentAvailable!==c.parentAvailable){visible.parentAvailable=c.parentAvailable;if(commentVisible(pid))cmtPaint(pid);}}return c;}).catch(e=>{if([403,404].includes(e.status)){if(same(key))current().commentReferences?.delete(ref);return null;}throw e;}).finally(()=>{if(registry.get(ref)===task)registry.delete(ref);});registry.set(ref,task);return task;
+  };
+  const oldLoadComments=loadLiveCmts;
+  function paintCommentContext(pid,preserve){
+    const box=CUR.post===pid?$('#post .scroll'):RL.on&&reelCur()?.id===pid?$('.rl-cm-l',RL.el):null,top=box?.getBoundingClientRect().top,anchor=preserve&&box?[...box.querySelectorAll('[data-cmt-id]')].find(el=>{const r=el.getBoundingClientRect();return r.bottom>top&&r.top<top+box.clientHeight;}):null,id=anchor?.dataset.cmtId,offset=anchor?anchor.getBoundingClientRect().top-top:0;cmtPaint(pid);
+    const next=CUR.post===pid?$('#post .scroll'):RL.on&&reelCur()?.id===pid?$('.rl-cm-l',RL.el):null,restored=id&&next?[...next.querySelectorAll('[data-cmt-id]')].find(el=>el.dataset.cmtId===id):null;if(restored)next.scrollTop+=restored.getBoundingClientRect().top-next.getBoundingClientRect().top-offset;
+  }
+  function loadCommentContext(pid,target,direction='replace'){
+    let s=liveCmtState(pid);if(!s)return Promise.resolve(null);if(s.context&&s.task&&(direction!=='replace'||s.context.target===target))return s.task;
+    if(direction==='replace'){
+      s.controller?.abort();const prior=s.context,keep=prior?.target===target;if(!keep)COMMENTS[pid]=[];
+      s=LIVE.cmts[pid]={scope:cmtScope(),status:'idle',loaded:keep&&s.loaded,next:null,task:null,controller:null,context:{target,before:keep?prior.before:null,after:keep?prior.after:null}};
+    }
+    const session=cmtScope(),controller=new AbortController(),active=()=>cmtScope()===session&&LIVE.cmts[pid]===s;
+    s.status='pending';s.more=direction!=='replace';s.controller=controller;s.context.unavailable=false;
+    const task=Promise.resolve().then(()=>fetchCommentContext(pid,target,controller.signal)).then(r=>{
+      if(!active())return null;if(!validCommentContext(r,pid,target))throw Error('评论定位结果不完整，请重试');if(direction==='before'&&r.before===target||direction==='after'&&r.after===target)throw Error('评论分页没有前进，请重试');
+      const rows=r.items.map(raw=>cacheCommentReference(pid,raw)),old=direction==='replace'?[]:COMMENTS[pid] || [],values=new Map([...old,...rows].map(c=>[c.id,c])),order=[...new Set((direction==='before'?[...rows,...old]:[...old,...rows]).map(c=>c.id))];COMMENTS[pid]=order.map(id=>values.get(id));
+      if(r.parent)cacheCommentReference(pid,r.parent);const found=rows.find(c=>c.id===target);if(found?.parentId)found.parentAvailable=!!r.parent;const known=new Set(rows.map(c=>c.id));UI.newCmts[pid]=(UI.newCmts[pid] || []).filter(c=>!c.id||!known.has(c.id));
+      if(direction==='replace'||direction==='before')s.context.before=r.before || null;if(direction==='replace'||direction==='after')s.context.after=r.after || null;
+      s.context.retry=null;s.loaded=true;s.status='ready';paintCommentContext(pid,direction!=='replace');return COMMENTS[pid].find(c=>c.id===target) || null;
+    }).catch(error=>{
+      if(!active())return null;if(error.name==='AbortError'){s.status=s.loaded?'ready':'idle';return null;}
+      if([401,403,404].includes(error.status)){COMMENTS[pid]=[];s.loaded=false;s.context.before=s.context.after=null;s.context.unavailable=true;}
+      s.status='error';s.context.retry={target,direction};s.context.error=error.message || '评论读取失败';paintCommentContext(pid,direction!=='replace'&&!s.context.unavailable);return null;
+    }).finally(()=>{if(active()&&s.task===task){s.task=null;s.controller=null;}});s.task=task;paintCommentContext(pid,direction!=='replace');return task;
+  }
+  loadLiveCmts=function(pid,more=false,force=false){
+    const s=liveCmtState(pid),target=UI.commentJump?.p===pid&&UI.commentJump.id;
+    if(target&&!more&&POST(pid)?.live)return loadCommentContext(pid,target);
+    if(s?.context){if(s.task)return s.task;if(more)return s.context.after?loadCommentContext(pid,s.context.after,'after'):Promise.resolve(null);const retry=s.context.retry;return force?retry?loadCommentContext(pid,retry.target,retry.direction):loadCommentContext(pid,s.context.target):Promise.resolve(null);}
+    return oldLoadComments(pid,more,force);
+  };
+  const oldJump=commentJumpReady;commentJumpReady=async function(pid){
+    const jump=UI.commentJump;if(!jump||jump.p!==pid||!jump.id||!POST(pid)?.live)return oldJump(pid);if(jump.started)return;jump.started=true;const key=cmtScope();if(RL.on&&reelCur()?.id===pid)openReelCm();
+    const c=await loadCommentContext(pid,jump.id);if(cmtScope()!==key||UI.commentJump!==jump||!commentVisible(pid))return;const s=liveCmtState(pid);if(s.status!=='ready'&&!s.context?.unavailable)return;
+    UI.commentJump=null;UI.flashCmt=c?{p:pid,id:c.id,t:c.t,u:c.u}:null;if(!c)toast('这条评论已不可用，或当前无法查看','blue');cmtPaint(pid);
+  };
+  const contextControls=pid=>{const s=liveCmtState(pid),c=s?.context;if(!c)return '';const disabled=s.status==='pending'?' disabled':'';return `<div class="comm-comment-context" role="group" aria-label="评论上下文"><span>正在查看这条评论附近的内容</span><div class="comm-actions">${c.before?`<button class="pill sm lt" data-act="comm-comment-before" data-p="${esc(pid)}"${disabled}>更早评论</button>`:''}${c.after?`<button class="pill sm lt" data-act="comm-comment-after" data-p="${esc(pid)}"${disabled}>后续评论</button>`:''}${c.unavailable?`<button class="pill sm lt" data-act="comm-comment-retry" data-p="${esc(pid)}"${disabled}>重新定位</button>`:''}<button class="pill sm lt" data-act="comm-comment-all" data-p="${esc(pid)}">查看全部评论</button></div></div>`;};
+  const oldCmtStatus=cmtStatusHtml;cmtStatusHtml=function(pid){const s=liveCmtState(pid),feedback=s?.context?.unavailable?'<div class="request-note" role="status">这条评论已删除或暂不可查看</div>':oldCmtStatus(pid);return (s?.context?contextControls(pid):'')+feedback;};
+  const oldCmtMore=cmtMoreHtml;cmtMoreHtml=pid=>liveCmtState(pid)?.context?contextControls(pid):oldCmtMore(pid);
+  for(const [act,direction]of [['comm-comment-before','before'],['comm-comment-after','after']])ACTIONS[act]=b=>{const pid=b.dataset.p,s=liveCmtState(pid),target=s?.context?.[direction];return target?loadCommentContext(pid,target,direction):Promise.resolve(null);};
+  ACTIONS['comm-comment-retry']=b=>{const pid=b.dataset.p,s=liveCmtState(pid),target=s?.context?.target,key=cmtScope();if(!target)return Promise.resolve(null);return loadCommentContext(pid,target).then(c=>{if(c&&key===cmtScope()&&liveCmtState(pid)?.context?.target===target&&commentVisible(pid)){UI.flashCmt={p:pid,id:c.id,t:c.t,u:c.u};cmtPaint(pid);}return c;});};
+  ACTIONS['comm-comment-all']=b=>{const pid=b.dataset.p,s=liveCmtState(pid);s?.controller?.abort();delete LIVE.cmts[pid];if(UI.commentJump?.p===pid)UI.commentJump=null;UI.flashCmt=null;commentRouteTarget(pid,null);const task=oldLoadComments(pid,false,true);cmtPaint(pid);return task;};
 
   comm.openActivity=async function(orig,b,e){const key=scope(),kind=b.dataset.v,count=NOTE_NEW[kind],reads=(NOTES[kind] || []).map(n=>[n,!!n.read]);orig(b,e);NOTE_NEW[kind]=count;reads.forEach(([n,read])=>n.read=read);msgBadge();const list=$('#layer .m-list');if(list){LACT.panel={k:kind,list,current:dmSession()};actPanelPaint();}
     try{await actLoad(true);if(!same(key))return;const token=current().tokens[kind];if(!token)throw Error('通知快照未读取成功，请重试');await API.req('POST','/me/activity/read',{kind,through:token});if(!same(key))return;current().version=null;await actLoad(true);await poll();}catch(err){if(same(key)){apiFail(err);actPanelPaint();}}
