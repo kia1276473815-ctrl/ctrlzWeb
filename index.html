@@ -2626,7 +2626,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 }
 </style>
 
-<link rel="stylesheet" href="scripts/communication.css?v=20261110-r3">
+<link rel="stylesheet" href="scripts/communication.css?v=20261110-r4">
 </head>
 <body>
 
@@ -10697,7 +10697,7 @@ function apiProduct(p){
   const o = Object.assign(old || {}, {id:p.id, kind:p.kind || CATS[p.cat]?.cn || '', cat:CATS[p.cat] ? p.cat : 'sample', title:p.title, en:p.en || p.title, seller:p.seller.id,
     price:f2y(p.price), ext:p.extPrice == null ? null : f2y(p.extPrice), count:p.fileName || '—', format:ext || '—', compat:'见商品介绍', size:fmtSize(p.fileSize), sales:p.salesCount, rating:p.rating ?? old?.rating ?? null,
     cover:{tpl:'orbit', pal:'pb', ...(p.cover || {}), txt:p.en || p.title}, desc:p.desc, files:p.fileName, tpl:['sample', 'preset', 'video'].includes(p.tpl) ? p.tpl : undefined,
-    live:true, status:p.status, publishedAt:p.publishedAt ?? old?.publishedAt ?? null, selfOff:p.status !== 'on_sale', hasAi:p.hasAi, aiTrain:p.aiTrain, ver:p.ver || old?.ver || 'v1.0', vlog:(p.versions || []).map(x => ({v:x.v, note:x.note, ts:+new Date(x.at)})), pendingVer:p.pendingVer || null});
+    live:true, _readRev:(apiProduct.readSeq=(apiProduct.readSeq || 0)+1), status:p.status, publishedAt:p.publishedAt ?? old?.publishedAt ?? null, selfOff:p.status !== 'on_sale', hasAi:p.hasAi, aiTrain:p.aiTrain, ver:p.ver || old?.ver || 'v1.0', vlog:(p.versions || []).map(x => ({v:x.v, note:x.note, ts:+new Date(x.at)})), pendingVer:p.pendingVer || null});
   // 真实商品的试听由 preview 明确提供，不用示例音频代替卖家素材。
   if (!old) PRODUCTS.push(o); return o;
 }
@@ -11178,11 +11178,11 @@ Object.assign(ACTIONS, {
 /* 私信列表为空时：还没读到过（listState 不是 ready）显示「正在读取」，最近一次失败显示重试；读到过才是「还没有私信」 */
 const dmListNote = () => LDM.listState === 'error' ? '<div class="request-note" role="status"><span>私信读取失败，请重试</span><button class="pill sm lt" data-act="dm-list-retry">重试</button></div>' : '<div class="request-note" role="status">正在读取私信…</div>';
 ACTIONS['dm-list-retry'] = b => { b.disabled = true; dmThreads().then(() => msgBadge(), () => {}).finally(() => { LDM.side = ''; if (CUR.key?.startsWith('msg|')) dmPaint(CUR.key.slice(4)); }); };   // 再失败也重画，按钮恢复可点
-const LDM = {timer:0, epoch:0, unread:null, listAt:0, full:new Set(), loading:new Set(), look:new Set(), miss:new Set(), last:{}, sig:{}, since:{}, before:{}, inflight:new Map(), history:new Set(), side:'', busy:false, listed:false, listState:'', blk:{}};
+const LDM = {timer:0, epoch:0, unread:null, listAt:0, full:new Set(), loading:new Set(), look:new Set(), miss:new Set(), last:{}, sig:{}, since:{}, before:{}, inflight:new Map(), refs:new Map(), missAt:new Map(), refScope:'', refPool:null, history:new Set(), side:'', busy:false, listed:false, listState:'', blk:{}};
 const dmSession = () => { const epoch = LDM.epoch, me = ME; return () => epoch === LDM.epoch && me === ME && STATE.role === 'user'; };
 function dmReset(){ LDM.epoch++; clearInterval(LDM.timer); LDM.timer = 0; LDM.busy = LDM.listed = false; LDM.listState = ''; LDM.unread = null; LDM.listAt = 0; LDM.sysMark = null;
   dmOutboxReset();
-  ['full','loading','look','miss','history'].forEach(k => LDM[k].clear()); LDM.inflight.clear();
+  ['full','loading','look','miss','history'].forEach(k => LDM[k].clear()); LDM.inflight.clear(); LDM.refs.clear(); LDM.missAt.clear(); LDM.refScope=''; LDM.refPool=null;
   ['last','sig','since','before','blk'].forEach(k => LDM[k] = {}); LDM.side = ''; refill(CHATS, {}); refill(CHAT_UNREAD, {}); }
 API.sessionReset = dmReset;
 /* 私信类型只认这几种，其它一律归成 other：列表和气泡显示占位，也没有撤回入口 */
@@ -11190,22 +11190,49 @@ const DM_KINDS = new Set(['text', 'image', 'post', 'prod']);
 const dmMap = m => ({id:m.id,createdRevision:m.createdRevision || 0,hidden:!!m.hidden,refState:m.refState,...(['post','prod'].includes(m.kind)?{_refCheckedAt:Date.now()}:{}), clientMessageId:m.clientMessageId || null, me:m.from === ME, t:m.kind === 'image' ? 'img' : DM_KINDS.has(m.kind) ? m.kind : 'other', text:m.body, url:m.url || undefined, ref:m.ref || undefined, ts:+new Date(m.createdAt), rc:m.recalled, read:m.read});
 const dmLive = uid => API.on() && STATE.role === 'user' && LIVE.u.has(uid);
 const dmCut = (uid, ts) => !API.on() && DELC[uid] && ts <= DELC[uid];   // 自己删过聊天记录：删之前的不再显示
-/* 分享来的帖子 / 商品本地没有：去后端取一次 */
-async function dmRefs(list){
-  const current = dmSession(), seen = new Set(), todo = [];
-  for (const m of list){
-    if (!m.ref || m.rc || LDM.miss.has(m.ref)) continue;
-    const key = m.t + ':' + m.ref; if (seen.has(key)) continue; seen.add(key); todo.push(m);
+/* 分享卡片按50项合并读取；跨入口共用两路队列，前台优先且保留会话作用域。 */
+async function dmRefs(list,force=false){
+  const current=dmSession(),scope=()=>JSON.stringify([API.base,API.epoch,LDM.epoch,ME]),session=scope(),valid=()=>current()&&scope()===session,outcomes=new Map();
+  if(LDM.refScope!==session){LDM.refScope=session;LDM.refs=new Map();LDM.miss.clear();LDM.missAt=new Map();LDM.refPool={active:0,queue:[]};}
+  const registry=LDM.refs,seen=new Set(),owned=[],waiting=new Map(),get=(kind,id)=>kind==='post'?POST(id):P(id),forced=key=>force===true||!!force?.has?.(key),priority=force===true||!!force?.size||CUR.key?.startsWith('msg|')&&list.some(m=>m.id);
+  const rememberMissing=key=>{LDM.miss.add(key);LDM.missAt.delete(key);LDM.missAt.set(key,Date.now());while(LDM.missAt.size>512){const old=LDM.missAt.keys().next().value;LDM.missAt.delete(old);LDM.miss.delete(old);}};
+  for(const m of list){
+    if(!m.ref||m.rc||m.refState==='unavailable'||!['post','prod'].includes(m.t))continue;const key=m.t+':'+m.ref;if(seen.has(key))continue;seen.add(key);
+    const entity=get(m.t,m.ref);if(entity&&!forced(key))continue;
+    const at=LDM.missAt.get(key),now=Date.now();if(!forced(key)&&LDM.miss.has(key)&&at&&now>=at&&now-at<30000){outcomes.set(key,'unavailable');continue;}
+    LDM.miss.delete(key);LDM.missAt.delete(key);const existing=registry.get(key);if(existing){if(priority&&existing.task)existing.task.priority=1;waiting.set(key,existing);continue;}
+    let finish;const promise=new Promise(resolve=>finish=resolve),entry={key,kind:m.t,id:m.ref,entity,revision:entity?.[m.t==='post'?'cmtsRev':'_readRev'],discussion:entity?.discussionVersion,promise,finish,outcome:'retry'};
+    registry.set(key,entry);owned.push(entry);waiting.set(key,entry);
   }
-  const one = async m => {
-    try {
-      if (m.t === 'post' && !POST(m.ref)){ const data = await API.req('GET', `/posts/${encodeURIComponent(m.ref)}`); if (!current()) return; const p = apiPost(data); if (!POSTS.some(x => x.id === p.id)) POSTS.push(p); }
-      if (m.t === 'prod' && !P(m.ref)){ const data = await API.req('GET', `/products/${encodeURIComponent(m.ref)}`); if (!current()) return; apiProduct(data); }
-    } catch(e){ if (!current()) return; if (e.status === 404 || e.code === 'not_found') LDM.miss.add(m.ref); }
+  const unchanged=e=>{const now=get(e.kind,e.id);return now===e.entity&&(!now||now[e.kind==='post'?'cmtsRev':'_readRev']===e.revision&&(e.kind!=='post'||now.discussionVersion===e.discussion));};
+  const apply=(entry,data)=>{
+    const previous=entry.entity;
+    if(entry.kind==='post'){
+      const liked=STATE.liked?.has(entry.id),counts=previous?{likes:previous.likes,cmts:previous.cmts,cmtsRev:previous.cmtsRev}:null;let mapped;
+      try{mapped=apiPost(data);}catch(error){if(STATE.liked)liked?STATE.liked.add(entry.id):STATE.liked.delete(entry.id);throw error;}
+      if(previous){Object.assign(previous,mapped,counts);if(STATE.liked)liked?STATE.liked.add(entry.id):STATE.liked.delete(entry.id);}
+      else if(!POSTS.some(p=>p.id===mapped.id))POSTS.push(mapped);
+    }else{const counts=previous?{sales:previous.sales,rating:previous.rating}:null,mapped=apiProduct(data);if(counts)Object.assign(mapped,counts);}
   };
-  // 3 个一起取（一条条串行时，收藏多的账号要排几百个往返）；换了账号就停
-  let i = 0; const work = async () => { while (i < todo.length && current()) await one(todo[i++]); };
-  await Promise.all(Array.from({length:Math.min(3, todo.length)}, work));
+  const batches=[];for(let i=0;i<owned.length;i+=50)batches.push(owned.slice(i,i+50));
+  const work=async batch=>{
+      try{
+        if(!valid())return;const r=await API.req('POST','/content/resolve',{refs:batch.map(e=>({kind:e.kind,id:e.id}))});if(!valid())return;
+        if(!r||!Array.isArray(r.posts)||!Array.isArray(r.products)||!Array.isArray(r.unavailable)||!Array.isArray(r.retry))return;
+        const cards=new Map([...r.posts.map(p=>['post:'+p.id,p]),...r.products.map(p=>['prod:'+p.id,p])]),missing=new Set(r.unavailable.map(x=>x.kind+':'+x.id));
+        for(const entry of batch){
+          if(!unchanged(entry))continue;
+          try{if(cards.has(entry.key)){apply(entry,cards.get(entry.key));entry.outcome='available';LDM.miss.delete(entry.key);LDM.missAt.delete(entry.key);}
+            else if(missing.has(entry.key)){rememberMissing(entry.key);entry.outcome='unavailable';}
+          }catch{/* 单张卡片格式或临时读取失败保留重试，其它卡片继续。 */}
+        }
+      }catch{/* 整批网络/登录失败不等于内容已删除，也不写负缓存。 */}
+      finally{for(const entry of batch){if(registry.get(entry.key)===entry)registry.delete(entry.key);entry.finish(entry.outcome);}}
+  };
+  const pool=LDM.refPool,jobs=batches.map(batch=>new Promise(resolve=>{const task={run:()=>work(batch),resolve,priority:priority?1:0};for(const entry of batch)entry.task=task;pool.queue.push(task);}));
+  const pump=()=>{while(pool.active<2&&pool.queue.length){const first=pool.queue.findIndex(task=>task.priority>0),task=pool.queue.splice(first<0?0:first,1)[0];pool.active++;Promise.resolve().then(task.run).catch(()=>{}).finally(()=>{pool.active--;task.resolve();pump();});}};
+  pump();await Promise.all(jobs);
+  for(const [key,entry]of waiting)outcomes.set(key,await entry.promise);return valid()?outcomes:new Map();
 }
 async function dmThreads(){
   const cursor=arguments[0];
@@ -12982,7 +13009,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { coverFontDrop(); if (!CUR.post) rerender(); });
 })();
 </script>
-<script src="scripts/communication.js?v=20261110-r3"></script>
+<script src="scripts/communication.js?v=20261110-r4"></script>
 
 <script src="scripts/oauth-v1.js?v=20261110-1"></script>
 </body>

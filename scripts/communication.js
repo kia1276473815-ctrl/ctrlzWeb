@@ -73,12 +73,18 @@
       const byId=new Map(r.items.map(m=>[m.id,m]));
       CHATS[uid]=(CHATS[uid] || []).flatMap(m=>{
         if(!requested.has(m.id))return [m];const raw=byId.get(m.id);if(!raw||raw.hidden)return [];if(m.rc)return [m];
-        if(raw.ref)LDM.miss.delete(raw.ref);
+        if(raw.ref){const target=m.t+':'+raw.ref;LDM.miss.delete(target);LDM.missAt?.delete(target);LDM.miss.delete(raw.ref);}
         return [{...m,ref:raw.recalled||raw.refState==='unavailable'?undefined:raw.ref || undefined,text:raw.recalled?'':raw.body,refState:raw.refState,rc:!!raw.recalled,_refCheckedAt:Date.now()}];
       });
       paint();
     }
-    await dmRefs(CHATS[uid] || []);if(same(key))paint();
+    const metadataAt=Date.now(),box=CUR.key==='msg|'+uid?$('#cvB'):null,visible=new Set();
+    if(box){const bounds=box.getBoundingClientRect(),ids=new Set([...box.children].filter(el=>{const r=el.getBoundingClientRect();return el.dataset.dm?.startsWith('msg-')&&r.bottom>bounds.top&&r.top<bounds.bottom;}).map(el=>el.dataset.dm.slice(4)));for(const m of CHATS[uid] || [])if(ids.has(m.id)&&m.ref)visible.add(m.t+':'+m.ref);}
+    const outcomes=await dmRefs(CHATS[uid] || [],visible);if(!same(key))return;
+    if(outcomes?.get)CHATS[uid]=(CHATS[uid] || []).map(m=>{
+      if(m.rc||!m.ref||m._refCheckedAt>metadataAt)return m;const result=outcomes.get(m.t+':'+m.ref),off=result==='available'&&m.t==='prod'&&P(m.ref)?.status&&P(m.ref).status!=='on_sale';
+      return result==='unavailable'||off?{...m,ref:undefined,refState:'unavailable',text:'',_refCheckedAt:Date.now()}:m;
+    });paint();
   }
   async function poll(){
     const s=current();if(s.running || !allowed() || document.hidden || !liveUser() || !API.on() || !API.tok)return;s.running=true;

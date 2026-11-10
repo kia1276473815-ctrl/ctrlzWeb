@@ -62,12 +62,12 @@ test('官方通知：有变化才更新，保留本地已读和已提交的反�
   alive=false;reply={items:[row('n3')]};await ctx.sysLoad();assert.equal(ctx.ADM.inbox.me[0].id,'n2');
 });
 
-test('dmRefs 限制并发并逐条补完；收藏不等补取结束，补完只在收藏页重画',async()=>{
+test('dmRefs 分批并限制并发；收藏不等补取结束，补完只在收藏页重画',async()=>{
   let active=0,peak=0;const posts=new Map();
-  const ctx=vm.createContext({Map,Set,Promise,Array,STATE:{favs:new Set()},CUR:{key:'home|'},UI:{},POSTS:[],LDM:{miss:new Set()},dmSession:()=>()=>true,accountSession:()=>()=>true,rerender(){},
-    POST:id=>posts.get(id),P:()=>null,apiPost:p=>{posts.set(p.id,p);return p;},apiProduct(){},API:{req:async(m,p)=>{active++;peak=Math.max(peak,active);await tick();active--;return {id:p.split('/').pop()};}}});
-  vm.runInContext(section('async function dmRefs(list){','async function dmThreads(){'),ctx);
-  await ctx.dmRefs(Array.from({length:10},(_,i)=>({t:'post',ref:'p'+i})));assert.equal(peak,3);assert.equal(posts.size,10);
+  const ctx=vm.createContext({Map,Set,Promise,Array,ME:'me',STATE:{favs:new Set()},CUR:{key:'home|'},UI:{},POSTS:[],LDM:{miss:new Set()},dmSession:()=>()=>true,accountSession:()=>()=>true,rerender(){},
+    POST:id=>posts.get(id),P:()=>null,apiPost:p=>{posts.set(p.id,p);return p;},apiProduct(){},API:{req:async(m,p,body)=>{assert.equal(m,'POST');assert.equal(p,'/content/resolve');active++;peak=Math.max(peak,active);await tick();active--;return {posts:body.refs.map(r=>({id:r.id})),products:[],unavailable:[],retry:[]};}}});
+  vm.runInContext(section('async function dmRefs(list','async function dmThreads(){'),ctx);
+  await ctx.dmRefs(Array.from({length:120},(_,i)=>({t:'post',ref:'p'+i})));assert.equal(peak,2);assert.equal(posts.size,120);
   let finish;const r=defer();let renders=0;ctx.rerender=()=>renders++;ctx.CUR.key='me|favs';ctx.dmRefs=()=>new Promise(res=>finish=res);ctx.API.req=()=>r.promise;
   vm.runInContext(section('async function liveFavs(){',"wrapAct('fav', async"),ctx);
   const task=ctx.liveFavs();r.resolve({posts:['a'],products:[]});await task;assert(ctx.STATE.favs.has('a'));assert.equal(renders,0,'liveFavs 已返回，补取还在后台');

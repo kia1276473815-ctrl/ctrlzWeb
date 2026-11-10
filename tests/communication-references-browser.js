@@ -32,7 +32,8 @@ async(page)=>{
       if(!await page.evaluate(({b,id})=>CHATS[b].find(m=>m.id===id)?.rc,{b,id:late.id}))throw Error('迟到分享校对覆盖了撤回');cases.push('late-reference-response-keeps-recall');
     }finally{release();await page.unroute('**/dm/with/*/references',handler);}
     const recovery=await peer.evaluate(async a=>{const p=await API.req('POST','/posts',{type:'text',title:'断网后恢复的分享卡片'}),m=await API.req('POST','/dm/with/'+a,{kind:'post',ref:p.id,clientMessageId:crypto.randomUUID()});return {postId:p.id,messageId:m.id};},a);
-    await page.route('**/posts/'+recovery.postId,route=>route.abort('failed'),{times:1});await page.evaluate(async b=>{await dmConv(b);dmPaint(b);},b);
+    const abortRecovery=async route=>{if(route.request().postDataJSON()?.refs?.some(r=>r.kind==='post'&&r.id===recovery.postId)){await route.abort('failed');await page.unroute('**/content/resolve',abortRecovery);}else await route.continue();};
+    await page.route('**/content/resolve',abortRecovery);await page.evaluate(async b=>{await dmConv(b);dmPaint(b);},b);
     if(await page.evaluate(id=>!!POST(id),recovery.postId))throw Error('合成断网未覆盖卡片补读');
     await page.evaluate(b=>CZCommunication.refreshReferences(b,true),b);await page.waitForFunction(id=>!!POST(id),recovery.postId);
     if(!(await page.locator('[data-dm="msg-'+recovery.messageId+'"]').textContent()).includes('断网后恢复的分享卡片'))throw Error('缺失分享卡片未恢复');cases.push('fresh-reference-retries-failed-card-hydration');

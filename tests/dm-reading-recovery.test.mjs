@@ -54,24 +54,25 @@ test('切账号后迟到会话读取不写缓存或已读状态',async()=>{
   const task=r.ctx.dmConv('peer');r.ctx.ME='another';finish(page([message('private-old')]));await task;assert.equal(calls.length,1);assert.equal(r.ctx.CHATS.peer,undefined);assert.equal(r.ctx.CHAT_UNREAD.peer,3);
 });
 test('分享引用网络失败不负缓存，同批重复引用只尝试一次，下一次成功恢复',async()=>{
-  let failed=true;const calls=[],r=realm({API:{on:()=>true,req:async(method,path)=>{calls.push(path);if(failed)throw Object.assign(Error('offline'),{code:'network'});return {id:'shared-post',title:'真实引用'};}}});
+  let failed=true;const calls=[],r=realm({API:{on:()=>true,req:async(method,path)=>{calls.push(path);if(failed)throw Object.assign(Error('offline'),{code:'network'});return {posts:[{id:'shared-post',title:'真实引用'}],products:[],unavailable:[],retry:[]};}}});
   const refs=[{t:'post',ref:'shared-post'},{t:'post',ref:'shared-post'}];await r.ctx.dmRefs(refs);assert.equal(calls.length,1);assert.equal(vm.runInContext("LDM.miss.has('shared-post')",r.ctx),false);
   failed=false;await r.ctx.dmRefs(refs);assert.equal(calls.length,2);assert.equal(r.ctx.POSTS.length,1);await r.ctx.dmRefs(refs);assert.equal(calls.length,2);
 });
-test('确实404的分享引用在会话内负缓存，取消/503/未知403保持可恢复',async()=>{
+test('明确不可用的引用负缓存，批次404/取消/503/403不误判目标',async()=>{
   for(const error of [{status:404,code:'not_found'},{code:'cancelled'},{status:503,code:'upstream'},{status:403,code:'forbidden'}]){
-    let calls=0;const r=realm({API:{on:()=>true,req:async()=>{calls++;throw Object.assign(Error('fixture'),error);}}});const refs=[{t:'post',ref:'ref'}];await r.ctx.dmRefs(refs);await r.ctx.dmRefs(refs);assert.equal(calls,error.status===404?1:2);
+    let calls=0;const r=realm({API:{on:()=>true,req:async()=>{calls++;throw Object.assign(Error('fixture'),error);}}});const refs=[{t:'post',ref:'ref'}];await r.ctx.dmRefs(refs);await r.ctx.dmRefs(refs);assert.equal(calls,2);assert.equal(vm.runInContext('LDM.miss.size',r.ctx),0);
   }
+  let calls=0;const r=realm({API:{on:()=>true,req:async()=>{calls++;return {posts:[],products:[],unavailable:[{kind:'post',id:'ref'}],retry:[]};}}});await r.ctx.dmRefs([{t:'post',ref:'ref'}]);await r.ctx.dmRefs([{t:'post',ref:'ref'}]);assert.equal(calls,1);assert(vm.runInContext("LDM.miss.has('post:ref')",r.ctx));
 });
 test('增量没有新消息时，之前临时失败的缓存分享仍会补取',async()=>{
   let gets=0,refCalls=0;const r=realm({CHAT_UNREAD:{peer:0},API:{on:()=>true,req:async(method,path)=>{
-    if(path.startsWith('/posts/')){if(++refCalls===1)throw Object.assign(Error('timeout'),{code:'timeout'});return {id:'shared-post',title:'恢复后的帖子'};}
+    if(path==='/content/resolve'){if(++refCalls===1)throw Object.assign(Error('timeout'),{code:'timeout'});return {posts:[{id:'shared-post',title:'恢复后的帖子'}],products:[],unavailable:[],retry:[]};}
     return page(gets++?[]:[message('shared',{kind:'post',ref:'shared-post',read:true})]);
   }}});
   await r.ctx.dmConv('peer');assert.equal(r.ctx.POSTS.length,0);await r.ctx.dmConv('peer');assert.equal(refCalls,2);assert.equal(r.ctx.POSTS[0].id,'shared-post');
 });
 test('分享补读换账号后迟到结果不能写入新账号或负缓存',async()=>{
-  for(const fail of [false,true]){let finish;const r=realm({API:{on:()=>true,req:()=>new Promise((res,rej)=>finish=fail?rej:res)}});const task=r.ctx.dmRefs([{t:'post',ref:'old-post'}]);r.ctx.ME='new';finish(fail?Object.assign(Error('gone'),{status:404}):{id:'old-post'});await task;assert.equal(r.ctx.POSTS.length,0);assert.equal(vm.runInContext('LDM.miss.size',r.ctx),0);}
+  for(const fail of [false,true]){let finish;const r=realm({API:{on:()=>true,req:()=>new Promise((res,rej)=>finish=fail?rej:res)}});const task=r.ctx.dmRefs([{t:'post',ref:'old-post'}]);await tick();assert.equal(typeof finish,'function');r.ctx.ME='new';finish(fail?Object.assign(Error('gone'),{status:404}):{posts:[{id:'old-post'}],products:[],unavailable:[],retry:[]});await task;assert.equal(r.ctx.POSTS.length,0);assert.equal(vm.runInContext('LDM.miss.size',r.ctx),0);}
 });
 test('本人已确认的文字/图片/帖子/商品分享两分钟内均有撤回入口',()=>{
   const ctx=vm.createContext({Date,RC_MS:120000,esc:String,POST:()=>null,P:()=>null,USERS:{},msgAv:()=>''});vm.runInContext(section('function bubble(m, uid){','function convBody(uid){'),ctx);

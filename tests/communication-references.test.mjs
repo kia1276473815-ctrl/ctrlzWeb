@@ -24,6 +24,14 @@ test('分享状态刚校对过也会重试缺失卡片的补读，避免暂时�
   const h=harness();h.ctx.CHATS.peer=[share('fresh',{_refCheckedAt:Date.now()})];await h.ctx.refreshReferences('peer',true);assert.equal(h.calls.length,0);assert.equal(h.hydrated.length,1);assert.equal(h.hydrated[0][0].ref,'old');
 });
 
+test('卡片补读发现目标已不可用时隐藏分享，已购下架商品的详情权益不等于仍可分享',async()=>{
+  for(const type of ['post','prod']){const h=harness();h.ctx.CHATS.peer=[share('m',{t:type})];h.ctx.P=()=>({status:'off'});h.ctx.dmRefs=async()=>new Map([[type+':current',type==='post'?'unavailable':'available']]);await h.ctx.refreshReferences('peer');assert.equal(h.ctx.CHATS.peer[0].ref,undefined,type);assert.equal(h.ctx.CHATS.peer[0].refState,'unavailable',type);assert.equal(h.ctx.CHATS.peer[0].read,false,type);assert.equal(h.ctx.LDM.since.peer,'stable-cursor',type);}
+});
+
+test('补读期间收到更新的消息可见性，不用旧卡片结果再次隐藏它',async()=>{
+  const h=harness();h.ctx.CHATS.peer=[share('m')];h.ctx.dmRefs=async()=>{h.ctx.CHATS.peer[0]._refCheckedAt=Date.now()+1000;return new Map([['post:current','unavailable']]);};await h.ctx.refreshReferences('peer');assert.equal(h.ctx.CHATS.peer[0].ref,'current');assert.equal(h.ctx.CHATS.peer[0].refState,'available');
+});
+
 test('账号切换后丢弃迟到校对，不继续后续批次或触碰新账号缓存',async()=>{
   const h=harness(),pending=defer();h.ctx.CHATS.peer=Array.from({length:201},(_,i)=>share('m'+i));h.ctx.API.req=async(method,path,body)=>{h.calls.push({body});return pending.promise;};
   const work=h.ctx.refreshReferences('peer');h.ctx.ME='new-account';h.ctx.CHATS.peer=[share('new-account-message')];pending.resolve({items:[{id:'m0',ref:null,body:'',refState:'unavailable'}]});await work;
