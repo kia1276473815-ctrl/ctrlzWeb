@@ -1094,6 +1094,9 @@ canvas[data-wave]:focus-visible{box-shadow:0 0 0 2px var(--on)}
 .cp-add{display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 14px;border-radius:999px;background:var(--paper);font-size:14px;font-weight:600;cursor:pointer;color:var(--ink);transition:background .15s}
 .cp-add:hover{background:var(--rule)}
 .cp-demo{font-size:12.5px;color:var(--ink-3);text-decoration:underline;text-underline-offset:3px;padding:0 4px}
+.cp-audio-error{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;font-size:14px;line-height:1.5;color:var(--ink-2)}
+.cp-audio-error span{flex:1 1 180px;overflow-wrap:anywhere}.cp-audio-error button{min-height:44px;flex:none}
+.cp-media-note{margin:8px 0 0;color:var(--ink-2);font-size:14px;line-height:1.5;overflow-wrap:anywhere}
 .cp.has-aud .cp-demo{display:none}
 .cp-add svg{width:18px;height:18px}
 .cp-imgs{display:flex;gap:8px;flex-wrap:wrap}
@@ -1104,11 +1107,12 @@ canvas[data-wave]:focus-visible{box-shadow:0 0 0 2px var(--on)}
 .cp-im.on::after{content:"封面";position:absolute;left:4px;bottom:4px;font:700 10px/1 var(--f-b);background:var(--ink);color:var(--paper);padding:3px 5px;border-radius:5px;pointer-events:none}
 .cp-im .x,.cp-chip .x{position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;background:rgba(20,20,24,.7);color:#fff;display:grid;place-items:center}
 .cp-im .x svg,.cp-chip .x svg{width:11px;height:11px}
-.cp-chip{position:relative;display:flex;align-items:center;gap:8px;min-height:40px;padding:0 36px 0 12px;border-radius:12px;background:var(--paper);font-size:13.5px;min-width:0}
+.cp-chip{position:relative;display:flex;align-items:center;gap:8px;min-height:48px;padding:0 56px 0 12px;border-radius:12px;background:var(--paper);font-size:14px;min-width:0}
 .cp-chip > svg{width:18px;height:18px;flex:none}
 .cp-chip span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cp-chip em{font-style:normal;color:var(--ink-3);font-variant-numeric:tabular-nums;margin-left:auto}
-.cp-chip .x{top:50%;margin-top:-10px;right:8px}
+.cp-chip .x{top:50%;margin-top:-22px;right:2px;width:44px;height:44px;background:transparent;color:var(--ink-2)}
+.cp-chip .x svg{width:16px;height:16px}
 .cp-chip + .cp-chip{margin-top:8px}
 .spin{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .7s linear infinite;margin-left:auto;flex:none}
 .cp-cover{display:grid;grid-template-columns:min(190px,46%) minmax(0,1fr);gap:16px;align-items:start;padding:14px;border-radius:16px;background:var(--paper)}
@@ -3506,12 +3510,15 @@ function peaksOf(chs, N, BINS=240){ const per = Math.max(1, Math.floor(N/BINS)),
 /* 用户上传的真实音频：解码 → 包络 → 和渲染出来的曲子一样可以播放、跳转 */
 function trackFromBuffer(key, buf, file=null){ const chs = []; for (let c = 0; c < buf.numberOfChannels; c++) chs.push(buf.getChannelData(c));
   const tr = {dur:buf.duration, bpm:120, events:[], peaks:peaksOf(chs, buf.length), buffer:buf, born:performance.now(), uploaded:true, file}; tr.pr = Promise.resolve(tr); TRACKS[key] = tr; return trackReady(key, tr); }
-async function trackFromFile(key, file){
+async function trackFromFile(key, file, {current = () => true, signal} = {}){
   return AudioResources.runDecode(async () => {
+  if (!current()) return null;
   const C = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!C) throw new Error('no audio');
-  const ab = await file.arrayBuffer(), ctx = new C(1, 2, 44100);
+  const ab = await file.arrayBuffer(); if (!current()) return null;
+  const ctx = new C(1, 2, 44100);
   const buf = await new Promise((res, rej) => { const r = ctx.decodeAudioData(ab, res, rej); if (r && r.then) r.then(res, rej); });
-  return trackFromBuffer(key, buf, file); }); }
+  // 原生解码开始后不能取消；归属检查必须先于缓存、波形和就绪事件的写入。
+  return current() ? trackFromBuffer(key, buf, file) : null; }, {signal}); }
 const fmtT = s => { s = Math.max(0, Math.round(s)); return Math.floor(s/60) + ':' + String(s % 60).padStart(2, '0'); };
 const FREQ = new Uint8Array(512), WAVE = new Uint8Array(1024);
 function readAudio(t){
@@ -5907,6 +5914,7 @@ function cancelUnusedTrack(id){ const tr = TRACKS['post:' + id]; if (!tr?.cancel
 function mountWaves(root){ onClean(waveLoop($$('canvas[data-wave]', root))); }
 const PEND = {id:null, n:0, ctrl:null};
 async function toggleAudio(id, at){
+  if (id === 'draft' && (UI.cp?.audio?.ld || UI.cp?.audio?.error || !TRACKS['post:draft']?.buffer)) return;
   if (typeof quickPlayPending !== 'undefined' && quickPlayPending != null){ quickPlayNonce++; quickPlayCtrl?.abort(); quickPlayCtrl = null; quickPlayPending = null; document.dispatchEvent(new CustomEvent('audio-priority-change')); }
   const own = 'post:' + id;
   if (at === undefined && GEN.owner === own && (GEN.on || GEN.pending)){ GEN.pending ? GEN.stop() : GEN.pause(); return; }
@@ -9495,36 +9503,38 @@ function cpCapture(C = UI.cp){
   if (!C) return;
   if (UI.cp === C && $('#cpWrap')){ C.title = $('#cTitle')?.value ?? C.title ?? ''; C.body = $('#cBody')?.value ?? C.body ?? ''; }
   return {title:C.title || '', body:C.body || '', imgs:C.imgs.map(x => ({file:x.file, h:x.h, uploadId:x.uploadId})).filter(x => x.file),
-    ci:C.ci, audio:C.audio ? {name:C.audio.name, file:C.audio.file, demo:!C.audio.file, uploadId:C.audio.uploadId} : null,
+    ci:C.ci, audio:C.audio ? {name:C.audio.name, file:C.audio.file, demo:!C.audio.file, uploadId:C.audio.uploadId, uploadSource:C.audio.uploadSource} : null,
     link:C.link, pal:C.pal, q:C.q, ttext:C.ttext, acov:C.acov, vis:{...C.vis}, attach:[...C.attach], res:!!C.res, requestKey:C.requestKey, requestSignature:C.requestSignature,mentions:C.mentions || [], savedAt:Date.now()};
 }
 function cpSave(C = UI.cp){
-  if (!C || C.restoring || C.published) return Promise.resolve(); const data = cpCapture(C), key = C.key;
+  if (!C || (C.restoring && !C.userEdited) || C.published) return Promise.resolve(); const data = cpCapture(C), key = C.key;
   CPSTORE.memory.set(key, data);
   const job = CPSTORE.queue.catch(() => {}).then(() => cpStoreOp('put', key, data)); CPSTORE.queue = job;
-  return job.catch(() => { if (!C.saveWarn){ C.saveWarn = true; toast('草稿暂时只能保留在本次页面，刷新前请检查浏览器存储空间', 'orange'); } });
+  return job.catch(() => { if (!C.saveWarn && UI.cp === C && !C.closed && C.key === cpStoreKey()){ C.saveWarn = true; toast('草稿暂时只能保留在本次页面，刷新前请检查浏览器存储空间', 'orange'); } });
 }
-function cpAutosave(){ const C = UI.cp; if (!C || C.restoring || C.published) return; cpCapture(C); clearTimeout(C.saveTimer); C.saveTimer = setTimeout(() => cpSave(C), 350); }
+function cpAutosave(){ const C = UI.cp; if (!C || (C.restoring && !C.userEdited) || C.published || C.closed) return; cpCapture(C); clearTimeout(C.saveTimer); C.saveTimer = setTimeout(() => cpSave(C), 350); }
 window.addEventListener('pagehide', () => { const C = UI.cp; if (C){ clearTimeout(C.saveTimer); cpSave(C); } });
 document.addEventListener('visibilitychange', () => { if (document.hidden && UI.cp){ clearTimeout(UI.cp.saveTimer); cpSave(UI.cp); } });
 async function cpForget(C){ C.published = true; clearTimeout(C.saveTimer); CPSTORE.memory.delete(C.key);
   await (CPSTORE.queue = CPSTORE.queue.catch(() => {}).then(() => cpStoreOp('delete', C.key))).catch(() => {});
 }
 async function cpRestore(C){
+  const panel = $('#cpWrap');
   let d; try { d = await cpStoreOp('get', C.key); } catch(_){} d ||= CPSTORE.memory.get(C.key);
-  if (UI.cp !== C || !$('#cpWrap')){ C.restoring = false; return; }
+  if (UI.cp !== C || !panel || $('#cpWrap') !== panel || C.closed || C.key !== cpStoreKey()){ C.restoring = false; return; }
   if (C.userEdited){ C.restoring = false; cpRender(); return; }
   if (d){ Object.assign(C, d, {imgs:(d.imgs || []).map(x => ({...x, url:URL.createObjectURL(x.file)})), attach:new Set(d.attach || []), restoring:false});
-    const audio = d.audio; C.audio = null; drawCompose(); if (audio){ await cpAddAudio(audio.file, audio.demo); if (UI.cp === C && C.audio) C.audio.uploadId = audio.uploadId; }
-    if (UI.cp === C) toast('已恢复未发布的草稿', 'blue'); }
-  C.restoring = false; if (UI.cp === C) cpRender();
+    const audio = d.audio; C.audio = null; drawCompose(); if (audio) await cpAddAudio(audio.file, audio.demo, {restored:true, uploadId:audio.uploadId, uploadSource:audio.uploadSource});
+    if (UI.cp === C && !C.closed && $('#cpWrap') === panel && C.key === cpStoreKey()) toast('已恢复未发布的草稿', 'blue'); }
+  C.restoring = false; if (UI.cp === C && !C.closed && $('#cpWrap') === panel && C.key === cpStoreKey()) cpRender();
 }
 function composeSheet(mode){
   if (UI.cp?.busy){ toast('作品正在发布，完成后可以继续', 'blue'); return; }
+  if (UI.cp) cpCancelAudio(UI.cp);
   const C = UI.cp = {mode:'post', imgs:[], ci:0, audio:null, link:'', pal:'paper', q:null, ttext:false, acov:'wave', vis:{tpl:'dots', pal:'pb'}, attach:new Set(), title:'', body:'', key:cpStoreKey(), restoring:true};
   delete TRACKS['post:draft'];
   sheet(`<div class="cp-top"><h3>发布</h3></div><div id="cpWrap"></div>`,
-    () => () => { if (GEN.owner?.endsWith('draft')) GEN.stop(); clearTimeout(C.saveTimer); cpSave(C); if (cpRender._wl){ cpRender._wl(); cpRender._wl = null; }
+    () => () => { C.closed = true; cpCancelAudio(C); clearTimeout(C.saveTimer); cpSave(C); if (cpRender._wl){ cpRender._wl(); cpRender._wl = null; }
       // 草稿存的是 File，下次打开重新生成地址，这批可以放掉：等面板退场播完（影子还在显示），发布中的不动，原型发布后帖子还在用的也不动
       setTimeout(() => { if (!C.busy) C.imgs.forEach(im => { if (!POSTS.some(p => p.img === im.url || p.imgs?.includes(im.url))) URL.revokeObjectURL(im.url); }); }, 1000); });
   $('#layer .sheet').classList.add('cp'); drawCompose(); cpRestore(C);
@@ -9556,7 +9566,7 @@ function drawCompose(){
   $('#cBody').addEventListener('paste', () => setTimeout(upd, 0));
   $('#cLink').addEventListener('input', e => { C.link = e.target.value.trim(); upd(); });
   $('#cpImg').addEventListener('change', e => cpAddImages([...e.target.files]));
-  $('#cpAud').addEventListener('change', e => e.target.files[0] && cpAddAudio(e.target.files[0]));
+  $('#cpAud').addEventListener('change', e => { const file = e.target.files[0]; e.target.value = ''; if (file) cpAddAudio(file); });
   setTimeout(() => $('#cBody')?.focus(), 80); cpRender(); cpResRender();
 }
 /* 附上用到的素材：开关打开后才展开；站内搜索 + 紧凑列表（小封面 + 名字），已购买的排在最前 */
@@ -9589,22 +9599,46 @@ function cpResListRender(){
   el.innerHTML = L.map(p => { const r = rank(p), h = !C.rq && r !== last ? `<div class="rh">${head[r]}</div>` : ''; last = r; return h + cpResRow(p); }).join('');
   el.scrollTop = st;
 }
+function cpAudioSource(file, demo){ return JSON.stringify(demo ? ['demo-lofi', 1] : [file?.name, file?.type, file?.size, file?.lastModified]); }
 function cpAddImages(files){ const C = UI.cp;
-  files.filter(f => /^image\//.test(f.type)).slice(0, 9 - C.imgs.length).forEach(f => { const url = URL.createObjectURL(f), im = new Image(); const it = {url, h:1, file:f}; C.imgs.push(it); im.onload = () => { it.h = clamp(im.naturalHeight/im.naturalWidth, .7, 1.4); if (UI.cp === C) cpRender(); }; im.src = url; });
+  if (!C || C.closed || C.busy || C.published || C.key !== cpStoreKey()) return;
+  const picked = files.filter(f => /^image\//.test(f.type)).slice(0, 9 - C.imgs.length); if (!picked.length) return; C.userEdited = true;
+  picked.forEach(f => { const url = URL.createObjectURL(f), im = new Image(); const it = {url, h:1, file:f}; C.imgs.push(it); im.onload = () => { it.h = clamp(im.naturalHeight/im.naturalWidth, .7, 1.4); if (UI.cp === C && !C.closed && C.key === cpStoreKey()) cpRender(); }; im.src = url; });
   C.ttext = false; cpRender(); }
-async function cpAddAudio(file, demo){ const C = UI.cp; C.audio = {name: demo ? '示例音频 · lo-fi' : file.name, ld:true, file: demo ? null : file}; cpRender();
-  try { if (demo){ delete TRACKS['cp-demo']; const tr = await renderTrack('cp-demo', {bars:8, bpm:88, opts:{style:'lofi', seed:5}, arr:b => ({d: b < 1 ? 0 : 1, b:1, p:1})}); if (!tr?.buffer) throw new Error('demo audio unavailable'); TRACKS['post:draft'] = tr; }
-        else await trackFromFile('post:draft', file);
-        if (!UI.cp || UI.cp !== C) return; C.audio.ld = false; }
-  catch(e){ C.audio = null; toast('这个音频文件读不出来，换一个试试', 'orange'); }
-  cpRender(); }
+function cpCancelAudio(C){
+  C.audioJob?.abort(); C.audioJob = null;
+  if (UI.cp !== C) return;
+  if (GEN.owner === 'post:draft') GEN.stop();
+  if (PEND.id === 'draft'){ PEND.ctrl?.abort(); PEND.ctrl = null; PEND.id = null; PEND.n++; }
+  delete TRACKS['post:draft'];
+}
+async function cpAddAudio(file, demo, {restored = false, uploadId, uploadSource} = {}){
+  const C = UI.cp, panel = $('#cpWrap'); if (!C || !panel || C.closed || C.busy || C.published || C.key !== cpStoreKey() || (!demo && !file)) return;
+  cpCancelAudio(C); if (!restored) C.userEdited = true;
+  // 旧版草稿的上传ID未记录文件归属；保留原File并重传，避免沿用曾被竞态错配的ID。
+  const audio = C.audio = {name:demo ? '示例音频 · lo-fi' : file.name, ld:true, file:demo ? null : file, ...(uploadId && uploadSource === cpAudioSource(file, demo) ? {uploadId, uploadSource} : {})};
+  const scope = cpStoreKey(), epoch = API.epoch, controller = C.audioJob = new AbortController();
+  const current = () => !controller.signal.aborted && UI.cp === C && C.audio === audio && !C.closed && !C.published && panel.isConnected && $('#cpWrap') === panel && cpStoreKey() === scope && API.epoch === epoch;
+  const demoKey = demo ? 'cp-demo:' + crypto.randomUUID() : null; cpRender();
+  try {
+    let tr;
+    if (demo){ tr = await renderTrack(demoKey, {bars:8, bpm:88, opts:{style:'lofi', seed:5}, arr:b => ({d:b < 1 ? 0 : 1, b:1, p:1})});
+      if (!current()) return; if (tr?.buffer) TRACKS['post:draft'] = tr;
+    } else tr = await trackFromFile('post:draft', file, {current, signal:controller.signal});
+    if (!current()) return; if (!tr?.buffer) throw new Error('音频解码不可用'); audio.ld = false;
+  } catch(e){ if (!current()) return; audio.ld = false; audio.error = '音频暂时无法读取，文件仍在草稿里'; }
+  finally { if (demoKey) delete TRACKS[demoKey]; if (C.audioJob === controller) C.audioJob = null; }
+  if (current()) cpRender();
+}
 function cpRender(){
   const C = UI.cp, box = $('#cpCover'), att = $('#cpAtt'); if (!box) return;
   const k = cpKind(), d = cpDraft(), [kn, kc] = KIND[k]; $('#layer .sheet')?.classList.toggle('has-aud', !!C.audio);
+  const mediaConflict = !!C.audio && C.imgs.length > 0;
   // 附件
   att.innerHTML = (C.imgs.length ? `<div class="cp-imgs">${C.imgs.map((im, i) => `<div class="cp-im ${i === C.ci && !C.ttext ? 'on' : ''}"><button data-act="cp-ci" data-i="${i}" aria-label="设为封面"><img src="${im.url}" alt=""></button><button class="x" data-act="cp-rmimg" data-i="${i}" aria-label="移除">${IC.x}</button></div>`).join('')}</div>` : '')
-    + (C.audio ? `<div class="cp-chip">${IC.wave}<span>${esc(C.audio.name)}</span>${C.audio.ld ? '<i class="spin"></i>' : `<em>${d.dur}</em>`}<button class="x" data-act="cp-rmaud" aria-label="移除">${IC.x}</button></div>` : '')
+    + (C.audio ? `<div class="cp-chip">${IC.wave}<span>${esc(C.audio.name)}</span>${C.audio.ld ? '<i class="spin" role="status" aria-label="正在读取音频"></i>' : C.audio.error ? '' : `<em>${d.dur}</em>`}<button class="x" data-act="cp-rmaud" aria-label="移除音频">${IC.x}</button></div>${C.audio.error ? `<div class="cp-audio-error" role="status"><span>${esc(C.audio.error)}</span><button class="chip" data-act="cp-retryaud">重试读取</button></div>` : ''}` : '')
     + (detectPlat(cpLink()) ? `<div class="cp-chip">${IC.link}<span>${detectPlat(cpLink())} · ${esc(cpLink().replace(/^https?:\/\//, '').slice(0, 34))}</span><button class="x" data-act="cp-rmlink" aria-label="移除">${IC.x}</button></div>` : '');
+  if (mediaConflict) att.innerHTML += '<p class="cp-media-note" id="cpMediaConflict" role="status">这篇草稿同时有图片和声音，请移除其中一种后再发布。</p>';
   // 封面选项
   let opts = '';
   if (k === 'text') opts = `<div class="cp-pals">${Object.entries(TC_PALS).map(([key, [bg, ac, n]]) => `<button class="${C.pal === key ? 'on' : ''}" data-act="cp-pal" data-v="${key}" style="--b:${bg};--a:${INK[ac]}" aria-label="${n}"><i></i></button>`).join('')}</div>`;
@@ -9614,9 +9648,10 @@ function cpRender(){
   if (k === 'question' || (k === 'text' && C.q === false)) opts += `<button class="chip" data-act="cp-q" data-v="${k === 'question' ? 0 : 1}">${k === 'question' ? '不是提问，按图文发' : '其实是提问'}</button>`;
   if (k === 'video') opts = `<span class="mut2 cp-note">封面和时长会从链接里取</span>`;
   const empty = !cpTitle() && !C.imgs.length && !C.audio && !detectPlat(cpLink());
-  box.innerHTML = `<div class="cp-pv">${postCard(d)}</div><div class="cp-side"><span class="cp-kind c-${kc}"><i></i>${empty ? '封面预览' : kn}</span>${empty ? '' : opts}</div>`;
-  if (!C.audio) { if (!empty) {} } else if (!C.audio.ld) PCLEAN_CP();
-  const pub = $('#cpPub'); if (pub){ pub.disabled = empty || !!C.audio?.ld || C.busy || C.restoring; pub.textContent = C.busy ? C.progress || '发布中…' : C.restoring ? '正在读取草稿…' : empty ? '发布' : '发布' + kn; }
+  const audioUnavailable = C.audio && (C.audio.ld || C.audio.error);
+  box.innerHTML = `<div class="cp-pv"${audioUnavailable ? ' inert aria-disabled="true"' : ''}>${postCard(d)}</div><div class="cp-side"><span class="cp-kind c-${kc}"><i></i>${empty ? '封面预览' : kn}</span>${empty ? '' : opts}</div>`;
+  if (cpRender._wl){ cpRender._wl(); cpRender._wl = null; } if (C.audio && !audioUnavailable) PCLEAN_CP();
+  const pub = $('#cpPub'); if (pub){ pub.disabled = empty || !!audioUnavailable || mediaConflict || C.busy || C.restoring; if (mediaConflict) pub.setAttribute('aria-describedby', 'cpMediaConflict'); else pub.removeAttribute('aria-describedby'); pub.textContent = C.busy ? C.progress || '发布中…' : C.restoring ? '正在读取草稿…' : empty ? '发布' : '发布' + kn; }
   cpAutosave();
   syncLive(); document.dispatchEvent(new CustomEvent('gen'));
 }
@@ -9627,8 +9662,9 @@ Object.assign(ACTIONS, {
   'cp-link': () => { const r = $('#cpLinkRow'); r.hidden = !r.hidden; if (!r.hidden) $('#cLink').focus(); },
   'cp-rmlink': () => { UI.cp.link = ''; const l = $('#cLink'); if (l) l.value = ''; const b = $('#cBody'); if (b) b.value = b.value.replace(URL_RE, '').trim(); cpRender(); },
   'cp-ci': b => { UI.cp.ci = +b.dataset.i; UI.cp.ttext = false; cpRender(); },
-  'cp-rmimg': b => { const C = UI.cp, i = +b.dataset.i; URL.revokeObjectURL(C.imgs[i].url); C.imgs.splice(i, 1); C.ci = Math.min(C.ci, Math.max(0, C.imgs.length - 1)); cpRender(); },
-  'cp-rmaud': () => { if (GEN.owner?.endsWith('draft')) GEN.stop(); UI.cp.audio = null; delete TRACKS['post:draft']; cpRender(); },
+  'cp-rmimg': b => { const C = UI.cp, i = +b.dataset.i; if (C.busy || !C.imgs[i]) return; C.userEdited = true; URL.revokeObjectURL(C.imgs[i].url); C.imgs.splice(i, 1); C.ci = Math.min(C.ci, Math.max(0, C.imgs.length - 1)); cpRender(); },
+  'cp-rmaud': () => { const C = UI.cp; if (!C || C.busy) return; C.userEdited = true; cpCancelAudio(C); C.audio = null; cpRender(); },
+  'cp-retryaud': () => { const a = UI.cp?.audio; if (a?.error) return cpAddAudio(a.file, !a.file, {uploadId:a.uploadId, uploadSource:a.uploadSource}); },
   'cp-demo': () => cpAddAudio(null, true),
   'cp-pal': b => { UI.cp.pal = b.dataset.v; cpRender(); },
   'cp-ttext': () => { UI.cp.ttext = !UI.cp.ttext; cpRender(); },
@@ -9643,7 +9679,7 @@ Object.assign(ACTIONS, {
   'cp-prod': b => { const g = b.dataset.v; UI.up.cat = g === 'visual' ? 'visual' : 'sample'; UI.up.tpl = CATS[UI.up.cat].tpl; UI.up.group = g; closeSheet(); UI.sellerTab = 'upload'; go('seller-upload'); },
   'cp-publish': () => {
     const C = UI.cp, d = cpDraft(), k = cpKind(), n = POSTS.length + 1, id = 's' + (90 + n);
-    if (C.audio?.ld) return;
+    if (C.audio?.ld || C.audio?.error || (C.audio && C.imgs.length)) return;
     const ck = speakOk(d.title + ' ' + (d.ex || '') + ' ' + cpRest()); if (!ck) return;
     const p = {...d, id, qn:String(18 + n).padStart(3, '0'), tags:[k === 'question' ? '提问' : '新作品'], seed:n};
     if (p.tcover) p.tcover = {...p.tcover};
@@ -10485,7 +10521,10 @@ wrapAct('cmt-dgo', async (orig, b, e) => {
 /* 发帖：声音 / 可视化帖子把音频真的传上去（浏览器认不出的格式转成 WAV），封面样式和时长放在 style 里 */
 wrapAct('cp-publish', async (orig, b, e) => {
   if (!liveUser()){ const C = UI.cp, first = POSTS[0]; orig(b, e); if (POSTS[0] !== first && C) await cpForget(C); return; }
-  const C = UI.cp; if (!C || C.busy || C.restoring || C.audio?.ld || !canSpeak()) return;
+  const C = UI.cp; if (!C || C.busy || C.restoring || C.audio?.ld || C.audio?.error || (C.audio && C.imgs.length) || !canSpeak()) return;
+  const panel = $('#cpWrap'), scope = cpStoreKey(), epoch = API.epoch;
+  const current = () => UI.cp === C && !C.closed && $('#cpWrap') === panel && panel?.isConnected !== false && scope === cpStoreKey() && API.epoch === epoch && liveUser();
+  if (C.key !== scope || !current()) return;
   cpCapture(C); const p = cpDraft(), k = cpKind(), afile = C.audio?.file, snd = k === 'audio' || k === 'vis', tr = snd ? TRACKS['post:draft'] : null;
   if (!cpTitle() && !C.imgs.length && !C.audio && !detectPlat(cpLink())) return;
   const type = snd ? 'audio' : p.tcover ? 'text' : p.type === 'question' ? 'question' : p.type === 'image' ? 'image' : 'video';
@@ -10496,31 +10535,36 @@ wrapAct('cp-publish', async (orig, b, e) => {
   const signature = JSON.stringify([type, p.title, text, tags, style, mentions, C.ci, C.imgs.map(x => [x.file?.name, x.file?.size, x.file?.lastModified]), afile ? [afile.name, afile.size, afile.lastModified] : C.audio?.name]);
   if (C.requestSignature !== signature){ C.requestKey = crypto.randomUUID(); C.requestSignature = signature; }
   C.busy = true; $('#cpWrap')?.setAttribute('inert', ''); b.disabled = true;
-  const progress = t => { C.progress = t; if (b.isConnected) b.textContent = t; };
-  await cpSave(C);
+  const progress = t => { C.progress = t; if (current() && b.isConnected) b.textContent = t; };
   try {
+    await cpSave(C); if (!current()) return;
     const uploadIds = [];
     if (snd){ if (C.audio.uploadId && !await liveEnsureUpload(C.audio.uploadId)) C.audio.uploadId = null;
+      if (!current()) return;
       if (!tr?.buffer && !C.audio.uploadId) throw new Error('音频还没处理好，稍等一下再发'); progress('正在上传音频…');
-      C.audio.uploadId ||= (await liveUpload(afile && AUD_MIME.test(afile.type) ? afile : wavBlob(tr.buffer), 'post_audio', {duration:tr.dur,peaks:Array.from(tr.peaks)})).id;
-      uploadIds.push(C.audio.uploadId); await cpSave(C); }
+      C.audio.uploadId ||= (await liveUpload(afile && AUD_MIME.test(afile.type) ? afile : wavBlob(tr.buffer), 'post_audio', {duration:tr.dur,peaks:Array.from(tr.peaks)}, {current})).id;
+      C.audio.uploadSource = cpAudioSource(afile, !afile);
+      await cpSave(C); if (!current()) return; uploadIds.push(C.audio.uploadId); }
     const images = type === 'image' ? [C.imgs[C.ci], ...C.imgs.filter((_, i) => i !== C.ci)].filter(Boolean) : [];
     for (const [i, im] of images.entries()){
       progress(`正在上传图片 ${i + 1} / ${C.imgs.length}…`);
       if (im.uploadId && !await liveEnsureUpload(im.uploadId)) im.uploadId = null;
-      im.uploadId ||= (await liveUpload(im.file || await (await fetch(im.url)).blob(), 'post_image')).id;
-      uploadIds.push(im.uploadId); await cpSave(C);
+      if (!current()) return;
+      im.uploadId ||= (await liveUpload(im.file || await (await fetch(im.url)).blob(), 'post_image', undefined, {current})).id;
+      await cpSave(C); if (!current()) return; uploadIds.push(im.uploadId);
     }
     progress('正在提交作品…');
     const r = await API.req('POST', '/posts', {type, title:p.title, body:text, tags, uploadIds, style, mentions, requestKey:C.requestKey});
+    if (!current()) return;
     const np = apiPost(r); const exists = POSTS.findIndex(x => x.id === np.id); if (exists >= 0) POSTS.splice(exists, 1); POSTS.unshift(np);
     if (snd && tr){ TRACKS['post:' + np.id] = tr; delete TRACKS['post:draft']; }
     await cpForget(C); C.imgs.forEach(im => URL.revokeObjectURL(im.url));
+    if (!current()) return;
     if (UI.cp === C) closeSheet(); UI.feed = {type:'all', cat:'all', tag:null, sort:'new'};
     toast(np.review ? '已提交审核，通过后大家才能看到；现在只有你自己看得到' : '发出去了 · ' + KIND[k][0], np.review ? 'orange' : 'pink');
     if (CUR.key === 'feed|') rerender(); else go('feed');
-  } catch(err){ await cpSave(C); apiFail(err); }
-  finally { C.busy = false; C.progress = ''; if (UI.cp === C){ $('#cpWrap')?.removeAttribute('inert'); cpRender(); } }
+  } catch(err){ await cpSave(C); if (current()) apiFail(err); }
+  finally { C.busy = false; C.progress = ''; if (UI.cp === C && $('#cpWrap') === panel){ panel?.removeAttribute('inert'); if (current()) cpRender(); else if (b.isConnected){ b.disabled = true; b.textContent = '账号已变化，请重新打开发帖'; } } }
 });
 wrapAct('post-esave', async (orig, b, e) => {
   const id = b.dataset.id; orig(b, e); const p = POST(id); if (!p?.live || !liveUser()) return;
@@ -10765,11 +10809,13 @@ async function liveMine(){
 /* —— 上传：先要地址，再直传（本机是 /files/…，线上是对象存储） —— */
 const PROD_MIME = /^(application\/(zip|x-zip-compressed|octet-stream)|audio\/(wav|x-wav)|video\/(mp4|quicktime))$/;
 async function liveUpload(file, purpose, audioMeta, options = {}){
+  const {current:owner = () => true, ...requestOptions} = options, base = API.base, epoch = API.epoch;
+  const current = () => { if (API.base !== base || API.epoch !== epoch || !owner()) throw Object.assign(new Error('上传所属账号或面板已变化，草稿仍保留'), {code:'cancel'}); }; current();
   const mime = purpose === 'product_file' ? (PROD_MIME.test(file.type) ? file.type : 'application/octet-stream') : (file.type || 'application/octet-stream');
-  const opts = {timeoutMs:120000, ...options}, up = await API.req('POST', '/uploads', {purpose, mime, size:file.size}, true, opts);
+  const opts = {timeoutMs:120000, ...requestOptions}, up = await API.req('POST', '/uploads', {purpose, mime, size:file.size}, true, opts); current();
   /* 直传时限按文件大小算，再小也给够 opts.timeoutMs。这是硬上限，按 96KB/s 留余量：真实 1Mbps 扣掉协议开销约 119KB/s。以前一律 2 分钟，手机上超过 30MB 就传不完 */
   const put = await requestFetch(up.uploadUrl, {method:'PUT', headers:up.headers, body:file}, {...opts, timeoutMs:Math.max(opts.timeoutMs, file.size / (96 * 1024) * 1000)});
-  if (!put.ok) throw new Error('文件上传失败，请重试'); await API.req('POST', `/uploads/${encodeURIComponent(up.id)}/complete`, audioMeta ? {audioMeta} : undefined, true, opts); return up;
+  current(); if (!put.ok) throw new Error('文件上传失败，请重试'); await API.req('POST', `/uploads/${encodeURIComponent(up.id)}/complete`, audioMeta ? {audioMeta} : undefined, true, opts); current(); return up;
 }
 async function liveEnsureUpload(id){
   try { await API.req('POST', `/uploads/${encodeURIComponent(id)}/complete`); return true; }
