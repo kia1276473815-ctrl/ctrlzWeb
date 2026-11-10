@@ -865,8 +865,8 @@ footer p{font-size:13px;color:var(--ink-3);text-align:right;line-height:1.8}
   .post{height:100%;border-radius:0;display:block;overflow-y:auto}
   .post .media{aspect-ratio:1;max-height:62vh}
   .post .side{min-height:auto}
-  .post .scroll{overflow:visible;padding-bottom:90px}
-  .post:has(.foot.cmt-replying) .scroll{padding-bottom:144px}
+  .post .scroll{overflow:visible;padding-bottom:max(90px,calc(var(--comment-composer-height,66px) + 24px))}
+  .post:has(.foot.cmt-replying) .scroll{padding-bottom:max(144px,calc(var(--comment-composer-height,120px) + 24px))}
   .post .foot{position:fixed;left:0;right:0;bottom:0;z-index:6}
   .player{bottom:calc(var(--tbh) + 14px + env(safe-area-inset-bottom,0px))}
   body:has(.buybar) .player{bottom:calc(var(--tbh) + var(--bbh) + 16px + env(safe-area-inset-bottom,0px))}
@@ -915,8 +915,8 @@ footer p{font-size:13px;color:var(--ink-3);text-align:right;line-height:1.8}
   .ov{padding:0}
   .post{height:100%;border-radius:0;display:block;overflow-y:auto}
   .post .media{height:70vh}
-  .post .scroll{overflow:visible;padding-bottom:90px}
-  .post .foot{position:sticky;bottom:0;z-index:6}
+  .post .scroll{overflow:visible;padding-bottom:max(90px,calc(var(--comment-composer-height,66px) + 24px))}
+  .post .foot{position:fixed;left:0;right:0;bottom:0;width:100%;max-width:1200px;margin-inline:auto;z-index:6}
   .navp{display:none}
 }
 .ph h1,.prof h1,.shopband .x,footer .x{white-space:nowrap}
@@ -2626,7 +2626,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 }
 </style>
 
-<link rel="stylesheet" href="scripts/communication.css?v=20261110-r7">
+<link rel="stylesheet" href="scripts/communication.css?v=20261110-r8">
 </head>
 <body>
 
@@ -6462,10 +6462,19 @@ function closePostLayer(){ inputDraftSave($('#cmtIn')); PCLEAN.forEach(f => { tr
    · 打字时小球被震得轻轻跳一下；点小球照常能用（不收键盘）；失焦后弹簧回到原位
    · 「减少动效」时不做物理，图标淡出 / 淡入 ===== */
 const DK = {st:null, tap:0}, DK_HOME = 420;   // 小球回家的时长（毫秒）
-function autoGrow(t){ if (!t) return; t.style.height = 'auto'; const h = Math.min(t.scrollHeight, 134); t.style.height = h + 'px'; t.style.overflowY = t.scrollHeight > 134 ? 'auto' : 'hidden'; }
+function autoGrow(t){ if (!t) return; const top=t.scrollTop,border=Math.max(0,t.offsetHeight-t.clientHeight);t.style.height = 'auto'; const h = Math.min(t.scrollHeight+border, 134); t.style.height = h + 'px'; t.style.overflowY = t.scrollHeight > t.clientHeight+1 ? 'auto' : 'hidden';t.scrollTop=top; }
+// 宽度、字体和输入栏高度变化合并到下一帧；高度反馈不再次触发长高，避免观察器循环。
+function watchEditorSize(t,grow=true){
+  if(!t||t.tagName!=='TEXTAREA')return;if(typeof ResizeObserver!=='function'){if(!grow)t.style.overflowY='auto';return;}if(t._editorSize){t._editorSize.refresh(true);return;}
+  const foot=t.closest?.('.post .foot'),post=foot?.closest('.post');let frame=0,width=-1,measure=false,alive=true;
+  const dispose=()=>{if(!alive)return;alive=false;cancelAnimationFrame(frame);observer.disconnect();t.removeEventListener('input',input);document.fonts?.removeEventListener('loadingdone',input);if(post?._composerOwner===t){delete post._composerOwner;post.style.removeProperty('--comment-composer-height');}if(t._editorSize===record)delete t._editorSize;};
+  const refresh=resize=>{if(!alive)return;measure ||=!!resize;if(frame)return;frame=requestAnimationFrame(()=>{frame=0;if(!t.isConnected){dispose();return;}if(!t.clientWidth)return;const update=measure;measure=false;if(grow&&update)autoGrow(t);if(!grow)t.style.overflowY='auto';if(post?.isConnected&&post._composerOwner===t){const height=foot.offsetHeight+'px';if(post.style.getPropertyValue('--comment-composer-height')!==height)post.style.setProperty('--comment-composer-height',height);}});};
+  const input=()=>refresh(true),observer=new ResizeObserver(entries=>{if(!t.isConnected){dispose();return;}let resize=false;for(const entry of entries)if(entry.target===t&&entry.contentRect.width>0&&entry.contentRect.width!==width){width=entry.contentRect.width;resize=true;}refresh(resize);}),record=t._editorSize={refresh,dispose};
+  if(post)post._composerOwner=t;observer.observe(t);if(foot)observer.observe(foot);t.addEventListener('input',input);document.fonts?.addEventListener('loadingdone',input);refresh(true);
+}
 // 输入框通用绑定：自动长高、回车发送（输入法组字时不发，Shift+回车换行）、聚焦挤走图标
 function composer(t, send){
-  if (!t) return; const box = t.parentNode, dk = $('.cdock', box);
+  if (!t) return;globalThis.watchEditorSize?.(t); const box = t.parentNode, dk = $('.cdock', box);
   t.addEventListener('input', () => { autoGrow(t); dockJolt(); });
   t.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229){ e.preventDefault(); send(); } });
   if (!dk) return;
@@ -6643,7 +6652,7 @@ function renderPost(id, fresh){
   PCLEAN.push(waveLoop($$('canvas[data-wave]', root)));
   syncLive();
   document.dispatchEvent(new CustomEvent('gen'));
-  const inp = $('#cmtIn'); composer(inp, () => ACTIONS.cmt($('[data-act="cmt"]'))); inputDraftBind(inp,'comment',id);
+  const inp = $('#cmtIn'); composer(inp, () => ACTIONS.cmt($('[data-act="cmt"]'))); inputDraftBind(inp,'comment',id);globalThis.CZCommunication?.attachEditor?.(inp);
   // 点赞 / 收藏等重绘后：保留没发出去的文字和焦点，小球接着在原来的位置滚
   if (csnap){ inp.value = csnap.v; autoGrow(inp); if (csnap.f){ inp.focus({preventScroll:true}); if (csnap.b && DK.st && DK.st.t === inp){ dockEnd(DK.st); } if (csnap.b) dockOn(inp.parentNode, inp, $('.cdock', inp.parentNode), csnap.b); } }
 }
@@ -13033,7 +13042,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { coverFontDrop(); if (!CUR.post) rerender(); });
 })();
 </script>
-<script src="scripts/communication.js?v=20261110-r7"></script>
+<script src="scripts/communication.js?v=20261110-r8"></script>
 
 <script src="scripts/oauth-v1.js?v=20261110-1"></script>
 </body>
