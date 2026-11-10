@@ -6,12 +6,19 @@ import {test} from 'node:test';
 import {installTrade} from './trade-fixture.mjs';
 
 const source = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8').replace(/\r\n/g,'\n');
-const permsSource = fs.readFileSync(new URL('../../ctrlz-server/src/modules/admin/perms.ts', import.meta.url), 'utf8');
+// 前端单仓测试使用契约夹具；后端 CI 显式传入当前权限源码，严格核对夹具没有漂移。
+const backendPerms = JSON.parse(fs.readFileSync(new URL('./admin-permissions.fixture.json', import.meta.url), 'utf8'));
+if (process.env.CTRLZ_ADMIN_PERMS_FILE) {
+  test('后台权限契约与本次后端源码逐项一致', () => {
+    const permsSource = fs.readFileSync(process.env.CTRLZ_ADMIN_PERMS_FILE, 'utf8');
+    const actual = Object.fromEntries([...permsSource.matchAll(/^\s*'([^']+)':\s*\[([^\]]+)\]/gm)].map(([,p,rs])=>[p,[...rs.matchAll(/'([^']+)'/g)].map(x=>x[1])]));
+    assert.deepEqual(actual, backendPerms);
+  });
+}
 const section = (a,b) => { const start = source.indexOf(a), end = source.indexOf(b,start+a.length); assert(start >= 0 && end > start,a); return source.slice(start,end); };
 const defer = () => { let resolve,reject; const promise = new Promise((a,b) => {resolve=a;reject=b;}); return {promise,resolve,reject}; };
 const tick = async () => { for (let i=0;i<24;i++) await Promise.resolve(); };
 const response = (status=200,value={ok:true}) => ({status,ok:status>=200 && status<300,headers:{get:()=>'application/json'},json:async()=>value});
-const backendPerms = Object.fromEntries([...permsSource.matchAll(/^\s*'([^']+)':\s*\[([^\]]+)\]/gm)].map(([,p,rs])=>[p,[...rs.matchAll(/'([^']+)'/g)].map(x=>x[1])]));
 const permsOf = role => Object.keys(backendPerms).filter(p=>backendPerms[p].includes(role));
 const staffInfo = (id='super',role='super') => ({id,name:id,email:id+'@test',role,enabled:true});
 
