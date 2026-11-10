@@ -2644,6 +2644,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 
 <link rel="stylesheet" href="scripts/communication.css?v=20261111-r13">
 <link rel="stylesheet" href="scripts/favorites.css?v=20261111-2">
+<link rel="stylesheet" href="scripts/dm-voice.css?v=20261111-4">
 </head>
 <body>
 
@@ -2685,7 +2686,8 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 <div class="toasts" id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
 
 <script src="scripts/audio-cache.js?v=20261011"></script>
-<script src="scripts/dm-outbox.js"></script>
+<script src="scripts/dm-outbox.js?v=20261111-voice1"></script>
+<script src="scripts/dm-voice-core.js?v=20261111-2"></script>
 <script src="vendor/qrcodegen.js"></script>
 <script src="scripts/harmony-loader.js?v=20261012"></script>
 <script src="scripts/native-video-v1.js?v=20261111-2"></script>
@@ -8158,7 +8160,7 @@ Object.assign(ACTIONS, {
 /* ================= 私信 ================= */
 const unreadTotal = () => (ntOn('dm') ? Object.entries(CHAT_UNREAD).reduce((a, [k, b]) => a + (blocked(k) ? 0 : b), 0) : 0) + Object.entries(NOTE_NEW).reduce((a, [k, b]) => a + (ntOn(k) ? b : 0), 0) + (STATE.role === 'user' ? inboxUnread() : 0);
 function msgBadge(){ const n = unreadTotal(); $$('[data-r="msg"]').forEach(b => { let d = b.querySelector('.bdg'); if (n > 0){ if (!d){ d = document.createElement('span'); d.className = 'bdg'; b.appendChild(d); } d.textContent = n > 99 ? '99+' : n; } else d && d.remove(); }); }
-function msgPreview(m){ if (!m) return ''; const who = m.me ? '我：' : ''; return who + (m.t === 'text' ? m.text : m.t === 'img' ? '[图片]' : m.t === 'post' ? '[帖子] ' + (POST(m.ref)?.title || '') : m.t === 'prod' ? '[商品] ' + (P(m.ref)?.title || '') : '[暂不支持的消息]'); }
+function msgPreview(m){ if (!m) return ''; const who = m.me ? '我：' : ''; return who + (m.t === 'text' ? m.text : m.t === 'img' ? '[图片]' : m.t==='audio'?'[语音]':m.t === 'post' ? '[帖子] ' + (POST(m.ref)?.title || '') : m.t === 'prod' ? '[商品] ' + (P(m.ref)?.title || '') : '[暂不支持的消息]'); }
 
 /* ================= 用户端：和后台联动的部分 =================
    官方通知（私信列表最上面）、首页公告条、账号受限提示、没有邀请码时申请入驻 */
@@ -8612,6 +8614,7 @@ function bubble(m, uid){
   if (m.rc) return `<div class="msep">${m.me ? '你' : esc(uname(uid))}撤回了一条消息</div>`;
   let inner = '';
   if (m.t === 'text') inner = `<div class="bub">${esc(m.text)}</div>`;
+  else if(m.t==='audio')inner=globalThis.CZDmVoice?.bubble(m,uid)||'<div class="bub">[语音]</div>';
   else if (m.t === 'img') inner = `<div class="bimg"><img src="${esc(m.url || cover(m.cover || 'rings', 3, 360, 440))}" alt=""></div>`;
   else if (['post','prod'].includes(m.t) && m.refState==='unavailable')inner=`<div class="bub">[${m.t==='post'?'帖子':'商品'}暂不可用]</div>`;
   else if (m.t === 'post'){ const p = POST(m.ref); inner = p ? `<a class="bcard" data-go="${postHref(p)}"><span class="bcv">${miniThumb(p)}${inStream(p) ? `<i class="bplay">${IC.play}</i>` : ''}</span><b>${esc(p.title)}</b><span class="by">${av(p.author, 'sm')}${esc(USERS[p.author].name)}</span></a>` : `<div class="bub">[帖子暂不可用]</div>`; }
@@ -8623,8 +8626,8 @@ function bubble(m, uid){
   const metadata=edited||delivery?`<div class="dm-meta">${edited}${delivery}</div>`:'';
   if(quote||metadata||reactions)inner=`<div class="dm-content">${quote}${inner}${metadata}${reactions}</div>`;
   const rc = m.me && !m.pend && ['text', 'img', 'post', 'prod'].includes(m.t) && Date.now() - m.ts < RC_MS ? `<button class="bub-rc" data-act="msg-rc" data-u="${uid}" data-ts="${m.ts}">撤回</button>` : '';
-  const pending = m.outbox ? `<span class="dm-send-state" role="status">${m.state === 'sending' ? '正在发送…' : esc(m.error || '未发送，内容已保存在此设备')}</span>${m.state !== 'sending' ? `<span class="dm-send-actions"><button data-act="dm-retry" data-id="${esc(m.clientMessageId)}">重试</button><button data-act="dm-edit" data-id="${esc(m.clientMessageId)}">${m.t === 'img' ? '更换图片' : '编辑'}</button>${m.reply ? `<button data-act="dm-unquote" data-id="${esc(m.clientMessageId)}">移除引用并另存</button>` : ''}<button data-act="dm-remove" data-id="${esc(m.clientMessageId)}">移除</button></span>` : ''}` : '';
-  return `<div class="msg ${m.me ? 'me' : ''} ${m.outbox ? 'dm-pending' : ''}">${m.me ? '' : msgAv(uid)}${inner}${rc}${pending}</div>`;
+  const pending = m.outbox ? `<span class="dm-send-state" role="status">${m.state === 'sending' ? '正在发送…' : esc(m.error || '未发送，内容已保存在此设备')}</span>${m.state !== 'sending' ? `<span class="dm-send-actions"><button data-act="dm-retry" data-id="${esc(m.clientMessageId)}">重试</button><button data-act="dm-edit" data-id="${esc(m.clientMessageId)}">${m.t === 'img' ? '更换图片' : m.t==='audio'?'另存音频':'编辑'}</button>${m.reply ? `<button data-act="dm-unquote" data-id="${esc(m.clientMessageId)}">移除引用并另存</button>` : ''}<button data-act="dm-remove" data-id="${esc(m.clientMessageId)}">移除</button></span>` : ''}` : '';
+  return `<div class="msg ${m.me ? 'me' : ''} ${m.outbox ? 'dm-pending' : ''} ${m.t==='audio'?'dm-voice-msg':''}">${m.me ? '' : msgAv(uid)}${inner}${rc}${pending}</div>`;
 }
 function convBody(uid){ const ms = CHATS[uid] || []; let last = 0; return ms.map((m,i) => { const key = esc(m.id || m.ts + '-' + i), sep = m.ts - last > 30*60e3 ? `<div class="msep" data-dm="sep-${key}">${ago(m.ts)}</div>` : ''; last = m.ts; return sep + bubble(m, uid).replace(/^<div/,`<div data-dm="msg-${key}"`); }).join('') + (TYPING[uid] ? `<div class="msg" data-dm="typing">${msgAv(uid)}<div class="bub typing"><i></i><i></i><i></i></div></div>` : ''); }
 const TYPING = {};
@@ -8632,7 +8635,7 @@ function conv(uid){
   const u = USERS[uid];
   return `<div class="conv"><div class="cv-h"><button class="hd-back" data-act="back" aria-label="返回">${IC.back}</button><a data-go="user-${uid}" class="cv-who">${av(uid, 'sm')}<b>${esc(u.name)}</b></a>${blocked(uid) ? '' : `<button class="pill sm ${STATE.follows.has(uid) ? 'lt' : ''}" data-act="follow" data-id="${uid}">${STATE.follows.has(uid) ? '已关注' : '关注'}</button>`}<button class="cv-mo" data-act="cv-more" data-id="${uid}" aria-label="更多">⋯</button></div>
     <div class="cv-b" id="cvB">${convBody(uid)}</div>
-    ${blocked(uid) ? `<div class="cv-blk">你已拉黑 TA，不能互发消息<button class="pill sm lt" data-act="blk" data-id="${uid}">解除拉黑</button></div>` : ''}<div class="cv-f" ${blocked(uid) ? 'hidden' : ''}><span class="cdock"><label class="cv-ic" title="发图片">${RIC.img}<input type="file" id="cvImg" accept="image/*" hidden></label><button class="cv-ic" data-act="cv-pick" data-id="${uid}" title="分享作品或商品">${IC.plus}</button></span><textarea class="inp" id="cvIn" rows="1" placeholder="发消息…" autocomplete="off" enterkeyhint="send"></textarea><button class="pill sm ic" data-act="cv-send" data-id="${uid}" aria-label="发送">${IC.arrow}</button></div></div>`;
+    ${blocked(uid) ? `<div class="cv-blk">你已拉黑 TA，不能互发消息<button class="pill sm lt" data-act="blk" data-id="${uid}">解除拉黑</button></div>` : ''}<div class="cv-f" ${blocked(uid) ? 'hidden' : ''}><span class="cdock">${globalThis.CZDmVoice?.composer(uid)||''}<label class="cv-ic" title="发图片">${RIC.img}<input type="file" id="cvImg" accept="image/*" hidden></label><button class="cv-ic" data-act="cv-pick" data-id="${uid}" title="分享作品或商品">${IC.plus}</button></span><textarea class="inp" id="cvIn" rows="1" placeholder="发消息…" autocomplete="off" enterkeyhint="send"></textarea><button class="pill sm ic" data-act="cv-send" data-id="${uid}" aria-label="发送">${IC.arrow}</button></div></div>`;
 }
 ROUTES.msg = arg => {
   if (STATE.role === 'guest') return gate('私信', '登录后可以和创作者互相私信。', `<button class="pill lg" data-act="login">登录</button>`);
@@ -11331,8 +11334,8 @@ function dmReset(){ LDM.epoch++; clearInterval(LDM.timer); LDM.timer = 0; LDM.bu
   ['last','sig','since','before','blk'].forEach(k => LDM[k] = {}); LDM.side = ''; refill(CHATS, {}); refill(CHAT_UNREAD, {}); }
 API.sessionReset = dmReset;
 /* 私信类型只认这几种，其它一律归成 other：列表和气泡显示占位，也没有撤回入口 */
-const DM_KINDS = new Set(['text', 'image', 'post', 'prod']);
-const dmMap = m => ({id:m.id,revision:m.revision||0,editVersion:m.editVersion||0,editedAt:m.editedAt||null,editUntil:m.editUntil||null,canEdit:m.canEdit===true,canReact:m.canReact===true,reactions:Array.isArray(m.reactions)?m.reactions:[],createdRevision:m.createdRevision || 0,hidden:!!m.hidden,refState:m.refState,reply:m.reply || null,...(['post','prod'].includes(m.kind)?{_refCheckedAt:Date.now()}:{}), clientMessageId:m.clientMessageId || null, me:m.from === ME, t:m.kind === 'image' ? 'img' : DM_KINDS.has(m.kind) ? m.kind : 'other', text:m.body, url:m.url || undefined, ref:m.ref || undefined, ts:+new Date(m.createdAt), rc:m.recalled, read:m.from===ME&&m.receipt!==undefined ? !!m.read&&!!globalThis.CZCommunication?.canShowReceipt?.(m.to) : m.read,delivery:m.receipt ? m.receipt==='read'&&globalThis.CZCommunication?.canShowReceipt?.(m.to) ? 'read':'sent':null});
+const DM_KINDS = new Set(['text', 'image', 'audio', 'post', 'prod']);
+const dmMap = m => ({id:m.id,revision:m.revision||0,editVersion:m.editVersion||0,editedAt:m.editedAt||null,editUntil:m.editUntil||null,canEdit:m.canEdit===true,canReact:m.canReact===true,reactions:Array.isArray(m.reactions)?m.reactions:[],createdRevision:m.createdRevision || 0,hidden:!!m.hidden,refState:m.refState,reply:m.reply || null,audioMeta:m.audioMeta||null,...(['post','prod'].includes(m.kind)?{_refCheckedAt:Date.now()}:{}), clientMessageId:m.clientMessageId || null, me:m.from === ME, t:m.kind === 'image' ? 'img' : DM_KINDS.has(m.kind) ? m.kind : 'other', text:m.body, url:m.url || undefined, ref:m.ref || undefined, ts:+new Date(m.createdAt), rc:m.recalled, read:m.from===ME&&m.receipt!==undefined ? !!m.read&&!!globalThis.CZCommunication?.canShowReceipt?.(m.to) : m.read,delivery:m.receipt ? m.receipt==='read'&&globalThis.CZCommunication?.canShowReceipt?.(m.to) ? 'read':'sent':null});
 const dmLive = uid => API.on() && STATE.role === 'user' && LIVE.u.has(uid);
 const dmCut = (uid, ts) => !API.on() && DELC[uid] && ts <= DELC[uid];   // 自己删过聊天记录：删之前的不再显示
 /* 分享卡片按50项合并读取；跨入口共用两路队列，前台优先且保留会话作用域。 */
@@ -11484,7 +11487,7 @@ function dmOutboxReset(){
 }
 function dmOutboxBubble(row){
   let url; if (row.file){ url=DMOUT.urls.get(row.id); if (!url){url=URL.createObjectURL(row.file);DMOUT.urls.set(row.id,url);} }
-  return {id:'outbox-'+row.id, clientMessageId:row.id, me:true, pend:true, outbox:true, t:row.t, text:row.text, ref:row.ref, reply:row.replyToId ? {id:row.replyToId,state:'pending'} : null, url, ts:row.ts, state:row.state, error:row.error};
+  return {id:'outbox-'+row.id, clientMessageId:row.id, me:true, pend:true, outbox:true, t:row.t, duration:row.duration, text:row.text, ref:row.ref, reply:row.replyToId ? {id:row.replyToId,state:'pending'} : null, url, ts:row.ts, state:row.state, error:row.error};
 }
 function dmOutboxPaint(row){
   if (!DMOUT.rows.has(row.id) || row.scope!==dmScope() || STATE.role!=='user') return;
@@ -11517,11 +11520,12 @@ function dmRestore(){
   DMOUT.restoring=task;return task;
 }
 async function liveDmSend(uid, m, options={}){
+  const ensure=()=>{if(options.current&&!options.current())throw Object.assign(new Error('发送所属账号已变化，语音仍保留'),{code:'cancel'});};ensure();
   const u=`/dm/with/${encodeURIComponent(uid)}`, clientMessageId=m.clientMessageId || crypto.randomUUID(),reply=m.replyToId ? {replyToId:m.replyToId} : {};
-  if (m.t==='img'){
+  if (m.t==='img'||m.t==='audio'){
     let uploadId=m.uploadId;
-    if (!uploadId){const f=m.file || await (await fetch(m.url,{signal:options.signal})).blob();const up=await liveUpload(f,'dm_image',undefined,options);uploadId=up.id;await options.uploaded?.(uploadId);}
-    return API.req('POST',u,{kind:'image',uploadId,clientMessageId,...reply},true,options);
+    if (!uploadId){const f=m.file || await (await fetch(m.url,{signal:options.signal})).blob();const up=await liveUpload(f,m.t==='audio'?'dm_audio':'dm_image',undefined,options);uploadId=up.id;ensure();await options.uploaded?.(uploadId);}
+    ensure();if(m.t==='audio')await options.posting?.();ensure();return API.req('POST',u,{kind:m.t==='audio'?'audio':'image',uploadId,clientMessageId,...reply},true,options);
   }
   if (m.t==='post' || m.t==='prod') return API.req('POST',u,{kind:m.t,ref:m.ref,clientMessageId,...reply},true,options);
   return API.req('POST',u,{kind:'text',body:m.text,clientMessageId,...reply},true,options);
@@ -11531,14 +11535,15 @@ async function dmTransmit(row){
   const current=dmSession(), controller=new AbortController(); DMOUT.flights.set(row.id,controller);
   try {
     row.state='sending';row.error='';await DMOUT.store.put(row);if(!DMOUT.rows.has(row.id) || !current() || row.scope!==dmScope())return;dmOutboxPaint(row);
-    const message=await liveDmSend(row.peer,{...row,clientMessageId:row.id},{signal:controller.signal,uploaded:async id=>{row.uploadId=id;await DMOUT.store.put(row);}});
+    const message=await liveDmSend(row.peer,{...row,clientMessageId:row.id},{signal:controller.signal,current:()=>current()&&row.scope===dmScope()&&DMOUT.rows.has(row.id),uploaded:async id=>{if(!current()||row.scope!==dmScope())throw Object.assign(new Error('发送已中断'),{code:'cancel'});row.uploadId=id;await DMOUT.store.put(row);},posting:async()=>{row.unknown=true;await DMOUT.store.put(row);}});
     if(current() && row.scope===dmScope()){dmForgetMemory(row);dmMerge(row.peer,[message]);refreshConv(row.peer);}
     // 确认成功与本地清理分开：清理失败也不能把已经发出的消息重新显示为失败。
     row.state='confirmed';row.message={...message,reply:message.reply ? {id:message.reply.id,state:'unavailable'} : null};await DMOUT.store.put(row).catch(()=>{});await DMOUT.store.remove(row.key).catch(()=>{});
   } catch(error){
     if (!DMOUT.rows.has(row.id) || !current() || row.scope!==dmScope()) return;
     row.state='failed';row.error=['cancel','cancelled'].includes(error.code) ? '发送已中断，内容已保存在此设备' : (error.message || '发送失败，内容已保存在此设备');
-    if(['bad_upload','upload_incomplete','upload_deleted'].includes(error.code) && row.t==='img')row.uploadId=null;
+    if(row.t==='audio'){row.unknown=row.unknown&&(!error.status||error.status>=500||error.status===409);if(row.unknown)row.error='发送结果待确认，原语音和提交键已保留，请重试确认。';}
+    if(['bad_upload','upload_incomplete','upload_deleted','upload_size_mismatch','upload_type_mismatch'].includes(error.code) && ['img','audio'].includes(row.t))row.uploadId=null;
     await DMOUT.store.put(row).catch(()=>{});if(DMOUT.rows.has(row.id))dmOutboxPaint(row);
   } finally {if(DMOUT.flights.get(row.id)===controller)DMOUT.flights.delete(row.id);}
 }
@@ -11546,8 +11551,8 @@ async function dmTransmit(row){
   sendMsg=async function(uid,m){
     if (!dmLive(uid)) return send0(uid,m);
     if (blocked(uid)){toast('你已拉黑对方，解除后才能发消息','orange','x');return false;}if(!canSpeak())return false;
-    const current=dmSession(),scope=dmScope(),id=crypto.randomUUID(),row={id,key:scope+'|'+id,scope,peer:uid,peerName:USERS[uid]?.name,peerC:USERS[uid]?.c,t:m.t,text:m.text,ref:m.ref,replyToId:m.replyToId || null,file:m.file,ts:Date.now(),state:'failed',error:''};
-    try {if(m.t==='img' && !row.file) row.file=await (await fetch(m.url,{signal:AbortSignal.timeout(15000)})).blob();await DMOUT.store.put(row);}
+    const current=dmSession(),scope=dmScope(),voiceDraft=m.t==='audio'&&m.voiceDraftKey==='dm-voice|'+scope+'|'+uid,id=voiceDraft?m.voiceDraftVersion:crypto.randomUUID(),row={id,key:scope+'|'+id,scope,peer:uid,peerName:USERS[uid]?.name,peerC:USERS[uid]?.c,t:m.t,text:m.text,ref:m.ref,replyToId:m.replyToId || null,file:m.file,duration:m.duration,ts:Date.now(),state:'failed',error:''};
+    try {if(['img','audio'].includes(m.t) && !row.file) row.file=await (await fetch(m.url,{signal:AbortSignal.timeout(15000)})).blob();if(voiceDraft)await DMOUT.store.transfer(m.voiceDraftKey,m.voiceDraftVersion,row);else await DMOUT.store.put(row);}
     catch(error){apiFail(Object.assign(new Error('未能保存待发送内容，输入已保留，请检查浏览器存储空间后重试'),{code:'local_storage'}));return false;}
     if(!current() || scope!==dmScope())return true;DMOUT.rows.set(id,row);dmOutboxPaint(row);void dmTransmit(row);return true;
   };
@@ -11564,17 +11569,17 @@ ACTIONS['dm-remove']=async b=>{const row=DMOUT.rows.get(b.dataset.id);if(!row ||
   try {await DMOUT.store.remove(row.key);dmForgetMemory(row);refreshConv(row.peer);}catch(error){apiFail(error);}
 };
 async function dmEditSaved(row,changes){
-  if(row.scope!==dmScope() || DMOUT.flights.has(row.id))return;const id=crypto.randomUUID(),next={...row,...changes,id,key:row.scope+'|'+id,ts:Date.now(),state:'failed',error:'已修改，点击重试发送'};
-  try {await DMOUT.store.replace(row.key,next);if(row.scope!==dmScope() || STATE.role!=='user')return;dmForgetMemory(row);DMOUT.rows.set(id,next);dmOutboxPaint(next);closeSheet();}
-  catch(error){apiFail(error);}
+  if(row.scope!==dmScope() || DMOUT.flights.has(row.id))return;const id=crypto.randomUUID(),next={...row,...changes,id,key:row.scope+'|'+id,ts:Date.now(),unknown:false,state:'failed',error:'已修改，点击重试发送'};
+  try {await DMOUT.store.replace(row.key,next);if(row.scope!==dmScope() || STATE.role!=='user')return false;dmForgetMemory(row);DMOUT.rows.set(id,next);dmOutboxPaint(next);closeSheet();return true;}
+  catch(error){apiFail(error);return false;}
 }
 ACTIONS['dm-edit']=b=>{const row=DMOUT.rows.get(b.dataset.id);if(!row || row.scope!==dmScope() || DMOUT.flights.has(row.id))return;
   if(row.t==='img')return pickAny(file=>dmEditSaved(row,{file,uploadId:null}));
-  if(row.t==='text')sheet(`<h3>编辑未发送消息</h3><textarea class="inp" id="dmEdit" rows="4" maxlength="2000">${esc(row.text || '')}</textarea><button class="pill lg" data-act="dm-edit-save" data-id="${esc(row.id)}">保存修改</button>`,d=>$('#dmEdit',d)?.focus());
+  if(row.t==='text')sheet(`<h3>编辑未发送消息</h3><textarea class="inp" id="dmEdit" rows="4" maxlength="2000">${esc(row.text || '')}</textarea><button class="pill lg" data-act="dm-outbox-edit-save" data-id="${esc(row.id)}">保存修改</button>`,d=>$('#dmEdit',d)?.focus());
   else toast('分享内容可移除后重新选择','blue');
 };
 ACTIONS['dm-unquote']=b=>{const row=DMOUT.rows.get(b.dataset.id);if(row && row.replyToId && row.scope===dmScope())void dmEditSaved(row,{replyToId:null});};
-ACTIONS['dm-edit-save']=b=>{const row=DMOUT.rows.get(b.dataset.id),text=$('#dmEdit')?.value.trim();if(row && text && speakOk(text))void dmEditSaved(row,{text});};
+ACTIONS['dm-outbox-edit-save']=b=>{const row=DMOUT.rows.get(b.dataset.id),text=$('#dmEdit')?.value.trim();if(row && text && speakOk(text))void dmEditSaved(row,{text});};
 wrapAct('msg-rc', async (orig, b, e) => { const uid = b.dataset.u; if (!dmLive(uid)) return orig(b, e);
   const m = (CHATS[uid] || []).find(x => x.me && x.ts === +b.dataset.ts); if (!m || m.pend) return;
   try { Object.assign(m, dmMap(await API.req('POST', `/dm/messages/${encodeURIComponent(m.id)}/recall`))); refreshConv(uid); } catch(err){ apiFail(err); } });
@@ -11748,6 +11753,7 @@ function dmViewSheet(a, b, preset = ''){
     <input class="inp" id="dvX" placeholder="补充（可选），例如订单号 / 举报编号" value="${esc(preset.split('：')[1] || '')}">
     <button class="pill lg" data-act="dv-go" data-a="${esc(a)}" data-b="${esc(b)}">查看记录</button><div id="dvLog"></div>`); }
 const dvBody = m => m.kind === 'image' ? (m.url ? `<a href="${esc(m.url)}" target="_blank" rel="noopener"><img src="${esc(m.url)}" alt="图片" class="dv-img"></a>` : '[图片]')
+  : m.kind==='audio'?(globalThis.CZDmVoice?.staffAudio(m.url)||'[语音]')
   : m.kind === 'post' ? `[分享的帖子] <a data-go="post-${esc(m.ref)}">${esc(POST(m.ref)?.title || m.ref)}</a>` : m.kind === 'prod' ? `[分享的商品] <a data-go="item-${esc(m.ref)}">${esc(P(m.ref)?.title || m.ref)}</a>` : esc(m.body);
 ACTIONS['dv-go'] = async b => { const a = b.dataset.a, c = b.dataset.b, why = ($('#dvR .on')?.textContent || '处理举报') + ($('#dvX').value.trim() ? '：' + $('#dvX').value.trim() : '');
   if (!API.on()){   // 原型：只有自己参与的会话有数据
@@ -11840,7 +11846,7 @@ const RP_K = {post:'帖子', comment:'评论', user:'用户', product:'商品', 
       const link = r.kind === 'post' ? `post-${r.targetId}` : r.kind === 'product' ? `item-${r.targetId}` : r.kind === 'user' ? `user-${r.targetId}` : r.targetUser ? `user-${r.targetUser.id}` : '';
       return `<div class="ad-row rp-live ${open ? '' : 'dim'}"><div class="ad-rm"><b><span class="tag ${/版权/.test(r.reason) ? 'c-orange' : 'k'}">${RP_K[r.kind] || r.kind}</span> ${esc(r.reason)}</b>
         <span class="mut">${esc(r.reporter.name)} 举报 ${r.targetUser ? esc(r.targetUser.name) + (r.againstCount > 1 ? `（共被举报 ${r.againstCount} 次）` : '') : '—'} · ${fmtDT(+new Date(r.createdAt))}</span>
-        ${t ? `<div class="rp-tgt"><b>${esc(t.title)}</b>${t.body ? `<span>${esc(t.body.slice(0, 160))}</span>` : ''}${t.url ? `<img src="${esc(t.url)}" alt="">` : ''}${t.status && t.status !== 'published' && t.status !== 'sent' ? `<i>${esc({review:'审核中', taken_down:'已下架', deleted:'已删除', recalled:'已撤回'}[t.status] || t.status)}</i>` : ''}</div>` : ''}
+        ${t ? `<div class="rp-tgt"><b>${esc(t.title)}</b>${t.body ? `<span>${esc(t.body.slice(0, 160))}</span>` : ''}${t.url ? t.mediaKind==='audio' ? (globalThis.CZDmVoice?.staffAudio(t.url)||'[语音]') : `<img src="${esc(t.url)}" alt="">` : ''}${t.status && t.status !== 'published' && t.status !== 'sent' ? `<i>${esc({review:'审核中', taken_down:'已下架', deleted:'已删除', recalled:'已撤回'}[t.status] || t.status)}</i>` : ''}</div>` : ''}
         ${r.detail ? `<span class="mut2">${r.kind === 'appeal' ? '申诉内容' : '补充'}：${esc(r.detail)}</span>` : ''}
         ${r.counter ? `<div class="rp-tgt"><b>作者的反通知 · ${fmtDT(+new Date(r.counter.at))}</b><span>${esc(r.counter.text)}</span><span>权属证明：${/^https?:\/\//i.test(r.counter.link) ? `<a href="${esc(r.counter.link)}" target="_blank" rel="noopener noreferrer">${esc(r.counter.link)}</a>` : esc(r.counter.link)}</span></div>` : ''}
         ${open || r.status === 'counter' ? '' : `<span class="mut2">${{resolved:'属实', dismissed:'不成立', counter_restored:'反通知成立 · 已恢复', counter_kept:'反通知不成立 · 维持下架'}[r.status] || r.status} · ${esc(r.handledBy || '')}${r.note ? ' · ' + esc(r.note) : ''}</span>`}</div>
@@ -13178,6 +13184,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 <script src="scripts/dm-expressions.js?v=20261111-2"></script>
 <script src="scripts/communication.js?v=20261111-r13"></script>
 <script src="scripts/favorites.js?v=20261111-5"></script>
+<script src="scripts/dm-voice.js?v=20261111-5"></script>
 
 <script src="scripts/oauth-v1.js?v=20261110-1"></script>
 </body>
