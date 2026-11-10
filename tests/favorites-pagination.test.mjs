@@ -41,3 +41,11 @@ test('帖子弹层首次显示时校对旧收藏，完成前禁用按钮并提�
 test('服务切换后已排队的旧账号批次不再向新服务发送旧收藏ID',async()=>{
  const h=setup(),pending=[];h.handler=()=>new Promise(resolve=>pending.push(resolve));const work=h.ctx.CZFavorites.hydrate(Array.from({length:501},(_,i)=>({kind:'post',id:'old-'+i})));await new Promise(r=>setTimeout(r,0));assert.equal(h.calls.length,2);h.ctx.ME='other';h.ctx.API.epoch++;pending.forEach(resolve=>resolve({posts:[],products:[],counts:{posts:0,products:0}}));await work;assert.equal(h.calls.length,2);assert.equal(h.ctx.STATE.favs.size,0);
 });
+
+test('旧服务取消收藏后翻页不重新带回旧记录，未知总数仍显示下界',async()=>{
+ const h=setup();h.handler=async(method,path)=>{if(path==='/me/favs')return{posts:Array.from({length:500},(_,i)=>'old-'+i),products:[]};if(method==='DELETE')return{ok:true};throw Object.assign(Error('旧服务'),{status:404});};await h.refresh();await h.ctx.ACTIONS.fav(button('old-0'));assert.equal(h.ctx.CZFavorites.total(),'≥499');await h.next();await h.ctx.ACTIONS['favs-previous']({dataset:{context:'profile',kind:'post'}});assert(!h.ctx.STATE.favs.has('old-0'));assert(!h.ctx.CZFavorites.profile().includes('公开 old-0</article>'));
+});
+
+test('旧服务成功新增收藏后计数和首页同步，失败操作不改变旧列表',async()=>{
+ const h=setup();h.handler=async(method,path)=>{if(path==='/me/favs')return{posts:['old'],products:[]};if(method==='PUT')return{ok:true};if(method==='DELETE')throw Error('断网');throw Object.assign(Error('旧服务'),{status:404});};await h.refresh();await h.ctx.ACTIONS.fav(button('new'));assert.equal(h.ctx.CZFavorites.total(),2);await h.ctx.CZFavorites.boot();assert(h.ctx.CZFavorites.profile().includes('公开 new'));await h.ctx.ACTIONS.fav(button('old'));assert.equal(h.ctx.CZFavorites.total(),2);await h.ctx.CZFavorites.boot();assert(h.ctx.STATE.favs.has('old'));assert(h.ctx.CZFavorites.profile().includes('公开 old'));
+});
