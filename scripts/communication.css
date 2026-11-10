@@ -7,3 +7,17 @@
 .comm-activity-unavailable .mt{min-width:0}.comm-activity-unavailable .mt span{white-space:normal;overflow-wrap:anywhere}.comm-activity-unavailable>button{flex-shrink:0}
 .comm-comment-context{padding:12px 14px;margin:12px 0;border:1px solid var(--rule);border-radius:12px;font-size:13px;line-height:1.6;background:var(--yellow-t)}.comm-comment-context>.comm-actions{margin:8px 0 0}.comm-comment-context button{min-height:36px}
 @media(max-width:760px){.comm-picker{top:max(env(safe-area-inset-top),8vh);max-height:55dvh;padding:16px}.comm-list-actions{gap:8px}.comm-admission{padding:10px 12px}.comm-admission span{min-width:100%}}
+/* 引用与消息操作保持原来的气泡和输入栏，只增加紧凑的上下文。 */
+.dm-content{display:flex;flex-direction:column;gap:4px;min-width:0;max-width:100%}
+.dm-quote{display:flex;flex-direction:column;gap:3px;min-width:0;max-width:100%;padding:9px 11px;text-align:left;border-left:2px solid var(--ink-3);background:color-mix(in srgb,var(--ink) 5%,transparent);border-radius:4px 10px 10px 4px;font-size:12px;color:var(--ink-2);line-height:1.5;overflow-wrap:anywhere}
+button.dm-quote{min-height:44px;cursor:pointer}.dm-quote span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
+.comm-message-menu{align-self:center;flex:0 0 44px;min-width:44px;min-height:44px;font-size:20px;color:var(--ink-3);border-radius:50%}
+.comm-message-menu:focus-visible,.dm-quote:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.comm-dm-reply{display:flex;gap:10px;align-items:center;flex:none;padding:5px 12px;border-top:1px solid var(--rule);font-size:12px;line-height:1.5}
+.comm-dm-reply>span{display:flex;flex:1;min-width:0;flex-direction:column}.comm-dm-reply>span>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2)}
+.comm-dm-reply button{flex:none;width:44px;height:44px;font-size:24px}
+.comm-dm-policy{display:grid;gap:12px}.comm-dm-policy label{display:flex;gap:10px;align-items:center;min-height:48px}.comm-dm-policy label span{display:flex;flex-direction:column;gap:3px}.comm-dm-policy small{color:var(--ink-2);line-height:1.5}
+.msg:has(.comm-message-menu)>:is(.bub,.bcard,.bimg,.dm-content){min-width:0;flex-shrink:1;max-width:calc(100% - 92px)}
+.msg.me:has(.comm-message-menu)>:is(.bub,.bcard,.bimg,.dm-content){max-width:calc(100% - 52px)}
+.msg:has(.comm-message-menu) .bimg img,.dm-content .bcard{max-width:100%}
+.dm-send-actions button{min-height:44px}

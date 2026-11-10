@@ -20,13 +20,24 @@
   }
   async function requests(){const s=current(),key=s.scope,r=await API.req('GET','/dm/requests?limit=50');if(!same(key))return;s.requests=r.items;s.requestNext=r.next;s.requestError='';r.items.forEach(t=>{apiUser(t.peer);absorb(t.peer.id,t.conversation);});}
   function incomingRequest(uid){const c=current().threads[uid];return c?.state==='pending' && c.requestedBy!==ME || c?.state==='rejected' && c.requestedBy!==ME;}
+  function replyTarget(uid){return CUR.key==='msg|'+uid ? $('#cvIn')?._dmReplyToId || null : null;}
+  function cancelDmReply(uid,id){if(CUR.key!=='msg|'+uid)return;const input=$('#cvIn');if(!input || id && input._dmReplyToId!==id)return;input._dmReplyToId=null;inputDraftSave(input);paintDmReply();}
+  function paintDmReply(){
+    const input=$('#cvIn'),uid=CUR.key?.startsWith('msg|') ? CUR.key.slice(4):'',host=input?.closest('.conv');if(!host)return;
+    let bar=host.querySelector('.comm-dm-reply');const id=input._dmReplyToId;if(!id){bar?.remove();return;}
+    const target=(CHATS[uid] || []).find(m=>m.id===id),unavailable=target?.rc || target?.hidden;
+    const text=unavailable ? '原消息已不可访问，请取消引用后发送' : target ? msgPreview(target) : '历史消息，发送时会重新校对';
+    const html=`<span><b>回复${target ? target.me ? '自己' : esc(uname(uid)) : '消息'}</b><span>${esc(text)}</span></span><button data-act="comm-reply-cancel" data-id="${esc(uid)}" aria-label="取消引用回复">×</button>`;
+    if(!bar){bar=document.createElement('div');bar.className='comm-dm-reply';bar.setAttribute('role','status');host.querySelector('.cv-f')?.before(bar);}if(bar.innerHTML!==html)bar.innerHTML=html;
+  }
   function controls(){
     if(!liveUser())return;const uid=CUR.key?.startsWith('msg|') ? CUR.key.slice(4):'',s=current();
+    paintDmReply();
     if(uid && $('#cvB')){
       const c=s.threads[uid],host=$('.cv-h')?.parentElement;
       if(host && c){let note=host.querySelector('.comm-admission');if(!note){note=document.createElement('div');note.className='comm-admission';host.querySelector('.cv-h')?.after(note);}
         const pending=c.state==='pending' || c.state==='rejected';
-        const html=pending ? `<span>${c.state==='rejected' ? '这条消息请求已被拒绝' : c.requestedBy===ME ? '请求已发送，等待对方接受' : '对方希望与你开始聊天；接受后才能继续沟通'}</span>${c.canAccept ? `<button class="pill sm" data-act="comm-accept" data-id="${esc(uid)}">${c.state==='rejected' ? '恢复聊天':'接受'}</button>${c.state==='pending' ? `<button class="pill sm lt" data-act="comm-reject" data-id="${esc(uid)}">拒绝</button>`:''}`:''}` : c.state==='none' && !c.canSendMedia ? '<span>可以先发送一条文字请求；对方接受后可发图片和分享。</span>':'';
+        const html=pending ? `<span>${c.state==='rejected' ? '这条消息请求已被拒绝' : c.requestedBy===ME ? '请求已发送，等待对方接受' : '对方希望与你开始聊天；接受后才能继续沟通'}</span>${c.canAccept ? `<button class="pill sm" data-act="comm-accept" data-id="${esc(uid)}">${c.state==='rejected' ? '恢复聊天':'接受'}</button>${c.state==='pending' ? `<button class="pill sm lt" data-act="comm-reject" data-id="${esc(uid)}">拒绝</button>`:''}`:''}` : c.state==='none' && !c.canSend ? '<span>对方暂不接收新的私信请求。</span>' : c.state==='none' && !c.canSendMedia ? '<span>可以先发送一条文字请求；对方接受后可发图片和分享。</span>':'';
         if(note.innerHTML!==html)note.innerHTML=html;note.hidden=!html;
         const send=$('[data-act="cv-send"]');if(send)send.disabled=!c.canSend;
         const file=$('#cvImg');if(file)file.disabled=!c.canSendMedia;
@@ -60,7 +71,7 @@
   }
   function schedule(ms){clearTimeout(LDM.timer);clearInterval(LDM.timer);LDM.timer=0;if(!document.hidden && allowed() && liveUser() && API.on() && API.tok)LDM.timer=setTimeout(()=>void poll(),ms);}
   async function refreshReferences(uid,staleOnly=false){
-    const key=scope(),now=Date.now(),ids=[...new Set((CHATS[uid] || []).filter(m=>m.id&&!m.pend&&!m.rc&&['post','prod'].includes(m.t)&&(!staleOnly||!m._refCheckedAt||now<m._refCheckedAt||now-m._refCheckedAt>=30000)).map(m=>m.id))];
+    const key=scope(),now=Date.now(),ids=[...new Set((CHATS[uid] || []).filter(m=>m.id&&!m.pend&&!m.rc&&(['post','prod'].includes(m.t)||m.reply)&&(!staleOnly||!m._refCheckedAt||now<m._refCheckedAt||now-m._refCheckedAt>=30000)).map(m=>m.id))];
     let lastBox,lastTop,lastContext,reading=false;
     const paint=()=>{
       if(CUR.key!=='msg|'+uid)return;const context=current().context,box=$('#cvB'),top=box?.getBoundingClientRect().top,keep=box&&(context?.uid===uid||box.scrollHeight-box.scrollTop-box.clientHeight>=120||reading&&context===lastContext&&box===lastBox&&Math.abs(box.scrollTop-lastTop)<1);
@@ -76,7 +87,7 @@
       CHATS[uid]=(CHATS[uid] || []).flatMap(m=>{
         if(!requested.has(m.id))return [m];const raw=byId.get(m.id);if(!raw||raw.hidden)return [];if(m.rc)return [m];
         if(raw.ref){const target=m.t+':'+raw.ref;LDM.miss.delete(target);LDM.missAt?.delete(target);LDM.miss.delete(raw.ref);}
-        return [{...m,ref:raw.recalled||raw.refState==='unavailable'?undefined:raw.ref || undefined,text:raw.recalled?'':raw.body,refState:raw.refState,rc:!!raw.recalled,_refCheckedAt:Date.now()}];
+        return [{...m,reply:raw.reply || null,ref:raw.recalled||raw.refState==='unavailable'?undefined:raw.ref || undefined,text:raw.recalled?'':raw.body,refState:raw.refState,rc:!!raw.recalled,_refCheckedAt:Date.now()}];
       });
       paint();
     }
@@ -97,9 +108,9 @@
       for(const setting of r.settings || [])absorb(setting.peerId,setting);
       const open=CUR.key?.startsWith('msg|') ? CUR.key.slice(4):'',dmChanged=!previous || previous.dm!==r.versions.dm;
       if(dmChanged || force){await dmThreads();if(!same(s.scope))return;await requests();if(!same(s.scope))return;}
-      if(open && s.context?.uid!==open && (dmChanged || !LDM.full.has(open)))await dmConv(open);
+      if(open && s.context?.uid!==open && (dmChanged || force || !LDM.full.has(open)))await dmConv(open);
       if(!same(s.scope))return;
-      if(open && force){await refreshReferences(open,true);if(!same(s.scope))return;}
+      if(open && (force||dmChanged)){await refreshReferences(open,!dmChanged);if(!same(s.scope))return;}
       if(!previous || previous.activity!==r.versions.activity || force){const loaded=await actLoad(true);if(!same(s.scope))return;if(loaded===false)throw Error('互动通知暂未同步完成');}
       if(!previous || previous.official!==r.versions.official || force){const loaded=await sysLoad(true);if(!same(s.scope))return;if(loaded===false)throw Error('官方通知暂未同步完成');}
       if(!same(s.scope))return;s.version=r.version;s.versions=r.versions;if(r.unread)s.unread=r.unread;if(force)s.lastFull=Date.now();s.failures=0;
@@ -109,7 +120,7 @@
     finally{s.running=false;if(same(s.scope))schedule(Math.round(wait*(.95+Math.random()*.1)));}
   }
   async function start(){if(!allowed())return;clearInterval(LDM.timer);clearTimeout(LDM.timer);LDM.timer=0;await restoreComments();await poll();}
-  const comm=globalThis.CZCommunication={get threads(){return current().threads;},contextFor(uid){return current().context?.uid===uid;},incomingRequest,absorb,controls,poll,start,refreshReferences,
+  const comm=globalThis.CZCommunication={get threads(){return current().threads;},contextFor(uid){return current().context?.uid===uid;},incomingRequest,absorb,controls,poll,start,refreshReferences,replyTarget,paintDmReply,
     threadPage(r,cursor){const s=current();s.next=r.next;if(!cursor && !r.next){const ids=new Set(r.items.map(t=>t.peer.id));for(const uid of Object.keys(s.threads))if(!ids.has(uid) && !incomingRequest(uid) && CUR.key!=='msg|'+uid && !CHATS[uid]?.some(m=>m.pend)){delete CHATS[uid];delete CHAT_UNREAD[uid];}}},
     activityToken(k,t){if(t)current().tokens[k]=t;},officialToken(t){if(t)current().tokens.official=t;},
     async saveComment(pid,c){try{const row={key:'comment|'+JSON.stringify([API.base,ME,c._client]),scope:'comment|'+JSON.stringify([API.base,ME]),pid,comment:{...c,sendState:'failed',_counted:false}};await drafts.put(row);return true;}catch(e){c.sendState='failed';c.sendError=e.message || '本机草稿未保存，请检查存储空间';cmtPaint(pid);return false;}},
@@ -129,19 +140,25 @@
   const oldCommentPaint=cmtPaint;cmtPaint=function(...args){const result=oldCommentPaint(...args);enhance();return result;};
   const oldReelComments=openReelCm;openReelCm=function(...args){const result=oldReelComments(...args);enhance();return result;};
   const oldDrawCompose=drawCompose;drawCompose=function(...args){const result=oldDrawCompose(...args);enhance();return result;};
-  const oldList=msgList;msgList=function(uid){const s=current(),html=oldList(uid);if(!liveUser())return html;return html.replace('<div class="m-list">',`<div class="comm-list-actions"><button class="pill sm lt" data-act="comm-requests">消息请求${s.unread?.requests ? ' · '+s.unread.requests:''}</button><button class="pill sm lt" data-act="comm-search">搜索聊天记录</button></div><div class="m-list">`)+(s.next ? '<button class="pill sm lt comm-more" data-act="comm-threads-more">加载更多会话</button>':'');};
-  const oldBubble=bubble;bubble=function(m,uid){const html=oldBubble(m,uid);if(!dmLive(uid) || m.me || !m.id || m.pend || m.rc)return html;return html.replace(/<\/div>$/,`<button class="comm-report" data-act="report" data-k="message" data-id="${esc(m.id)}" aria-label="举报这条消息">举报</button></div>`);};
+  const oldList=msgList;msgList=function(uid){const s=current(),html=oldList(uid);if(!liveUser())return html;return html.replace('<div class="m-list">',`<div class="comm-list-actions"><button class="pill sm lt" data-act="comm-requests">消息请求${s.unread?.requests ? ' · '+s.unread.requests:''}</button><button class="pill sm lt" data-act="comm-search">搜索聊天记录</button><button class="pill sm lt" data-act="comm-privacy">私信设置</button></div><div class="m-list">`)+(s.next ? '<button class="pill sm lt comm-more" data-act="comm-threads-more">加载更多会话</button>':'');};
+  const oldBubble=bubble;bubble=function(m,uid){const html=oldBubble(m,uid);if(!dmLive(uid) || !m.id || m.pend || m.rc)return html;return html.replace(/<button class="bub-rc"[\s\S]*?<\/button>/,'').replace(/<\/div>$/,`<button class="comm-message-menu" data-act="comm-message-menu" data-uid="${esc(uid)}" data-id="${esc(m.id)}" aria-label="消息操作">⋯</button></div>`);};
+  ACTIONS['comm-message-menu']=b=>{const uid=b.dataset.uid,m=(CHATS[uid] || []).find(m=>m.id===b.dataset.id);if(!dmLive(uid)||!m||m.rc||m.pend)return;sheet(`<h3>消息操作</h3><button class="pill lg" data-act="comm-reply" data-uid="${esc(uid)}" data-id="${esc(m.id)}"${current().threads[uid]?.canSend ? '' : ' disabled'}>引用回复</button>${m.me && Date.now()-m.ts<RC_MS ? `<button class="pill lt lg" data-act="msg-rc" data-u="${esc(uid)}" data-ts="${m.ts}">撤回消息</button>` : ''}${!m.me ? `<button class="pill lt lg" data-act="report" data-k="message" data-id="${esc(m.id)}">举报消息</button>`:''}`);};
+  ACTIONS['comm-reply']=b=>{const uid=b.dataset.uid,m=(CHATS[uid] || []).find(m=>m.id===b.dataset.id),input=$('#cvIn');if(CUR.key!=='msg|'+uid||!input||!m||m.rc||m.pend||!current().threads[uid]?.canSend)return;input._dmReplyToId=m.id;inputDraftSave(input);closeSheet();paintDmReply();input.focus({preventScroll:true});};
+  ACTIONS['comm-reply-cancel']=b=>cancelDmReply(b.dataset.id);
+  const oldRecall=ACTIONS['msg-rc'];ACTIONS['msg-rc']=(b,e)=>{const uid=b.dataset.u;if(!dmLive(uid))return oldRecall(b,e);const m=(CHATS[uid] || []).find(m=>m.me && m.ts===+b.dataset.ts);if(!m||m.pend)return;const panel=b.closest?.('.sheet');return busy(b,async ok=>{const r=await API.req('POST',`/dm/messages/${encodeURIComponent(m.id)}/recall`);if(!ok())return;dmMerge(uid,[r]);refreshConv(uid);if(panel?.isConnected)closeSheet();if(CUR.key==='msg|'+uid)await refreshReferences(uid);paintDmReply();});};
   const oldSend=sendMsg;sendMsg=async function(uid,message){
     if(!dmLive(uid))return oldSend(uid,message);const key=scope();let c=current().threads[uid];if(!c){await dmConv(uid);if(!same(key))return false;c=current().threads[uid];}
     if(!c?.canSend || message.t!=='text' && !c.canSendMedia){toast(c?.state==='pending' || c?.localRequest ? '等待首条请求确认或对方接受后再发送':c?.state==='rejected' ? '对方暂不接收消息':'先发送一条文字请求','orange');return false;}
     const firstRequest=c.state==='none' && !c.canSendMedia;
     if(firstRequest){c.localRequest=true;c.canSend=false;controls();}
-    try{const result=await oldSend(uid,message);if(!result && firstRequest){c.localRequest=false;c.canSend=true;controls();}if(result){current().version=null;void poll();}return result;}
+    try{const result=await oldSend(uid,message);if(!result && firstRequest){c.localRequest=false;c.canSend=true;controls();}if(result){if(message.replyToId && message.t!=='text')cancelDmReply(uid,message.replyToId);current().version=null;void poll();}return result;}
     catch(e){if(firstRequest){c.localRequest=false;c.canSend=true;controls();}throw e;}
   };
   const oldRemove=ACTIONS['dm-remove'];ACTIONS['dm-remove']=async b=>{await oldRemove(b);for(const [uid,c] of Object.entries(current().threads))if(c.localRequest && ![...DMOUT.rows.values()].some(row=>row.peer===uid && row.scope===dmScope())){c.localRequest=false;if(c.state==='none')c.canSend=true;}controls();};
   for(const action of ['accept','reject'])ACTIONS['comm-'+action]=b=>busy(b,async ok=>{const uid=b.dataset.id,r=await API.req('POST',`/dm/with/${encodeURIComponent(uid)}/request/${action}`);if(!ok())return;absorb(uid,r);current().version=null;await poll();if($('#layer .comm-requests'))closeSheet();if(CUR.key==='msg|'+uid)rerender();toast(action==='accept' ? '已接受，可以开始聊天':'已拒绝这条请求');});
   ACTIONS['comm-threads-more']=b=>busy(b,async()=>{if(current().next)await dmThreads(current().next);dmPaint('');});
+  ACTIONS['comm-privacy']=b=>busy(b,async ok=>{const r=await API.req('GET','/me/communication/settings');if(!ok())return;sheet(`<h3>谁能发起新私信</h3><div class="comm-dm-policy">${[['requests','允许文字请求','未互关的人可以发一条文字，接受后才可继续。'],['contacts','仅互关或已购联系','互相关注，或购买过你商品的人可以发起会话。'],['nobody','不接收新私信','已有的已接受会话仍可继续聊天。']].map(([v,title,detail])=>`<label><input type="radio" name="dmPolicy" value="${v}"${r.newDmPolicy===v ? ' checked':''}><span><b>${title}</b><small>${detail}</small></span></label>`).join('')}<p class="mut2">仅限制新的会话，已收到的请求仍由你决定是否接受。拉黑仍会禁止双方发送。</p><button class="pill lg" data-act="comm-privacy-save">保存设置</button></div>`);});
+  ACTIONS['comm-privacy-save']=b=>busy(b,async ok=>{const newDmPolicy=b.closest('.sheet')?.querySelector('input[name="dmPolicy"]:checked')?.value;if(!newDmPolicy)return;await API.req('PATCH','/me/communication/settings',{newDmPolicy});if(!ok())return;current().version=null;closeSheet();toast('私信设置已保存');void poll();});
   ACTIONS['comm-requests']=b=>busy(b,async ok=>{await requests();if(!ok())return;drawRequests();});
   function drawRequests(){const s=current();sheet(`<h3>消息请求</h3><p class="mut2">陌生人只可先发一条文字请求。接受后才可继续沟通。</p><div class="comm-requests">${s.requests.map(t=>`<div class="comm-request"><a data-go="msg-${esc(t.peer.id)}">${av(t.peer.id)}<b>${esc(t.peer.name)}</b></a><p>${esc(t.last.body)}</p><div class="comm-actions"><button class="pill sm" data-act="comm-accept" data-id="${esc(t.peer.id)}">接受</button><button class="pill sm lt" data-act="comm-reject" data-id="${esc(t.peer.id)}">拒绝</button><button class="pill sm lt" data-act="report" data-k="message" data-id="${esc(t.last.id)}">举报</button></div></div>`).join('') || '<p class="mut">还没有消息请求</p>'}${s.requestNext ? '<button class="pill sm lt" data-act="comm-requests-more">加载更多</button>':''}</div>`);}
   ACTIONS['comm-requests-more']=b=>busy(b,async ok=>{const s=current(),r=await API.req('GET','/dm/requests?limit=50&cursor='+encodeURIComponent(s.requestNext));if(!ok())return;r.items.forEach(t=>apiUser(t.peer));s.requests.push(...r.items);s.requestNext=r.next;drawRequests();});
