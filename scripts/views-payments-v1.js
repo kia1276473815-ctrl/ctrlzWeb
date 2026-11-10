@@ -98,8 +98,13 @@
     if(kind==='runs'){
       const coverage=Array.isArray(row.coverage)?row.coverage:row.coverage?.coveredKinds || row.result?.coveredKinds || [],result=row.result;
       values=[['任务编号',row.id],['渠道',label(row.channel)],['账单日期',row.billDate],['账单类型',label(row.billType)],['状态',label(row.status)],['已执行',`${row.attempts || 0} 次`],['下次重试',date(row.nextAttemptAt)],['凭据版本',row.credentialVersion],['完整覆盖',coverage.length?coverage.map(label).join('、'):'尚未确认'],['本地条目',result?.localEntries],['渠道条目',result?.providerEntries],['差异条数',result?.differences],['问题说明',row.errorMessage || row.errorCode],['完成时间',date(row.completedAt)],['更新时间',date(row.updatedAt)]];
+      const fees=result?.fees;
+      if(fees && typeof fees==='object'){
+        const feeMoney=value=>Number.isSafeInteger(value)&&value>=0?money(value):'—';
+        values.push(['已匹配费用条目',Number.isSafeInteger(fees.matchedEntries)&&fees.matchedEntries>=0?fees.matchedEntries:'—'],['已记录渠道手续费',feeMoney(fees.charges)],['已记录手续费退还',feeMoney(fees.credits)],['账单文件 SHA-256',typeof fees.fileSha256==='string'&&/^[a-f0-9]{64}$/.test(fees.fileSha256)?fees.fileSha256:'—']);
+      }
       if(!(row.leaseUntil&&Date.parse(row.leaseUntil)>Date.now()))actions=actionButton(kind,'retry',row,row.status==='succeeded'?'重新核对这份账单':'重新排队核对');
-      note='排队成功表示任务已保存。账单完整下载并逐笔核对后才会显示完成；旧结果会保留到新的完整结果生成。';
+      note='排队成功表示任务已保存。账单完整下载并逐笔核对后才会显示完成；旧结果会保留到新的完整结果生成。'+(fees?'费用仅涵盖已匹配条目，银行到账另行核实。':'');
     }
     if(kind==='differences'){
       values=[['订单号',row.orderNo],['渠道',label(row.channel)],['账单日期',row.billDate],['事件',label(row.kind)],['状态',label(row.status)],['系统金额',money(row.expectedAmount)],['渠道金额',money(row.actualAmount)],['差异说明',row.detail?.message || label(row.detail?.code) || '需要逐笔核对'],['更新时间',date(row.updatedAt)]];

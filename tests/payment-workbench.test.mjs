@@ -29,6 +29,16 @@ test('仅具备后台支付权限的成员能读取；disabled历史只读且伪
 test('列表读取分权限，客服/内容角色不能从商户或分账接口读数据',async()=>{
  const h=realm();h.permissions.delete('pay.settle');await h.load('merchants');await h.load('settlements');await h.load('candidates');assert.equal(h.calls.length,0);await h.load('attempts');assert.equal(h.calls.length,1);assert.doesNotMatch(h.workspace.view(),/data-tab="merchants"|data-tab="settlements"/);
 });
+test('对账详情只展示已匹配渠道费用，零费用与缺失证据分开且银行到账另核',async()=>{
+ const h=realm();await h.load('runs');h.select('runs');
+ assert.doesNotMatch(h.workspace.view(),/已记录渠道手续费|已记录手续费退还/);
+ const row=h.workspace.state.slots.runs.items[0];row.result={localEntries:2,providerEntries:2,differences:0,coveredKinds:['payment','refund'],fees:{matchedEntries:2,charges:60,credits:0,fileSha256:'a'.repeat(64)}};
+ const view=h.workspace.view();assert.match(view,/已匹配费用条目/);assert.match(view,/已记录渠道手续费/);assert.match(view,/¥0\.60/);assert.match(view,/已记录手续费退还/);assert.match(view,/¥0\.00/);assert.match(view,/仅涵盖已匹配条目/);assert.match(view,/银行到账另行核实/);assert.match(view,new RegExp('a'.repeat(64)));
+});
+test('异常费用DTO不显示NaN、伪造金额或未转义标记',async()=>{
+ const h=realm();await h.load('runs');h.select('runs');h.workspace.state.slots.runs.items[0].result={fees:{matchedEntries:'<bad-count>',charges:'<bad-fee>',credits:-60,fileSha256:'<bad-file>'}};
+ const view=h.workspace.view();assert.match(view,/已记录渠道手续费/);assert.doesNotMatch(view,/NaN|bad-count|bad-fee|bad-file|¥-0\.60/);
+});
 test('读取失败保留错误与重试，不伪装空表；迟到旧账号响应不回填',async()=>{
  const h=realm();h.respond(async()=>{throw Error('弱网超时');});await h.load('attempts');assert.equal(h.workspace.state.slots.attempts.items,null);assert.equal(h.workspace.state.slots.attempts.error,'弱网超时');const count=h.calls.length;await h.load('attempts');assert.equal(h.calls.length,count);
  const wait=defer(),newWait=defer();let reads=0;h.respond(()=>reads++?newWait.promise:wait.promise);const pending=h.workspace.load('attempts',{force:true});h.ctx.STAFF.epoch++;h.workspace.view();wait.resolve({items:[rows.attempts],next:null});await pending;assert.notEqual(h.workspace.state.slots.attempts.items?.[0]?.id,'attempt/1');newWait.resolve({items:[],attempts:[],refunds:[]});await h.settle();
