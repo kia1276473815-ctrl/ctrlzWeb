@@ -2626,7 +2626,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 }
 </style>
 
-<link rel="stylesheet" href="scripts/communication.css?v=20261110-r4">
+<link rel="stylesheet" href="scripts/communication.css?v=20261110-r5">
 </head>
 <body>
 
@@ -11744,21 +11744,38 @@ UI.opS = null; applySlides();
    每 3 次私信轮询（约 12 秒）问一次未读数，变了才拉列表；新的评论 / 回复弹个提示。
    喜欢 / 新粉丝 打开就全部已读；回复与@ 按条读（atMark），和原来的交互一样 */
 const LACT = {sig:'', ids:new Set(), tick:0, busy:false, resume:false, request:null, me:null, status:'idle', loaded:false, error:null, panel:null, pages:{}, unreadAt:null, readRevision:0, bulk:null, bulkError:null};
-const actAt = n => ({id:n.id, commentId:n.commentId, u:n.actor.id, k:n.kind === 'reply' ? '回复了你的评论' : n.kind==='mention' ? '提到了你' : '评论了你的帖子', text:n.body, ref:n.post?.id, ts:+new Date(n.createdAt), read:!!n.read});
+const actAt = n => ({id:n.id, commentId:n.commentId, targetState:n.targetState || 'available', u:n.actor.id, k:n.kind === 'reply' ? '回复了你的评论' : n.kind==='mention' ? '提到了你' : '评论了你的帖子', text:['deleted','unavailable'].includes(n.targetState)?'':n.body, ref:n.post?.id, ts:+new Date(n.createdAt), read:!!n.read || AT_READ.has(n.id)});
 function actSetAt(n){ LACT.unreadAt=Math.max(0,Number(n)||0); const d=Object.getOwnPropertyDescriptor(NOTE_NEW,'at');
   if(d?.get)Object.defineProperty(NOTE_NEW,'at',{enumerable:true,configurable:true,get(){return liveUser() && LACT.unreadAt!=null ? LACT.unreadAt : atUnread();},set(){}}); else NOTE_NEW.at=LACT.unreadAt;
 }
-function actPage(k){ return LACT.pages[k] ||= {next:null,expanded:false,more:'idle',error:null,task:null,controller:null,seen:new Set(),invalid:false}; }
+function actPage(k){ return LACT.pages[k] ||= {next:null,expanded:false,more:'idle',error:null,task:null,controller:null,seen:new Set(),invalid:false,hidden:new Set()}; }
 function actPagesReset(){ Object.values(LACT.pages).forEach(p=>p.controller?.abort());LACT.pages={};LACT.unreadAt=null;LACT.bulk=null;LACT.bulkError=null;LACT.readRevision++; }
-function actMerge(k,items,keep){ const rows=items.map(n=>{apiUser(n.actor);return k==='at' ? actAt(n) : k==='likes' ? {id:n.id,u:n.actor.id,commentId:n.commentId,k:n.commentId ? '赞了你的评论' : '赞了你的帖子',text:n.commentId ? n.body : '',ref:n.post?.id,ts:+new Date(n.createdAt),read:!!n.read} : {id:n.id,u:n.actor.id,ts:+new Date(n.createdAt),read:!!n.read};});
+function actMerge(k,items,keep){ const rows=items.map(n=>{apiUser(n.actor);return k==='at' ? actAt(n) : k==='likes' ? {id:n.id,u:n.actor.id,commentId:n.commentId,targetState:n.targetState || 'available',k:n.commentId ? '赞了你的评论' : '赞了你的帖子',text:n.commentId && !['deleted','unavailable'].includes(n.targetState) ? n.body : '',ref:n.post?.id,ts:+new Date(n.createdAt),read:!!n.read} : {id:n.id,u:n.actor.id,ts:+new Date(n.createdAt),read:!!n.read};});
   const byId=new Map((keep ? NOTES[k] || [] : []).map(n=>[n.id || [n.u,n.ref,n.ts].join('|'),n]));rows.forEach(n=>byId.set(n.id,n));NOTES[k]=[...byId.values()].sort((a,b)=>b.ts-a.ts || String(b.id || '').localeCompare(String(a.id || '')));
-  if(k==='at')items.forEach(n=>n.read ? AT_READ.add(n.id) : AT_READ.delete(n.id));return rows;
+  for(const n of rows)LACT.pages[k]?.hidden?.delete(n.id);
+  if(k==='at')rows.forEach(n=>n.read ? AT_READ.add(n.id) : AT_READ.delete(n.id));return rows;
+}
+async function actRefreshReferences(k,exclude=new Set()){
+  const panel=LACT.panel;if(!liveUser() || !panel || panel.k!==k || !panel.list.isConnected || !panel.current())return;
+  const session=dmSession(),revision=LACT.readRevision,current=()=>session()&&LACT.readRevision===revision&&LACT.panel===panel&&panel.list.isConnected&&panel.current(),snapshot=new Map((NOTES[k] || []).filter(n=>n.id&&!exclude.has(n.id)).map(n=>[n.id,n]));
+  const page=actPage(k),hidden=page.hidden ||=new Set();for(const id of hidden)if(!exclude.has(id)&&!snapshot.has(id))snapshot.set(id,null);
+  const ids=[...snapshot.keys()];for(let start=0;start<ids.length;start+=200){
+    if(!current())return;const batch=ids.slice(start,start+200),requested=new Set(batch),r=await API.req('POST','/me/activity/references',{ids:batch});if(!current())return;
+    const kinds={at:['comment','reply','mention'],likes:['like'],fans:['follow']}[k];
+    if(!Array.isArray(r?.items)||r.items.some(n=>!requested.has(n?.id)||!kinds?.includes(n.kind)||!n.actor?.id||!['available','deleted','unavailable'].includes(n.targetState)||typeof n.body!=='string'||typeof n.read!=='boolean'||!Number.isFinite(+new Date(n.createdAt))))throw Error('通知校对结果不完整，请重试');
+    const cached=new Map((NOTES[k] || []).map(n=>[n.id,n])),eligible=new Set(batch.filter(id=>snapshot.get(id)===null?!cached.has(id)&&hidden.has(id):cached.get(id)===snapshot.get(id))),returned=new Set(r.items.map(n=>n.id));
+    NOTES[k]=(NOTES[k] || []).filter(n=>!eligible.has(n.id)||returned.has(n.id));for(const id of eligible)if(!returned.has(id))AT_READ.delete(id);
+    for(const id of eligible)returned.has(id)?hidden.delete(id):hidden.add(id);
+    actMerge(k,r.items.filter(n=>eligible.has(n.id)),true);
+    if(hidden.size>2000){hidden.clear();page.invalid=true;page.next=null;page.expanded=false;page.more='error';return;}
+  }
 }
 /* 后台读取只更新当前通知列表；标题、关闭按钮、面板滚动与正在操作的焦点保留。 */
 function actRowsHTML(k){
-  return (NOTES[k] || []).map(n => { const p=n.ref && POST(n.ref);
+  return (NOTES[k] || []).map(n => { const unavailable=['deleted','unavailable'].includes(n.targetState),p=!unavailable&&n.ref&&POST(n.ref),href=p?postHref(p):n.ref?'post-'+n.ref:'user-'+n.u;
+    if(unavailable){const reason=n.targetState==='deleted'?(n.commentId?'原评论已删除':'原帖子已删除'):'原内容暂不可查看';return `<div class="mrow ${k==='at'?'at '+(AT_READ.has(n.id)?'':'unread'):''} comm-activity-unavailable" data-activity-id="${esc(n.id)}" data-target-state="${esc(n.targetState)}"><a data-go="user-${esc(n.u)}" aria-label="查看互动用户">${av(n.u,'md')}</a><span class="mt"><b>${esc(USERS[n.u]?.name || '用户')}</b><span>${esc(n.k || '互动提醒')} · ${reason}</span><time>${ago(n.ts)}</time></span>${k==='at'&&!AT_READ.has(n.id)?`<button class="pill sm lt" data-act="activity-read" data-id="${esc(n.id)}">标为已读</button>`:''}</div>`;}
     if(k==='at'){ const lk=n.commentId ? !!(COMMENTS[n.ref] || []).find(c=>c.id===n.commentId)?.liked : STATE.clikes.has('at:'+n.id);
-      return `<a class="mrow at ${AT_READ.has(n.id) ? '' : 'unread'}" data-act="at-open" data-id="${esc(n.id)}" data-p="${esc(n.ref || '')}" data-cid="${esc(n.commentId || '')}" data-href="${p ? postHref(p)+(n.commentId ? '?comment='+encodeURIComponent(n.commentId) : '') : 'user-'+n.u}">${av(n.u,'md')}<span class="mt"><b>${esc(USERS[n.u]?.name || '用户')}</b><span>${esc(n.k)}：${esc(n.text)}</span><time>${ago(n.ts)}</time></span><button class="at-lk ${lk ? 'on' : ''}" data-act="at-like" data-id="${esc(n.id)}" data-p="${esc(n.ref || '')}" data-cid="${esc(n.commentId || '')}" aria-label="给这条回复点赞" aria-pressed="${lk}">${lk ? IC.heartF : IC.heart}</button></a>`;
+      return `<a class="mrow at ${AT_READ.has(n.id) ? '' : 'unread'}" data-act="at-open" data-id="${esc(n.id)}" data-p="${esc(n.ref || '')}" data-cid="${esc(n.commentId || '')}" data-href="${esc(href+(n.ref&&n.commentId?'?comment='+encodeURIComponent(n.commentId):''))}">${av(n.u,'md')}<span class="mt"><b>${esc(USERS[n.u]?.name || '用户')}</b><span>${esc(n.k)}：${esc(n.text)}</span><time>${ago(n.ts)}</time></span>${!liveUser()||n.commentId?`<button class="at-lk ${lk ? 'on' : ''}" data-act="at-like" data-id="${esc(n.id)}" data-p="${esc(n.ref || '')}" data-cid="${esc(n.commentId || '')}" aria-label="给这条回复点赞" aria-pressed="${lk}"${liveUser()&&!p?.live?' disabled':''}>${lk ? IC.heartF : IC.heart}</button>`:''}</a>`;
     }
     return `<a class="mrow" ${p && n.commentId ? `data-act="like-open" data-href="${postHref(p)}?comment=${encodeURIComponent(n.commentId)}"` : `data-go="${p ? postHref(p) : 'user-'+n.u}"`}>${av(n.u,'md')}<span class="mt"><b>${esc(USERS[n.u]?.name || '用户')}</b><span>${k==='fans' ? '开始关注你了' : esc(n.k)+(n.text ? '：'+esc(n.text) : '')} · ${ago(n.ts)}</span></span>${p ? miniThumb(p,'nth') : k==='fans' ? `<button class="pill sm ${STATE.follows.has(n.u) ? 'lt' : ''}" data-act="follow" data-id="${esc(n.u)}" data-follow-on="互相关注" data-follow-off="回关">${STATE.follows.has(n.u) ? '互相关注' : '回关'}</button>` : ''}</a>`;
   }).join('');
@@ -11800,6 +11817,7 @@ async function actLoad(force){
     for(const [k,r] of [['likes',lk],['fans',fn],['at',at]]){globalThis.CZCommunication?.activityToken(k,r.readToken);const page=actPage(k),keep=page.expanded || !!page.task;actMerge(k,r.items,keep);
       if(!keep || (force && page.invalid)){page.next=r.next || null;page.seen.clear();page.invalid=false;page.more='idle';page.error=null;}
     }
+    const panel=LACT.panel;if(force&&panel?.list.isConnected&&panel.current()&&actPage(panel.k).expanded){const head={likes:lk,fans:fn,at}[panel.k];await actRefreshReferences(panel.k,new Set(head.items.map(n=>n.id)));if(!current())return false;}
     NOTE_NEW.likes = u.likes; NOTE_NEW.fans = u.fans; actSetAt(u.at);
     await dmRefs([...NOTES.likes, ...NOTES.at].filter(n => n.ref).map(n => ({t:'post', ref:n.ref})));   // 提到的帖子本地没有就去取，链接才点得进去
     if (document.hidden || !current()) return false;
@@ -11823,7 +11841,7 @@ async function sysLoad(){ const current = dmSession(), mark = r => JSON.stringif
   } catch(e){return false;} }
 { const poll0 = dmPoll; dmPoll = async function(){ if (document.hidden || !API.on() || !API.tok || STATE.role !== 'user') return; const resume = LACT.resume; LACT.resume = false; await poll0(); if (document.hidden) return; if (resume || LACT.tick++ % 3 === 0) await Promise.all([actLoad(resume), sysLoad()]); }; }
 { const after2 = liveAfterLogin; liveAfterLogin = async function(){ actPagesReset();LACT.sig = ''; LACT.ids.clear(); LACT.status='idle';LACT.loaded=false;LACT.error=null;LACT.panel=null; await after2(); actLoad(true); }; }
-wrapAct('note', (orig, b, e) => { const k = b.dataset.v;if(liveUser() && k!=='at' && globalThis.CZCommunication)return CZCommunication.openActivity(orig,b,e); orig(b, e); if(liveUser()){ const list=$('#layer .m-list'); if(list){LACT.panel={k,list,current:dmSession()};actPanelPaint();if(!LACT.busy && (!LACT.loaded || LACT.status==='error'))void actLoad(true);} if(k==='at')void cmtNoticeLikes(); }
+wrapAct('note', (orig, b, e) => { const k = b.dataset.v;if(liveUser() && k!=='at' && globalThis.CZCommunication)return CZCommunication.openActivity(orig,b,e); orig(b, e); if(liveUser()){ const list=$('#layer .m-list'); if(list){LACT.panel={k,list,current:dmSession()};actPanelPaint();if(!LACT.busy){if(!LACT.loaded || LACT.status==='error')void actLoad(true);else void actRefreshReferences(k).then(()=>actPanelPaint()).catch(err=>{if(LACT.panel?.list===list&&list.isConnected){LACT.status='error';LACT.error=err.message;actPanelPaint();}});}} if(k==='at')void cmtNoticeLikes(); }
   if (liveUser() && k !== 'at') API.req('POST', '/me/activity/read', {kind:k}).then(() => { LACT.sig = ''; }).catch(() => {}); });
 wrapAct('at-all', async(orig,b,e)=>{if(!liveUser())return orig(b,e);if(LACT.bulk)return;const session=dmSession(), mark=LACT.bulk={}, current=()=>session() && LACT.bulk===mark;LACT.bulkError=null;b.disabled=true;b.setAttribute('aria-busy','true');actPanelPaint();
   try{await API.req('POST','/me/activity/read',{kind:'at'});if(!current())return;LACT.readRevision++;(NOTES.at || []).forEach(n=>{AT_READ.add(n.id);n.read=true;});actSetAt(0);LACT.sig='';noteSync();msgBadge();fxPop(b,'fx-jelly',500);}
@@ -13009,7 +13027,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { coverFontDrop(); if (!CUR.post) rerender(); });
 })();
 </script>
-<script src="scripts/communication.js?v=20261110-r4"></script>
+<script src="scripts/communication.js?v=20261110-r5"></script>
 
 <script src="scripts/oauth-v1.js?v=20261110-1"></script>
 </body>

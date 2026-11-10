@@ -9,6 +9,18 @@ function harness(){
 }
 const share=(id,extra={})=>({id,t:'post',ref:'old',text:'旧分享',read:false,...extra});
 
+test('卡片缩短后距底部跨过120px阈值，后续补读重画仍保留原阅读锚点',async()=>{
+  for(const mode of ['reading','scrolled','latest']){
+  const h=harness();h.ctx.CHATS.peer=[share('shared')];let height=500,scroll=250,first=true;
+  const box={isConnected:true,clientHeight:100,get scrollHeight(){return height;},get scrollTop(){return scroll;},set scrollTop(v){scroll=Math.max(0,Math.min(v,height-100));},getBoundingClientRect:()=>({top:0})};
+  const anchor={dataset:{dm:'msg-anchor'},getBoundingClientRect:()=>({top:260-scroll,bottom:290-scroll})};box.children=[anchor];h.ctx.$=()=>box;
+  h.ctx.dmPaint=()=>{const end=height-scroll-100<120;if(first){first=false;height=400;}if(end)box.scrollTop=height;};
+  if(mode==='latest')vm.runInContext('current().context={uid:"peer"}',h.ctx);
+  h.ctx.dmRefs=async()=>{if(mode==='scrolled')box.scrollTop=300;if(mode==='latest')vm.runInContext('current().context=null',h.ctx);};
+  await h.ctx.refreshReferences('peer');assert.equal(scroll,mode==='reading'?250:300,mode);assert.equal(anchor.getBoundingClientRect().top,mode==='reading'?10:-40,mode);
+  }
+});
+
 test('已加载的401条分享按200条分批校对，文字、待发与撤回消息不参与',async()=>{
   const h=harness();h.ctx.CHATS.peer=Array.from({length:401},(_,i)=>share('m'+i));h.ctx.CHATS.peer.push({id:'text',t:'text',text:'保留文字'},share('draft',{pend:true}),share('recalled',{rc:true}));
   await h.ctx.refreshReferences('peer');assert.deepEqual(h.calls.map(c=>c.body.ids.length),[200,200,1]);assert(h.calls.every(c=>c.method==='POST'&&c.path==='/dm/with/peer/references'));

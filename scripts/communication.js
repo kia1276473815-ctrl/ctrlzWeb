@@ -61,12 +61,14 @@
   function schedule(ms){clearTimeout(LDM.timer);clearInterval(LDM.timer);LDM.timer=0;if(!document.hidden && allowed() && liveUser() && API.on() && API.tok)LDM.timer=setTimeout(()=>void poll(),ms);}
   async function refreshReferences(uid,staleOnly=false){
     const key=scope(),now=Date.now(),ids=[...new Set((CHATS[uid] || []).filter(m=>m.id&&!m.pend&&!m.rc&&['post','prod'].includes(m.t)&&(!staleOnly||!m._refCheckedAt||now<m._refCheckedAt||now-m._refCheckedAt>=30000)).map(m=>m.id))];
+    let lastBox,lastTop,lastContext,reading=false;
     const paint=()=>{
-      if(CUR.key!=='msg|'+uid)return;const box=$('#cvB'),top=box?.getBoundingClientRect().top,keep=box&&box.scrollHeight-box.scrollTop-box.clientHeight>=120;
+      if(CUR.key!=='msg|'+uid)return;const context=current().context,box=$('#cvB'),top=box?.getBoundingClientRect().top,keep=box&&(context?.uid===uid||box.scrollHeight-box.scrollTop-box.clientHeight>=120||reading&&context===lastContext&&box===lastBox&&Math.abs(box.scrollTop-lastTop)<1);
       const anchor=keep?[...box.children].find(el=>{const rect=el.getBoundingClientRect();return el.dataset.dm?.startsWith('msg-')&&rect.top>=top&&rect.top<top+box.clientHeight;}):null,id=anchor?.dataset.dm,offset=anchor?anchor.getBoundingClientRect().top-top:0;
       LDM.sig[uid]=null;dmPaint(uid);
       const restored=id&&box.isConnected&&$('#cvB')===box?[...box.children].find(el=>el.dataset.dm===id):null;
       if(restored)box.scrollTop+=restored.getBoundingClientRect().top-box.getBoundingClientRect().top-offset;
+      reading=!!keep;lastBox=box;lastTop=box?.scrollTop;lastContext=context;
     };
     for(let i=0;i<ids.length;i+=200){
       if(!same(key))return;const batch=ids.slice(i,i+200),requested=new Set(batch),r=await API.req('POST',`/dm/with/${encodeURIComponent(uid)}/references`,{ids:batch});if(!same(key))return;
@@ -172,8 +174,8 @@
     if(!ok() || $('#srch')!==el || !el.isConnected || el._remote!==remote || remote.messageNext!==cursor)return;
     remote.messages.push(...r.items);remote.messageNext=r.next;searchRows(el,remote);
   });
-  ACTIONS['comm-jump-message']=b=>busy(b,async ok=>{const r=await API.req('GET',`/dm/messages/${encodeURIComponent(b.dataset.id || b.dataset.messageId)}/context`);if(!ok())return;const uid=r.peer.id;apiUser(r.peer);current().context={uid,after:r.after};LDM.full.add(uid);dmMerge(uid,r.items,true);LDM.before[uid]=r.before;closeSearch(false);closeSheet();go('msg-'+uid);LDM.sig[uid]=null;dmPaint(uid);requestAnimationFrame(()=>{const el=[...document.querySelectorAll('[data-dm]')].find(el=>el.dataset.dm==='msg-'+r.target);el?.scrollIntoView({block:'center'});el?.classList.add('flash');});});
-  ACTIONS['comm-context-next']=b=>busy(b,async ok=>{const r=await API.req('GET',`/dm/messages/${encodeURIComponent(b.dataset.id)}/context`);if(!ok())return;dmMerge(r.peer.id,r.items);current().context={uid:r.peer.id,after:r.after};LDM.sig[r.peer.id]=null;dmPaint(r.peer.id);});
+  ACTIONS['comm-jump-message']=b=>busy(b,async ok=>{const active=()=>ok()&&b.isConnected!==false,r=await API.req('GET',`/dm/messages/${encodeURIComponent(b.dataset.id || b.dataset.messageId)}/context`);if(!active())return;await dmRefs(r.items.map(dmMap));if(!active())return;const uid=r.peer.id;apiUser(r.peer);current().context={uid,after:r.after};LDM.full.add(uid);dmMerge(uid,r.items,true);LDM.before[uid]=r.before;closeSearch(false);closeSheet();go('msg-'+uid);LDM.sig[uid]=null;dmPaint(uid);requestAnimationFrame(()=>{const el=[...document.querySelectorAll('[data-dm]')].find(el=>el.dataset.dm==='msg-'+r.target);el?.scrollIntoView({block:'center'});el?.classList.add('flash');});});
+  ACTIONS['comm-context-next']=b=>busy(b,async ok=>{const context=current().context,view=CUR.key,active=()=>ok()&&current().context===context&&CUR.key===view,r=await API.req('GET',`/dm/messages/${encodeURIComponent(b.dataset.id)}/context`);if(!active())return;await dmRefs(r.items.map(dmMap));if(!active())return;dmMerge(r.peer.id,r.items);current().context={uid:r.peer.id,after:r.after};LDM.sig[r.peer.id]=null;dmPaint(r.peer.id);});
   ACTIONS['comm-latest']=b=>busy(b,async ok=>{const uid=b.dataset.id;current().context=null;LDM.full.delete(uid);await dmConv(uid);if(!ok())return;LDM.sig[uid]=null;dmPaint(uid);const box=$('#cvB');if(box)box.scrollTop=box.scrollHeight;});
 
   async function discussion(id,patch){const p=POST(id);if(!p?.live || p.author!==ME)return;const key=scope(),r=await API.req('PATCH',`/posts/${encodeURIComponent(id)}/discussion`,{...patch,expectedVersion:p.discussionVersion || 0});if(!same(key))return;Object.assign(p,r);delete STATE.solved[id];cmtPaint(id);controls();}
@@ -186,7 +188,8 @@
   comm.openActivity=async function(orig,b,e){const key=scope(),kind=b.dataset.v,count=NOTE_NEW[kind],reads=(NOTES[kind] || []).map(n=>[n,!!n.read]);orig(b,e);NOTE_NEW[kind]=count;reads.forEach(([n,read])=>n.read=read);msgBadge();const list=$('#layer .m-list');if(list){LACT.panel={k:kind,list,current:dmSession()};actPanelPaint();}
     try{await actLoad(true);if(!same(key))return;const token=current().tokens[kind];if(!token)throw Error('通知快照未读取成功，请重试');await API.req('POST','/me/activity/read',{kind,through:token});if(!same(key))return;current().version=null;await actLoad(true);await poll();}catch(err){if(same(key)){apiFail(err);actPanelPaint();}}
   };
-  const oldAtMark=atMark;atMark=function(id){if(!liveUser() || !/^ac_/.test(id))return oldAtMark(id);if(AT_READ.has(id))return;const key=scope();void API.req('POST','/me/activity/read',{ids:[id]}).then(async()=>{if(!same(key))return;AT_READ.add(id);const item=(NOTES.at || []).find(n=>n.id===id);if(item)item.read=true;current().version=null;await actLoad(true);msgBadge();}).catch(e=>{if(same(key))apiFail(e);});};
+  const oldAtMark=atMark;atMark=function(id){if(!liveUser() || !/^ac_/.test(id))return oldAtMark(id);if(AT_READ.has(id))return;const key=scope(),pending=current().activityReads ||= new Map();if(pending.has(id))return pending.get(id);const task=API.req('POST','/me/activity/read',{ids:[id]}).then(async()=>{if(!same(key))return;AT_READ.add(id);const item=(NOTES.at || []).find(n=>n.id===id);if(item)item.read=true;current().version=null;await actLoad(true);actPanelPaint();msgBadge();}).catch(e=>{if(same(key))apiFail(e);}).finally(()=>pending.delete(id));pending.set(id,task);return task;};
+  ACTIONS['activity-read']=b=>busy(b,()=>atMark(b.dataset.id));
   ACTIONS['at-all']=b=>busy(b,async ok=>{if(!current().tokens.at){const loaded=await actLoad(true);if(!ok())return;if(loaded===false)throw Error('通知尚未读取成功，请重试');}if(!ok())return;const through=current().tokens.at;if(!through)throw Error('通知尚未读取成功，请重试');await API.req('POST','/me/activity/read',{kind:'at',through});if(!ok())return;current().version=null;await actLoad(true);if(ok())await poll();});
   comm.openOfficial=async function(orig,b,e){const key=scope(),old=(ADM.inbox[ME] || []).map(n=>[n,n.read]);orig(b,e);old.forEach(([n,read])=>n.read=read);msgBadge();try{LDM.sysMark=null;const loaded=await sysLoad();if(!same(key))return;const through=current().tokens.official;if(loaded===false || !through)throw Error('官方通知尚未读取成功，请重试');await API.req('POST','/notifications/read-all?through='+encodeURIComponent(through));if(!same(key))return;current().version=null;LDM.sysMark=null;await sysLoad();if(same(key))await poll();}catch(err){if(same(key))apiFail(err);}};
 

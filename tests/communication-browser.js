@@ -3,7 +3,7 @@ async(page)=>{
   const errors=[],cases=[],origin=new URL(page.url()).origin;
   page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(12000);
   const assert=(value,message)=>{if(!value)throw Error(message);};
-  await page.reload();await page.waitForFunction(()=>STATE.role==='user' && !!globalThis.CZCommunication && POSTS.some(p=>p.live));
+  await page.goto(origin+'/#home');await page.reload();await page.waitForFunction(()=>STATE.role==='user' && !!globalThis.CZCommunication && POSTS.some(p=>p.live&&p.author===ME));
   const fixture=await page.evaluate(async()=>({me:ME,post:POSTS.find(p=>p.live&&p.author===ME).id,users:Object.fromEntries((await API.req('GET','/users?q=comm_')).items.map(u=>[u.name,u.id]))}));
   const a=fixture.me,b=fixture.users.comm_bravo,c=fixture.users.comm_charlie,pid=fixture.post;
   await page.evaluate(id=>go('post-'+id),pid);await page.waitForSelector('#cmtIn');await page.waitForSelector('[data-act="comm-close-comments"]');

@@ -11,18 +11,20 @@ async(page)=>{
     },{a,label});
     await page.evaluate(id=>go('msg-'+id),b);await page.waitForSelector('#cvB');await page.evaluate(()=>openSearch('msg'));await page.locator('#sq').fill(label);await page.locator('[data-message-id="'+fixture.messageId+'"]').click();await page.waitForSelector('.comm-context');
     await page.waitForFunction(({id,label})=>document.querySelector('[data-dm="msg-'+id+'"]')?.textContent.includes(label),{id:fixture.messageId,label});
+    await page.evaluate(()=>new Promise(requestAnimationFrame));
+    await page.evaluate(async()=>Promise.all(document.getAnimations().filter(a=>a.effect?.getComputedTiming().iterations!==Infinity).map(a=>a.finished.catch(()=>{}))));
     await peer.evaluate(async a=>API.req('POST','/dm/with/'+a,{body:'保持未读的新消息',clientMessageId:crypto.randomUUID()}),a);
     await page.waitForFunction(async()=>((await API.req('GET','/dm/unread')).count)>0);
     const before=await page.evaluate(async b=>{
-      clearTimeout(LDM.timer);const box=document.querySelector('#cvB');box.scrollTop=Math.max(0,Math.min(250,box.scrollHeight-box.clientHeight-150));
+      clearTimeout(LDM.timer);const unread=(await API.req('GET','/dm/unread')).count,box=document.querySelector('#cvB');box.scrollTop=Math.max(0,Math.min(250,box.scrollHeight-box.clientHeight-150));
       const top=box.getBoundingClientRect().top,anchor=[...box.children].find(el=>el.dataset.dm?.startsWith('msg-')&&el.getBoundingClientRect().top>=top);
-      return {unread:(await API.req('GET','/dm/unread')).count,cursor:LDM.since[b],anchor:anchor?.dataset.dm,offset:anchor?.getBoundingClientRect().top-top};
+      return {unread,cursor:LDM.since[b],anchor:anchor?.dataset.dm,offset:anchor?.getBoundingClientRect().top-top};
     },b);
     await peer.evaluate(id=>API.req('DELETE','/posts/'+id),fixture.postId);await page.evaluate(b=>CZCommunication.refreshReferences(b),b);
-    const after=await page.evaluate(async({b,id})=>{const box=document.querySelector('#cvB'),anchor=[...box.children].find(el=>el.dataset.dm===id);return {unread:(await API.req('GET','/dm/unread')).count,cursor:LDM.since[b],context:CZCommunication.contextFor(b),offset:anchor?.getBoundingClientRect().top-box.getBoundingClientRect().top};},{b,id:before.anchor});
+    const after=await page.evaluate(async({b,id})=>{const unread=(await API.req('GET','/dm/unread')).count,box=document.querySelector('#cvB'),anchor=[...box.children].find(el=>el.dataset.dm===id);return {unread,cursor:LDM.since[b],context:CZCommunication.contextFor(b),offset:anchor?.getBoundingClientRect().top-box.getBoundingClientRect().top};},{b,id:before.anchor});
     const tile=page.locator('[data-dm="msg-'+fixture.messageId+'"]');if(!(await tile.textContent()).includes('帖子暂不可用')||(await tile.textContent()).includes(label))throw Error('删帖后仍显示旧分享卡片');
     if(after.unread!==before.unread||after.cursor!==before.cursor||!after.context)throw Error('分享校对改动历史阅读状态');
-    if(before.anchor&&Math.abs(after.offset-before.offset)>3)throw Error('分享变化移动了正在阅读的位置');
+    if(before.anchor&&Math.abs(after.offset-before.offset)>3)throw Error('分享变化移动了正在阅读的位置 '+JSON.stringify({before,after}));
     await page.screenshot({path:'D:/ctrlz/output/communication-reference-20261110/browser/unavailable-share-context.png',animations:'disabled'});cases.push('deleted-share-refresh-without-read-or-cursor-change','share-refresh-preserves-reading-anchor');
     const late=await peer.evaluate(async a=>{const p=await API.req('POST','/posts',{type:'text',title:'迟到分享响应'});return API.req('POST','/dm/with/'+a,{kind:'post',ref:p.id,clientMessageId:crypto.randomUUID()});},a);
     await page.evaluate(async b=>{await dmConv(b);dmPaint(b);},b);

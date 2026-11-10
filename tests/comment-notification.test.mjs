@@ -21,7 +21,7 @@ function harness(){
       const wait=deferred();requests.push({method,path,body,auth,options,...wait});return wait.promise;
     }},
     LIVE:{cmts:{}},COMMENTS:{a:[],b:[],_default:[{u:'prototype',t:'不应注入真实帖子'}]},
-    UI:{newCmts:{},commentJump:null,flashCmt:null},STATE:{role:'user',cdel:new Set()},ME:'me',
+    UI:{newCmts:{},commentJump:null,flashCmt:null},STATE:{role:'user',cdel:new Set()},AT_READ:new Set(),ME:'me',
     ADM:{taken:{cmt:{}}},POST:id=>posts[id],CUR:{post:'a'},RL:{on:false,cm:false},reelCur:()=>posts[active],
     hash:s=>s,blocked:()=>false,apiUser(){},ago:()=> '刚刚',esc:v=>String(v),ACTIONS:{},
     renderPost:id=>paint.push({kind:'post',id}),reelBar:()=>paint.push({kind:'bar',id:active}),

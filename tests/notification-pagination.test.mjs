@@ -7,15 +7,15 @@ const source=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const part=(a,b)=>{const x=source.indexOf(a),y=source.indexOf(b,x+a.length);assert(x>=0&&y>x,a);return source.slice(x,y);};
 const tick=async()=>{for(let i=0;i<30;i++)await Promise.resolve();};
 const defer=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject};};
-const row=(i,read=false)=>({id:'ac_'+String(i).padStart(3,'0'),kind:'reply',actor:{id:'actor_'+i,name:'作者'+i},commentId:'c_'+i,body:'通知'+i,post:null,read,createdAt:new Date(1791763200000+i*1000).toISOString()});
+const row=(i,read=false)=>({id:'ac_'+String(i).padStart(3,'0'),kind:'reply',actor:{id:'actor_'+i,name:'作者'+i},commentId:'c_'+i,body:'通知'+i,post:null,targetState:'available',read,createdAt:new Date(1791763200000+i*1000).toISOString()});
 const rows=(high,low,read=false)=>Array.from({length:high-low+1},(_,i)=>row(high-i,read));
 function harness(){
-  const requests=[],attrs=new Map(),toasts=[],motions=[];let originalCalls=0;let ctx;
+  const requests=[],referenceRequests=[],attrs=new Map(),toasts=[],motions=[];let originalCalls=0;let ctx;
   const all={isConnected:true,disabled:false,innerHTML:'全部已读',dataset:{act:'at-all'},setAttribute:(k,v)=>attrs.set(k,v),removeAttribute:k=>attrs.delete(k),focus(){}};
   const list={isConnected:true,innerHTML:'',dataset:{},contains:()=>false,querySelectorAll:()=>[]},panel={isConnected:true,scrollTop:222,querySelector:sel=>sel.includes('at-all')?all:sel.includes('m-list')?list:null};list.closest=()=>panel;
   const note={likes:0,fans:0};Object.defineProperty(note,'at',{enumerable:true,configurable:true,get:()=>ctx.NOTES.at.filter(n=>!ctx.AT_READ.has(n.id)).length,set(){}});
   ctx=vm.createContext({Map,Set,JSON,Promise,Date,AbortController,encodeURIComponent,
-    API:{base:'https://isolated.invalid',epoch:1,tok:{access:'fake'},on:()=>true,req(method,path,body,auth,options){const r={...defer(),method,path,body,auth,options};requests.push(r);return r.promise;}},
+    API:{base:'https://isolated.invalid',epoch:1,tok:{access:'fake'},on:()=>true,req(method,path,body,auth,options){if(path==='/me/activity/references'){referenceRequests.push({method,path,body});return Promise.resolve({items:body.ids.map(id=>row(Number(id.slice(3))))});}const r={...defer(),method,path,body,auth,options};requests.push(r);return r.promise;}},
     ME:'fixture_reader',LDM:{epoch:1},STATE:{role:'user',clikes:new Set(),follows:new Set()},NOTES:{likes:[],fans:[],at:[]},NOTE_NEW:note,AT_READ:new Set(),USERS:{},COMMENTS:{},CUR:{key:'home|'},UI:{},
     document:{hidden:false,activeElement:null},$:sel=>sel.includes('at-all')?all:sel.includes('m-list')?list:sel.includes('.sheet')?panel:null,$$:()=>[],
     ACTIONS:{note(){},'at-all':()=>originalCalls++},liveUser:()=>ctx.API.on()&&ctx.STATE.role==='user',dmRefs:async()=>{},dmPoll:async()=>{},liveAfterLogin:async()=>{},
@@ -34,7 +34,7 @@ function harness(){
     for(const r of requests.slice(start+1)){const k=new URL('https://fixture'+r.path).searchParams.get('kind');r.resolve(k==='at'?{items:atRows,next}:others[k]||{items:[],next:null});}
     await task;return task;
   };
-  return{ctx,requests,attrs,all,list,panel,toasts,motions,read,page,head,get originalCalls(){return originalCalls;}};
+  return{ctx,requests,referenceRequests,attrs,all,list,panel,toasts,motions,read,page,head,get originalCalls(){return originalCalls;}};
 }
 test('通知第二页采用编码游标，重复点击共用请求，按稳定ID去重倒序并保留面板位置',async()=>{
   const h=harness();await h.head(rows(60,31),'a_cursor/+?');const p=h.ctx.ACTIONS['activity-more']({dataset:{v:'at'}}),same=h.ctx.ACTIONS['activity-more']({dataset:{v:'at'}});
@@ -52,6 +52,7 @@ test('后台刷新新首屏覆盖同ID字段且保留已经展开的旧页和末
   const h=harness();await h.head(rows(40,11),'a_11',40);const more=h.ctx.actMore('at');await tick();h.requests[4].resolve({items:rows(10,1),next:null});await more;
   await h.head([{...row(41),body:'新通知'}, {...row(40),body:'首屏更新'},...rows(39,12)],'a_new_head',41);
   assert.equal(h.ctx.NOTES.at.length,41);assert.equal(h.ctx.NOTES.at.at(-1).id,'ac_001');assert.equal(h.ctx.NOTES.at.find(n=>n.id==='ac_040').text,'首屏更新');assert.equal(h.page('at').next,null);assert.equal(h.page('at').expanded,true);
+  assert.equal(h.referenceRequests.length,1);assert.deepEqual([...h.referenceRequests[0].body.ids].sort(),Array.from({length:11},(_,i)=>row(i+1).id).sort());
 });
 test('读取更多的同时刷新首屏，保留两次请求间的旧首屏尾部，避免中间通知消失',async()=>{
   const h=harness();await h.head();const older=h.ctx.actMore('at');await tick();const head=h.ctx.actLoad(true);await tick();
