@@ -28,6 +28,12 @@ test('已离线时主页和必需脚本直接命中缓存，不启动网络或�
   assert.equal(await(await w.dispatch('/scripts/audio-cache.js').response).text(),'cached-script');
   assert.equal(requests,0);assert.equal(w.timers.length,0);
 });
+test('付款二维码组件离线从预缓存读取，不向外部二维码服务发送支付地址',async()=>{
+  let requests=0;const w=worker({online:false,fetchImpl:async()=>{requests++;throw Error('不能联网');}});
+  w.cache.set(w.key('/vendor/qrcodegen.js'),new Response('local-qr-library'));
+  assert.equal(await(await w.dispatch('/vendor/qrcodegen.js').response).text(),'local-qr-library');
+  assert.equal(requests,0);
+});
 
 test('联网但请求挂起时四秒取消并回缓存，完成后清理计时器',async()=>{
   let aborted=false;const w=worker({fetchImpl:(request,{signal})=>new Promise((resolve,reject)=>signal.addEventListener('abort',()=>{aborted=true;reject(Error('aborted'));}))});
@@ -44,9 +50,9 @@ test('联网成功采用新页面并更新统一主页缓存，未命中离线�
 
 test('安装缓存HTML与四个经典脚本，私密签名文件和接口请求不被主页策略接管',async()=>{
   const w=worker(),waits=[];w.listeners.get('install')({waitUntil:value=>waits.push(value)});await Promise.all(waits);
-  assert.deepEqual(w.precache.map(x=>typeof x==='string'?x:x.url),['./','./scripts/audio-cache.js?v=20261011','./scripts/dm-outbox.js','./scripts/harmony-loader.js?v=20261012','./scripts/views-admin-v1.js?v=20261030-2','./scripts/views-audio-v1.js?v=20261030-sec','./scripts/docs-v1.js?v=20261030-2']);
+  assert.deepEqual(w.precache.map(x=>typeof x==='string'?x:x.url),['./','./scripts/audio-cache.js?v=20261011','./scripts/dm-outbox.js','./scripts/harmony-loader.js?v=20261012','./scripts/views-admin-v1.js?v=20261030-2','./scripts/views-audio-v1.js?v=20261030-sec','./scripts/docs-v1.js?v=20261030-2','./vendor/qrcodegen.js']);
   // 页面和带版本号的脚本复用 HTTP 缓存；没版本号的 dm-outbox.js 可能是旧副本，照常走网络
-  assert.deepEqual(w.precache.filter(x=>typeof x==='string'),['./scripts/dm-outbox.js']);assert(w.precache.filter(x=>typeof x!=='string').every(x=>x.cache==='force-cache'));
+  assert.deepEqual(w.precache.filter(x=>typeof x==='string'),['./scripts/dm-outbox.js','./vendor/qrcodegen.js']);assert(w.precache.filter(x=>typeof x!=='string').every(x=>x.cache==='force-cache'));
   for(const path of ['/files/post_audio/u/202610/f_1.wav?sig=secret','/avatars/photo.png','/s/p_1','/dm/with/u','/posts'])assert.equal(w.dispatch(path).response,undefined,path);
 });
 

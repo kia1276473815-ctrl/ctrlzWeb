@@ -2659,6 +2659,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 
 <script src="scripts/audio-cache.js?v=20261011"></script>
 <script src="scripts/dm-outbox.js"></script>
+<script src="vendor/qrcodegen.js"></script>
 <script src="scripts/harmony-loader.js?v=20261012"></script>
 <script>
 "use strict";
@@ -6833,6 +6834,11 @@ function vcWarnFx(el){ if (!el || reduced()) return; const E = 'cubic-bezier(.2,
     setTimeout(() => { const r = hole.getBoundingClientRect(); fxShapes(r.left + r.width/2, r.top + r.height/2, 6, 50, ['pink','yellow'], 90); haptic(10); }, 520); } }
 function payBox(pr){
   if (API.on() && (!pr.live || !tradeAllowed(tradePurchaseKind(pr)))) return tradeNotice('paidCheckout', true);
+  if (API.on() && tradeCaps()?.mode === 'live'){
+    const channels = paymentChannels();
+    if (!channels.some(c => c.channel === PAY_M[UI.pay])) UI.pay = PAY_N[channels[0]?.channel] || '';
+    return `${tradeNotice('paidCheckout')}<div class="pays">${channels.map(c => `<button data-act="paym" data-m="${esc(PAY_N[c.channel])}" class="${UI.pay === PAY_N[c.channel] ? 'on' : ''}">${esc(PAY_N[c.channel])}</button>`).join('')}</div><p class="mut2">当前真实付款暂不支持代金券。</p><div class="sum"><div class="tot"><span>合计</span><b class="num">${yuan2(pr.price)}</b></div></div><button class="pill lg" data-act="do-pay" data-id="${pr.id}" id="payBtn" ${channels.length ? '' : 'disabled'}>${channels.length ? `${payVerb(UI.pay)} ${yuan2(pr.price)}` : '当前设备暂无可用支付方式'}</button>`;
+  }
   const ded = vcDed(pr), cash = r2(pr.price - ded), w = vcWasteOf(pr), gate = w > 0 && !UI.vcOk;
   return `${tradeNotice('paidCheckout')}${vcPick(pr)}${cash > 0 && !API.on() ? `<div class="pays">${[['微信支付','green'],['支付宝','blue'],['银行卡','ink']].map(([m,c]) => `<button data-act="paym" data-m="${m}" class="${UI.pay===m?'on':''}"><i style="background:${INK[c]}"></i>${m}</button>`).join('')}</div>` : ''}
     <div class="sum">${pr.orig ? `<div><span class="mut">原价</span><span class="num">${yuan2(pr.orig)}</span></div><div><span class="mut">限时优惠</span><span class="num" style="color:var(--pink)">−${yuan2(pr.orig - pr.price)}</span></div>` : ''}
@@ -6851,7 +6857,7 @@ ACTIONS.buy0 = b => {
     <div id="payBox" data-product-id="${pr.id}" style="display:contents">${payBox(pr)}</div>
     <p class="mut2 pay-cf">付款即确认：数字资源下载或查看后不适用七日无理由退货（文件损坏、和描述严重不符的除外）。按<a href="#doc-license">《素材使用许可》</a>使用 · <a href="#doc-refund">《退款规则》</a></p>`);
 };
-ACTIONS.paym = b => { UI.pay = b.dataset.m; $$('.pays button').forEach(x => x.classList.toggle('on', x === b)); const pb = $('#payBtn'); pb.textContent = pb.textContent.replace(/^用\S+?支付/, payVerb(UI.pay)); };
+ACTIONS.paym = b => { UI.pay = b.dataset.m; $$('.pays button').forEach(x => x.classList.toggle('on', x === b)); const pb = $('#payBtn'); if (pb) pb.textContent = pb.textContent.replace(/^用\S+?支付/, payVerb(UI.pay)); };
 ACTIONS['vc-pick'] = b => { const pr = P(b.dataset.id); UI.vcSel = b.dataset.v || null; UI.vcOk = false; haptic(8);
   const box = $('#payBox'); if (!box) return; box.innerHTML = payBox(pr); vcWarnFx($('#vcw')); fxPop($(`.vct[data-v="${b.dataset.v}"]`), 'fx-jelly'); };
 /* 确认「剩下的会作废」之后才出现付款按钮；票根盖一个「已确认」章 */
@@ -8369,10 +8375,10 @@ RJ_REASON.invoice = ['抬头或税号有误', '该订单已退款', '重复申�
 /* —— 购买凭证：画成图片保存 —— */
 function receiptPNG(o){ const p = P(o.pid), W = 720, H = 920, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), ff = getComputedStyle(document.body).fontFamily;
   g.fillStyle = '#F4F1EA'; g.fillRect(0, 0, W, H); g.fillStyle = '#141418'; g.font = `900 46px ${ff}`; g.fillText('CTRL Z', 56, 96); g.fillStyle = '#FF4FA3'; g.fillRect(56, 116, 80, 8);
-  g.fillStyle = '#141418'; g.font = `700 26px ${ff}`; g.fillText(o.live ? tradeSource(o) === 'mock' ? '内测模拟订单（无真实扣款）' : tradeSource(o) === 'free' ? '免费领取记录' : '历史订单（来源未确认）' : '购买凭证', 56, 176);
+  g.fillStyle = '#141418'; g.font = `700 26px ${ff}`; g.fillText(o.live ? tradeSource(o) === 'mock' ? '内测模拟订单（无真实扣款）' : tradeSource(o) === 'free' ? '免费领取记录' : tradeSource(o) === 'live' ? '购买凭证' : '历史订单（来源未确认）' : '购买凭证', 56, 176);
   const rows = [['订单号', o.no], ['资源', p.title], ['卖家', uname(p.seller)], ['买家', uname(ME)], ['金额', yuan2(o.price)], ['支付方式', o.pay], ['下单时间', o.time], ['状态', ordSt(o)], ['授权', '个人及商业作品使用，不得转售原文件']];
   g.font = `400 22px ${ff}`; rows.forEach(([k, v], i) => { const y = 250 + i*62; g.fillStyle = '#8A8780'; g.fillText(k, 56, y); g.fillStyle = '#141418'; g.fillText(String(v).slice(0, 26), 220, y); g.fillStyle = 'rgba(20,20,24,.12)'; g.fillRect(56, y + 22, W - 112, 2); });
-  g.save(); g.translate(W - 170, H - 170); g.rotate(-.18); g.strokeStyle = '#FF4FA3'; g.lineWidth = 6; g.beginPath(); g.arc(0, 0, 84, 0, Math.PI*2); g.stroke(); g.fillStyle = '#FF4FA3'; g.font = `900 40px ${ff}`; g.textAlign = 'center'; g.fillText(o.live ? tradeSource(o) === 'mock' ? 'TEST' : tradeSource(o) === 'free' ? 'FREE' : 'HIST' : ordSt(o) === '已退款' ? 'REFUND' : 'PAID', 0, 14); g.restore();
+  g.save(); g.translate(W - 170, H - 170); g.rotate(-.18); g.strokeStyle = '#FF4FA3'; g.lineWidth = 6; g.beginPath(); g.arc(0, 0, 84, 0, Math.PI*2); g.stroke(); g.fillStyle = '#FF4FA3'; g.font = `900 40px ${ff}`; g.textAlign = 'center'; g.fillText(o.live ? tradeSource(o) === 'mock' ? 'TEST' : tradeSource(o) === 'free' ? 'FREE' : tradeSource(o) === 'live' ? ordSt(o) === '已退款' ? 'REFUND' : ordSt(o) === '已完成' ? 'PAID' : 'PENDING' : 'HIST' : ordSt(o) === '已退款' ? 'REFUND' : 'PAID', 0, 14); g.restore();
   g.fillStyle = '#8A8780'; g.font = `400 16px ${ff}`; g.fillText(`${coName()} · 生成于 ${fmtDay(Date.now())}`, 56, H - 48);
   const u8 = Uint8Array.from(atob(c.toDataURL('image/png').split(',')[1]), ch => ch.charCodeAt(0)), a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([u8], {type:'image/png'})); a.download = `ctrlz-receipt-${o.no}.png`;
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);   // 同步生成，保证在点击手势内触发下载；文件名用英文，部分浏览器会丢掉中文下载名
@@ -8380,7 +8386,7 @@ function receiptPNG(o){ const p = P(o.pid), W = 720, H = 920, c = document.creat
 function ordSheet(no){ const o = STATE.orders.find(x => x.no === no); if (!o) return; const p = P(o.pid), inv = invOf(no), st = ordSt(o);
   sheet(`<h3>订单详情</h3>${tradeOrderBadge(o)}<div class="ad-kv col"><span>订单号<b class="n">${o.no}</b></span><span>资源<b>${esc(p.title)}</b></span><span>卖家<b>${esc(uname(p.seller))}</b></span><span>金额<b>${o.price ? yuan2(o.price) : '免费'}</b></span>${o.vc ? `<span>代金券抵扣<b>−${yuan2(o.vc)}</b></span><span>实付<b>${yuan2(r2(o.price - o.vc))}</b></span>` : ''}<span>支付方式<b>${esc(o.pay)}</b></span>${o.lic ? `<span>许可编号<b class="n">${esc(o.lic)}</b></span>` : ''}<span>时间<b>${esc(o.time)}</b></span><span>状态<b>${st}</b></span>${inv ? `<span>发票<b>${inv.st}${inv.invNo ? ' · ' + esc(inv.invNo) : ''}</b></span>` : ''}</div>
     ${o.live && tradeSource(o) === 'mock' ? '<p class="mut2">内测模拟记录，不代表真实扣款、退款、打款或开票。</p>' : ''}
-    <div class="ad-acts"><a class="pill sm lt" data-go="item-${p.id}">查看资源</a><button class="pill sm lt" data-act="ord-rcpt" data-no="${o.no}">${IC.dl}保存凭证</button>${o.live && tradeOrderCan(o,'canPay') ? `<button class="pill sm" data-act="order-pay" data-id="${o.id}">${tradeSource(o) === 'free' ? '确认领取' : '继续确认模拟订单'}</button>` : ''}${o.price > 0 && st !== '已退款' && !inv && tradeOrderCan(o,'canInvoice') ? `<button class="pill sm lt" data-act="inv-open" data-no="${o.no}">${o.live ? '申请模拟发票' : '申请发票'}</button>` : ''}<a class="pill sm lt" href="#msg-${p.seller}">联系卖家</a>${st === '已完成' && o.price > 0 && !rfOf(o.no) && tradeOrderCan(o,'canRefund') ? `<button class="pill sm lt" data-act="refund" data-no="${o.no}">${o.vc ? '申诉' : '退款'}</button>` : ''}</div>`); }
+    <div class="ad-acts"><a class="pill sm lt" data-go="item-${p.id}">查看资源</a><button class="pill sm lt" data-act="ord-rcpt" data-no="${o.no}">${IC.dl}保存凭证</button>${o.live && tradeOrderCan(o,'canPay') ? `<button class="pill sm" data-act="order-pay" data-id="${o.id}">${tradeSource(o) === 'free' ? '确认领取' : tradeSource(o) === 'live' ? '继续付款' : '继续确认模拟订单'}</button>` : ''}${o.price > 0 && st !== '已退款' && !inv && tradeOrderCan(o,'canInvoice') ? `<button class="pill sm lt" data-act="inv-open" data-no="${o.no}">${o.live && tradeSource(o) === 'mock' ? '申请模拟发票' : '申请发票'}</button>` : ''}<a class="pill sm lt" href="#msg-${p.seller}">联系卖家</a>${st === '已完成' && o.price > 0 && !rfOf(o.no) && tradeOrderCan(o,'canRefund') ? `<button class="pill sm lt" data-act="refund" data-no="${o.no}">${o.vc ? '申诉' : '退款'}</button>` : ''}</div>`); }
 
 /* —— 登录设备（原型：本机 + 示例设备） —— */
 const uaName = () => { const u = navigator.userAgent; const os = /iPhone/.test(u) ? 'iPhone' : /iPad|Macintosh.*Mobile/.test(u) ? 'iPad' : /Android/.test(u) ? 'Android' : /Mac/.test(u) ? 'Mac' : /Windows/.test(u) ? 'Windows' : '电脑';
@@ -10676,8 +10682,8 @@ function apiProduct(p){
   if (!old) PRODUCTS.push(o); return o;
 }
 const apiOrder = o => (apiUser(o.seller), {id:o.id, no:o.no, pid:o.productId, title:o.title, price:f2y(o.price), vc:f2y(o.voucherAmount), pay:tradePayName(o,o.payMethod), time:ymdhm(o.paidAt || o.createdAt),
-  status:o.status, tradeSource:tradeSource(o), ...Object.fromEntries(['canPay','canDownload','canRefund','canInvoice'].filter(k => Object.hasOwn(o,k)).map(k => [k,o[k] === true])),
-  st:o.status === 'refunded' ? '已退款' : ['pending','processing'].includes(o.refund?.status || o.refundStatus) ? '退款中' : {pending:'待付款',failed:'付款失败'}[o.status] || '已完成',
+  status:o.status, tradeSource:tradeSource(o), payment:o.payment || null, payMethod:o.payMethod, ...Object.fromEntries(['canPay','canDownload','canRefund','canInvoice'].filter(k => Object.hasOwn(o,k)).map(k => [k,o[k] === true])),
+  st:o.status === 'refunded' ? '已退款' : ['pending','processing'].includes(o.refund?.status || o.refundStatus) ? '退款中' : {pending:'待付款',failed:'付款失败',closed:'已关闭'}[o.status] || '已完成',
   live:true, paidAt:o.paidAt, createdAt:o.createdAt, summary:!Object.hasOwn(o,'licenseNo'), dl:o.downloads, lic:o.licenseNo, rfx:o.refund, fresh:false});
 function liveApplyOrder(o){ STATE.orders = [apiOrder(o), ...STATE.orders.filter(x => x.id !== o.id)]; STATE.owned.add(o.productId); LSHOP.library?.set(o.productId,{productId:o.productId,orderId:o.id,downloads:o.downloads}); const p = P(o.productId); if (p) p.sales++; }
 
@@ -10745,14 +10751,15 @@ const pickAny = cb => { const i = Object.assign(document.createElement('input'),
 const TRADE = {base:'', seq:0, status:'unknown', value:null};
 const TRADE_FLAGS = ['paidCheckout','freeClaim','refunds','payouts','invoices'];
 function normalizeTrade(value){
-  if (!value || !['disabled','mock'].includes(value.mode) || value.freeClaim !== true || TRADE_FLAGS.some(k => typeof value[k] !== 'boolean')) return null;
+  if (!value || !['disabled','mock','live'].includes(value.mode) || value.freeClaim !== true || TRADE_FLAGS.some(k => typeof value[k] !== 'boolean')) return null;
   if (value.mode === 'disabled' && TRADE_FLAGS.some(k => k !== 'freeClaim' && value[k])) return null;
-  return Object.fromEntries([['mode',value.mode],...TRADE_FLAGS.map(k => [k,value[k]])]);
+  if (value.mode === 'live' && (value.contract !== 'ctrlz-trade-v2' || !Array.isArray(value.channels) || value.channels.some(c => !c || !['wechat','alipay'].includes(c.channel) || !Array.isArray(c.scenes) || !c.scenes.length || c.scenes.some(s => !(c.channel === 'wechat' ? ['native','h5','jsapi'] : ['page','wap']).includes(s))) || new Set(value.channels.map(c => c.channel)).size !== value.channels.length || value.paidCheckout && !value.channels.length)) return null;
+  return Object.fromEntries([['contract',value.contract],['mode',value.mode],['channels',value.channels || []],...TRADE_FLAGS.map(k => [k,value[k]])]);
 }
 function tradeCaps(){ return TRADE.base === API.base && TRADE.status === 'ready' ? TRADE.value : null; }
-function tradeAllowed(action){ return !API.on() || tradeCaps()?.[action] === true; }
+function tradeAllowed(action){ if (!API.on()) return true; const caps=tradeCaps(); return caps?.[action] === true && !(action === 'payouts' && caps.mode === 'live'); } // 旧月结/手工标记入口仅供模拟；真实分账使用独立财务接口。
 function tradePurchaseKind(pr){ return pr.price === 0 ? 'freeClaim' : 'paidCheckout'; }
-function tradeBuyLabel(pr){ if (!API.on()) return pr.price ? '购买' : '免费领取'; if (!pr.live || !tradeAllowed(tradePurchaseKind(pr))) return pr.price ? '暂未开放购买' : '暂不可领取'; return pr.price ? '模拟购买' : '免费领取'; }
+function tradeBuyLabel(pr){ if (!API.on()) return pr.price ? '购买' : '免费领取'; if (!pr.live || !tradeAllowed(tradePurchaseKind(pr))) return pr.price ? '暂未开放购买' : '暂不可领取'; return pr.price ? tradeCaps()?.mode === 'live' ? '购买' : '模拟购买' : '免费领取'; }
 function tradeReason(action){
   if (!tradeCaps()) return '暂时无法确认交易状态，请重新读取后再试';
   return ({paidCheckout:'当前暂未开放付款，有价商品仍可查看',freeClaim:'当前暂不可领取',refunds:'当前暂不办理退款，历史记录仍可查看',payouts:'当前暂不办理结算打款，历史记录仍可查看',invoices:'当前暂不办理发票，历史记录仍可查看'})[action] || '当前操作暂未开放';
@@ -10760,11 +10767,11 @@ function tradeReason(action){
 function tradeGuard(action){ if (tradeAllowed(action)) return true; toast(tradeReason(action),'orange','x'); return false; }
 function tradeNotice(action='paidCheckout', retry=false){
   if (!API.on()) return '';
-  const text = tradeCaps()?.mode === 'mock' ? '内测模拟交易，不会实际扣款、退款、打款或开具发票。' : tradeAllowed(action) && tradeCaps() ? '当前仅开放免费领取，有价商品暂不支持付款。' : tradeReason(action);
+  const text = tradeCaps()?.mode === 'mock' ? '内测模拟交易，不会实际扣款、退款、打款或开具发票。' : tradeCaps()?.mode === 'live' && tradeAllowed(action) ? '付款结果以订单确认状态为准。离开支付页面后，可以在订单详情继续查看。' : tradeAllowed(action) && tradeCaps() ? '当前仅开放免费领取，有价商品暂不支持付款。' : tradeReason(action);
   return `<p class="mut2" data-trade-notice style="font-size:13px;line-height:1.6">${esc(text)}${retry && !tradeCaps() ? ' <button class="more" data-act="trade-retry">重新读取</button>' : ''}</p>`;
 }
-function tradeSource(row){ return ['free','mock'].includes(row?.tradeSource) ? row.tradeSource : 'legacy'; }
-function tradeOrderLabel(row){ return ({mock:'内测模拟',free:'免费领取',legacy:'历史记录 · 来源未确认'})[tradeSource(row)]; }
+function tradeSource(row){ return ['free','mock','live'].includes(row?.tradeSource) ? row.tradeSource : 'legacy'; }
+function tradeOrderLabel(row){ return ({mock:'内测模拟',free:'免费领取',live:'真实交易',legacy:'历史记录 · 来源未确认'})[tradeSource(row)]; }
 function tradePayName(row,method){ return tradeSource(row) === 'mock' ? '模拟支付' : tradeSource(row) === 'free' ? '免费领取' : PAY_N[method] || method || '—'; }
 function tradeOrderBadge(row){ return API.on() || row?.live || Object.hasOwn(row || {},'tradeSource') ? `<span class="tag ${tradeSource(row) === 'mock' ? 'c-yellow' : 'k'}">${tradeOrderLabel(row)}</span>` : ''; }
 function tradeOrderCan(o, key){
@@ -10774,20 +10781,21 @@ function tradeOrderCan(o, key){
   const source=tradeSource(o), status=o.status || ({'待付款':'pending','付款失败':'failed','已退款':'refunded','已完成':'paid'})[o.st];
   if (key === 'canDownload') return typeof o[key] === 'boolean' ? o[key] : status === 'paid';
   if (source === 'legacy' || o[key] === false) return false;
+  if (source === 'live' && tradeCaps()?.mode !== 'live' || source === 'mock' && tradeCaps()?.mode !== 'mock') return false;
   if (key === 'canPay') return status === 'pending' && tradeAllowed(source === 'free' ? 'freeClaim' : 'paidCheckout') && (o[key] === true || source === 'free' || source === 'mock');
   const action=key === 'canRefund' ? 'refunds' : 'invoices';
-  return source === 'mock' && status === 'paid' && tradeAllowed(action) && (o[key] === true || o.price > 0 && (key !== 'canInvoice' || o.price > (o.vc || 0)));
+  return (source === 'mock' || source === 'live' && o[key] === true) && status === 'paid' && tradeAllowed(action) && (o[key] === true || o.price > 0 && (key !== 'canInvoice' || o.price > (o.vc || 0)));
 }
 function tradeOrderGuard(o,key){ if (tradeOrderCan(o,key)) return true; toast(tradeSource(o) === 'legacy' ? '来源未确认的历史交易仅供查看，不能继续付款、退款或开票' : tradeReason(key === 'canPay' ? tradeSource(o) === 'free' ? 'freeClaim' : 'paidCheckout' : key === 'canRefund' ? 'refunds' : 'invoices'),'orange','x'); return false; }
-function tradeRowAllowed(row,action){ return !API.on() || tradeAllowed(action) && tradeSource(row) === 'mock'; }
+function tradeRowAllowed(row,action){ return !API.on() || tradeAllowed(action) && (tradeSource(row) === 'mock' && tradeCaps()?.mode === 'mock' || tradeSource(row) === 'live' && tradeCaps()?.mode === 'live'); }
 function tradeRowGuard(row,action){ if (tradeRowAllowed(row,action)) return true; toast(tradeSource(row) === 'legacy' ? '来源未确认的历史交易仅供查看，不能新增财务操作' : tradeReason(action),'orange','x'); return false; }
 function tradePendingOrder(o){
-  if (!o?.id || !['pending','failed'].includes(o.status)) throw new Error('无法确认订单结果');
+  if (!o?.id || !['pending','failed','closed'].includes(o.status)) throw new Error('无法确认订单结果');
   STATE.orders=[apiOrder(o),...STATE.orders.filter(x => x.id !== o.id)];
   toast(o.status === 'pending' ? '订单仍待确认，请在订单详情查看；不要重复创建订单' : '订单未完成，请在订单详情查看','orange','x'); rerender();
 }
-function tradePublishNote(){ if (!API.on()) return ''; return `<p class="mut2" data-trade-publish style="font-size:13px;line-height:1.6">${tradeCaps()?.mode === 'mock' ? '当前为内测模拟交易，审核和上架不代表真实收款。' : '可以提交审核、编辑和展示商品；当前有价商品暂不支持付款，免费资源仍按服务器能力领取。'}</p>`; }
-function tradeSummaryNotice(simulation){ return API.on() ? `<p class="mut2" data-trade-summary style="font-size:13px;line-height:1.6">${simulation === true ? '以下为内测模拟统计，不代表真实收入、退款或到账。' : '真实资金业务尚未开放，资金汇总不包含历史未确认及模拟交易；原记录仍可逐条查看。'}</p>` : ''; }
+function tradePublishNote(){ if (!API.on()) return ''; return `<p class="mut2" data-trade-publish style="font-size:13px;line-height:1.6">${tradeCaps()?.mode === 'mock' ? '当前为内测模拟交易，审核和上架不代表真实收款。' : tradeCaps()?.mode === 'live' ? '收费商品能否购买，以卖家的收款开通状态和可用支付方式为准。' : '可以提交审核、编辑和展示商品；当前有价商品暂不支持付款，免费资源仍按服务器能力领取。'}</p>`; }
+function tradeSummaryNotice(simulation){ return API.on() ? `<p class="mut2" data-trade-summary style="font-size:13px;line-height:1.6">${simulation === true ? '以下为内测模拟统计，不代表真实收入、退款或到账。' : tradeCaps()?.mode === 'live' ? '收入与退款以渠道确认和对账结果为准；预计金额不代表已到账。' : '真实资金业务尚未开放，资金汇总不包含历史未确认及模拟交易；原记录仍可逐条查看。'}</p>` : ''; }
 async function tradePost(path,body,action){
   const base=API.base, epoch=API.epoch;
   if (API.tok?.refresh && API.stale?.()) try { await API.refresh(); } catch(e){ e.tradeUnsent=true; throw e; }
@@ -10817,11 +10825,174 @@ ACTIONS['trade-retry']=async b => { if (b?.disabled) return; if (b) b.disabled=t
 ACTIONS['order-pay']=async b => {
   const row=STATE.orders.find(o => o.id === b.dataset.id); if (b.disabled || !row || !tradeOrderGuard(row,'canPay')) return;
   const current=accountSession(), sh=b.closest?.('.sheet'); b.disabled=true;
-  try { const o=await tradePost('/orders/'+encodeURIComponent(row.id)+'/pay',{},tradeSource(row) === 'free' ? 'freeClaim' : 'paidCheckout'); if (!current()) return;
-    if (o.status !== 'paid'){ tradePendingOrder(o); return; } liveApplyOrder(o); const pr=P(o.productId);
+  try { const request = tradeSource(row) === 'live' ? {paymentScene:paymentScene(row.payMethod || PAY_M[row.pay])} : {};
+    if (tradeSource(row) === 'live' && !request.paymentScene){ toast('当前环境不支持这个支付方式，请在支持的浏览器中打开订单','orange','x'); return; }
+    const o=await tradePost('/orders/'+encodeURIComponent(row.id)+'/pay',request,tradeSource(row) === 'free' ? 'freeClaim' : 'paidCheckout'); if (!current()) return;
+    if (o.status !== 'paid'){ if (tradeSource(o) === 'live' || tradeSource(o) === 'mock' && o.payment) paymentCheckout(o); else tradePendingOrder(o); return; } liveApplyOrder(o); const pr=P(o.productId);
     if (pr && sh?.isConnected) paidUI(pr,sh,o); else { toast('订单已确认，请在资源库查看','green'); rerender(); }
   } catch(e){ if (current()) tradeFailure(e); } finally { if (b.isConnected) b.disabled=false; }
 };
+/* 真实付款：调起结果只更新提示；只有服务端订单确认后才授予已购。
+   持久化的恢复标记不含支付签名，且始终绑定服务地址和当前账号。 */
+const PAYMENT_FLOW = {job:null};
+function paymentChannels(){
+  return (tradeCaps()?.channels || []).filter(c => paymentScene(c.channel, c.scenes));
+}
+function paymentScene(channel, allowed){
+  const scenes = allowed || tradeCaps()?.channels?.find(c => c.channel === channel)?.scenes || [];
+  const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent, mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua), wechat = /MicroMessenger/i.test(ua);
+  const preference = channel === 'wechat' ? wechat ? ['jsapi','native'] : mobile ? ['h5','native'] : ['native'] : channel === 'alipay' ? wechat ? [] : mobile ? ['wap','page'] : ['page'] : [];
+  return preference.find(s => scenes.includes(s)) || null;
+}
+function paymentMarker(value){
+  if (typeof store === 'undefined') return null;
+  if (value !== undefined) store.set('payment-pending', value);
+  return store.get('payment-pending', null);
+}
+function paymentRememberAttempt(o,signature,key){
+  if (!o?.id || typeof store === 'undefined') return;
+  const bindings=store.get('order-attempt-bindings',{}) || {};
+  bindings[JSON.stringify([API.base,ME,o.id])]={signature,key};
+  store.set('order-attempt-bindings',bindings);
+  paymentSettleAttempt(o);
+}
+function paymentSettleAttempt(o){
+  if (!o?.id || !['paid','refunded','closed','failed'].includes(o.status) || typeof store === 'undefined') return;
+  const bindings=store.get('order-attempt-bindings',{}) || {},id=JSON.stringify([API.base,ME,o.id]),binding=bindings[id];
+  if (!binding) return;
+  const attempts=store.get('order-attempts',{}) || {};
+  if (attempts[binding.signature] === binding.key){ delete attempts[binding.signature]; store.set('order-attempts',attempts); }
+  delete bindings[id];store.set('order-attempt-bindings',bindings);
+}
+function paymentStop(){
+  const job = PAYMENT_FLOW.job;
+  if (job?.timer) clearTimeout(job.timer);
+  if (job) job.stopped = true;
+  PAYMENT_FLOW.job = null;
+}
+function paymentSafeUrl(url, channel, qr = false){
+  if (typeof url !== 'string' || url.length > 8192) throw new Error('支付地址无效，请从订单详情重新读取');
+  const u = new URL(url);
+  if (qr && channel === 'wechat' && u.protocol === 'weixin:' && ['wxpay','pay.weixin.qq.com'].includes(u.hostname)) return u.href;
+  const hosts = channel === 'wechat' ? ['tenpay.com','weixin.qq.com'] : ['alipay.com','alipaydev.com'];
+  if (u.protocol !== 'https:' || u.username || u.password || !hosts.some(h => u.hostname === h || u.hostname.endsWith('.' + h))) throw new Error('支付地址无效，请从订单详情重新读取');
+  return u.href;
+}
+function paymentQrMarkup(url){
+  if (typeof qrcodegen === 'undefined') throw new Error('二维码组件未能加载，请刷新页面后查看订单');
+  const qr = qrcodegen.QrCode.encodeText(url, qrcodegen.QrCode.Ecc.MEDIUM), n = qr.size + 8, path = [];
+  for (let y=0; y<qr.size; y++) for (let x=0; x<qr.size; x++) if (qr.getModule(x,y)) path.push(`M${x+4},${y+4}h1v1h-1z`);
+  return `<svg role="img" aria-label="微信支付二维码" viewBox="0 0 ${n} ${n}" style="display:block;width:min(100%,240px);height:auto;margin:20px auto;background:#fff;shape-rendering:crispEdges"><rect width="${n}" height="${n}" fill="#fff"/><path d="${path.join('')}" fill="#000"/></svg>`;
+}
+function paymentMessage(job,text){
+  if (job?.panel?.isConnected){ const label = $('[data-payment-message]',job.panel); if (label) label.textContent=text; }
+}
+function paymentCheckout(o){
+  if (!o?.id || !['live','mock'].includes(tradeSource(o))) return tradePendingOrder(o);
+  paymentSettleAttempt(o);
+  STATE.orders=[apiOrder(o),...STATE.orders.filter(x => x.id !== o.id)];
+  paymentMarker({base:API.base,uid:ME,orderId:o.id,source:tradeSource(o),at:Date.now()});
+  const p=o.payment, action=p?.action, mock=tradeSource(o) === 'mock', terminal=o.status !== 'pending' || ['closed','failed','expired'].includes(p?.status);
+  let body='';
+  try {
+    if (mock) body='<p class="mut2">内测模拟付款，不会实际扣款。请使用下面的模拟按钮，不要扫描任何付款码。</p>'+(!terminal && p?.attemptId && tradeCaps()?.mode === 'mock' ? '<button class="pill lg" data-act="payment-mock">模拟付款成功（不会扣款）</button>' : '');
+    else if (!terminal && action?.type === 'qr') body=paymentQrMarkup(paymentSafeUrl(action.url,p.channel,true))+'<p>请用微信扫一扫完成付款。</p>';
+    else if (!terminal && action?.type === 'redirect') { paymentSafeUrl(action.url,p.channel); body=`<button class="pill lg" data-act="payment-launch">前往${esc(PAY_N[p.channel] || '支付页面')}付款</button>`; }
+    else if (!terminal && action?.type === 'jsapi') body='<button class="pill lg" data-act="payment-launch">打开微信支付</button>';
+  } catch(e){ body=`<p class="mut2">${esc(e.message)}</p>`; }
+  const message=terminal ? '本次付款已结束。请查询订单确认最终结果。' : body ? '付款后正在等待渠道确认。关闭面板不会取消订单。' : '付款参数暂不可用。请先查询状态，再从订单详情继续付款。';
+  sheet(`<h3>${mock ? '模拟订单付款' : '订单付款'}</h3><p style="overflow-wrap:anywhere">${esc(o.title || o.no || '')}</p><div class="sum"><div class="tot"><span>${mock ? '模拟金额' : '实付'}</span><b class="num">${yuan2(f2y(o.cashAmount ?? o.price))}</b></div></div>${body}<p class="mut2" data-payment-message role="status" aria-live="polite">${message}</p><div class="ad-acts"><button class="pill lt" data-act="payment-check">查询付款状态</button><button class="pill lt" data-act="payment-pause">稍后查看</button></div>`, panel => {
+    panel.dataset.paymentOrder=o.id;
+    paymentWatch(o.id,panel,o);
+    return () => { if (PAYMENT_FLOW.job?.panel === panel) paymentStop(); };
+  });
+}
+function paymentWatch(orderId,panel=null,order=null){
+  paymentStop();
+  const job={orderId,panel,order,current:accountSession(),base:API.base,uid:ME,started:Date.now(),busy:false,stopped:false,timer:null};
+  PAYMENT_FLOW.job=job;
+  void paymentCheck(job);
+  return job;
+}
+async function paymentCheck(job=PAYMENT_FLOW.job){
+  if (!job || job.busy || job.stopped || job !== PAYMENT_FLOW.job) return;
+  if (!job.current() || job.base !== API.base || job.uid !== ME){ paymentStop(); return; }
+  if (typeof document !== 'undefined' && document.hidden) return;
+  if (job.timer){ clearTimeout(job.timer); job.timer=null; }
+  job.busy=true;
+  try {
+    const o=await API.req('GET','/orders/'+encodeURIComponent(job.orderId));
+    if (job.stopped || job !== PAYMENT_FLOW.job || !job.current() || job.base !== API.base || job.uid !== ME) return;
+    if (!o || o.id !== job.orderId || !['live','mock'].includes(tradeSource(o))) throw new Error('无法确认当前订单');
+    job.order=o;
+    paymentSettleAttempt(o);
+    if (o.status === 'paid'){
+      paymentMarker(null); paymentStop(); liveApplyOrder(o);
+      if (job.panel?.isConnected){ const pr=P(o.productId); if (pr) paidUI(pr,job.panel,o); else { closeSheet(); toast('订单已付款，请在资源库查看','green'); } }
+      else toast(tradeSource(o) === 'mock' ? '模拟订单已确认，未发生真实扣款' : '订单已付款，请在资源库查看','green');
+      rerender(); return;
+    }
+    STATE.orders=[apiOrder(o),...STATE.orders.filter(x => x.id !== o.id)];
+    if (['closed','failed','refunded'].includes(o.status) || ['closed','failed','expired'].includes(o.payment?.status)){
+      paymentMessage(job,o.status === 'refunded' ? '订单已退款。请在订单详情查看。' : '本次付款已关闭或未完成。请在订单详情查看，再决定是否重新付款。');
+      paymentMarker(null); paymentStop(); rerender(); return;
+    }
+    paymentMessage(job,'尚未确认付款。请完成支付；如已扣款，请等待确认，不要重复支付。');
+  } catch(e){
+    if (job.stopped || job !== PAYMENT_FLOW.job || !job.current()) return;
+    paymentMessage(job,'暂时无法读取付款状态。请稍后点“查询付款状态”，不要重复支付。');
+    if (!job.panel?.isConnected) toast('暂时无法确认付款结果，请在订单详情查询','orange','x');
+    paymentStop(); return;
+  } finally { job.busy=false; }
+  if (Date.now()-job.started >= 300_000){ paymentMessage(job,'付款仍未确认，已暂停自动查询。可手动查询或稍后从订单详情查看。'); return; }
+  if (!job.stopped && (!job.panel || job.panel.isConnected)) job.timer=setTimeout(() => void paymentCheck(job),2500);
+}
+function paymentRestore(){
+  if (!API.on() || typeof liveUser === 'undefined' || !liveUser() || typeof document !== 'undefined' && document.hidden) return;
+  const marker=paymentMarker();
+  if (!marker || marker.base !== API.base || marker.uid !== ME || typeof marker.orderId !== 'string') return;
+  if (PAYMENT_FLOW.job){ if (!PAYMENT_FLOW.job.timer && Date.now()-PAYMENT_FLOW.job.started < 300_000) void paymentCheck(); return; }
+  if (Date.now()-marker.at < 86_400_000) paymentWatch(marker.orderId);
+}
+ACTIONS['payment-check']=b => {
+  const panel=b.closest?.('.sheet'), id=panel?.dataset.paymentOrder;
+  if (!id) return;
+  if (PAYMENT_FLOW.job?.orderId === id) void paymentCheck(); else paymentWatch(id,panel);
+};
+ACTIONS['payment-pause']=() => { paymentStop(); closeSheet(); toast('订单已保留，可在订单详情继续查看','blue'); };
+ACTIONS['payment-mock']=async b => {
+  const job=PAYMENT_FLOW.job,panel=b.closest?.('.sheet'),p=job?.order?.payment;
+  if (!job || job.panel !== panel || !job.current() || job.base !== API.base || tradeSource(job.order) !== 'mock' || tradeCaps()?.mode !== 'mock' || !p?.attemptId || b.disabled) return;
+  b.disabled=true;
+  try { await tradePost('/pay/mock/'+encodeURIComponent(p.attemptId),{kind:'payment'},'paidCheckout'); if (!job.stopped && job.current()) await paymentCheck(job); }
+  catch(e){ if (!job.stopped && job.current()) paymentMessage(job,'暂时无法确认模拟结果，请查询订单状态后再操作。'); }
+  finally { if (b.isConnected) b.disabled=false; }
+};
+ACTIONS['payment-launch']=async b => {
+  const job=PAYMENT_FLOW.job, panel=b.closest?.('.sheet');
+  if (!job || panel !== job.panel || !job.current() || job.base !== API.base || job.uid !== ME || b.disabled) return;
+  const p=job.order?.payment, action=p?.action;
+  if (p?.expiresAt && Date.parse(p.expiresAt) <= Date.now()){ paymentMessage(job,'本次付款参数已过期，请查询状态后从订单详情继续付款。'); return; }
+  try {
+    if (action?.type === 'redirect'){ const url=paymentSafeUrl(action.url,p.channel); location.assign(url); return; }
+    if (action?.type !== 'jsapi') return;
+    if (typeof WeixinJSBridge === 'undefined' || typeof WeixinJSBridge.invoke !== 'function'){ paymentMessage(job,'未能打开微信支付，请在微信中打开订单链接，或使用其它支付方式。'); return; }
+    const required=['appId','timeStamp','nonceStr','package','signType','paySign'];
+    if (required.some(k => typeof action[k] !== 'string' || !action[k])) throw new Error('微信支付参数不完整，请从订单详情重新读取');
+    b.disabled=true;
+    WeixinJSBridge.invoke('getBrandWCPayRequest',Object.fromEntries(required.map(k => [k,action[k]])),result => {
+      b.disabled=false; if (job.stopped || !job.current()) return;
+      paymentMessage(job,/cancel/i.test(result.err_msg || '') ? '已取消调起微信支付，订单仍待付款。可重新打开支付或稍后查看。' : /:ok$/.test(result.err_msg || '') ? '微信已返回，正在查询订单确认结果。' : '微信支付未完成，请查询订单后再决定是否重试。');
+      void paymentCheck(job);
+    });
+  } catch(e){ paymentMessage(job,e.message); }
+};
+if (typeof addEventListener === 'function'){
+  addEventListener('pageshow',paymentRestore); addEventListener('focus',paymentRestore);
+  addEventListener('pagehide',paymentStop);
+  document.addEventListener('visibilitychange',() => { if (document.hidden){ const job=PAYMENT_FLOW.job; if (job?.timer){ clearTimeout(job.timer); job.timer=null; } } else paymentRestore(); });
+  document.addEventListener('rendered',paymentRestore);
+}
 const USER_RE = /^[A-Za-z0-9_]{3,20}$/;
 { const me0 = liveMe;
   liveMe = function(me){ LIVE.me = me; me0(me); const a = ACC.list.find(x => x.id === me.id); if (a){ a.username = me.username || undefined; a.ini = avIni(USERS[me.id]); ACC.save(); }
@@ -11769,17 +11940,20 @@ wrapAct('sp-save', async (orig, b) => { const p = P(b.dataset.id); if (!liveUser
 /* —— 买：下单付款、免费领取 —— */
 wrapAct('buy0', async (orig, b, e) => { const pr = P(b.dataset.id); if (!API.on()) return orig(b,e); if (b.disabled) return; if (!pr?.live){ toast('商品资料尚未读取，请稍后重试','orange','x'); return; } if (!tradeGuard(tradePurchaseKind(pr)) || needLogin()) return;
   if (pr.price > 0) return orig(b, e);   // 付费的照常打开付款面板
-  const attempt = orderAttempt(pr,{productId:pr.id}), current=accountSession(); b.disabled = true; try { const o = await tradePost('/orders',attempt.body,'freeClaim'); if (!current()) return; if (o.status !== 'paid'){ tradePendingOrder(o); return; } attempt.done(); liveApplyOrder(o); STATE.libNew++; badge(); toast('已放进你的资源库', 'green'); rerender(); } catch(err){ if (current()) tradeFailure(err); } finally { if (b.isConnected) b.disabled=false; } });
+  const attempt = orderAttempt(pr,{productId:pr.id}), current=accountSession(); b.disabled = true; try { const o = await tradePost('/orders',attempt.body,'freeClaim'); if (!current()) return; attempt.remember?.(o); if (o.status !== 'paid'){ tradePendingOrder(o); return; } attempt.done(); liveApplyOrder(o); STATE.libNew++; badge(); toast('已放进你的资源库', 'green'); rerender(); } catch(err){ if (current()){ if (['order_closed','payment_failed'].includes(err.code)) attempt.done(); tradeFailure(err); } } finally { if (b.isConnected) b.disabled=false; } });
 wrapAct('do-pay', async (orig, b) => { const pr = P(b.dataset.id); if (!API.on()) return orig(b); if (!pr?.live || !tradeGuard(tradePurchaseKind(pr))) return;
-  const sh = $('#layer .sheet'), ded = vcDed(pr), cash = r2(pr.price - ded), v = vcSel(pr); if (!sh?.isConnected || b.disabled) return;
-  if (vcWasteOf(pr) > 0 && !UI.vcOk) return;   // 会作废的券必须先确认（后端也会拦：没带 confirmWaste 就报 voucher_waste）
-  const current=accountSession(); sh.innerHTML = `<div class="done"><div class="ring-p" id="rp" style="--p:35"></div><b style="font-size:18px">正在确认模拟订单…</b></div>`;
-  const attempt = orderAttempt(pr,{productId:pr.id,payMethod:PAY_M[UI.pay] || 'wechat',...(v ? {useVoucher:true,voucherId:v.id,confirmWaste:true} : {useVoucher:false})});
+  const real=tradeCaps()?.mode === 'live', sh = $('#layer .sheet'), v = real ? null : vcSel(pr); if (!sh?.isConnected || b.disabled) return;
+  if (!real && vcWasteOf(pr) > 0 && !UI.vcOk) return;   // 会作废的券必须先确认（后端也会拦：没带 confirmWaste 就报 voucher_waste）
+  const method=PAY_M[UI.pay] || 'wechat', scene=real ? paymentScene(method) : null;
+  if (real && !scene){ toast('当前环境不支持这个支付方式，请选择其它方式或在浏览器打开','orange','x'); return; }
+  const current=accountSession(); b.disabled=true; sh.innerHTML = `<div class="done"><b style="font-size:18px">${real ? '正在创建付款订单…' : '正在确认模拟订单…'}</b></div>`;
+  const attempt = orderAttempt(pr,{productId:pr.id,payMethod:method,...(real ? {paymentScene:scene} : {}),...(v ? {useVoucher:true,voucherId:v.id,confirmWaste:true} : {useVoucher:false})});
   try { const o = await tradePost('/orders',attempt.body,tradePurchaseKind(pr)); if (!current()) return;
-    if (o.status !== 'paid'){ if (sh.isConnected) closeSheet(); tradePendingOrder(o); return; }
+    attempt.remember?.(o);
+    if (o.status !== 'paid'){ if (real || tradeSource(o) === 'mock' && o.payment) paymentCheckout(o); else { if (sh.isConnected) closeSheet(); tradePendingOrder(o); } return; }
     attempt.done(); liveApplyOrder(o); try { LSHOP.wallet = await API.req('GET', '/me/wallet'); } catch(e){}
     if (!current()) return; if (sh.isConnected) paidUI(pr, sh, o); else toast('订单已确认，请在资源库查看','green'); }
-  catch(err){ if (!current()) return; if (sh.isConnected) closeSheet(); tradeFailure(err); if (/^voucher_/.test(err.code || '')) try { LSHOP.wallet = await API.req('GET', '/me/wallet'); } catch(e){} } });
+  catch(err){ if (!current()) return; if (['order_closed','payment_failed'].includes(err.code)) attempt.done(); if (sh.isConnected) closeSheet(); tradeFailure(err); if (/^voucher_/.test(err.code || '')) try { LSHOP.wallet = await API.req('GET', '/me/wallet'); } catch(e){} } finally { if (b.isConnected) b.disabled=false; } });
 /* —— 下载：从服务端领取短时效地址 —— */
 wrapAct('dl', async (orig, b) => { const id = b.dataset.id, pr = P(id); if (!pr?.live) return orig(b);
   const o = STATE.orders.find(x => x.pid === id && x.live && x.st === '已完成'), orderId = LSHOP.library?.get(id)?.orderId || o?.id; if (!orderId){ toast('购买后才能下载', 'orange', 'lock'); return; } if (o && !tradeOrderCan(o,'canDownload')){ toast('该订单暂不可下载，请重新读取订单状态','orange','lock'); return; }
@@ -11793,7 +11967,7 @@ wrapAct('do-refund', async (orig, b) => { const o = STATE.orders.find(x => x.no 
   if (!fast && !x){ fxPop($('#rfX'), 'fx-shake', 300); $('#rfX').focus(); return; }
   const problem = pick === '文件损坏' ? 'broken' : pick === '和描述不符' ? 'mismatch' : 'other';
   if (b.disabled) return; b.disabled = true; const current=accountSession(), sh=b.closest?.('.sheet');
-  try { const r = await tradePost(`/orders/${o.id}/refund`,{reason,problem},'refunds'); if (!current()) return; if (sh?.isConnected) closeSheet(); toast(r.fast ? '模拟退款已完成，未实际退回资金' : '模拟申请已提交，未发生真实退款', r.fast ? 'green' : 'orange', r.fast ? 'check' : undefined); await liveShop(); await liveMine(); rerender(); }
+  try { const r = await tradePost(`/orders/${o.id}/refund`,{reason,problem},'refunds'); if (!current()) return; if (sh?.isConnected) closeSheet(); const real=tradeSource(o) === 'live'; toast(real ? '退款申请已提交，请在订单详情查看渠道确认结果' : r.fast ? '模拟退款已完成，未实际退回资金' : '模拟申请已提交，未发生真实退款', !real && r.fast ? 'green' : 'orange', !real && r.fast ? 'check' : undefined); await liveShop(); await liveMine(); rerender(); }
   catch(e){ if (!current()) return; if (b.isConnected) b.disabled = false; tradeFailure(e); } });
 
 /* —— 「我 › 代金券」（原型和后端共用；数据统一走 vcItems） —— */
@@ -12766,7 +12940,8 @@ for (const action of ['ord-open','refund']) wrapAct(action,async (orig,b,e) => {
 { const resetAccount = liveReset; liveReset = function(){ ACCOUNT_PAGES.epoch++; ACCOUNT_PAGES.busy.clear(); LSHOP.library = null; LSHOP.libraryTried = new Set(); LSHOP.ordersNext = LSHOP.salesNext = null; return resetAccount(); }; }
 function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.tier || 'standard',body.useVoucher,body.payMethod,body.voucherId || null,body.confirmWaste === true]); let attempts = store.get('order-attempts',{}) || {};
   if (!attempts[signature]){ attempts[signature] = 'web-' + crypto.randomUUID(); store.set('order-attempts',attempts); }
-  return {body:{...body,requestKey:attempts[signature]},done(){ attempts = store.get('order-attempts',{}) || {}; delete attempts[signature]; store.set('order-attempts',attempts); }};
+  const key=attempts[signature];
+  return {body:{...body,requestKey:key},remember(o){paymentRememberAttempt(o,signature,key);},done(){ attempts = store.get('order-attempts',{}) || {}; if (attempts[signature] === key) delete attempts[signature]; store.set('order-attempts',attempts); }};
 }
 
 (function boot(){
