@@ -316,7 +316,7 @@
     let s=liveCmtState(pid);if(!s)return Promise.resolve(null);if(s.context&&s.task&&(direction!=='replace'||s.context.target===target))return s.task;
     if(direction==='replace'){
       s.controller?.abort();const prior=s.context,keep=prior?.target===target;if(!keep)COMMENTS[pid]=[];
-      s=LIVE.cmts[pid]={scope:cmtScope(),status:'idle',loaded:keep&&s.loaded,next:null,task:null,controller:null,context:{target,before:keep?prior.before:null,after:keep?prior.after:null}};
+      s=LIVE.cmts[pid]={scope:cmtScope(),order:s.order||'oldest',status:'idle',loaded:keep&&s.loaded,next:null,task:null,controller:null,context:{target,before:keep?prior.before:null,after:keep?prior.after:null}};
     }
     const session=cmtScope(),controller=new AbortController(),active=()=>cmtScope()===session&&LIVE.cmts[pid]===s;
     s.status='pending';s.more=direction!=='replace';s.controller=controller;s.context.unavailable=false;
@@ -348,7 +348,7 @@
   const oldCmtMore=cmtMoreHtml;cmtMoreHtml=pid=>liveCmtState(pid)?.context?contextControls(pid):oldCmtMore(pid);
   for(const [act,direction]of [['comm-comment-before','before'],['comm-comment-after','after']])ACTIONS[act]=b=>{const pid=b.dataset.p,s=liveCmtState(pid),target=s?.context?.[direction];return target?loadCommentContext(pid,target,direction):Promise.resolve(null);};
   ACTIONS['comm-comment-retry']=b=>{const pid=b.dataset.p,s=liveCmtState(pid),target=s?.context?.target,key=cmtScope();if(!target)return Promise.resolve(null);return loadCommentContext(pid,target).then(c=>{if(c&&key===cmtScope()&&liveCmtState(pid)?.context?.target===target&&commentVisible(pid)){UI.flashCmt={p:pid,id:c.id,t:c.t,u:c.u};cmtPaint(pid);}return c;});};
-  ACTIONS['comm-comment-all']=b=>{const pid=b.dataset.p,s=liveCmtState(pid);s?.controller?.abort();delete LIVE.cmts[pid];if(UI.commentJump?.p===pid)UI.commentJump=null;UI.flashCmt=null;commentRouteTarget(pid,null);const task=oldLoadComments(pid,false,true);cmtPaint(pid);return task;};
+  ACTIONS['comm-comment-all']=b=>{const pid=b.dataset.p,s=liveCmtState(pid);s?.controller?.abort();LIVE.cmts[pid]={scope:cmtScope(),order:s?.order||'oldest',status:'idle',loaded:false,next:null,task:null,controller:null};if(UI.commentJump?.p===pid)UI.commentJump=null;UI.flashCmt=null;commentRouteTarget(pid,null);const task=oldLoadComments(pid,false,true);cmtPaint(pid);return task;};
 
   comm.openActivity=async function(orig,b,e){const key=scope(),kind=b.dataset.v,count=NOTE_NEW[kind],reads=(NOTES[kind] || []).map(n=>[n,!!n.read]);orig(b,e);NOTE_NEW[kind]=count;reads.forEach(([n,read])=>n.read=read);msgBadge();const list=$('#layer .m-list');if(list){LACT.panel={k:kind,list,current:dmSession()};actPanelPaint();}
     try{await actLoad(true);if(!same(key))return;const token=current().tokens[kind];if(!token)throw Error('通知快照未读取成功，请重试');await API.req('POST','/me/activity/read',{kind,through:token});if(!same(key))return;current().version=null;await actLoad(true);await poll();}catch(err){if(same(key)){apiFail(err);actPanelPaint();}}

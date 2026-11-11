@@ -2644,7 +2644,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 
 <link rel="stylesheet" href="scripts/relationship-lists.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/official-inbox.css?v=20261111-1">
-<link rel="stylesheet" href="scripts/communication.css?v=20261112-r19">
+<link rel="stylesheet" href="scripts/communication.css?v=20261112-r20">
 <link rel="stylesheet" href="scripts/comment-replies.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/block-operations.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/favorites.css?v=20261111-2">
@@ -10402,25 +10402,30 @@ function liveCmtState(id){
   if(!s || s.scope!==scope){ s?.controller?.abort(); COMMENTS[id]=[]; s=LIVE.cmts[id]={scope,status:'idle',loaded:false,next:null,task:null,controller:null}; }
   return s;
 }
+function commentListEnabled(){ return LIVE.cfg?.commentLists?.version===1 && LIVE.cfg.commentLists.cursor==='signed-v1' && ['oldest','newest'].every(k=>LIVE.cfg.commentLists.orders?.includes(k)); }
+function commentOrderHtml(id){const s=liveCmtState(id);return s&&!s.context&&commentListEnabled() ? '<div class="cmt-order" role="group" aria-label="评论排序">'+['oldest','newest'].map(order=>'<button class="pill sm '+(order===(s.order||'oldest')?'':'lt')+'" data-act="cmt-order" data-p="'+esc(id)+'" data-order="'+order+'" aria-pressed="'+(order===(s.order||'oldest'))+'">'+(order==='oldest'?'最早':'最新')+'</button>').join('')+'</div>' : '';}
+function validCommentList(r,id,order){return r&&r.order===order&&Array.isArray(r.items)&&r.items.length<=50&&new Set(r.items.map(c=>c?.id)).size===r.items.length&&r.items.every(c=>c&&c.postId===id&&typeof c.id==='string'&&c.id&&typeof c.body==='string'&&typeof c.author?.id==='string'&&['published','review'].includes(c.status)&&Number.isFinite(+new Date(c.createdAt)))&&(r.next===null||typeof r.next==='string'&&r.next.length>0&&r.next.length<=1024);}
 function loadLiveCmts(id, more=false, force=false){
-  const s=liveCmtState(id); if(!s || s.task || (s.loaded && !more && !force) || (more && !s.next)) return s?.task || Promise.resolve();
-  const cursor=more ? s.next : null, current=()=>LIVE.cmts[id]===s && cmtScope()===s.scope, controller=new AbortController();
-  s.status='pending'; s.more=more; s.controller=controller;
-  const task=Promise.resolve().then(()=>API.req('GET',`/posts/${encodeURIComponent(id)}/comments?limit=50${cursor ? '&cursor='+encodeURIComponent(cursor) : ''}`,undefined,true,{signal:controller.signal})).then(r=>{
-    if(!current()) return; if(cursor && r.next===cursor) throw Error('评论分页没有前进');
+  const s=liveCmtState(id); if(!s || s.task || (s.loaded && !more && !force) || (more && (!s.next||s.needsReload))) return s?.task || Promise.resolve();
+  const cursor=more ? s.next : null, current=()=>LIVE.cmts[id]===s && cmtScope()===s.scope, controller=new AbortController(), modern=commentListEnabled(),order=s.order||'oldest';
+  s.status='pending'; s.more=more; s.controller=controller;s.error='';s.needsReload=false;
+  const path='/posts/'+encodeURIComponent(id)+'/comments'+(modern?'/page':'')+'?limit=50'+(modern?'&order='+order:'')+(cursor?'&cursor='+encodeURIComponent(cursor):'');
+  const task=Promise.resolve().then(()=>{if(!current())return;return API.req('GET',path,undefined,true,{signal:controller.signal});}).then(r=>{
+    if(!current()) return; if(modern&&!validCommentList(r,id,order))throw Error('评论读取结果不完整，请重试');
+    if(cursor && r.next && (r.next===cursor || s.seen?.has(r.next))){s.needsReload=true;throw Error('评论分页没有前进，请重新加载评论');}
     const rows=r.items.map(c=>cmtLikeHydrate(apiCmt(c))), merged=new Map((more ? COMMENTS[id] || [] : []).map(c=>[c.id,c])); rows.forEach(c=>merged.set(c.id,c)); COMMENTS[id]=[...merged.values()];
     const known=new Set(merged.keys()); UI.newCmts[id]=(UI.newCmts[id] || []).filter(c=>!c.id || !known.has(c.id));
-    s.next=r.next || null; s.loaded=true; s.status='ready'; cmtPaint(id);
+    s.seen ||= new Set();if(cursor)s.seen.add(cursor);else s.seen.clear();s.next=r.next || null; s.loaded=true; s.status='ready'; cmtPaint(id);
   }).catch(err=>{ if(!current()) return; if(err.name==='AbortError'){s.status=s.loaded?'ready':'idle';return;}
     if([401,403,404].includes(err.status) || ['not_found','forbidden'].includes(err.code)){COMMENTS[id]=[];s.next=null;s.loaded=false;}
-    s.status='error'; cmtPaint(id);
+    if(err.code==='bad_cursor')s.needsReload=true;s.error=s.needsReload?'评论分页已失效，请重新加载评论':err.message||'评论读取失败，请重试';s.status='error'; cmtPaint(id);
   }).finally(()=>{if(LIVE.cmts[id]===s && s.task===task){s.task=null;s.controller=null;}}); s.task=task; return task;
 }
-function cmtStatusHtml(id){ const s=liveCmtState(id); if(!s) return '';
-  if(s.status==='idle' || s.status==='pending') return `<div class="request-note" role="status">${s.more ? '正在读取更多评论…' : s.loaded ? '正在更新评论…' : '正在读取评论…'}</div>`;
-  return s.status==='error' ? `<div class="request-note" role="status"><span>评论读取失败，请重试</span><button class="pill sm lt" data-act="cmt-load-retry" data-p="${esc(id)}">重试</button></div>` : '';
+function cmtStatusHtml(id){ const s=liveCmtState(id); if(!s) return '';const order=commentOrderHtml(id);
+  if(s.status==='idle' || s.status==='pending') return order+`<div class="request-note" role="status">${s.more ? '正在读取更多评论…' : s.loaded ? '正在更新评论…' : '正在读取评论…'}</div>`;
+  return order+(s.status==='error' ? `<div class="request-note" role="status"><span>${esc(s.error||'评论读取失败，请重试')}</span><button class="pill sm lt" data-act="cmt-load-retry" data-p="${esc(id)}">${s.needsReload?'重新加载评论':s.more&&s.next?'重试加载更多':'重试'}</button></div>` : '');
 }
-function cmtMoreHtml(id){ const s=liveCmtState(id); return s?.next ? `<div class="msep"><button class="pill sm lt" data-act="cmt-more" data-p="${esc(id)}"${s.status==='pending' ? ' disabled' : ''}>${s.status==='pending' ? '加载中…' : '更多评论'}</button></div>` : ''; }
+function cmtMoreHtml(id){ const s=liveCmtState(id); return s?.next&&!s.needsReload&&s.status!=='error' ? `<div class="msep"><button class="pill sm lt" data-act="cmt-more" data-p="${esc(id)}"${s.status==='pending' ? ' disabled' : ''}>${s.status==='pending' ? '加载中…' : '更多评论'}</button></div>` : ''; }
 const commentVisible = id => CUR.post===id || (RL.on && RL.cm && reelCur()?.id===id);
 async function commentJumpReady(id){
   const jump=UI.commentJump; if(!jump || jump.p!==id || jump.started) return;
@@ -10434,7 +10439,8 @@ async function commentJumpReady(id){
   const c=find(); UI.commentJump=null;
   if(c){UI.flashCmt={p:id,id:c.id,t:c.t,u:c.u};cmtPaint(id);} else {UI.flashCmt=null;toast('这条评论已不可用，或当前无法查看','blue');}
 }
-ACTIONS['cmt-load-retry']=b=>{loadLiveCmts(b.dataset.p,false,true);cmtPaint(b.dataset.p);if(UI.commentJump?.p===b.dataset.p){UI.commentJump.started=false;commentJumpReady(b.dataset.p);}};
+ACTIONS['cmt-load-retry']=b=>{const id=b.dataset.p,s=liveCmtState(id),task=loadLiveCmts(id,!!(s?.more&&s.next&&!s.needsReload),true);cmtPaint(id);if(UI.commentJump?.p===id){UI.commentJump.started=false;commentJumpReady(id);}return task;};
+ACTIONS['cmt-order']=b=>{const id=b.dataset.p,order=b.dataset.order,s=liveCmtState(id);if(!s||s.context||!commentListEnabled()||!['oldest','newest'].includes(order)||order===(s.order||'oldest'))return Promise.resolve();s.controller?.abort();COMMENTS[id]=[];LIVE.cmts[id]={scope:cmtScope(),order,status:'idle',loaded:false,next:null,task:null,controller:null};const task=loadLiveCmts(id);cmtPaint(id);return task;};
 ACTIONS['cmt-more']=b=>{loadLiveCmts(b.dataset.p,true);cmtPaint(b.dataset.p);};
 
 /* —— 读取 —— */
@@ -10567,8 +10573,10 @@ function cmtSendFeedback(pid,c){
   return `<div class="dm-send-state" role="status">${c._savingEdit ? '正在保存修改…' : pending ? '正在发送…' : esc(c.sendError || '未发送，文字已保留')}</div>${pending ? '' : `<div class="dm-send-actions" style="justify-content:flex-start"><button data-act="cmt-retry" data-p="${esc(pid)}" data-id="${esc(c._client)}">重试</button><button data-act="cmt-edit" data-p="${esc(pid)}" data-id="${esc(c._client)}"${c._unknown ? ' disabled title="请先重试确认原提交结果"':''}>编辑</button><button data-act="cmt-remove" data-p="${esc(pid)}" data-id="${esc(c._client)}">移除</button></div>`}`;
 }
 function cmtPaint(pid){
+  const orderFocus=globalThis.document?.activeElement?.closest?.('[data-act="cmt-order"]')?.dataset;
   if (CUR.post === pid) renderPost(pid);
   if (RL.on && reelCur()?.id === pid){ if (RL.cm) openReelCm(); reelBar(); }
+  if(orderFocus?.p===pid)document.querySelector('[data-act="cmt-order"][data-p="'+CSS.escape(pid)+'"][data-order="'+orderFocus.order+'"]')?.focus({preventScroll:true});
 }
 async function liveCmtSent(pid, before, saved){
   const L = UI.newCmts[pid] || [], c = saved || L[before], p = POST(pid);
@@ -13220,7 +13228,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 <script src="scripts/dm-expressions.js?v=20261111-2"></script>
 <script src="scripts/media-url-core.js?v=20261112-1"></script>
 <script src="scripts/post-edit-core.js?v=20261112-1"></script>
-<script src="scripts/communication.js?v=20261112-r19"></script>
+<script src="scripts/communication.js?v=20261112-r20"></script>
 <script src="scripts/comment-replies.js?v=20261111-1"></script>
 <script src="scripts/block-operations.js?v=20261111-1"></script>
 <script src="scripts/official-inbox.js?v=20261111-1"></script>

@@ -52,3 +52,5 @@ button.dm-quote{min-height:44px;cursor:pointer}.dm-quote span{display:-webkit-bo
 .comm-inbox-footer:empty{display:none}.comm-inbox-status,.comm-request-feedback{display:flex;align-items:center;flex-wrap:wrap;gap:12px;font-size:14px;line-height:1.6;color:var(--ink-2);overflow-wrap:anywhere;margin:12px 0}.comm-inbox-status button,.comm-inbox-footer button,.comm-requests button{min-height:44px}.comm-requests-note{font-size:14px;line-height:1.6;color:var(--ink-2)}.comm-request-error{font-size:14px;color:var(--ink-2)}.comm-request>a{min-height:44px}.comm-request-feedback{padding-bottom:12px;border-bottom:1px solid var(--rule)}
 
 .comm-request>a{min-width:0}.comm-request>a>:first-child{flex-shrink:0}.comm-request>a>b{min-width:0;flex:1;overflow-wrap:anywhere}.comm-request-body{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}.comm-request-full{margin-top:8px}
+
+.cmt-order{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}.cmt-order>button.pill{min-height:44px;min-width:60px;font-size:14px}.cmt-order button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}

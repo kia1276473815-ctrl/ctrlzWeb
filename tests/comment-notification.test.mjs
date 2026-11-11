@@ -101,7 +101,7 @@ for(const [label,change] of [['账号',h=>h.ctx.ME='other'],['服务',h=>h.ctx.A
 for(const status of [401,403,404])test(`权限或不可见错误 ${status} 清除旧公开缓存，不把旧数据当成功`,async()=>{
   const h=harness();const first=h.ctx.loadLiveCmts('a');await tick();h.requests[0].resolve({items:[row('old')],next:'next'});await first;
   const refresh=h.ctx.loadLiveCmts('a',false,true);await tick();h.requests[1].reject(Object.assign(Error('不可查看'),{status}));await refresh;
-  assert.equal(h.ctx.COMMENTS.a.length,0);assert.equal(h.ctx.LIVE.cmts.a.next,null);assert.equal(h.ctx.LIVE.cmts.a.status,'error');assert.match(h.ctx.cmtStatusHtml('a'),/重试/);
+  assert.equal(h.ctx.COMMENTS.a.length,0);assert.equal(h.ctx.LIVE.cmts.a.next,null);assert.equal(h.ctx.LIVE.cmts.a.status,'error');assert.match(h.ctx.cmtStatusHtml('a'),/重试|重新加载评论/);
 });
 
 test('后台已取消请求不显示读取失败，也不污染下一次加载状态',async()=>{
@@ -112,7 +112,7 @@ test('后台已取消请求不显示读取失败，也不污染下一次加载�
 test('分页返回同一个游标时停止定位循环，保留已读页面与手动重试',async()=>{
   const h=harness();h.ctx.UI.commentJump={p:'a',id:'not-found'};const work=h.ctx.commentJumpReady('a');await tick();h.requests[0].resolve({items:[row('one')],next:'loop'});await tick();
   h.requests[1].resolve({items:[row('one')],next:'loop'});await work;
-  assert.equal(h.requests.length,2);assert.equal(h.ctx.LIVE.cmts.a.status,'error');assert.equal(h.ctx.COMMENTS.a.length,1);assert.match(h.ctx.cmtStatusHtml('a'),/重试/);assert.equal(h.ctx.UI.commentJump.id,'not-found');
+  assert.equal(h.requests.length,2);assert.equal(h.ctx.LIVE.cmts.a.status,'error');assert.equal(h.ctx.COMMENTS.a.length,1);assert.match(h.ctx.cmtStatusHtml('a'),/重新加载评论/);assert.equal(h.ctx.UI.commentJump.id,'not-found');
 });
 
 test('旧原型通知没有评论ID时保持作者与正文兼容定位，真实通知转换保留ID',async()=>{
