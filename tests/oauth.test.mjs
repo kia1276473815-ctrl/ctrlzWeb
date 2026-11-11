@@ -70,6 +70,20 @@ test('受限页面保留设置和验证入口，所有渠道未就绪时说明�
   assert.match(h.ctx.ROUTES.home(),/完成账号验证/);assert.match(h.ctx.ROUTES.me('settings'),/settings/);
   h.ctx.LIVE.cfg.oauth={};h.ctx.LIVE.cfg.phoneBinding=false;h.ctx.oauthVerificationSheet();assert.match(h.calls.at(-1).html,/暂未开放/);
 });
+test('失去交流资格后本人收藏、评论与点赞管理仍可达，公开读写页仍需验证',()=>{
+  const h=fixture();h.ctx.STATE.role='user';h.ctx.LIVE.cfg.verifiedAccessRequired=true;h.ctx.LIVE.me={accessState:'verification_required'};
+  assert.equal(h.ctx.ROUTES.me('favs'),'<main>favs</main>');assert.match(h.ctx.ROUTES.home(),/管理收藏/);
+  assert.match(h.ctx.ROUTES.me('cmts'),/完成账号验证/,'旧服务没有互动管理能力时保留门槛');
+  h.ctx.CZMyInteractions={enabled:()=>true};
+  for(const tab of['cmts','likes'])assert.equal(h.ctx.ROUTES.me(tab),'<main>'+tab+'</main>');
+  for(const tab of['works','hist','lib'])assert.match(h.ctx.ROUTES.me(tab),/完成账号验证/);
+  const gate=h.ctx.ROUTES.home();for(const target of['favs','cmts','likes'])assert.match(gate,new RegExp('href="#me-'+target+'"'));
+  h.ctx.LIVE.me.accessState='active';assert.equal(h.ctx.ROUTES.home(),'<main>home</main>');
+});
+test('验证受限时启动不请求已知无权读取的公开扩展与商业资料，不触发验证弹层',async()=>{
+  const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),ctx=vm.createContext({LIVE:{me:{accessState:'verification_required'}},liveUser:()=>true,accountSession:()=>()=>true,API:{req:()=>{throw Error('unexpected_request');}}});
+  for(const [start,end,name]of[['async function liveMeExtras(){','/* 用 /me','liveMeExtras'],['async function liveMine(){','/* —— 上传：','liveMine'],['async function bizMine(){','const bizInvMap','bizMine']]){const from=html.indexOf(start),to=html.indexOf(end,from);assert(from>=0&&to>from);vm.runInContext(html.slice(from,to),ctx);await ctx[name]();}
+});
 test('登录结果未知不重交完成请求，提供显式退出Cookie会话的恢复入口',async()=>{
   const h=fixture();await h.ctx.oauthBegin('qq','login');h.ctx.location.search='?oauth=complete';let count=0;
   h.ctx.credentialUnknown=e=>e.code==='network';h.ctx.API.req=async()=>{count++;throw Object.assign(new Error('网络中断'),{code:'network'});};

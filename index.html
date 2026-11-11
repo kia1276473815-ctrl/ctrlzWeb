@@ -10474,6 +10474,7 @@ async function liveFeed(){
 ACTIONS['feed-retry'] = () => liveFeed().catch(apiFail);
 ACTIONS['prof-retry'] = b => { delete LIVE.prof[b.dataset.id]; rerender(); };   // 别人主页读取失败后重试
 async function liveMeExtras(){
+  if (LIVE.me?.accessState === 'verification_required') return;
   const [fo, bl, nt, prof, mine] = await Promise.all([API.req('GET', `/users/${ME}/following?limit=50`), API.req('GET', '/me/blocks'), API.req('GET', '/notifications?limit=50'), API.req('GET', `/users/${ME}`),
     API.req('GET', `/posts?author=${encodeURIComponent(ME)}&limit=50`)]);
   LIVE.pend = {};
@@ -10889,6 +10890,7 @@ async function liveShop(){
 ACTIONS['shop-retry'] = () => liveShop();
 async function liveMine(){
   if (!liveUser()) return; const current = accountSession();
+  if (LIVE.me?.accessState === 'verification_required') return;
   try {
     const [s, od, w, library] = await Promise.all([API.req('GET', '/me/seller'), API.req('GET', '/me/order-cards?limit=50'), API.req('GET', '/me/wallet'), API.req('GET', '/me/library')]);
     if (!current()) return; LSHOP.seller = s; LSHOP.wallet = w; STATE.seller = s.seller; LSHOP.mineError = false;
@@ -12492,6 +12494,7 @@ wrapAct('pm-save', async (orig, b) => { if (!admGuard('params') || b?.disabled) 
 
 /* 用户端：我的入驻申请、发票、收款账户和结算记录 */
 async function bizMine(){ if (!liveUser()) return;
+  if (LIVE.me?.accessState === 'verification_required') return;
   try { const [a, iv, pe] = await Promise.all([API.req('GET', '/me/seller-app'), API.req('GET', '/me/invoices'), API.req('GET', '/me/payee')]);
     LBIZ.app = a.app; LBIZ.inv = iv.items; LBIZ.at = Date.now();
     if (pe.payee) ADM.payee[ME] = pe.payee; else delete ADM.payee[ME];
@@ -13206,6 +13209,6 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 <script src="scripts/post-access.js?v=20261111-2"></script>
 <script src="scripts/my-interactions.js?v=20261111-2"></script>
 
-<script src="scripts/oauth-v1.js?v=20261110-1"></script>
+<script src="scripts/oauth-v1.js?v=20261111-2"></script>
 </body>
 </html>

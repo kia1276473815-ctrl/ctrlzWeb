@@ -36,7 +36,7 @@ function oauthRestricted(){return LIVE.cfg.verifiedAccessRequired&&STATE.role===
 /* 门槛只在后端明确开启后生效；设置和法律/账号必要流程始终可到达。 */
 for(const [key,renderRoute]of Object.entries(ROUTES)){
   if(typeof renderRoute!=='function'||['settings','set','doc','admin','feedback'].includes(key))continue;
-  ROUTES[key]=arg=>oauthRestricted()&&!(key==='me'&&['settings','close'].includes(arg))?`<div class="wrap"><div class="box"><div class="box-b"><h2>完成账号验证</h2><p>验证手机号，或绑定微信、QQ，即可继续使用。</p><button class="pill lg" data-act="oauth-verification">选择验证方式</button><button class="pill lt" data-act="do-logout">退出账号</button></div></div></div>`:renderRoute(arg);
+  ROUTES[key]=arg=>oauthRestricted()&&!(key==='me'&&(['settings','close','favs'].includes(arg)||['cmts','likes'].includes(arg)&&globalThis.CZMyInteractions?.enabled()))?`<div class="wrap"><div class="box"><div class="box-b"><h2>完成账号验证</h2><p>验证手机号，或绑定微信、QQ，即可继续使用。</p><button class="pill lg" data-act="oauth-verification">选择验证方式</button><button class="pill lt" data-act="do-logout">退出账号</button><p>你仍可管理自己的收藏${globalThis.CZMyInteractions?.enabled()?'、评论和点赞':''}。</p><div class="comm-actions"><a class="pill lg lt" href="#me-favs">管理收藏</a>${globalThis.CZMyInteractions?.enabled()?'<a class="pill lg lt" href="#me-cmts">管理评论</a><a class="pill lg lt" href="#me-likes">管理点赞</a>':''}</div></div></div></div>`:renderRoute(arg);
 }
 ACTIONS['oauth-verification']=oauthVerificationSheet;
 function oauthChannel(provider){
