@@ -91,11 +91,11 @@ function contacts(){
 }
 test('联系人搜索换词立即取消旧连接，防抖期间旧结果不显示',async()=>{
   const r=contacts();r.input.value='新词';r.input.listeners.input();assert.equal(r.calls[0].signal.aborted,true);r.pending[0].res({items:[{id:'old',name:'旧结果',rel:[]}]});await tick();assert(!r.list.innerHTML.includes('旧结果'));
-  r.flush();assert(r.calls[1].path.includes('q='));r.pending[1].res({items:[]});await tick();assert(r.list.innerHTML.includes('新词'));assert.equal(r.list.attrs['aria-busy'],'false');
+  r.flush();assert(r.calls[1].path.includes('q='));r.pending[1].res({items:[],next:null});await tick();assert(r.list.innerHTML.includes('新词'));assert.equal(r.list.attrs['aria-busy'],'false');
 });
 test('联系人失败就地重试，真实空结果结束等待状态',async()=>{
   const r=contacts();r.pending[0].rej(Error('offline'));await tick();assert(r.list.innerHTML.includes('重试'));assert.equal(r.list.attrs['aria-busy'],'false');
-  r.ctx.ACTIONS['new-chat-retry']({closest:()=>r.dialog});r.pending[1].res({items:[]});await tick();assert(r.list.innerHTML.includes('还没有可以私信的人'));assert.equal(r.list.attrs['aria-busy'],'false');
+  r.ctx.ACTIONS['new-chat-retry']({closest:()=>r.dialog});r.pending[1].res({items:[],next:null});await tick();assert(r.list.innerHTML.includes('还没有可以私信的人'));assert.equal(r.list.attrs['aria-busy'],'false');
 });
 test('关闭联系人面板取消连接与防抖，迟到失败不恢复弹层',async()=>{
   const r=contacts();r.input.value='旧搜索';r.input.listeners.input();r.close();r.flush();r.pending[0].rej(Error('late'));await tick();assert.equal(r.calls.length,1);assert.equal(r.dialog._contactsRetry,undefined);assert.equal(r.calls[0].signal.aborted,true);

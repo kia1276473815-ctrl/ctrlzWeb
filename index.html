@@ -11623,23 +11623,31 @@ wrapAct('shr-send', (orig, b, e) => { const d = b.closest('.sheet'), to = [...d.
     if(msg && !saved.has(textKey)){if(!await sendMsg(uid,{t:'text',text:msg}))throw new Error('附言未保存，请检查本地存储后重试');saved.add(textKey);}
   })).then(results => { const failed=results.find(r=>r.status==='rejected');if(failed)throw failed.reason;
     if(d.isConnected)closeSheet();toast('分享已加入发送列表，失败时可在会话中重试', 'pink');dmPoll(); }).catch(apiFail).finally(()=>{if(b.isConnected)b.disabled=false;}); });
-wrapAct('new-chat', () => sheet(`<h3>发起私信</h3><p class="mut" style="font-size:13px;margin-top:-6px">这里是你关注的人，和你买过作品的创作者。其他人可以去 TA 的主页发私信。</p><div class="rsearch">${IC.search}<input class="inp" id="ncQ" placeholder="搜昵称或用户名" autocomplete="off"></div><div class="m-list" id="ncL"><div class="rnone">正在读取…</div></div>`, d => {
-  let seq = 0, t = 0, controller = null; const current = accountSession(), input = $('#ncQ',d), list = $('#ncL',d);
+wrapAct('new-chat', () => sheet(`<h3>发起私信</h3><p class="mut" style="font-size:13px;margin-top:-6px">这里是你关注的人，和你买过作品的创作者。其他人可以去 TA 的主页发私信。</p><div class="rsearch">${IC.search}<input class="inp" id="ncQ" placeholder="搜昵称、账号或 ID" maxlength="40" style="font-size:16px;min-height:44px" autocomplete="off"></div><div class="m-list" id="ncL"><div class="rnone">正在读取…</div></div>`, d => {
+  let seq=0,t=0,controller=null,composing=false;const current=accountSession(),input=$('#ncQ',d),list=$('#ncL',d),state={rows:[],next:null,seen:new Set(),loaded:false,query:'',error:'',moreError:false,invalid:false};
   list.setAttribute('aria-live','polite');
-  const invalidate = () => { seq++; clearTimeout(t); controller?.abort(); controller = null; };
-  const draw = async () => { if (!d.isConnected || !current()) return; const q = input.value.trim(), my = ++seq; controller?.abort(); const request = controller = new AbortController();
-    list.setAttribute('aria-busy','true'); list.innerHTML = '<div class="rnone">正在读取…</div>';
-    try { const r = await API.req('GET', '/dm/contacts' + (q ? '?q=' + encodeURIComponent(q) : ''),undefined,true,{signal:request.signal}); if (my !== seq || !d.isConnected || !current()) return;
-      list.innerHTML = r.items.map(u => { apiUser(u); return `<a class="mrow" data-go="msg-${esc(u.id)}">${av(u.id, 'md')}<span class="mt"><b>${esc(u.name)}</b><span>${[u.rel.includes('following') ? '已关注' : '', u.rel.includes('bought') ? '买过 TA 的作品' : ''].filter(Boolean).join(' · ')}</span></span></a>`; }).join('') || `<div class="rnone">${q ? '没有找到“' + esc(q) + '”相关的联系人' : '还没有可以私信的人：先去关注一些创作者吧'}</div>`; }
-    catch(e){ if (my !== seq || !d.isConnected || !current() || request.signal.aborted) return; list.innerHTML = `<div class="rnone"><span>暂时读不到联系人</span><button class="pill sm lt" data-act="new-chat-retry" style="margin-left:8px">重试</button></div>`; }
-    finally { if (my === seq && d.isConnected) list.setAttribute('aria-busy','false'); if (controller === request) controller = null; }
+  const invalidate=()=>{seq++;clearTimeout(t);t=0;controller?.abort();controller=null;};
+  const paint=()=>{if(!d.isConnected||!current())return;const top=d.scrollTop||0,pending=!!controller||!!t||composing;list.setAttribute('aria-busy',String(pending));
+    const rows=state.rows.map(u=>`<a class="mrow" data-go="msg-${esc(u.id)}">${av(u.id,'md')}<span class="mt"><b>${esc(u.name)}</b><span>${[u.rel.includes('following')?'已关注':'',u.rel.includes('bought')?'买过 TA 的作品':''].filter(Boolean).join(' · ')}</span></span></a>`).join('');
+    const status=state.error?`<div class="rnone" role="status"><span>${esc(state.error)}</span><button class="pill sm lt" data-act="new-chat-retry" style="margin-left:8px;min-height:44px">${state.invalid?'刷新联系人':'重试'}</button></div>`:pending?'<div class="rnone" role="status">正在读取…</div>':'';
+    const empty=!state.rows.length&&!pending&&!state.error?`<div class="rnone">${state.query?'没有找到“'+esc(state.query)+'”相关的联系人':'还没有可以私信的人：先去关注一些创作者吧'}</div>`:'';
+    const more=state.next&&!state.invalid&&!state.moreError?`<button class="pill sm lt" data-act="new-chat-more" style="min-height:44px"${pending?' disabled':''}>${pending?'正在加载…':'加载更多联系人'}</button>`:'';
+    list.innerHTML=rows+status+empty+(state.loaded?`<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:16px"><span class="mut" style="font-size:13px">已载入 ${state.rows.length}${state.next?'+':''} 人</span>${more}</div>`:'');d.scrollTop=top;
   };
-  d._contactsRetry = () => { invalidate(); draw(); };
-  input.addEventListener('input', () => { invalidate(); list.setAttribute('aria-busy','true'); list.innerHTML = '<div class="rnone">正在读取…</div>'; t = setTimeout(draw,250); });
-  draw(); const focusTimer = setTimeout(() => { if (d.isConnected) input.focus(); },60);
-  return () => { invalidate(); clearTimeout(focusTimer); delete d._contactsRetry; };
+  const draw=async(more=false)=>{if(!d.isConnected||!current()||more&&(!state.next||state.invalid||controller||t))return;const q=input.value.trim().normalize('NFC'),my=++seq,cursor=more?state.next:null;controller?.abort();const request=controller=new AbortController();state.query=q;state.error='';state.moreError=false;paint();
+    try{const r=await API.req('GET','/dm/contacts?limit=50'+(q?'&q='+encodeURIComponent(q):'')+(cursor?'&cursor='+encodeURIComponent(cursor):''),undefined,true,{signal:request.signal});if(my!==seq||!d.isConnected||!current())return;
+      if(!r||!Array.isArray(r.items)||r.items.length>50||!(r.next===null||typeof r.next==='string'&&r.next.startsWith('dc_')&&r.next.length<=512)||r.items.some(u=>!u||typeof u.id!=='string'||!u.id||typeof u.name!=='string'||!Array.isArray(u.rel))||new Set(r.items.map(u=>u.id)).size!==r.items.length||!r.items.length&&r.next)throw Error('联系人读取结果不完整，请重试');
+      if(more&&r.next&&(r.next===cursor||state.seen.has(r.next))){state.invalid=true;throw Error('联系人分页已变化，请刷新后继续');}
+      r.items.forEach(apiUser);if(more){const rows=new Map(state.rows.map(u=>[u.id,u]));r.items.forEach(u=>rows.set(u.id,u));state.rows=[...rows.values()];state.seen.add(cursor);}else{state.rows=r.items;state.seen.clear();state.invalid=false;}state.next=r.next;state.loaded=true;
+    }catch(e){if(my!==seq||!d.isConnected||!current()||request.signal.aborted)return;state.error=e.message||'暂时读不到联系人';state.moreError=more;}finally{if(controller===request){controller=null;paint();}}
+  };
+  d._contactsRetry=()=>{if(state.moreError&&!state.invalid)return draw(true);invalidate();return draw(false);};d._contactsMore=()=>draw(true);
+  const changed=()=>{invalidate();state.rows=[];state.next=null;state.loaded=false;state.error='';state.moreError=false;state.invalid=false;state.seen.clear();state.query=input.value.trim().normalize('NFC');t=setTimeout(()=>{t=0;draw();},250);paint();};
+  input.addEventListener('compositionstart',()=>{composing=true;invalidate();state.rows=[];state.next=null;state.loaded=false;state.error='';paint();});input.addEventListener('compositionend',()=>{composing=false;changed();});input.addEventListener('input',e=>{if(!composing&&!e?.isComposing)changed();});
+  draw();const focusTimer=setTimeout(()=>{if(d.isConnected)input.focus();},60);return()=>{invalidate();clearTimeout(focusTimer);delete d._contactsRetry;delete d._contactsMore;};
 }));
-ACTIONS['new-chat-retry'] = b => b.closest('.sheet')?._contactsRetry?.();
+ACTIONS['new-chat-retry']=b=>b.closest('.sheet')?._contactsRetry?.();
+ACTIONS['new-chat-more']=b=>b.closest('.sheet')?._contactsMore?.();
 
 /* —— 声音 / 可视化帖子 —— */
 const AUD_MIME = /^audio\/(mpeg|mp4|aac|wav|x-wav|ogg|flac|x-flac)$/;
