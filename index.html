@@ -2642,7 +2642,10 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 }
 </style>
 
+<link rel="stylesheet" href="scripts/relationship-lists.css?v=20261111-1">
+<link rel="stylesheet" href="scripts/official-inbox.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/communication.css?v=20261111-r13">
+<link rel="stylesheet" href="scripts/comment-replies.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/block-operations.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/favorites.css?v=20261111-2">
 <link rel="stylesheet" href="scripts/my-interactions.css?v=20261111-2">
@@ -3143,7 +3146,7 @@ function censor(text){ const t = String(text || '').toLowerCase(); for (const lv
 function speakOk(text){ if (!canSpeak()) return false; const c = censor(text); if (c && c.lv === 'block'){ toast(`包含违规词「${esc(c.w)}」，改一下再发`, 'orange', 'x'); return false; } return c || true; }
 /* 官方通知 / 站内信（私信列表最上面的「CTRL Z 官方」） */
 function notify(uid, title, text, extra){ (ADM.inbox[uid] ||= []).unshift({id:'m' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), title, text, ts:Date.now(), read:false, ...extra}); admSave(); if (uid === ME && typeof msgBadge === 'function') msgBadge(); }
-const inboxUnread = () => (ADM.inbox[ME] || []).filter(m => !m.read).length;
+const inboxUnread = () => globalThis.CZOfficial?.unread() ?? (ADM.inbox[ME] || []).filter(m => !m.read).length;
 const IC = {
   readAll:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 13l4.5 4.5L13 10M10 16l1.5 1.5L22 7"/></svg>',
   moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg>',
@@ -8426,7 +8429,7 @@ Object.entries(MINE.ed).forEach(([id, e]) => { const p = POSTS.find(x => x.id ==
 /* —— 删掉的评论（自己的）：和后台下架一样在所有地方过滤 —— */
 STATE.cdel = new Set(store.get('cdel', []));
 const cmtMine = c => STATE.role === 'user' && c.u === ME;
-const cmtCtl = (pid, c) => { if (POST(pid)?.live && (!c.id || c.sendState)) return ''; const k = cmtKey(pid, c); return cmtMine(c) ? `<button data-act="cmt-del" data-p="${pid}" data-k="${esc(k)}">删除</button>` : STATE.role === 'user' ? `<button data-act="report" data-k="cmt" data-p="${pid}" data-id="${esc(k)}">举报</button>` : ''; };
+const cmtCtl = (pid, c) => { if (POST(pid)?.live && (!c.id || c.sendState)) return ''; const k = cmtKey(pid, c); return (cmtMine(c) ? `<button data-act="cmt-del" data-p="${pid}" data-k="${esc(k)}">删除</button>` : STATE.role === 'user' ? `<button data-act="report" data-k="cmt" data-p="${pid}" data-id="${esc(k)}">举报</button>` : '') + (globalThis.CZCommentReplies?.entry(pid,c)||''); };
 
 /* —— 卖家改自己的商品：价格 / 标题 / 介绍 / 上下架 / 新版本（PE 存本地） —— */
 const PE = store.get('pe', {});
@@ -12000,10 +12003,10 @@ async function actLoad(force){
 }
 /* 官方通知（「CTRL Z 官方」）：和互动提醒同一节奏重读，会话期间也能看到新通知；只有内容变了才更新红点和列表。
    本地刚标的已读、已提交的反通知（done）保留，免得请求赛跑时又冒出来 */
-async function sysLoad(){ const current = dmSession(), mark = r => JSON.stringify([r.items[0]?.id, r.unread]);
+async function sysLoad(){ if(globalThis.CZOfficial && liveUser())return CZOfficial.load(arguments[0]===true); const officialScope=JSON.stringify([API.base,API.epoch,ME,typeof STATE==='undefined'?null:STATE.role]), current = dmSession(), mark = r => JSON.stringify([r.items[0]?.id, r.unread]);
   const force=arguments[0]===true;
   try { if (LDM.sysMark && !force){ const head = await API.req('GET', '/notifications?limit=1'); if (!current())return false;if(mark(head) === LDM.sysMark)return true; }   // 完整同步时也校对旧通知的处理状态；轻量读取仍复用列表标记。
-    const nt = await API.req('GET', '/notifications?limit=50'); if (!current()) return false;globalThis.CZCommunication?.officialToken(nt.readToken); LDM.sysMark = mark(nt);
+    const nt = await API.req('GET', '/notifications?limit=50'); if (!current()) return false;if(globalThis.CZOfficial)return CZOfficial.acceptLegacy(nt,officialScope);globalThis.CZCommunication?.officialToken(nt.readToken); LDM.sysMark = mark(nt);
     const old = new Map((ADM.inbox[ME] || []).map(m => [m.id, m])), L = nt.items.map(n => { const o = old.get(n.id);
       return {id:n.id, title:n.title, text:n.body, ts:+new Date(n.createdAt), read:n.read || !!o?.read, ...n.extra, ...(o?.done ? {done:true} : {})}; });
     const sig = x => JSON.stringify(x.map(m => [m.id, m.read, !!m.done]));
@@ -13203,7 +13206,10 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 </script>
 <script src="scripts/dm-expressions.js?v=20261111-2"></script>
 <script src="scripts/communication.js?v=20261111-r14"></script>
+<script src="scripts/comment-replies.js?v=20261111-1"></script>
 <script src="scripts/block-operations.js?v=20261111-1"></script>
+<script src="scripts/official-inbox.js?v=20261111-1"></script>
+<script src="scripts/relationship-lists.js?v=20261111-1"></script>
 <script src="scripts/favorites.js?v=20261111-5"></script>
 <script src="scripts/dm-voice.js?v=20261111-5"></script>
 <script src="scripts/post-audience.js?v=20261111-2"></script>
