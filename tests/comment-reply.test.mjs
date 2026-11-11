@@ -31,6 +31,17 @@ function harness(stored=new Map()){
 }
 const choose=(h,input,id,pid='a',name='同作者')=>h.ctx.commentReplySelect(h.button(id,name),input,pid);
 
+test('原位面板使用真实发送流水线，保留显式提及而不移动主评论定位',async()=>{
+ const h=harness(),c={u:'me',t:'原位回复',parentId:'parent',mentions:[],_client:'inline-client',_counted:false};let claims=0,jumps=0;
+ h.ctx.UI.newCmts.a=[c];h.ctx.CZCommunication={claimCommentMentions(){claims++;c.mentions=[{userId:'unrelated',start:0,end:2}];},saveComment:async()=>true,forgetComment(){}};h.ctx.commentRouteTarget=()=>jumps++;
+ const task=h.ctx.liveCmtSent('a',0,c,{navigate:false,claimMentions:false});await tick();assert.equal(h.calls.length,1);assert.deepEqual(plain(h.calls[0].body),{body:'原位回复',parentId:'parent',mentions:[],clientCommentId:'inline-client'});
+ h.calls[0].resolve({id:'inline-published',parentId:'parent',status:'published'});await task;assert.equal(claims,0);assert.equal(jumps,0);assert.equal(h.ctx.UI.flashCmt,undefined);assert.equal(c.id,'inline-published');
+});
+
+test('未知原提交的确认被拒绝时仍未知，不将后来的403或404当成原提交未发生',async()=>{
+ for(const status of[400,403,404,409,422]){const h=harness(),c={u:'me',t:'待确认原文',parentId:'parent',_client:'frozen-key',_unknown:true,_counted:false};h.ctx.UI.newCmts.a=[c];const task=h.ctx.liveCmtSent('a',0,c,{navigate:false});h.calls[0].reject(Object.assign(Error('当前请求被拒绝'),{status}));await task;assert.equal(c._unknown,true);assert.equal(c._client,'frozen-key');assert.match(c.sendError,/结果待确认/);}
+});
+
 test('两条同作者同正文评论按ID选中，切换回复目标保留原草稿且不叠加旧前缀',()=>{
   const h=harness();h.comments.a=[{id:'first',u:'author',t:'同正文'},{id:'second',u:'author',t:'同正文'}];
   const input=h.field('我原来已经写的正文');h.ctx.inputDraftBind(input,'comment','a');choose(h,input,'second');

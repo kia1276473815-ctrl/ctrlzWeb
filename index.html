@@ -2648,7 +2648,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 <link rel="stylesheet" href="scripts/recommendation-window.css?v=20261112-1">
 <link rel="stylesheet" href="scripts/communication.css?v=20261112-r21">
 <link rel="stylesheet" href="scripts/publications.css?v=20261112-1">
-<link rel="stylesheet" href="scripts/comment-replies.css?v=20261111-1">
+<link rel="stylesheet" href="scripts/comment-replies.css?v=20261112-1">
 <link rel="stylesheet" href="scripts/block-operations.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/favorites.css?v=20261111-2">
 <link rel="stylesheet" href="scripts/my-interactions.css?v=20261112-1">
@@ -10594,10 +10594,10 @@ function cmtPaint(pid){
   if (RL.on && reelCur()?.id === pid){ if (RL.cm) openReelCm(); reelBar(); }
   if(orderFocus?.p===pid)document.querySelector('[data-act="'+orderFocus.act+'"][data-p="'+CSS.escape(pid)+'"]'+(orderFocus.order?'[data-order="'+orderFocus.order+'"]':''))?.focus({preventScroll:true});
 }
-async function liveCmtSent(pid, before, saved){
+async function liveCmtSent(pid, before, saved, options={}){
   const L = UI.newCmts[pid] || [], c = saved || L[before], p = POST(pid);
   if (!c || !L.includes(c) || !liveUser() || !p?.live || c.sendState === 'sending'||c._savingEdit) return;
-  globalThis.CZCommunication?.claimCommentMentions(pid,c);
+  if(options.claimMentions!==false)globalThis.CZCommunication?.claimCommentMentions(pid,c);
   const current = accountSession(); c._client ||= crypto.randomUUID();
   if(globalThis.CZCommunication && !await CZCommunication.saveComment(pid,c))return;
   if (c._counted === false) p.cmts++; c._counted = true; c.sendState = 'sending'; c.sendError = ''; cmtPaint(pid);
@@ -10606,8 +10606,8 @@ async function liveCmtSent(pid, before, saved){
     if ('parentId' in r) c.parentId=r.parentId;
     c.likes=r.likeCount || 0;c.liked=!!r.liked;
     if (r.status === 'review'){ c.review = true; if (c._counted){ p.cmts = Math.max(0,p.cmts - 1); c._counted = false; } toast('评论已提交审核，通过后大家才能看到', 'orange'); }
-    if(commentVisible(pid)){commentRouteTarget(pid,c.id);UI.flashCmt={p:pid,id:c.id};} cmtPaint(pid);
-  } catch(err){ if (!current() || c._acknowledged) return; c._unknown=!err.status || err.status>=500;c.sendState = 'failed';void globalThis.CZCommunication?.saveComment(pid,c); c.sendError = c._unknown ? '发送结果待确认，重试不会重复发布' : err.code === 'bad_parent' ? '原评论已不可回复，文字已保留；可编辑为普通评论' : '未发送，文字已保留 · ' + (err.message || '请重试');
+    if(options.navigate!==false&&commentVisible(pid)){commentRouteTarget(pid,c.id);UI.flashCmt={p:pid,id:c.id};} cmtPaint(pid);
+  } catch(err){ if (!current() || c._acknowledged) return; c._unknown=!!c._unknown || !err.status || err.status>=500;c.sendState = 'failed';void globalThis.CZCommunication?.saveComment(pid,c); c.sendError = c._unknown ? '发送结果待确认，重试不会重复发布' : err.code === 'bad_parent' ? '原评论已不可回复，文字已保留；可编辑为普通评论' : '未发送，文字已保留 · ' + (err.message || '请重试');
     if (c._counted){ p.cmts = Math.max(0,p.cmts - 1); c._counted = false; } cmtPaint(pid);
   }
 }
@@ -13245,9 +13245,10 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 <script src="scripts/dm-expressions.js?v=20261111-2"></script>
 <script src="scripts/media-url-core.js?v=20261112-1"></script>
 <script src="scripts/post-edit-core.js?v=20261112-1"></script>
-<script src="scripts/communication.js?v=20261112-r22"></script>
+<script src="scripts/communication.js?v=20261112-r23"></script>
 <script src="scripts/publications.js?v=20261112-1"></script>
-<script src="scripts/comment-replies.js?v=20261111-1"></script>
+<script src="scripts/reply-composer.js?v=20261112-1"></script>
+<script src="scripts/comment-replies.js?v=20261112-1"></script>
 <script src="scripts/block-operations.js?v=20261111-1"></script>
 <script src="scripts/official-inbox.js?v=20261112-1"></script>
 <script src="scripts/relationship-lists.js?v=20261111-1"></script>
