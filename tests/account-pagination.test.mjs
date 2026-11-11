@@ -54,12 +54,12 @@ test('切换账号后资源库旧任务停止，不污染新账号的尝试集�
 });
 
 test('旧历史已购权限独立于订单首屏，下载使用library内的orderId',async()=>{
-  const calls=[],links=[],toasts=[];const {ctx,actions,products}=accountRealm({API:{req:async(method,path)=>{calls.push([method,path]);return {url:'/signed-real-file',fileName:'old.wav'};}},
+  const calls=[],links=[],toasts=[];const {ctx,actions,products}=accountRealm({URL,API:{base:'https://api.ctrlz.test',req:async(method,path)=>{calls.push([method,path]);return {url:'/signed-real-file',fileName:'old.wav'};}},
     toast:(...a)=>toasts.push(a),document:{createElement:()=>({click(){links.push(this.href);},remove(){}}),body:{appendChild(){}},dispatchEvent(){}}});
   products.old={id:'old',live:true};ctx.STATE.orders=[];ctx.LSHOP.library.set('old',{productId:'old',orderId:'order-outside-first-50'});
   vm.runInContext(section("wrapAct('dl', async",'/* —— 退款：后端判断'),ctx);
   await actions.dl(()=>{throw Error('真实旧已购不能回落演示下载');},{dataset:{id:'old'}});
-  assert.deepEqual(calls,[['POST','/orders/order-outside-first-50/download']]);assert.deepEqual(links,['/signed-real-file']);assert.equal(ctx.STATE.dlc.old,1);
+  assert.deepEqual(calls,[['POST','/orders/order-outside-first-50/download']]);assert.deepEqual(links,['https://api.ctrlz.test/signed-real-file']);assert.equal(ctx.STATE.dlc.old,1);
 });
 
 test('摘要详情按需加载订单和商品，完整详情缓存后不重复请求',async()=>{

@@ -78,30 +78,30 @@ test('审核中、发送中、失败和本地没有ID的真实评论不能选为
 
 test('回复发送与手动重试均传parentId，返回后仍保留服务器回复关系',async()=>{
   const h=harness(),c={u:'me',t:'@同作者 回复正文',parentId:'parent',replyName:'同作者'};h.ctx.UI.newCmts.a=[c];
-  const first=h.ctx.liveCmtSent('a',0);assert.deepEqual(plain(h.calls[0].body),{body:c.t,parentId:'parent'});h.calls[0].reject(Error('断网'));await first;
+  const first=h.ctx.liveCmtSent('a',0);assert.deepEqual(plain(h.calls[0].body),{body:c.t,clientCommentId:c._client,mentions:[],parentId:'parent'});h.calls[0].reject(Error('断网'));await first;
   assert.equal(c.sendState,'failed');assert.equal(c.parentId,'parent');const before=h.calls.length;
-  h.ctx.ACTIONS['cmt-retry']({dataset:{p:'a',id:c._client}});assert.equal(h.calls.length,before+1);assert.deepEqual(plain(h.calls[1].body),{body:c.t,parentId:'parent'});
+  h.ctx.ACTIONS['cmt-retry']({dataset:{p:'a',id:c._client}});assert.equal(h.calls.length,before+1);assert.deepEqual(plain(h.calls[1].body),{body:c.t,clientCommentId:c._client,mentions:[],parentId:'parent'});
   h.calls[1].resolve({id:'reply-new',parentId:'parent',status:'published'});await tick();assert.equal(c.id,'reply-new');assert.equal(c.parentId,'parent');assert.equal(c.sendState,'');
 });
 
 test('普通评论及主动取消关联的评论省略parentId，旧发送协议兼容',async()=>{
   for(const parentId of [undefined,null,'']){const h=harness(),c={u:'me',t:'普通正文',parentId};h.ctx.UI.newCmts.a=[c];const task=h.ctx.liveCmtSent('a',0);
-    assert.deepEqual(plain(h.calls[0].body),{body:'普通正文'});h.calls[0].resolve({id:'plain',parentId:null,status:'published'});await task;assert.equal(c.parentId,null);
+    assert.deepEqual(plain(h.calls[0].body),{body:'普通正文',clientCommentId:c._client,mentions:[]});h.calls[0].resolve({id:'plain',parentId:null,status:'published'});await task;assert.equal(c.parentId,null);
   }
 });
 
 test('bad_parent不自动改成普通评论，文字和目标保留且可以明确编辑解除回复',async()=>{
   const h=harness(),c={u:'me',t:'回复文字不能丢',parentId:'deleted-parent',replyName:'原作者'};h.ctx.UI.newCmts.a=[c];const work=h.ctx.liveCmtSent('a',0);
-  h.calls[0].reject(Object.assign(Error('要回复的评论不存在或已被删除'),{code:'bad_parent'}));await work;
+  h.calls[0].reject(Object.assign(Error('要回复的评论不存在或已被删除'),{code:'bad_parent',status:400}));await work;
   assert.equal(c.t,'回复文字不能丢');assert.equal(c.parentId,'deleted-parent');assert.equal(c.sendState,'failed');assert.match(c.sendError,/原评论已不可回复/);assert.equal(h.calls.length,1);
-  h.edits.text.value='用户改成普通评论';h.edits.reply.checked=false;h.ctx.ACTIONS['cmt-edit-save']({dataset:{p:'a',id:c._client}});assert.equal(c.parentId,null);assert.equal(c.replyName,undefined);assert.equal(c.t,'用户改成普通评论');
-  h.ctx.ACTIONS['cmt-retry']({dataset:{p:'a',id:c._client}});assert.deepEqual(plain(h.calls[1].body),{body:'用户改成普通评论'});h.calls[1].resolve({id:'plain-after-edit',parentId:null,status:'published'});await tick();assert.equal(c.sendState,'');
+  h.edits.text.value='用户改成普通评论';h.edits.reply.checked=false;await h.ctx.ACTIONS['cmt-edit-save']({dataset:{p:'a',id:c._client}});assert.equal(c.parentId,null);assert.equal(c.replyName,undefined);assert.equal(c.t,'用户改成普通评论');
+  h.ctx.ACTIONS['cmt-retry']({dataset:{p:'a',id:c._client}});assert.deepEqual(plain(h.calls[1].body),{body:'用户改成普通评论',clientCommentId:c._client,mentions:[]});h.calls[1].resolve({id:'plain-after-edit',parentId:null,status:'published'});await tick();assert.equal(c.sendState,'');
 });
 
 test('失败回复只编辑正文时保持parentId并在下一次发送中继续回复',async()=>{
   const h=harness(),c={u:'me',t:'旧正文',parentId:'parent',replyName:'同作者',sendState:'failed',_client:'c'};h.ctx.UI.newCmts.a=[c];
-  h.ctx.ACTIONS['cmt-edit-save']({dataset:{p:'a',id:'c'}});assert.equal(c.parentId,'parent');assert.equal(c.replyName,'同作者');assert.equal(c.t,'修改后的回复');
-  const work=h.ctx.liveCmtSent('a',0,c);assert.deepEqual(plain(h.calls[0].body),{body:'修改后的回复',parentId:'parent'});h.calls[0].resolve({id:'edited-reply',parentId:'parent',status:'published'});await work;
+  await h.ctx.ACTIONS['cmt-edit-save']({dataset:{p:'a',id:'c'}});assert.equal(c.parentId,'parent');assert.equal(c.replyName,'同作者');assert.equal(c.t,'修改后的回复');
+  const work=h.ctx.liveCmtSent('a',0,c);assert.deepEqual(plain(h.calls[0].body),{body:'修改后的回复',clientCommentId:c._client,mentions:[],parentId:'parent'});h.calls[0].resolve({id:'edited-reply',parentId:'parent',status:'published'});await work;
 });
 
 test('清理已发送草稿同时移除回复上下文，较新的草稿不会被旧发送清掉',()=>{

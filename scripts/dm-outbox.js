@@ -26,10 +26,19 @@
       });
     }
     return {
+      get:key=>transact(false,s=>s.get(key)),
       list:scope=>transact(false,s=>s.index('scope').getAll(scope)),
       put:row=>transact(true,s=>s.put(row)),
       remove:key=>transact(true,s=>s.delete(key)),
-      replace:(oldKey,row)=>transact(true,s=>{s.delete(oldKey);return s.put(row);})
+      replace:(oldKey,row)=>transact(true,s=>{s.delete(oldKey);return s.put(row);}),
+      // 草稿转待发送必须同一事务；另一标签页已发送/更新时不创建第二份消息。
+      async transfer(oldKey,version,row){
+        const database=await open();return new Promise((resolve,reject)=>{
+          const tx=database.transaction('messages','readwrite'),store=tx.objectStore('messages'),get=store.get(oldKey);let failure;
+          get.onsuccess=()=>{if(!get.result||get.result.version!==version){failure=Object.assign(new Error('语音草稿已在另一页面发送或更新，请重新打开'),{code:'voice_draft_changed'});tx.abort();return;}store.delete(oldKey);store.put(row);};
+          tx.oncomplete=()=>resolve();tx.onabort=tx.onerror=()=>reject(failure||tx.error||get.error||new Error('语音未保存，原草稿仍保留，请重试'));
+        });
+      }
     };
   }
   const api={create};

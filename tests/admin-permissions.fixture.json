@@ -1,0 +1,112 @@
+{
+  "users.read": [
+    "super",
+    "mod",
+    "cs",
+    "fin"
+  ],
+  "users.act": [
+    "super",
+    "mod",
+    "cs"
+  ],
+  "content.read": [
+    "super",
+    "mod",
+    "cs",
+    "ops"
+  ],
+  "content.act": [
+    "super",
+    "mod"
+  ],
+  "words.manage": [
+    "super",
+    "mod"
+  ],
+  "notify.send": [
+    "super",
+    "cs",
+    "ops"
+  ],
+  "notify.broadcast": [
+    "super",
+    "ops"
+  ],
+  "dm.read": [
+    "super",
+    "mod",
+    "cs"
+  ],
+  "reports.manage": [
+    "super",
+    "mod",
+    "cs"
+  ],
+  "site.manage": [
+    "super",
+    "ops"
+  ],
+  "backup.run": [
+    "super"
+  ],
+  "audit.read": [
+    "super"
+  ],
+  "staff.manage": [
+    "super"
+  ],
+  "users.create": [
+    "super"
+  ],
+  "products.review": [
+    "super",
+    "mod"
+  ],
+  "orders.read": [
+    "super",
+    "cs",
+    "fin"
+  ],
+  "refunds.manage": [
+    "super",
+    "cs",
+    "fin"
+  ],
+  "vouchers.manage": [
+    "super"
+  ],
+  "invites.manage": [
+    "super",
+    "ops"
+  ],
+  "apply.manage": [
+    "super",
+    "mod"
+  ],
+  "invoice.manage": [
+    "super",
+    "fin"
+  ],
+  "payout.manage": [
+    "super",
+    "fin"
+  ],
+  "pay.reconcile": [
+    "super",
+    "fin"
+  ],
+  "pay.settle": [
+    "super",
+    "fin"
+  ],
+  "params.manage": [
+    "super",
+    "fin"
+  ],
+  "feedback.manage": [
+    "super",
+    "cs",
+    "ops"
+  ]
+}

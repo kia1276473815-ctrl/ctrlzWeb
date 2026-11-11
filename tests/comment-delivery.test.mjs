@@ -203,3 +203,15 @@ test('真实通知访客提示登录，只有没有服务器评论ID的原型通
   const h=harness();h.withLoading();const b=h.button('a','target','at-like');h.ctx.STATE.role='guest';await h.ctx.cmtNoticeLike(b,()=>assert.fail('真实访客不得本地点赞'),{});assert.equal(h.loginAttempts,1);assert.equal(h.calls.length,0);
   let original=0;await h.ctx.cmtNoticeLike(h.button('demo','','at-like'),()=>original++,{});assert.equal(original,1);assert.equal(h.calls.length,0);
 });
+
+test('通知点赞补读失败有反馈且释放忙状态，重试成功后才标读并发送点赞',async()=>{
+  const h=harness(),err=Error('offline'),b=h.button('a','target','at-like');h.ctx.cmtForNotice=async()=>{throw err;};
+  await h.ctx.cmtNoticeLike(b,()=>assert.fail('不得本地点赞'),{});assert.deepEqual(h.errors,[err]);assert.equal(h.marks.length,0);assert.equal(h.calls.length,0);assert.equal(b.attrs['aria-busy'],undefined);assert.equal(!!b._cmtReading,false);assert.match(b.title,/点按重试/);
+  const {c}=h.add('a',{id:'target'});h.ctx.cmtForNotice=async()=>c;const retry=h.ctx.cmtNoticeLike(b,()=>assert.fail('不得本地点赞'),{});await tick();assert.equal(h.calls.length,1);assert.equal(h.calls[0].method,'PUT');assert.deepEqual(h.marks,['notice-target']);assert.equal(b.title,'');h.calls[0].resolve({liked:true,likeCount:1});await retry;
+});
+
+test('通知自动补读失败不冒泡，成功重读清除旧失败提示；切账号后的失败不提示',async()=>{
+  const h=harness(),b=h.button('a','target','at-like');h.ctx.cmtForNotice=async()=>{throw Error('offline');};await h.ctx.cmtNoticeLikes();assert.match(b.title,/点按重试/);assert.equal(b.attrs['aria-busy'],undefined);assert.equal(h.errors.length,0);
+  const {c}=h.add('a',{id:'target',liked:true,likes:1});h.ctx.cmtForNotice=async()=>c;await h.ctx.cmtNoticeLikes();assert.equal(b.title,'');assert.equal(b.attrs['aria-pressed'],'true');
+  h.ctx.cmtForNotice=async()=>{h.ctx.ME='other';throw Error('old account');};await h.ctx.cmtNoticeLike(b,()=>assert.fail('不得本地点赞'),{});assert.equal(h.errors.length,0);assert.equal(b.title,'');assert.equal(b.attrs['aria-busy'],undefined);
+});

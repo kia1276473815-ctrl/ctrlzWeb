@@ -7,7 +7,7 @@ import {installTrade} from './trade-fixture.mjs';
 const source = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 for (const [, script] of source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)) if (script.trim()) new vm.Script(script);
 const section = (a, b) => { const start = source.indexOf(a), end = source.indexOf(b, start + a.length); assert(start >= 0 && end > start, a); return source.slice(start, end); };
-const realm = data => { const ctx=vm.createContext({console, crypto:webcrypto, Date, Map, Set, Blob, File, URL, setTimeout, clearTimeout, LIVE:{u:new Set()}, ACTIONS:{}, apiFail:e=>{throw e;}, ...data}); installTrade(ctx); return ctx; };
+const realm = data => { const ctx=vm.createContext({console, crypto:webcrypto, Date, Map, Set, Blob, File, URL, setTimeout, clearTimeout, LIVE:{u:new Set()}, ACTIONS:{}, apiFail:e=>{throw e;}, ...data}); vm.runInContext(fs.readFileSync(new URL('../scripts/post-audience-core.js',import.meta.url),'utf8'),ctx); installTrade(ctx); return ctx; };
 const json = x => JSON.parse(JSON.stringify(x));
 
 // App 身份为 user，关联的后台会话仍必须调用服务器，禁止回退到本地发放。
@@ -37,12 +37,12 @@ for (const [name, end, path] of [['vc-send', "ACTIONS['lvc-off']", '/admin/vouch
   let action, close = 0, saved = 0, uploaded = 0, forget = 0, fail = true;
   const requests = [], file = new File(['image'], 'photo.png', {type:'image/png', lastModified:1});
   const coverFile = new File(['cover'], 'cover.png', {type:'image/png', lastModified:2});
-  const C = {imgs:[{file, url:'blob:test'}, {file:coverFile, url:'blob:cover'}], ci:1, attach:new Set(), title:'标题', body:'正文', vis:{}};
-  const ctx = realm({UI:{cp:C}, POSTS:[], TRACKS:{}, CUR:{key:'feed|'}, API:{req:async (method, path, body) => { requests.push(json(body)); if (fail) throw new Error('离线'); return {id:'server-post'}; }},
+  const C = {key:'fixture|one',imgs:[{file, url:'blob:test'}, {file:coverFile, url:'blob:cover'}], ci:1, attach:new Set(), title:'标题', body:'正文', vis:{}},panel={isConnected:true,setAttribute(){},removeAttribute(){}};
+  const ctx = realm({UI:{cp:C}, POSTS:[], TRACKS:{}, CUR:{key:'feed|'}, cpStoreKey:()=>C.key, API:{epoch:1,req:async (method, path, body) => { requests.push(json(body)); if (fail) throw new Error('离线'); return {id:'server-post'}; }},
     liveUser:() => true, canSpeak:() => true, cpCapture(){}, cpDraft:() => ({title:'标题', type:'image', h:1}), cpKind:() => 'image', cpTitle:() => '标题', cpRest:() => '正文',
     cpLink:() => '', detectPlat:() => false, cpSave:async () => saved++, cpForget:async () => { forget++; C.published = true; }, cpRender(){},
     liveUpload:async file => { uploaded++; return {id:file === coverFile ? 'uploaded-cover' : 'uploaded-image'}; }, liveEnsureUpload:async () => true, apiPost:r => ({...r, live:true}), apiFail(){}, KIND:{image:['图文']},
-    $:() => ({setAttribute(){}, removeAttribute(){}}), closeSheet(){close++;}, rerender(){}, go(){}, toast(){}, URL:{revokeObjectURL(){}},
+    $:() => panel, closeSheet(){close++;}, rerender(){}, go(){}, toast(){}, URL:{revokeObjectURL(){}},
     wrapAct:(name, fn) => { action = fn; }});
   vm.runInContext(section("wrapAct('cp-publish', async", "wrapAct('post-esave'"), ctx);
   const button = {isConnected:true, disabled:false};
@@ -57,7 +57,7 @@ for (const [name, end, path] of [['vc-send', "ACTIONS['lvc-off']", '/admin/vouch
 
 // 读取草稿期间的用户输入优先，异步恢复不得覆盖刚输入的内容或永久禁用发布。
 {
-  const C = {restoring:true, userEdited:true, title:'新输入'}, ctx = realm({UI:{cp:C}, $:() => ({}), cpStoreOp:async () => ({title:'旧草稿'}), CPSTORE:{memory:new Map()}, cpRender(){}});
+  const C = {key:'fixture|one',restoring:true, userEdited:true, title:'新输入'},panel={isConnected:true},ctx = realm({UI:{cp:C}, $:() => panel, cpStoreKey:()=>C.key, cpStoreOp:async () => ({title:'旧草稿'}), CPSTORE:{memory:new Map()}, cpRender(){}});
   vm.runInContext(section('async function cpRestore(C)', 'function composeSheet(mode)'), ctx); ctx.C = C;
   await vm.runInContext('cpRestore(C)', ctx); assert.equal(C.restoring, false); assert.equal(C.title, '新输入');
 }

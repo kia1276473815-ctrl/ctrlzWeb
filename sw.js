@@ -4,9 +4,9 @@
    - 字体和 vendor 放在独立的缓存里，升 V 时不用整批重下
    - 中文字体分片由页面自己存进 ctrlz-font-sc-v1，这里直接放行，不重复占空间
    更新 vendor 里的文件时请改文件名（例如加版本号），否则老用户会先用到一次旧缓存；顺手把 ASSETS 升一级，老文件才会被清掉 */
-const V = 'ctrlz-static-v9', ASSETS = 'ctrlz-assets-v1';
+const V = 'ctrlz-static-v51', ASSETS = 'ctrlz-assets-v1';
 const STATIC = /\/(fonts|icons|vendor)\/|\.(woff2|ttf|png|jpg|svg|webmanifest)$/, ASSET = /\/(fonts|vendor)\//;
-const PRECACHE = ['./','./scripts/audio-cache.js?v=20261011','./scripts/dm-outbox.js','./scripts/harmony-loader.js?v=20261012','./scripts/views-admin-v1.js?v=20261030-2','./scripts/views-audio-v1.js?v=20261030-sec','./scripts/docs-v1.js?v=20261030-2'];
+const PRECACHE = ["./scripts/block-operations.js?v=20261111-1","./scripts/block-operations.css?v=20261111-1","./","./scripts/communication.js?v=20261111-r14","./scripts/communication.css?v=20261111-r13","./scripts/audio-cache.js?v=20261011","./scripts/dm-outbox.js?v=20261111-voice1","./scripts/dm-voice-core.js?v=20261111-2","./scripts/dm-voice.js?v=20261111-5","./scripts/dm-voice.css?v=20261111-4","./scripts/post-audience-core.js?v=20261111-1","./scripts/post-audience.js?v=20261111-2","./scripts/post-access.js?v=20261111-2","./scripts/my-interactions.js?v=20261111-2","./scripts/my-interactions.css?v=20261111-2","./scripts/post-audience.css?v=20261111-2","./scripts/favorites.js?v=20261111-5","./scripts/favorites.css?v=20261111-2","./scripts/dm-expressions.js?v=20261111-2","./scripts/harmony-loader.js?v=20261012","./scripts/native-video-v1.js?v=20261111-2","./scripts/views-admin-v1.js?v=20261030-2","./scripts/views-payments-v1.js?v=20261111-2","./scripts/views-audio-v1.js?v=20261030-sec","./scripts/docs-v1.js?v=20261110-oauth","./scripts/oauth-v1.js?v=20261111-2","./vendor/qrcodegen.js"];
 function cachedResponse(res){
   // 直接交还原响应，保留 URL/type 等浏览器元数据及安全头；重建导航响应会影响隔离策略。
   return res || Response.error();
@@ -36,8 +36,8 @@ async function networkFirst(e,key){
   finally { if (timer !== null) clearTimeout(timer); }
 }
 
-// 页面和带版本号的脚本刚加载过，直接用 HTTP 缓存里那份，不再下载一遍；没版本号的脚本可能是很久以前的旧副本，照常走网络
-self.addEventListener('install', e => e.waitUntil(caches.open(V).then(c => c.addAll(PRECACHE.map(u => u === './' || u.includes('?v=') ? new Request(u,{cache:'force-cache'}) : u))).then(() => self.skipWaiting())));
+// 首页须读取当前版本，避免旧HTTP缓存把旧脚本引用带进新离线缓存；带版本号的脚本继续复用HTTP缓存。
+self.addEventListener('install', e => e.waitUntil(caches.open(V).then(c => c.addAll(PRECACHE.map(u => u === './' ? new Request(u,{cache:'reload'}) : u.includes('?v=') ? new Request(u,{cache:'force-cache'}) : u))).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(
   caches.keys().then(ks => Promise.all(ks.filter(k => (k.startsWith('ctrlz-static-') && k !== V) || (k.startsWith('ctrlz-assets-') && k !== ASSETS)).map(k => caches.delete(k)))).then(() => self.clients.claim())
 ));
@@ -45,9 +45,10 @@ self.addEventListener('activate', e => e.waitUntil(
 self.addEventListener('fetch', e => {
   const r = e.request; if (r.method !== 'GET') return;
   const u = new URL(r.url); if (u.origin !== location.origin) return;
+  if (/^\/auth\//.test(u.pathname) || u.searchParams.get('oauth') === 'complete') return;
   if (/HarmonyOS_Sans_SC\.part/.test(u.pathname)) return;
   if (/^\/(s|files|avatars)\//.test(u.pathname)) return;   // 分享卡片页、带签名的文件、头像：不缓存（分享页也不能当成首页存）
-  if (/\/scripts\/.*\.js$/.test(u.pathname)){
+  if (/\/scripts\/.*\.(js|css)$/.test(u.pathname) || /\/vendor\/qrcodegen\.js$/.test(u.pathname)){
     // 代码与页面一起更新，断网时仍能启动；不能先给旧脚本再后台更新。
     e.respondWith(networkFirst(e,r)); return;
   }
@@ -62,6 +63,10 @@ self.addEventListener('fetch', e => {
       return net;
     })));
   }
+});
+
+self.addEventListener('message', e => {
+  if (e.data === 'ctrlz-oauth-version') e.ports?.[0]?.postMessage('ctrlz-oauth-v1');
 });
 
 /* 网页推送：服务器推来的通知显示在系统通知栏；点一下打开（或切到）网页对应的页面 */
