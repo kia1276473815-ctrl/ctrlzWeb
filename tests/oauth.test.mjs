@@ -80,8 +80,8 @@ test('失去交流资格后本人收藏、评论与点赞管理仍可达，公�
   const gate=h.ctx.ROUTES.home();for(const target of['favs','cmts','likes'])assert.match(gate,new RegExp('href="#me-'+target+'"'));
   h.ctx.LIVE.me.accessState='active';assert.equal(h.ctx.ROUTES.home(),'<main>home</main>');
 });
-test('验证受限时启动不请求已知无权读取的公开扩展与商业资料，不触发验证弹层',async()=>{
-  const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),ctx=vm.createContext({LIVE:{me:{accessState:'verification_required'}},liveUser:()=>true,accountSession:()=>()=>true,API:{req:()=>{throw Error('unexpected_request');}}});
+test('全站强制验证开启且验证受限时，启动不请求已知无权读取的扩展资料',async()=>{
+  const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),ctx=vm.createContext({LIVE:{cfg:{verifiedAccessRequired:true},me:{accessState:'verification_required'}},liveUser:()=>true,accountSession:()=>()=>true,API:{req:()=>{throw Error('unexpected_request');}}});
   for(const [start,end,name]of[['async function liveMeExtras(){','/* 用 /me','liveMeExtras'],['async function liveMine(){','/* —— 上传：','liveMine'],['async function bizMine(){','const bizInvMap','bizMine']]){const from=html.indexOf(start),to=html.indexOf(end,from);assert(from>=0&&to>from);vm.runInContext(html.slice(from,to),ctx);await ctx[name]();}
 });
 test('登录结果未知不重交完成请求，提供显式退出Cookie会话的恢复入口',async()=>{
