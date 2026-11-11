@@ -39,3 +39,6 @@ button.dm-quote{min-height:44px;cursor:pointer}.dm-quote span{display:-webkit-bo
 .comm-video-choice{font-size:14px;line-height:1.6;overflow-wrap:anywhere}
 #commVideoPreview{display:flex;flex-direction:column;gap:12px;min-width:0}
 .comm-edit-status{font-size:14px;line-height:1.6;white-space:pre-line;overflow-wrap:anywhere}
+
+.comm-edit-comparison{margin-top:16px;padding-top:16px;border-top:1px solid var(--rule);max-height:280px;overflow:auto;overflow-wrap:anywhere}.comm-edit-comparison p{white-space:pre-wrap;line-height:1.6;margin:8px 0 16px}
+#layer .sheet:has(#peB) .inp{font-size:16px;min-height:44px}

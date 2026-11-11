@@ -2644,7 +2644,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 
 <link rel="stylesheet" href="scripts/relationship-lists.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/official-inbox.css?v=20261111-1">
-<link rel="stylesheet" href="scripts/communication.css?v=20261111-r13">
+<link rel="stylesheet" href="scripts/communication.css?v=20261112-r15">
 <link rel="stylesheet" href="scripts/comment-replies.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/block-operations.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/favorites.css?v=20261111-2">
@@ -8497,7 +8497,7 @@ function relList(uid, k){ const all = Object.keys(USERS).concat(ADM_BUYERS).filt
 Object.assign(ACTIONS, {
   pers: () => { STATE.settings.pers = !STATE.settings.pers; applySettings(); toast(STATE.settings.pers ? '已开启个性化推荐' : '已关闭个性化推荐，「推荐」改为按发布时间排列', 'blue'); rerender(); },
   // 帖子：本人可编辑 / 删除
-  'post-edit': b => { const p = POST(b.dataset.id); if (!p || p.author !== ME) return; const body = (BODY[p.id] || []).join('\n');
+  'post-edit': b => { const p = POST(b.dataset.id); if (!p || p.author !== ME) return; if(API.on()&&p.live&&!globalThis.CZCommunication?.postEditingReady){toast('正在准备编辑页面，请稍后重试','blue');return;} const body = (BODY[p.id] || []).join('\n');
     sheet(`<h3>编辑帖子</h3><label class="ad-lab" for="peT">标题</label><input class="inp" id="peT" value="${esc(p.title)}" maxlength="60"><label class="ad-lab" for="peB">正文</label><textarea class="inp" id="peB" rows="6">${esc(body || p.ex || '')}</textarea><button class="pill lg" data-act="post-esave" data-id="${p.id}">保存</button>`); },
   'post-esave': b => { const p = POST(b.dataset.id), t = $('#peT').value.trim(), x = $('#peB').value.trim(); if (!t){ fxPop($('#peT'), 'fx-shake', 300); return; }
     const ck = speakOk(t + ' ' + x); if (!ck) return; const body = x.split(/\n+/).filter(Boolean);
@@ -13219,7 +13219,9 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 })();
 </script>
 <script src="scripts/dm-expressions.js?v=20261111-2"></script>
-<script src="scripts/communication.js?v=20261111-r14"></script>
+<script src="scripts/media-url-core.js?v=20261112-1"></script>
+<script src="scripts/post-edit-core.js?v=20261112-1"></script>
+<script src="scripts/communication.js?v=20261112-r16"></script>
 <script src="scripts/comment-replies.js?v=20261111-1"></script>
 <script src="scripts/block-operations.js?v=20261111-1"></script>
 <script src="scripts/official-inbox.js?v=20261111-1"></script>
