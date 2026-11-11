@@ -1,0 +1,2 @@
+.post-audience-draft{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;margin:18px 0;min-width:0}.post-audience-draft>label{font-size:14px;line-height:1.5;color:var(--ink-2)}.post-audience-draft>select{min-height:44px;width:100%;min-width:0;font-size:16px}.post-audience-draft>.comm-editor-note{margin:0;overflow-wrap:anywhere}
+.comm-publication .pill,[data-act="comm-publication-filter"]{min-height:44px}.comm-publication>.mut2{color:var(--ink-2)}

@@ -7,7 +7,7 @@ import {installTrade} from './trade-fixture.mjs';
 const source = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 for (const [, script] of source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)) if (script.trim()) new vm.Script(script);
 const section = (a, b) => { const start = source.indexOf(a), end = source.indexOf(b, start + a.length); assert(start >= 0 && end > start, a); return source.slice(start, end); };
-const realm = data => { const ctx=vm.createContext({console, crypto:webcrypto, Date, Map, Set, Blob, File, URL, setTimeout, clearTimeout, LIVE:{u:new Set()}, ACTIONS:{}, apiFail:e=>{throw e;}, ...data}); installTrade(ctx); return ctx; };
+const realm = data => { const ctx=vm.createContext({console, crypto:webcrypto, Date, Map, Set, Blob, File, URL, setTimeout, clearTimeout, LIVE:{u:new Set()}, ACTIONS:{}, apiFail:e=>{throw e;}, ...data}); vm.runInContext(fs.readFileSync(new URL('../scripts/post-audience-core.js',import.meta.url),'utf8'),ctx); installTrade(ctx); return ctx; };
 const json = x => JSON.parse(JSON.stringify(x));
 
 // App 身份为 user，关联的后台会话仍必须调用服务器，禁止回退到本地发放。

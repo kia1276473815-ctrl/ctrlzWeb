@@ -2645,6 +2645,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 <link rel="stylesheet" href="scripts/communication.css?v=20261111-r13">
 <link rel="stylesheet" href="scripts/favorites.css?v=20261111-2">
 <link rel="stylesheet" href="scripts/dm-voice.css?v=20261111-4">
+<link rel="stylesheet" href="scripts/post-audience.css?v=20261111-2">
 </head>
 <body>
 
@@ -2688,6 +2689,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 <script src="scripts/audio-cache.js?v=20261011"></script>
 <script src="scripts/dm-outbox.js?v=20261111-voice1"></script>
 <script src="scripts/dm-voice-core.js?v=20261111-2"></script>
+<script src="scripts/post-audience-core.js?v=20261111-1"></script>
 <script src="vendor/qrcodegen.js"></script>
 <script src="scripts/harmony-loader.js?v=20261012"></script>
 <script src="scripts/native-video-v1.js?v=20261111-2"></script>
@@ -7349,7 +7351,7 @@ function rvDetail(r){
   const imgs = p ? (p.imgs || (p.img ? [p.img] : [])) : [], media = (r.lp?.media || []).filter(m => ['audio', 'video'].includes(m.kind) && m.url);
   return `<div class="rv-hd"><img src="${cover(r.cover, 5, 360, 360)}" alt=""><div class="rv-ht">
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="tag ${r.kind === '商品' ? 'c-pink' : 'k'}">${r.kind}</span><span class="mut2" style="font-size:13px">${esc(r.cat)} · ${r.time} 提交</span>${r.st === '待补充' ? stTag('等卖家补充', 'yellow') : ''}</div>
-      <h3>${esc(r.title)}</h3>${r.en ? `<span class="x" style="font-size:14px">${esc(r.en)}</span>` : ''}${r.price != null ? `<b class="num" style="font-size:20px">${r.price ? yuan2(r.price) : '免费'}</b>` : ''}
+      <h3>${esc(r.title)}</h3>${r.lk==='post'?`<p class="comm-editor-note">审核通过后：${globalThis.CZPostAudience?.label(r.visibility===undefined?'public':r.visibility)||'范围待确认'}。审核不会扩大可见范围。</p>`:''}${r.en ? `<span class="x" style="font-size:14px">${esc(r.en)}</span>` : ''}${r.price != null ? `<b class="num" style="font-size:20px">${r.price ? yuan2(r.price) : '免费'}</b>` : ''}
       ${r.flags.length ? `<div class="flags">${r.flags.map(f => `<span class="flag ${/^⚠|^未|敏感/.test(f) ? 'w' : ''}">${esc(f.replace('⚠ ', ''))}</span>`).join('')}</div>` : ''}</div></div>
     ${r.st === '待补充' ? `<p class="ad-warn y">已要求补充：${esc(r.ask || '')}</p>` : ''}
     <section class="rv-s"><h4>内容</h4>${r.kind === '商品' ? `${r.fileUrl ? `<a class="pill sm lt" href="${esc(r.fileUrl)}" target="_blank" rel="noopener" style="align-self:flex-start">${IC.dl}下载交付文件检查</a>` : ''}<div class="ad-kv col">${kv('文件', esc(r.files || ''))}${kv('试听方式', esc(r.tpl || ''))}</div>${r.desc ? `<p class="rv-p">${esc(r.desc)}</p>` : '<p class="mut2">没有填介绍</p>'}`
@@ -9564,7 +9566,7 @@ function cpCapture(C = UI.cp){
   return {title:C.title || '', body:C.body || '', imgs:C.imgs.map(x => ({file:x.file, h:x.h, uploadId:x.uploadId})).filter(x => x.file),
     ci:C.ci, audio:C.audio ? {name:C.audio.name, file:C.audio.file, demo:!C.audio.file, uploadId:C.audio.uploadId, uploadSource:C.audio.uploadSource} : null,
     video:C.video ? {file:C.video.file,name:C.video.name,mime:C.video.mime,poster:C.video.poster,duration:C.video.duration,w:C.video.w,h:C.video.h,uploadId:C.video.uploadId,uploadSource:C.video.uploadSource,posterUploadId:C.video.posterUploadId} : null,
-    link:C.link, pal:C.pal, q:C.q, ttext:C.ttext, acov:C.acov, vis:{...C.vis}, attach:[...C.attach], res:!!C.res, requestKey:C.requestKey, requestSignature:C.requestSignature,mentions:C.mentions || [], savedAt:Date.now()};
+    link:C.link, pal:C.pal, q:C.q, ttext:C.ttext, acov:C.acov, vis:{...C.vis}, attach:[...C.attach], res:!!C.res, visibility:C.visibility, pendingPublish:C.pendingPublish, requestKey:C.requestKey, requestSignature:C.requestSignature,mentions:C.mentions || [], savedAt:Date.now()};
 }
 function cpSave(C = UI.cp){
   if (!C || (C.restoring && !C.userEdited) || C.published) return Promise.resolve(); const data = cpCapture(C), key = C.key;
@@ -9592,7 +9594,7 @@ async function cpRestore(C){
 function composeSheet(mode){
   if (UI.cp?.busy){ toast('作品正在发布，完成后可以继续', 'blue'); return; }
   if (UI.cp){cpCancelAudio(UI.cp);cpCancelVideo(UI.cp);}
-  const C = UI.cp = {mode:'post', imgs:[], ci:0, audio:null, link:'', pal:'paper', q:null, ttext:false, acov:'wave', vis:{tpl:'dots', pal:'pb'}, attach:new Set(), title:'', body:'', key:cpStoreKey(), restoring:true};
+  const C = UI.cp = {mode:'post', imgs:[], ci:0, audio:null, link:'', pal:'paper', q:null, ttext:false, acov:'wave', vis:{tpl:'dots', pal:'pb'}, attach:new Set(), title:'', body:'', visibility:'public', key:cpStoreKey(), restoring:true};
   delete TRACKS['post:draft'];
   sheet(`<div class="cp-top"><h3>发布</h3></div><div id="cpWrap"></div>`,
     () => () => { C.closed = true; cpCancelAudio(C); cpCancelVideo(C,false); clearTimeout(C.saveTimer); cpSave(C); if (cpRender._wl){ cpRender._wl(); cpRender._wl = null; }
@@ -9622,6 +9624,7 @@ function drawCompose(){
     <div id="cpAtt"></div>
     <div class="cp-cover" id="cpCover"></div>
     <div class="cp-res" id="cpRes"></div>
+    <div id="cpAudience"></div>
     <button class="pill lg pk" data-act="cp-publish" id="cpPub">发布</button>`;
   $('#cTitle').value = C.title || ''; $('#cBody').value = C.body || ''; $('#cLink').value = C.link || ''; $('#cpLinkRow').hidden = !C.link;
   const upd = () => { C.userEdited = true; cpAutosave(); clearTimeout(drawCompose._t); drawCompose._t = setTimeout(cpRender, 90); };
@@ -9709,6 +9712,7 @@ async function cpAddAudio(file, demo, {restored = false, uploadId, uploadSource}
 }
 function cpRender(){
   const C = UI.cp, box = $('#cpCover'), att = $('#cpAtt'); if (!box) return;
+  globalThis.CZPostAudience?.draft(C);
   const k = cpKind(), d = cpDraft(), [kn, kc] = KIND[k]; $('#layer .sheet')?.classList.toggle('has-aud', !!C.audio);
   const mediaConflict = [C.audio,C.video,C.imgs.length,detectPlat(cpLink())].filter(Boolean).length>1;
   // 附件
@@ -9732,6 +9736,7 @@ function cpRender(){
   if (cpRender._wl){ cpRender._wl(); cpRender._wl = null; } if (C.audio && !audioUnavailable) PCLEAN_CP();
   const pub = $('#cpPub'); if (pub){ pub.disabled = empty || !!audioUnavailable || mediaConflict || C.busy || C.restoring; if (mediaConflict) pub.setAttribute('aria-describedby', 'cpMediaConflict'); else pub.removeAttribute('aria-describedby'); pub.textContent = C.busy ? C.progress || '发布中…' : C.restoring ? '正在读取草稿…' : empty ? '发布' : '发布' + kn; }
   cpAutosave();
+  globalThis.CZPostAudience?.draft(C);
   syncLive(); document.dispatchEvent(new CustomEvent('gen'));
 }
 // 预览里的波形：交给统一的波形循环（只挂一个）
@@ -10297,7 +10302,7 @@ function apiPost(p){
   // 权威计数回写带版本，删除失败不能把旧回滚叠到刚读回的服务器计数上。
   const cmtsRev = apiPost.cmtsRev = (apiPost.cmtsRev || 0) + 1;
   const o = {id,serverType:p.type,serverStyle:{...s}, author:p.author.id, title:p.title, ex:body[0] || p.title, tags:p.tags || [], likes:p.likeCount - (liked ? 1 : 0), favs:0, cmts:p.commentCount, cmtsRev, time:ago(t), ts:t,
-    attach:[], seed:hash(id) % 50, qn:/^[A-Za-z0-9]{1,6}$/.test(s.qn) ? s.qn : id.slice(-3).toUpperCase(), solved:!!p.solved, commentsClosed:!!p.commentsClosed,pinnedCommentId:p.pinnedCommentId || null,discussionVersion:p.discussionVersion || 0,mentions:p.mentions || [],rawBody:p.body || '',serverMedia:p.media || [],serverStatus:p.status,takedownReason:p.takedownReason || '', h, word:s.word || 'SOUND', edited:p.edited, live:true, review:p.status === 'review'};
+    attach:[], seed:hash(id) % 50, qn:/^[A-Za-z0-9]{1,6}$/.test(s.qn) ? s.qn : id.slice(-3).toUpperCase(), ...(globalThis.PostAudienceCore?.readState(p)||{visibility:null,visibilityVersion:null}),solved:!!p.solved, commentsClosed:!!p.commentsClosed,pinnedCommentId:p.pinnedCommentId || null,discussionVersion:p.discussionVersion || 0,mentions:p.mentions || [],rawBody:p.body || '',serverMedia:p.media || [],serverStatus:p.status,takedownReason:p.takedownReason || '', h, word:s.word || 'SOUND', edited:p.edited, live:true, review:p.status === 'review'};
   const imgs = (p.media || []).filter(m => m.kind === 'image' && m.url).map(m => m.url),video=(p.media||[]).find(m=>m.kind==='video');
   if (p.type === 'image' && imgs.length) Object.assign(o, {type:'image', img:imgs[0], imgs, h});
   else if (p.type === 'question') o.type = 'question';
@@ -10604,23 +10609,26 @@ wrapAct('cmt-dgo', async (orig, b, e) => {
 /* 发帖：声音 / 可视化帖子把音频真的传上去（浏览器认不出的格式转成 WAV），封面样式和时长放在 style 里 */
 wrapAct('cp-publish', async (orig, b, e) => {
   if (!liveUser()){ const C = UI.cp, first = POSTS[0]; orig(b, e); if (POSTS[0] !== first && C) await cpForget(C); return; }
-  const C = UI.cp; if (!C || C.busy || C.restoring || C.audio?.ld || C.audio?.error || C.video?.ld || C.video?.error || [C.audio,C.video,C.imgs.length,detectPlat(cpLink())].filter(Boolean).length>1 || !canSpeak()) return;
+  const C = UI.cp; if (!C || C.busy || C.restoring || (!C.pendingPublish && (C.audio?.ld || C.audio?.error || C.video?.ld || C.video?.error || [C.audio,C.video,C.imgs.length,detectPlat(cpLink())].filter(Boolean).length>1 || !canSpeak()))) return;
   const panel = $('#cpWrap'), scope = cpStoreKey(), epoch = API.epoch;
   const current = () => UI.cp === C && !C.closed && $('#cpWrap') === panel && panel?.isConnected !== false && scope === cpStoreKey() && API.epoch === epoch && liveUser();
   if (C.key !== scope || !current()) return;
   cpCapture(C); const p = cpDraft(), k = cpKind(), afile = C.audio?.file, snd = k === 'audio' || k === 'vis', tr = snd ? TRACKS['post:draft'] : null;
-  if (!cpTitle() && !C.imgs.length && !C.audio && !C.video && !detectPlat(cpLink())) return;
+  if (!C.pendingPublish && !cpTitle() && !C.imgs.length && !C.audio && !C.video && !detectPlat(cpLink())) return;
   const type = snd ? 'audio' : p.tcover ? 'text' : p.type === 'question' ? 'question' : p.type === 'image' ? 'image' : 'video';
   const style = C.video ? {dur:C.video.duration||0,h:clamp((C.video.h||1)/(C.video.w||1),.3,3)} : snd ? {dur:Math.round(tr?.dur || 0), ...(k === 'vis' ? {vis:{tpl:p.vis?.tpl, pal:p.vis?.pal}} : {cover:p.cover || 'wave'})}
     : p.tcover ? {pal:p.tcover.pal} : p.type === 'video' ? {url:p.url, plat:p.plat, cover:p.cover} : p.type === 'image' ? {h:p.h} : {qn:p.qn};
   const text = cpRest() || p.title, tags = [k === 'question' ? '提问' : '新作品'];
   const mentions=globalThis.CZCommunication?.postMentions(text) || [];
-  const signature = JSON.stringify([type, p.title, text, tags, style, mentions, C.ci, C.imgs.map(x => [x.file?.name, x.file?.size, x.file?.lastModified]), afile ? [afile.name, afile.size, afile.lastModified] : C.audio?.name,...(C.video?[CZVideo.source(C.video.file),C.video.poster?.size]:[])]);
-  if (C.requestSignature !== signature){ C.requestKey = crypto.randomUUID(); C.requestSignature = signature; }
+  const signature = JSON.stringify([type, p.title, text, tags, style, mentions, C.ci, C.imgs.map(x => [x.file?.name, x.file?.size, x.file?.lastModified]), afile ? [afile.name, afile.size, afile.lastModified] : C.audio?.name,...(C.video?[CZVideo.source(C.video.file),C.video.poster?.size]:[]),...(C.visibility!==undefined&&C.visibility!=='public'?[C.visibility]:[])]);
+  if (!C.pendingPublish && C.requestSignature !== signature){ C.requestKey = crypto.randomUUID(); C.requestSignature = signature; }
   C.busy = true; $('#cpWrap')?.setAttribute('inert', ''); b.disabled = true;
   const progress = t => { C.progress = t; if (current() && b.isConnected) b.textContent = t; };
   try {
     await cpSave(C); if (!current()) return;
+    let requestBody=C.pendingPublish?.body;
+    const audience = await PostAudienceCore.prepareCreate(requestBody ? requestBody.visibility:C.visibility,()=>API.req('GET','/config'),current); if(!current())return;
+    if(!requestBody){
     const uploadIds = [];
     if(C.video){const video=C.video;if(video.uploadId&&!await liveEnsureUpload(video.uploadId))video.uploadId=null;if(!current())return;progress('正在上传视频…');
       video.uploadId ||= (await liveUpload(video.file.type===video.mime?video.file:video.file.slice(0,video.file.size,video.mime),'post_video',undefined,{current})).id;video.uploadSource=CZVideo.source(video.file);await cpSave(C);if(!current())return;uploadIds.push(video.uploadId);
@@ -10641,16 +10649,23 @@ wrapAct('cp-publish', async (orig, b, e) => {
       await cpSave(C); if (!current()) return; uploadIds.push(im.uploadId);
     }
     progress('正在提交作品…');
-    const r = await API.req('POST', '/posts', {type, title:p.title, body:text, tags, uploadIds, style, mentions, requestKey:C.requestKey});
+    requestBody={type, title:p.title, body:text, tags, uploadIds, style, mentions, ...audience, requestKey:C.requestKey};
+    C.pendingPublish={body:JSON.parse(JSON.stringify(requestBody)),signature};
+    await cpSave(C);if(!current())return;
+    }
+    progress(C.pendingPublish ? '正在确认发布结果…':'正在提交作品…');
+    const r = await API.req('POST', PostAudienceCore.createPath(requestBody.visibility), requestBody);
     if (!current()) return;
     const np = apiPost(r); const exists = POSTS.findIndex(x => x.id === np.id); if (exists >= 0) POSTS.splice(exists, 1); POSTS.unshift(np);
+    const modified=!!C.pendingPublish&&signature!==C.pendingPublish.signature;C.pendingPublish=null;
+    if(modified){C.requestKey=C.requestSignature=null;await cpSave(C);if(current())toast('上次发布已确认；当前修改仍保存在草稿里，可以另行发布','blue');return;}
     if (snd && tr){ TRACKS['post:' + np.id] = tr; delete TRACKS['post:draft']; }
     await cpForget(C); C.imgs.forEach(im => URL.revokeObjectURL(im.url));
     if (!current()) return;
     if (UI.cp === C) closeSheet(); UI.feed = {type:'all', cat:'all', tag:null, sort:'new'};
-    toast(np.review ? '已提交审核，通过后大家才能看到；现在只有你自己看得到' : '发出去了 · ' + KIND[k][0], np.review ? 'orange' : 'pink');
-    if (CUR.key === 'feed|') rerender(); else go('feed');
-  } catch(err){ await cpSave(C); if (current()) apiFail(err); }
+    toast(np.review ? '已提交审核，通过前仅自己可见' : np.visibility==='private' ? '已发布 · 仅自己可见' : np.visibility==='followers' ? '已发布 · 当前粉丝可见' : '发出去了 · ' + KIND[k][0], np.review ? 'orange' : 'pink');
+    if(np.visibility==='private'||np.visibility==='followers')go('user-'+ME);else if (CUR.key === 'feed|') rerender(); else go('feed');
+  } catch(err){ if(err.status>=400&&err.status<500&&![401,403,409].includes(err.status))C.pendingPublish=null;await cpSave(C); if (current()) apiFail(err); }
   finally { C.busy = false; C.progress = ''; if (UI.cp === C && $('#cpWrap') === panel){ panel?.removeAttribute('inert'); if (current()) cpRender(); else if (b.isConnected){ b.disabled = true; b.textContent = '账号已变化，请重新打开发帖'; } } }
 });
 wrapAct('post-esave', async (orig, b, e) => {
@@ -11802,7 +11817,7 @@ function luSheet(r){ const u = r.user, c = r.counts, uid = u.id, yuanF = f => '�
         ${admUserCan('ban7') ? `<button class="pill sm pk" data-act="us-do" data-v="ban7" data-id="${esc(uid)}">封禁 7 天</button><button class="pill sm pk" data-act="us-do" data-v="ban0" data-id="${esc(uid)}">永久封禁</button>` : ''}${banned || muted ? `<button class="pill sm" data-act="us-do" data-v="lift" data-id="${esc(uid)}">解除限制</button>` : ''}${admUserCan('verify') ? `<button class="pill sm lt" data-act="us-do" data-v="verify" data-id="${esc(uid)}">${u.verified ? '取消实名标记' : '标记已实名'}</button>` : ''}</div>` : ''}
       <div class="ad-acts">${staffCan('notify.send') ? `<button class="pill sm lt" data-act="us-msg" data-id="${esc(uid)}">发站内信</button>` : ''}${u.username && admCan('staff') ? `<button class="pill sm lt" data-act="lus-pw" data-id="${esc(uid)}">重置密码</button>` : ''}<a class="pill sm lt" data-go="user-${esc(uid)}">看主页</a></div>
       <div class="lu-perm">${usPerm(uid)}</div>`)}
-    ${pane('posts', `<div class="ad-mini">${r.posts.map(p => `<a data-go="post-${esc(p.id)}">${fmtDT(+new Date(p.createdAt))} · ${esc(p.title)} · ${{published:'公开', review:'审核中', taken_down:'已下架'}[p.status] || p.status}</a>`).join('') || '<span>没有帖子</span>'}</div>`)}
+    ${pane('posts', `<div class="ad-mini">${r.posts.map(p => `<a data-go="post-${esc(p.id)}">${fmtDT(+new Date(p.createdAt))} · ${esc(p.title)} · ${p.status==='published'?'已发布 · '+(globalThis.CZPostAudience?.label(p.visibility===undefined?'public':p.visibility)||'范围待确认'):({review:'审核中',taken_down:'已下架'}[p.status]||p.status)}</a>`).join('') || '<span>没有帖子</span>'}</div>`)}
     ${pane('orders', `<span class="ad-lab">买的</span><div class="ad-mini">${r.bought.map(o => `<span>${fmtDT(+new Date(o.createdAt))} · ${esc(o.title)} · ${yuanF(o.price)} · 卖家 ${esc(o.peer.name)} · ${esc(o.status)} ${tradeOrderBadge(o)}</span>`).join('') || '<span>没有</span>'}</div>
       <span class="ad-lab">卖的</span><div class="ad-mini">${r.sold.map(o => `<span>${fmtDT(+new Date(o.createdAt))} · ${esc(o.title)} · ${yuanF(o.price)} · 买家 ${esc(o.peer.name)} · ${esc(o.status)} ${tradeOrderBadge(o)}</span>`).join('') || '<span>没有</span>'}</div>`)}
     ${pane('dm', !r.dmVisible ? '<p class="mut2" style="font-size:12.5px">私信对象和登录 IP 属于隐私，只有超级管理员、内容审核和客服能看。</p>' : `<p class="mut2" style="font-size:12.5px">只显示和谁聊过、各发了几条；要看内容点「查看记录」，需要写理由并记进操作日志。</p><div class="lu-dm">${r.dmPeers.map(p => { apiUser(p.peer); return `<div class="lu-dmr">${uav(p.peer.id)}<span><b>${esc(p.peer.name)}</b><i>TA 发 ${p.sent} 条 · 收 ${p.received} 条 · 最近 ${ago(+new Date(p.lastAt))}</i></span>${admCan('reports') ? `<button class="pill sm lt" data-act="dv-open" data-a="${esc(uid)}" data-b="${esc(p.peer.id)}">查看记录</button>` : ''}</div>`; }).join('') || '<span class="mut2">没有私信</span>'}</div>`)}
@@ -12275,7 +12290,7 @@ const rvOfLive = p => ({id:p.id, live:true, kind:'商品', sp:p.id, title:p.titl
 /* 帖子 / 评论（lk = post / cmt）：通过 = 公开；驳回 = 不通过，后端会通知作者。没有「要求补充材料」 */
 const RV_TYPE = {text:'文字', image:'图片', video:'视频链接', question:'提问', audio:'声音'};
 const rvOfLivePost = p => { const body = String(p.body || '').split(/\n+/).filter(Boolean), s = p.style || {};
-  return {id:p.id, live:true, lk:'post', kind:'帖子', ref:p.id, title:p.title, who:apiUser(p.author).id, cat:RV_TYPE[p.type] || p.type, time:fmtDT(+new Date(p.createdAt)).slice(0, 11),
+  return {id:p.id, visibility:p.visibility, live:true, lk:'post', kind:'帖子', ref:p.id, title:p.title, who:apiUser(p.author).id, cat:RV_TYPE[p.type] || p.type, time:fmtDT(+new Date(p.createdAt)).slice(0, 11),
     flags:p.flags.map(f => /送审词/.test(f) ? '⚠ ' + f : f), cover:p.type === 'video' ? 'wave' : 'grid',
     lp:{id:p.id, body:body.length ? body : [p.title], imgs:(p.media || []).filter(m => m.kind === 'image').map(m => m.url), media:(p.media || []).filter(m => ['audio', 'video'].includes(m.kind)).map(m => ({kind:m.kind, url:m.url})), tags:p.tags || [], link:typeof s.url === 'string' ? s.url : ''}}; };
 const rvOfLiveCmt = c => ({id:c.id, live:true, lk:'cmt', kind:'评论', title:c.body.slice(0, 40), who:apiUser(c.author).id, cat:'评论', time:fmtDT(+new Date(c.createdAt)).slice(0, 11),
@@ -12641,7 +12656,7 @@ ACTIONS['lct-retry']=()=>adminLoadContent(LADM.ctk,!!LADM.content && !!LADM.cont
     const rows = LADM.content.filter(x => (f==='all' || f==='off' ? f==='all' || off(x) : ['published','on_sale'].includes(x.status)) && (!q || ((x.title || x.body || '') + who(x).name).toLowerCase().includes(q))).map(x => { apiUser(who(x));
       const st = off(x) ? stTag(k === 'cmt' ? '已删除' : '已下架', 'orange') : x.status === 'review' || x.status === 'need_info' ? stTag('审核中', 'yellow') : x.status === 'on_sale' || x.status === 'published' ? stTag(k === 'prod' ? '在售' : '在线', 'green') : stTag(x.status, '');
       const act = !staffCan(k==='prod' ? 'products.review' : 'content.act') ? '' : off(x) ? `<button class="pill sm lt" data-act="lct" data-v="on" data-k="${k}" data-id="${esc(x.id)}">恢复</button>` : (x.status === 'published' || x.status === 'on_sale') ? `<button class="pill sm" data-act="lct" data-v="off" data-k="${k}" data-id="${esc(x.id)}">${k === 'cmt' ? '删除' : '下架'}</button>` : '';
-      return `<tr><td><span class="ad-u">${k === 'cmt' ? uav(x.author.id) : ''}<span><b>${esc(k === 'cmt' ? x.body : x.title)}</b><i>${esc(who(x).name)}${k === 'cmt' ? ` · 在「${esc(x.postTitle)}」` : k === 'prod' ? ' · ' + yuan2(f2y(x.price)) : ''} · ${fmtDay(+new Date(x.createdAt))}</i></span></span></td><td class="r n">${k === 'prod' ? x.salesCount : ''}</td><td>${st}</td><td class="r">${act}</td></tr>`; }).join('');
+      return `<tr><td><span class="ad-u">${k === 'cmt' ? uav(x.author.id) : ''}<span><b>${esc(k === 'cmt' ? x.body : x.title)}</b><i>${esc(who(x).name)}${k === 'cmt' ? ` · 在「${esc(x.postTitle)}」` : k === 'prod' ? ' · ' + yuan2(f2y(x.price)) : ''} · ${fmtDay(+new Date(x.createdAt))}</i></span></span></td><td class="r n">${k === 'prod' ? x.salesCount : ''}</td><td>${st}${k==='post'?`<span class="mut2" style="display:block">${globalThis.CZPostAudience?.label(x.visibility===undefined?'public':x.visibility)||'范围待确认'}</span>`:''}</td><td class="r">${act}</td></tr>`; }).join('');
     return `${adH('内容', '已发布的内容；下架后用户端立刻看不到，可以恢复。作者会收到通知', adQ('content', '搜标题、内容或作者'))}
     <div class="ad-bar2">${adSeg('ct',tabs,k)}${adSeg('cs', [['all', '全部'], ['on', '在线'], ['off', '已下架']], f)}</div>
     <div class="box" style="margin-top:12px"><div class="tw"><table class="t"><thead><tr><th>内容</th><th class="r">${k === 'prod' ? '销量' : ''}</th><th>状态</th><th></th></tr></thead><tbody>${rows || `<tr><td colspan="4" class="mut">${LADM.busy.content ? '正在读取…' : '没找到'}</td></tr>`}</tbody></table></div></div>
@@ -13182,9 +13197,11 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 })();
 </script>
 <script src="scripts/dm-expressions.js?v=20261111-2"></script>
-<script src="scripts/communication.js?v=20261111-r13"></script>
+<script src="scripts/communication.js?v=20261111-r14"></script>
 <script src="scripts/favorites.js?v=20261111-5"></script>
 <script src="scripts/dm-voice.js?v=20261111-5"></script>
+<script src="scripts/post-audience.js?v=20261111-2"></script>
+<script src="scripts/post-access.js?v=20261111-2"></script>
 
 <script src="scripts/oauth-v1.js?v=20261110-1"></script>
 </body>
