@@ -10,14 +10,16 @@
   LIVE.cmts?.[id]?.controller?.abort();if(LIVE.cmts)delete LIVE.cmts[id];if(LIVE.pend)delete LIVE.pend[id];if(UI.newCmts)delete UI.newCmts[id];
   if(typeof RL!=='undefined'&&RL.on&&reelCur()?.id===id)reelDrop();else if(CUR.post===id){document.getElementById?.('post')?.replaceChildren();ACTIONS.pclose();}else rerender();
  }
- async function check(id){
-  if(!online()||id==='draft')return true;const owner=scope(),key=owner+'|'+id;if(pending.has(key))return pending.get(key);
-  const entity=POST(id),revision=entity?.cmtsRev,task=(async()=>{try{const raw=await API.req('GET','/posts/'+encodeURIComponent(id));if(scope()!==owner)return false;const current=POST(id);if(current!==entity||current?.cmtsRev!==revision)return false;const next=apiPost(raw);if(current)Object.assign(current,next);else POSTS.push(next);return true;}
-   catch(error){if(scope()!==owner)return false;const current=POST(id);if([403,404].includes(error.status)&&current===entity&&current?.cmtsRev===revision)forget(id);else apiFail(error);return false;}
+ async function read(id){
+  if(!online()||id==='draft')return{ok:true,superseded:false};const owner=scope(),key=owner+'|'+id;if(pending.has(key))return pending.get(key);
+  const entity=POST(id),revision=entity?.cmtsRev,task=(async()=>{try{const raw=await API.req('GET','/posts/'+encodeURIComponent(id));if(scope()!==owner)return{ok:false,superseded:false};const current=POST(id);if(current!==entity||current?.cmtsRev!==revision)return{ok:false,superseded:true};const next=apiPost(raw);if(current)Object.assign(current,next);else POSTS.push(next);return{ok:true,superseded:false};}
+   catch(error){if(scope()!==owner)return{ok:false,superseded:false};const current=POST(id),superseded=current!==entity||current?.cmtsRev!==revision;if([403,404].includes(error.status)){if(!superseded)forget(id);return{ok:false,superseded};}apiFail(error);return{ok:false,superseded:false};}
    finally{pending.delete(key);}})();pending.set(key,task);return task;
  }
- const open=openPost;openPost=function(id){if(!online())return open(id);const sequence=++opening,owner=scope(),route=location.hash;return check(id).then(ok=>{if(ok&&sequence===opening&&scope()===owner&&location.hash===route)return open(id);});};
- const reels=openReels;openReels=function(id,...args){if(!online())return reels(id,...args);const sequence=++opening,owner=scope(),route=location.hash;return check(id).then(ok=>{if(ok&&sequence===opening&&scope()===owner&&location.hash===route)return reels(id,...args);});};
+ async function check(id){return(await read(id)).ok;}
+ async function authorizeOpening(id,sequence,owner,route){const current=()=>sequence===opening&&scope()===owner&&location.hash===route;let result=await read(id);if(result.superseded&&current())result=await read(id);return result.ok&&current();}
+ const open=openPost;openPost=function(id){if(!online())return open(id);const sequence=++opening,owner=scope(),route=location.hash;return authorizeOpening(id,sequence,owner,route).then(ok=>{if(ok)return open(id);});};
+ const reels=openReels;openReels=function(id,...args){if(!online())return reels(id,...args);const sequence=++opening,owner=scope(),route=location.hash;return authorizeOpening(id,sequence,owner,route).then(ok=>{if(ok)return reels(id,...args);});};
  const audio=toggleAudio;toggleAudio=async function(id,...args){if(!online()||!POST(id)?.live||GEN.owner==='post:'+id&&(GEN.on||GEN.pending)&&args[0]===undefined)return audio(id,...args);if(await check(id))return audio(id,...args);};
  if(typeof NATIVE_VIDEO!=='undefined'){const play=NATIVE_VIDEO.play;NATIVE_VIDEO.play=async function(video){const id=video?.dataset.nativeVideo;if(!id||id==='draft'||!POST(id)?.live||await check(id))return play(video);return false;};}
  async function foreground(){if(document.hidden||!online())return;const ids=new Set([CUR.post,typeof RL!=='undefined'&&RL.on?reelCur()?.id:null,typeof GEN!=='undefined'&&GEN.owner?.startsWith('post:')?GEN.owner.slice(5):null].filter(Boolean));await Promise.all([...ids].map(check));}

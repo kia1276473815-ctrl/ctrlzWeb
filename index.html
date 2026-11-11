@@ -2644,7 +2644,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 
 <link rel="stylesheet" href="scripts/relationship-lists.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/official-inbox.css?v=20261111-1">
-<link rel="stylesheet" href="scripts/communication.css?v=20261112-r20">
+<link rel="stylesheet" href="scripts/communication.css?v=20261112-r21">
 <link rel="stylesheet" href="scripts/comment-replies.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/block-operations.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/favorites.css?v=20261111-2">
@@ -3125,7 +3125,7 @@ REPORTS.forEach(r => { if (r.kind === 'cmt' && !r.key) r.key = r.ref + ':' + has
 Object.keys(ADM.taken.post).forEach(id => { const i = POSTS.findIndex(p => p.id === id); if (i >= 0) TAKEN_P[id] = POSTS.splice(i, 1)[0]; });
 /* 评论：真实评论优先按 ID，原型按「帖子 + 作者 + 内容」识别；被下架的评论在各处过滤。 */
 const cmtKey = (pid, c) => pid + ':' + (c.id || hash(c.u + '|' + c.t));
-const cmtsOf = pid => (COMMENTS[pid] || COMMENTS._default).concat(UI.newCmts[pid] || []).filter(c => !(typeof CDEL_PEND !== 'undefined' && CDEL_PEND.get(cmtKey(pid, c))?.scope === cdelScope()) && (c.id && POST(pid)?.live || !ADM.taken.cmt[cmtKey(pid, c)] && !STATE.cdel?.has(cmtKey(pid, c))) && !blocked(c.u)).sort((a,b)=>Number(b.id===POST(pid)?.pinnedCommentId)-Number(a.id===POST(pid)?.pinnedCommentId));
+const cmtsOf = pid => (typeof commentListRows==='function'?commentListRows(pid,(COMMENTS[pid] || COMMENTS._default).concat(UI.newCmts[pid] || [])):(COMMENTS[pid] || COMMENTS._default).concat(UI.newCmts[pid] || [])).filter(c => !(typeof CDEL_PEND !== 'undefined' && CDEL_PEND.get(cmtKey(pid, c))?.scope === cdelScope()) && (c.id && POST(pid)?.live || !ADM.taken.cmt[cmtKey(pid, c)] && !STATE.cdel?.has(cmtKey(pid, c))) && !blocked(c.u)).sort((a,b)=>typeof commentPinned==='function'?Number(commentPinned(pid,b))-Number(commentPinned(pid,a)):Number(b.id===POST(pid)?.pinnedCommentId)-Number(a.id===POST(pid)?.pinnedCommentId));
 function cmtFlash(pid,c){ const f=UI.flashCmt; return !!(f && f.p===pid && (f.id ? c.id===f.id : c.t===f.t && (!f.u || c.u===f.u))); }
 /* 账号状态 */
 const acctOf = uid => ADM.acct[uid] ||= {warns:[]};
@@ -5506,7 +5506,7 @@ function renderBase(r, arg, soft){
 function revealActive(root){ $$('.on', root).forEach(el => { const par = el.parentElement; if (!par || par.scrollWidth <= par.clientWidth + 2 || !/(auto|scroll)/.test(getComputedStyle(par).overflowX)) return;
   const l = el.getBoundingClientRect().left - par.getBoundingClientRect().left + par.scrollLeft, want = l - (par.clientWidth - el.offsetWidth)/2; if (l < par.scrollLeft || l + el.offsetWidth > par.scrollLeft + par.clientWidth) par.scrollLeft = Math.max(0, want); }); }
 function rerender(){ if (CUR.post) { renderPost(CUR.post); UI.dirty = true; return; } const {r, arg} = parseHash();
-  if (r === 'v' || (r === 'post' && inStream(POST(arg)))){ UI.dirty = true;
+  if (r === 'v' || r === 'post'){ UI.dirty = true;
     if (RL.on && reelCur()?.id === arg) openReels(arg, true); else render('soft'); return; }
   renderBase(r, arg, true); }
 function patchBookmarks(){
@@ -6693,8 +6693,8 @@ function renderPost(id, fresh){
         <div class="body">${p.live && p.mentions?.length && globalThis.CZCommunication ? `<p style="white-space:pre-line">${CZCommunication.mentionText(p.rawBody || '',p.mentions)}</p>` : (BODY[p.id] || [p.ex]).map(t => `<p>${esc(t)}</p>`).join('')}${CODE[p.id] && p.type !== 'question' ? `<pre>${esc(CODE[p.id])}</pre>` : ''}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px">${p.tags.map(t => `<a class="chip" data-act="tagjump" data-v="${esc(t)}" style="height:28px;font-size:12.5px">#${esc(t)}</a>`).join('')}</div>
         ${p.attach.filter(a => onSale(P(a))).length ? `<div class="used"><span class="lab">这件作品用到</span>${p.attach.filter(a => onSale(P(a))).map(pid => { const pr = P(pid); return `<a class="c-${CATS[pr.cat].c}" data-go="item-${pid}"><img src="${cover(pr.cover, hash(pr.id)%50, 160, 160)}" alt=""><span style="min-width:0"><b style="font-size:13px;display:block">${esc(pr.en)}</b><span style="font-size:13.5px">${esc(pr.title)}</span></span><span class="pill sm cc">${yuan(pr.price)}</span></a>`; }).join('')}</div>` : ''}
-        <div style="margin-top:22px"><span class="lab">${p.type === 'question' ? '回答' : '评论'} ${p.live ? Math.max(p.cmts || 0,cm.filter(c=>c.sendState !== 'failed').length) : cm.filter(c=>c.sendState !== 'failed').length}</span>
-        ${p.live ? cmtStatusHtml(p.id) : ''}${cm.map((c, ci) => `<div class="cmt ${c.best ? 'best' : ''} ${UI.freshCmt === p.id && ci === cm.length - 1 ? 'fresh' : ''} ${cmtFlash(p.id,c) ? 'flash' : ''}" data-cmt-id="${esc(c.id || '')}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">楼主</span>' : ''}${c.best ? '<span class="tag c-green" style="height:18px;font-size:10px">最佳</span>' : ''}${c.review ? '<span class="tag c-yellow" style="height:18px;font-size:10px">审核中</span>' : ''}<span>${c.time}</span></div>${cmtReplyRef(p.id,c)}<p>${globalThis.CZCommunication ? CZCommunication.mentionText(c.t,c.mentions) : esc(c.t)}</p>${c.code ? `<pre class="code">${esc(CODE[c.code])}</pre>` : ''}<div class="ctl">${cmtLikeHtml(p.id,c,'clike') || `<button data-act="clike" data-k="${p.id}:${ci}" class="${STATE.clikes.has(p.id + ':' + ci) ? 'on' : ''}" aria-pressed="${STATE.clikes.has(p.id + ':' + ci)}"><i class="hk">${STATE.clikes.has(p.id + ':' + ci) ? '♥' : '♡'}</i><span>${c.likes + (STATE.clikes.has(p.id + ':' + ci) ? 1 : 0)}</span></button>`}<button data-act="reply" data-v="${esc(USERS[c.u]?.name || '')}" ${p.live && (!c.id || c.review || c.sendState) ? 'disabled title="发布后才能回复"' : ''}>回复</button>${cmtCtl(p.id, c)}</div>${cmtSendFeedback(p.id,c)}</div></div>`).join('')}${p.live ? cmtMoreHtml(p.id) : ''}</div>
+        <div class="cmt-list" style="margin-top:22px"><span class="lab">${p.type === 'question' ? '回答' : '评论'} ${p.live ? Math.max(p.cmts || 0,cm.filter(c=>c.sendState !== 'failed').length) : cm.filter(c=>c.sendState !== 'failed').length}</span>
+        ${p.live ? cmtStatusHtml(p.id) : ''}${cm.map((c, ci) => `<div class="cmt ${c.best ? 'best' : ''} ${UI.freshCmt === p.id && ci === cm.length - 1 ? 'fresh' : ''} ${cmtFlash(p.id,c) ? 'flash' : ''}" data-cmt-id="${esc(c.id || '')}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">楼主</span>' : ''}${c.best ? '<span class="tag c-green" style="height:18px;font-size:10px">最佳</span>' : ''}${commentPinned(p.id,c)?'<span class="tag k comm-pin-label">作者置顶</span>':''}${c.review ? '<span class="tag c-yellow" style="height:18px;font-size:10px">审核中</span>' : ''}<span>${c.time}</span></div>${cmtReplyRef(p.id,c)}<p>${globalThis.CZCommunication ? CZCommunication.mentionText(c.t,c.mentions) : esc(c.t)}</p>${c.code ? `<pre class="code">${esc(CODE[c.code])}</pre>` : ''}<div class="ctl">${cmtLikeHtml(p.id,c,'clike') || `<button data-act="clike" data-k="${p.id}:${ci}" class="${STATE.clikes.has(p.id + ':' + ci) ? 'on' : ''}" aria-pressed="${STATE.clikes.has(p.id + ':' + ci)}"><i class="hk">${STATE.clikes.has(p.id + ':' + ci) ? '♥' : '♡'}</i><span>${c.likes + (STATE.clikes.has(p.id + ':' + ci) ? 1 : 0)}</span></button>`}<button data-act="reply" data-v="${esc(USERS[c.u]?.name || '')}" ${p.live && (!c.id || c.review || c.sendState) ? 'disabled title="发布后才能回复"' : ''}>回复</button>${cmtCtl(p.id, c)}</div>${cmtSendFeedback(p.id,c)}</div></div>`).join('')}${p.live ? cmtMoreHtml(p.id) : ''}</div>
       </div>
       <div class="foot"><textarea id="cmtIn" rows="1" placeholder="${STATE.role === 'guest' ? '登录后参与' : p.type === 'question' ? '你会怎么解决？' : '说点什么…'}" autocomplete="off" enterkeyhint="send"></textarea><button class="pill sm ic" data-act="cmt" data-id="${p.id}" ${p.live && p.commentsClosed ? 'disabled title="作者已关闭评论"':''} aria-label="发送">${IC.arrow}</button>
         <span class="cdock"><button class="pill sm ic lt" data-act="like" data-id="${p.id}" aria-label="喜欢" style="${STATE.liked.has(p.id) ? 'color:var(--pink)' : ''}">${STATE.liked.has(p.id) ? IC.heartF : IC.heart}</button>
@@ -8097,7 +8097,7 @@ document.addEventListener('keydown', e => {
 });
 /* 评论面板：从底部升起，盖住下半屏，视频继续在上半屏播放 */
 function reelCmList(p){ const cm = cmtsOf(p.id), status=p.live ? cmtStatusHtml(p.id) : '', more=p.live ? cmtMoreHtml(p.id) : '';
-  return status + (cm.map(c => `<div class="cmt ${cmtFlash(p.id,c) ? 'flash' : ''}" data-cmt-id="${esc(c.id || '')}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">作者</span>' : ''}${c.review ? '<span class="tag c-yellow" style="height:18px;font-size:10px">审核中</span>' : ''}<span>${c.time}</span></div>${cmtReplyRef(p.id,c)}<p>${globalThis.CZCommunication ? CZCommunication.mentionText(c.t,c.mentions) : esc(c.t)}</p><div class="ctl">${cmtLikeHtml(p.id,c,'rl-cl') || `<button data-act="rl-cl">♥ ${c.likes}</button>`}<button data-act="rl-re" data-v="${esc(USERS[c.u]?.name || '')}" ${p.live && (!c.id || c.review || c.sendState) ? 'disabled title="发布后才能回复"' : ''}>回复</button>${cmtCtl(p.id, c)}</div>${cmtSendFeedback(p.id,c)}</div></div>`).join('') || (status ? '' : '<div class="rnone">还没有评论，来说第一句</div>')) + more; }
+  return status + (cm.map(c => `<div class="cmt ${cmtFlash(p.id,c) ? 'flash' : ''}" data-cmt-id="${esc(c.id || '')}">${av(c.u)}<div style="min-width:0"><div class="h"><b>${esc(USERS[c.u]?.name || '管理员')}</b>${c.u === p.author ? '<span class="tag k" style="height:18px;font-size:10px">作者</span>' : ''}${commentPinned(p.id,c)?'<span class="tag k comm-pin-label">作者置顶</span>':''}${c.review ? '<span class="tag c-yellow" style="height:18px;font-size:10px">审核中</span>' : ''}<span>${c.time}</span></div>${cmtReplyRef(p.id,c)}<p>${globalThis.CZCommunication ? CZCommunication.mentionText(c.t,c.mentions) : esc(c.t)}</p><div class="ctl">${cmtLikeHtml(p.id,c,'rl-cl') || `<button data-act="rl-cl">♥ ${c.likes}</button>`}<button data-act="rl-re" data-v="${esc(USERS[c.u]?.name || '')}" ${p.live && (!c.id || c.review || c.sendState) ? 'disabled title="发布后才能回复"' : ''}>回复</button>${cmtCtl(p.id, c)}</div>${cmtSendFeedback(p.id,c)}</div></div>`).join('') || (status ? '' : '<div class="rnone">还没有评论，来说第一句</div>')) + more; }
 function openReelCm(focus){
   const p = reelCur(), box = $('.rl-cm', RL.el); if (!p) return; const wasOpen=RL.cm; if(p.live) loadLiveCmts(p.id,false,!wasOpen); RL.cm = true;
   const old = $('#rlIn',box), keepFocus = old?._draftKey === inputDraftKey('comment',p.id) && document.activeElement === old; inputDraftSave(old);
@@ -8510,12 +8510,12 @@ Object.assign(ACTIONS, {
     if (RL.on && reelCur()?.id === id) reelDrop(); else if (CUR.post === id) ACTIONS.pclose(); toast('已删除', 'blue'); setTimeout(rerender, 60); },
   // 评论：本人删除 / 他人举报
   'cmt-del': b => { const pid = b.dataset.p, k = b.dataset.k; if (CDEL_PEND.has(k)) return;
-    const c = (COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || []).find(c => cmtKey(pid, c) === k); if (!c || !cmtMine(c) || POST(pid)?.live && (!c.id || c.sendState)) return;
+    const c = (typeof commentListRows==='function'?commentListRows(pid,(COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || [])):(COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || [])).find(c => cmtKey(pid, c) === k); if (!c || !cmtMine(c) || POST(pid)?.live && (!c.id || c.sendState)) return;
     const redraw = () => { if (RL.on && RL.cm && reelCur()?.id === pid && typeof openReelCm === 'function') openReelCm(); else if (CUR.post === pid) renderPost(pid); else if (UI.meTab === 'cmts') patchMyComments(); };
     const item = {pid, id:c.id, scope:cdelScope(), timer:0, sent:false}; CDEL_PEND.set(k, item);
     item.timer = setTimeout(() => cdelCommit(k, item), 5000); redraw();   // 只用本轮待删记录隐藏，不写持久删除标记
     toast('评论已删除', 'blue', 'check', {undo:() => { if (CDEL_PEND.get(k) !== item || item.sent) return; const current = cdelScope() === item.scope; cdelFinish(k, item); if (current) redraw(); }}); },
-  'cmt-dgo': b => { const pid = b.dataset.p, k = b.dataset.k, c = (COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || []).find(c => b.dataset.cid ? c.id === b.dataset.cid : cmtKey(pid, c) === k); STATE.cdel.add(k); store.set('cdel', [...STATE.cdel]); const p = POST(pid); if (p && p.cmts > 0 && c && !c.review && c._counted !== false) p.cmts--; if (!b.dataset.quiet){ closeSheet(); toast('评论已删除', 'blue'); }
+  'cmt-dgo': b => { const pid = b.dataset.p, k = b.dataset.k, c = (typeof commentListRows==='function'?commentListRows(pid,(COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || [])):(COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || [])).find(c => b.dataset.cid ? c.id === b.dataset.cid : cmtKey(pid, c) === k); STATE.cdel.add(k); store.set('cdel', [...STATE.cdel]); const p = POST(pid); if (p && p.cmts > 0 && c && !c.review && c._counted !== false) p.cmts--; if (!b.dataset.quiet){ closeSheet(); toast('评论已删除', 'blue'); }
     if (RL.on && RL.cm && reelCur()?.id === pid && typeof openReelCm === 'function') openReelCm(); else if (CUR.post === pid) renderPost(pid); else if (UI.meTab === 'cmts') patchMyComments(); },
   // 卖家商品管理
   'sp-manage': b => { const p = P(b.dataset.id); if (!p || p.seller !== ME) return;
@@ -10364,7 +10364,7 @@ function cmtLikeHtml(pid,c,act){
   return `<button data-act="${act}" data-p="${esc(pid)}" data-cid="${esc(c.id || '')}" class="${c.liked ? 'on' : ''}" aria-label="给评论点赞" aria-pressed="${!!c.liked}"${!c.id || c.review || c.sendState ? ' disabled' : ''}><i class="hk">${c.liked ? '♥' : '♡'}</i><span>${c.likes || 0}</span></button>`;
 }
 function cmtLikePaint(pid,id,s){
-  const c=(COMMENTS[pid] || []).concat(UI.newCmts[pid] || []).find(c=>c.id===id) || globalThis.CZCommunication?.commentReference?.(pid,id); if(!c) return;
+  const c=cmtsOf(pid).find(c=>c.id===id) || globalThis.CZCommunication?.commentReference?.(pid,id); if(!c) return;
   c.liked=s.desired; c.likes=Math.max(0,s.count+Number(s.desired)-Number(s.confirmed));
   $$(`[data-act="clike"][data-p="${pid}"][data-cid="${id}"],[data-act="rl-cl"][data-p="${pid}"][data-cid="${id}"],[data-act="at-like"][data-p="${pid}"][data-cid="${id}"]`).forEach(b=>{b.classList.toggle('on',c.liked);b.setAttribute('aria-pressed',String(c.liked));b.removeAttribute('aria-busy');b.innerHTML=b.dataset.act==='at-like' ? (c.liked ? IC.heartF : IC.heart) : `<i class="hk">${c.liked ? '♥' : '♡'}</i><span>${c.likes}</span>`;});
 }
@@ -10403,21 +10403,33 @@ function liveCmtState(id){
   return s;
 }
 function commentListEnabled(){ return LIVE.cfg?.commentLists?.version===1 && LIVE.cfg.commentLists.cursor==='signed-v1' && ['oldest','newest'].every(k=>LIVE.cfg.commentLists.orders?.includes(k)); }
-function commentOrderHtml(id){const s=liveCmtState(id);return s&&!s.context&&commentListEnabled() ? '<div class="cmt-order" role="group" aria-label="评论排序">'+['oldest','newest'].map(order=>'<button class="pill sm '+(order===(s.order||'oldest')?'':'lt')+'" data-act="cmt-order" data-p="'+esc(id)+'" data-order="'+order+'" aria-pressed="'+(order===(s.order||'oldest'))+'">'+(order==='oldest'?'最早':'最新')+'</button>').join('')+'</div>' : '';}
+function commentCapabilityMode(){return commentListEnabled()?(LIVE.cfg.commentLists.pinned===true?'pinned-v1':'ordered-v1'):'legacy';}
+function commentCapabilitiesUpdated(){const id=CUR.post||(RL.on&&RL.cm?reelCur()?.id:null),s=id&&liveCmtState(id);if(s&&!s.context&&s.mode&&s.mode!==commentCapabilityMode()){const task=loadLiveCmts(id,false,true);cmtPaint(id);return task;}return Promise.resolve();}
+function commentPinned(pid,c){const p=POST(pid);if(!c?.id||c.review||c.sendState||p?.pinnedCommentId!==c.id)return false;if(LIVE.cfg?.commentLists?.pinned!==true)return true;const s=liveCmtState(pid);return !!s&&(!!s.context||s.pinned?.id===c.id&&s.pinVersion===(p.discussionVersion||0));}
+function commentListRows(pid,rows){
+  const s=liveCmtState(pid),p=POST(pid);if(!s||s.context||LIVE.cfg?.commentLists?.pinned!==true)return rows;
+  const visible=rows.filter(c=>!s.hiddenPins?.has(c.id)),pin=s.pinned;if(!pin||pin.id!==p.pinnedCommentId||s.pinVersion!==(p.discussionVersion||0))return visible;
+  const at=visible.findIndex(c=>c.id===pin.id);if(at<0)visible.unshift(cmtLikeHydrate(pin));else visible[at]=cmtLikeHydrate(pin);return visible;
+}
+function validCommentDiscussion(r,id){const d=r?.discussion,c=r?.pinned;return d&&typeof d.commentsClosed==='boolean'&&typeof d.solved==='boolean'&&Number.isSafeInteger(d.discussionVersion)&&d.discussionVersion>=0&&(d.pinnedCommentId===null||typeof d.pinnedCommentId==='string'&&d.pinnedCommentId.length>0)&&(c===null||c?.id===d.pinnedCommentId&&c.postId===id&&c.status==='published'&&typeof c.body==='string'&&typeof c.author?.id==='string'&&Number.isFinite(+new Date(c.createdAt)));}
+function applyCommentDiscussion(id,s,r){const p=POST(id),d=r.discussion;if(!p||d.discussionVersion<(p.discussionVersion||0))return;Object.assign(p,d);s.pinVersion=d.discussionVersion;s.pinned=r.pinned?cmtLikeHydrate(apiCmt(r.pinned)):null;s.hiddenPins ||=new Set();r.items.forEach(c=>s.hiddenPins.delete(c.id));if(d.pinnedCommentId&&!r.pinned&&!r.items.some(c=>c.id===d.pinnedCommentId))s.hiddenPins.add(d.pinnedCommentId);else if(r.pinned)s.hiddenPins.delete(r.pinned.id);}
+function commentPinDeleted(pid,id){const s=liveCmtState(pid),p=POST(pid);if(!s)return;s.controller?.abort();const hidden=new Set(s.hiddenPins||[]);hidden.add(id);LIVE.cmts[pid]={...s,controller:null,task:null,status:s.loaded?'ready':'idle',hiddenPins:hidden,pinned:s.pinned?.id===id?null:s.pinned};if(p?.pinnedCommentId===id)p.pinnedCommentId=null;}
+function commentOrderHtml(id){const s=liveCmtState(id);return s&&!s.context&&commentListEnabled() ? '<div class="cmt-order" role="toolbar" aria-label="评论阅读"><div class="cmt-sort" role="group" aria-label="评论排序">'+['oldest','newest'].map(order=>'<button class="pill sm '+(order===(s.order||'oldest')?'':'lt')+'" data-act="cmt-order" data-p="'+esc(id)+'" data-order="'+order+'" aria-pressed="'+(order===(s.order||'oldest'))+'">'+(order==='oldest'?'最早':'最新')+'</button>').join('')+'</div><button class="pill sm lt" data-act="cmt-refresh" data-p="'+esc(id)+'"'+(s.status==='pending'?' disabled':'')+'>刷新评论</button></div>' : '';}
 function validCommentList(r,id,order){return r&&r.order===order&&Array.isArray(r.items)&&r.items.length<=50&&new Set(r.items.map(c=>c?.id)).size===r.items.length&&r.items.every(c=>c&&c.postId===id&&typeof c.id==='string'&&c.id&&typeof c.body==='string'&&typeof c.author?.id==='string'&&['published','review'].includes(c.status)&&Number.isFinite(+new Date(c.createdAt)))&&(r.next===null||typeof r.next==='string'&&r.next.length>0&&r.next.length<=1024);}
 function loadLiveCmts(id, more=false, force=false){
-  const s=liveCmtState(id); if(!s || s.task || (s.loaded && !more && !force) || (more && (!s.next||s.needsReload))) return s?.task || Promise.resolve();
+  let s=liveCmtState(id);const mode=commentCapabilityMode();if(s?.mode&&s.mode!==mode){s.controller?.abort();s=LIVE.cmts[id]={...s,status:'idle',loaded:false,next:null,task:null,controller:null,pinned:null,hiddenPins:new Set()};more=false;force=true;}if(!s || s.task || (s.loaded && !more && !force) || (more && (!s.next||s.needsReload))) return s?.task || Promise.resolve();
   const cursor=more ? s.next : null, current=()=>LIVE.cmts[id]===s && cmtScope()===s.scope, controller=new AbortController(), modern=commentListEnabled(),order=s.order||'oldest';
-  s.status='pending'; s.more=more; s.controller=controller;s.error='';s.needsReload=false;
+  s.mode=mode;s.status='pending'; s.more=more; s.controller=controller;s.error='';s.needsReload=false;
   const path='/posts/'+encodeURIComponent(id)+'/comments'+(modern?'/page':'')+'?limit=50'+(modern?'&order='+order:'')+(cursor?'&cursor='+encodeURIComponent(cursor):'');
   const task=Promise.resolve().then(()=>{if(!current())return;return API.req('GET',path,undefined,true,{signal:controller.signal});}).then(r=>{
-    if(!current()) return; if(modern&&!validCommentList(r,id,order))throw Error('评论读取结果不完整，请重试');
+    if(!current()) return; if(modern&&(!validCommentList(r,id,order)||LIVE.cfg?.commentLists?.pinned===true&&!validCommentDiscussion(r,id)))throw Error('评论读取结果不完整，请重试');
     if(cursor && r.next && (r.next===cursor || s.seen?.has(r.next))){s.needsReload=true;throw Error('评论分页没有前进，请重新加载评论');}
+    if(modern&&LIVE.cfg?.commentLists?.pinned===true)applyCommentDiscussion(id,s,r);
     const rows=r.items.map(c=>cmtLikeHydrate(apiCmt(c))), merged=new Map((more ? COMMENTS[id] || [] : []).map(c=>[c.id,c])); rows.forEach(c=>merged.set(c.id,c)); COMMENTS[id]=[...merged.values()];
     const known=new Set(merged.keys()); UI.newCmts[id]=(UI.newCmts[id] || []).filter(c=>!c.id || !known.has(c.id));
     s.seen ||= new Set();if(cursor)s.seen.add(cursor);else s.seen.clear();s.next=r.next || null; s.loaded=true; s.status='ready'; cmtPaint(id);
   }).catch(err=>{ if(!current()) return; if(err.name==='AbortError'){s.status=s.loaded?'ready':'idle';return;}
-    if([401,403,404].includes(err.status) || ['not_found','forbidden'].includes(err.code)){COMMENTS[id]=[];s.next=null;s.loaded=false;}
+    if([401,403,404].includes(err.status) || ['not_found','forbidden'].includes(err.code)){COMMENTS[id]=[];s.next=null;s.loaded=false;s.pinned=null;s.hiddenPins=new Set();}
     if(err.code==='bad_cursor')s.needsReload=true;s.error=s.needsReload?'评论分页已失效，请重新加载评论':err.message||'评论读取失败，请重试';s.status='error'; cmtPaint(id);
   }).finally(()=>{if(LIVE.cmts[id]===s && s.task===task){s.task=null;s.controller=null;}}); s.task=task; return task;
 }
@@ -10440,6 +10452,7 @@ async function commentJumpReady(id){
   if(c){UI.flashCmt={p:id,id:c.id,t:c.t,u:c.u};cmtPaint(id);} else {UI.flashCmt=null;toast('这条评论已不可用，或当前无法查看','blue');}
 }
 ACTIONS['cmt-load-retry']=b=>{const id=b.dataset.p,s=liveCmtState(id),task=loadLiveCmts(id,!!(s?.more&&s.next&&!s.needsReload),true);cmtPaint(id);if(UI.commentJump?.p===id){UI.commentJump.started=false;commentJumpReady(id);}return task;};
+ACTIONS['cmt-refresh']=b=>{const task=loadLiveCmts(b.dataset.p,false,true);cmtPaint(b.dataset.p);return task;};
 ACTIONS['cmt-order']=b=>{const id=b.dataset.p,order=b.dataset.order,s=liveCmtState(id);if(!s||s.context||!commentListEnabled()||!['oldest','newest'].includes(order)||order===(s.order||'oldest'))return Promise.resolve();s.controller?.abort();COMMENTS[id]=[];LIVE.cmts[id]={scope:cmtScope(),order,status:'idle',loaded:false,next:null,task:null,controller:null};const task=loadLiveCmts(id);cmtPaint(id);return task;};
 ACTIONS['cmt-more']=b=>{loadLiveCmts(b.dataset.p,true);cmtPaint(b.dataset.p);};
 
@@ -10573,10 +10586,10 @@ function cmtSendFeedback(pid,c){
   return `<div class="dm-send-state" role="status">${c._savingEdit ? '正在保存修改…' : pending ? '正在发送…' : esc(c.sendError || '未发送，文字已保留')}</div>${pending ? '' : `<div class="dm-send-actions" style="justify-content:flex-start"><button data-act="cmt-retry" data-p="${esc(pid)}" data-id="${esc(c._client)}">重试</button><button data-act="cmt-edit" data-p="${esc(pid)}" data-id="${esc(c._client)}"${c._unknown ? ' disabled title="请先重试确认原提交结果"':''}>编辑</button><button data-act="cmt-remove" data-p="${esc(pid)}" data-id="${esc(c._client)}">移除</button></div>`}`;
 }
 function cmtPaint(pid){
-  const orderFocus=globalThis.document?.activeElement?.closest?.('[data-act="cmt-order"]')?.dataset;
+  const orderFocus=globalThis.document?.activeElement?.closest?.('[data-act="cmt-order"],[data-act="cmt-refresh"]')?.dataset;
   if (CUR.post === pid) renderPost(pid);
   if (RL.on && reelCur()?.id === pid){ if (RL.cm) openReelCm(); reelBar(); }
-  if(orderFocus?.p===pid)document.querySelector('[data-act="cmt-order"][data-p="'+CSS.escape(pid)+'"][data-order="'+orderFocus.order+'"]')?.focus({preventScroll:true});
+  if(orderFocus?.p===pid)document.querySelector('[data-act="'+orderFocus.act+'"][data-p="'+CSS.escape(pid)+'"]'+(orderFocus.order?'[data-order="'+orderFocus.order+'"]':''))?.focus({preventScroll:true});
 }
 async function liveCmtSent(pid, before, saved){
   const L = UI.newCmts[pid] || [], c = saved || L[before], p = POST(pid);
@@ -10620,13 +10633,14 @@ wrapAct('at-like',(orig,b,e)=>cmtNoticeLike(b,orig,e));
 wrapAct('cmt-dgo', async (orig, b, e) => {
   const pid = b.dataset.p, k = b.dataset.k, item = b.cdel, scope = item?.scope || cdelScope();
   if (cdelScope() !== scope){ if (item) cdelFinish(k, item); return; }
-  const c = (COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || []).find(x => b.dataset.cid ? x.id === b.dataset.cid : cmtKey(pid, x) === k);
+  const c = (typeof commentListRows==='function'?commentListRows(pid,(COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || [])):(COMMENTS[pid] || COMMENTS._default || []).concat(UI.newCmts[pid] || [])).find(x => b.dataset.cid ? x.id === b.dataset.cid : cmtKey(pid, x) === k);
   if (!c || !cmtMine(c)){ if (item) cdelFinish(k, item); return; }
   const p = POST(pid), before = p?.cmts || 0, countRev = p?.cmtsRev; orig(b, e);
   if (!c.id || !p?.live || !liveUser()){ if (item){ clearTimeout(item.timer); CDEL_PEND.delete(k); } return; }
   const removed = Math.max(0, before - (p.cmts || 0)), current = () => cdelScope() === scope && liveUser();
   try { await API.req('DELETE', `/comments/${encodeURIComponent(c.id)}`, undefined, true, {keepalive:b.dataset.keepalive === '1'}); if (!current()) return;
     for (const list of [COMMENTS[pid], UI.newCmts[pid]]) if (list) for (let i = list.length - 1; i >= 0; i--) if (list[i].id === c.id) list.splice(i, 1);
+    if(typeof commentPinDeleted==='function')commentPinDeleted(pid,c.id);
     myCmtInvalidate({pid,cid:c.id});
   } catch(err){ if (!current()) return; if (POST(pid) === p && p.cmtsRev === countRev) p.cmts += removed; apiFail(err); }
   finally { if (item) cdelFinish(k, item); else STATE.cdel.delete(k); if (current()){ store.set('cdel', [...STATE.cdel]); cmtPaint(pid); patchMyComments(); } }
@@ -11024,7 +11038,7 @@ async function liveCfg(){
   if (base !== API.base || seq !== TRADE.seq) return;
   if (typeof auRender === 'function' && $('#au')) auRender(false);
   const box=$('#payBox'), pr=box?.dataset?.productId && P(box.dataset.productId); if (pr?.live) box.innerHTML=payBox(pr);
-  if (API.on()) rerender();
+  if (API.on()){if(typeof commentCapabilitiesUpdated==='function')void commentCapabilitiesUpdated();rerender();}
 }
 ACTIONS['trade-retry']=async b => { if (b?.disabled) return; if (b) b.disabled=true; await liveCfg(); if (b?.isConnected) b.disabled=false; };
 ACTIONS['order-pay']=async b => {
@@ -13228,7 +13242,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 <script src="scripts/dm-expressions.js?v=20261111-2"></script>
 <script src="scripts/media-url-core.js?v=20261112-1"></script>
 <script src="scripts/post-edit-core.js?v=20261112-1"></script>
-<script src="scripts/communication.js?v=20261112-r20"></script>
+<script src="scripts/communication.js?v=20261112-r21"></script>
 <script src="scripts/comment-replies.js?v=20261111-1"></script>
 <script src="scripts/block-operations.js?v=20261111-1"></script>
 <script src="scripts/official-inbox.js?v=20261111-1"></script>
@@ -13236,7 +13250,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 <script src="scripts/favorites.js?v=20261111-5"></script>
 <script src="scripts/dm-voice.js?v=20261111-5"></script>
 <script src="scripts/post-audience.js?v=20261111-2"></script>
-<script src="scripts/post-access.js?v=20261111-2"></script>
+<script src="scripts/post-access.js?v=20261112-3"></script>
 <script src="scripts/my-interactions.js?v=20261111-2"></script>
 
 <script src="scripts/oauth-v1.js?v=20261111-2"></script>

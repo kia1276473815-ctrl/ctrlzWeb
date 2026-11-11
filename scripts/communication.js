@@ -100,7 +100,7 @@
     attachEditor($('#cBody'));attachEditor($('#peB'));
     const pid=CUR.post || (RL.on ? reelCur()?.id:null),p=POST(pid);
     if(p?.live){
-      if(p.pinnedCommentId && !cmtsOf(pid).some(c=>c.id===p.pinnedCommentId) && !s.pins.has(pid+'|'+p.pinnedCommentId)){s.pins.add(pid+'|'+p.pinnedCommentId);void cmtForNotice(pid,p.pinnedCommentId).catch(()=>{});}
+      if(LIVE.cfg?.commentLists?.pinned!==true && p.pinnedCommentId && !cmtsOf(pid).some(c=>c.id===p.pinnedCommentId) && !s.pins.has(pid+'|'+p.pinnedCommentId)){s.pins.add(pid+'|'+p.pinnedCommentId);void cmtForNotice(pid,p.pinnedCommentId).catch(()=>{});}
       const list=$('#post .comments') || $('#post .cmts') || $('#post .cmt-list') || $('#post .cmt')?.parentElement || $('#rlCm .cmt')?.parentElement;
       const anchor=list || $('#post .foot');
       if(anchor && !anchor.querySelector(`[data-comm-discussion="${CSS.escape(pid)}"]`)){
@@ -108,10 +108,11 @@
         bar.innerHTML=`${p.commentsClosed ? '<span class="mut">评论已关闭</span>':''}${p.author===ME ? `<button class="pill sm lt" data-act="comm-close-comments" data-id="${esc(pid)}">${p.commentsClosed ? '重开评论':'关闭评论'}</button>`:''}`;
         anchor.prepend(bar);
       }
+      const visibleComments=new Map(cmtsOf(pid).map(c=>[c.id,c]));
       for(const row of document.querySelectorAll('[data-cmt-id]')){
-        const id=row.dataset.cmtId;if(!id)continue;row.classList.toggle('comm-pinned',id===p.pinnedCommentId);
-        if(id===p.pinnedCommentId && !row.querySelector('.comm-pin-label')){const label=document.createElement('span');label.className='tag k comm-pin-label';label.textContent='作者置顶';row.querySelector('.h')?.append(label);}
-        if(p.author===ME && !row.querySelector('[data-act="comm-pin-comment"]')){const c=cmtsOf(pid).find(c=>c.id===id);if(c && !c.review && !c.sendState){const b=document.createElement('button');b.dataset.act='comm-pin-comment';b.dataset.id=pid;b.dataset.cid=id;b.textContent=id===p.pinnedCommentId ? '取消置顶':'置顶';row.querySelector('.ctl')?.append(b);}}
+        const id=row.dataset.cmtId;if(!id)continue;const isPinned=typeof commentPinned==='function'?commentPinned(pid,visibleComments.get(id)||{id}):id===p.pinnedCommentId;row.classList.toggle('comm-pinned',isPinned);if(!isPinned)row.querySelector('.comm-pin-label')?.remove();
+        if(isPinned && !row.querySelector('.comm-pin-label')){const label=document.createElement('span');label.className='tag k comm-pin-label';label.textContent='作者置顶';row.querySelector('.h')?.append(label);}
+        if(p.author===ME && !row.querySelector('[data-act="comm-pin-comment"]')){const c=visibleComments.get(id);if(c && !c.review && !c.sendState){const b=document.createElement('button');b.dataset.act='comm-pin-comment';b.dataset.id=pid;b.dataset.cid=id;b.textContent=id===p.pinnedCommentId ? '取消置顶':'置顶';row.querySelector('.ctl')?.append(b);}}
       }
     }
   }
@@ -291,7 +292,7 @@
   ACTIONS['comm-context-next']=b=>busy(b,async ok=>{const context=current().context,view=CUR.key,active=()=>ok()&&current().context===context&&CUR.key===view,r=await API.req('GET',`/dm/messages/${encodeURIComponent(b.dataset.id)}/context`);if(!active())return;await dmRefs(r.items.map(dmMap));if(!active())return;dmMerge(r.peer.id,r.items);current().context={uid:r.peer.id,after:r.after};LDM.sig[r.peer.id]=null;dmPaint(r.peer.id);});
   ACTIONS['comm-latest']=b=>busy(b,async ok=>{const uid=b.dataset.id;current().context=null;LDM.full.delete(uid);await dmConv(uid);if(!ok())return;LDM.sig[uid]=null;dmPaint(uid);const box=$('#cvB');if(box)box.scrollTop=box.scrollHeight;});
 
-  async function discussion(id,patch){const p=POST(id);if(!p?.live || p.author!==ME)return;const key=scope(),r=await API.req('PATCH',`/posts/${encodeURIComponent(id)}/discussion`,{...patch,expectedVersion:p.discussionVersion || 0});if(!same(key))return;Object.assign(p,r);delete STATE.solved[id];cmtPaint(id);controls();}
+  async function discussion(id,patch){const p=POST(id);if(!p?.live || p.author!==ME)return;const key=scope(),pinId=patch.pinnedCommentId===undefined?p.pinnedCommentId:patch.pinnedCommentId,pin=cmtsOf(id).find(c=>c.id===pinId),r=await API.req('PATCH',`/posts/${encodeURIComponent(id)}/discussion`,{...patch,expectedVersion:p.discussionVersion || 0});if(!same(key)||r.discussionVersion<(p.discussionVersion||0))return;Object.assign(p,r);const s=liveCmtState(id);if(s){s.pinVersion=r.discussionVersion;s.pinned=pin?.id===r.pinnedCommentId?pin:s.pinned?.id===r.pinnedCommentId?s.pinned:null;if(pin?.id===r.pinnedCommentId)s.hiddenPins?.delete(pin.id);}delete STATE.solved[id];cmtPaint(id);controls();}
   const oldSolve=ACTIONS.solve;ACTIONS.solve=b=>POST(b.dataset.id)?.live ? busy(b,()=>discussion(b.dataset.id,{solved:!POST(b.dataset.id).solved})):oldSolve(b);
   ACTIONS['comm-close-comments']=b=>busy(b,()=>discussion(b.dataset.id,{commentsClosed:!POST(b.dataset.id)?.commentsClosed}));
   ACTIONS['comm-pin-comment']=b=>busy(b,()=>discussion(b.dataset.id,{pinnedCommentId:POST(b.dataset.id)?.pinnedCommentId===b.dataset.cid ? null:b.dataset.cid}));

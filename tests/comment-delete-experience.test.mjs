@@ -17,7 +17,7 @@ const defer = () => {
 const tick = async () => { for (let i = 0; i < 30; i++) await Promise.resolve(); };
 
 // 直接执行真实源函数，隔离请求、计时器和页面绘制，不读取或修改真实账号。
-function comments({temporary = false, sendState = '', review = false, counted, activeMine = false, realRead = false} = {}){
+function comments({temporary = false, sendState = '', review = false, counted, activeMine = false, realRead = false, pinOutside = false} = {}){
   const pending = defer(), reads = [], jobs = new Map(), handlers = new Map(), requests = [], toasts = [], failures = [], paints = [], refreshes = [], microtasks = [];
   let timer = 0;
   const first = {u:'me', t:'待检查的评论', likes:0, ...(temporary ? {} : {id:'c_first'}), ...(sendState ? {sendState, _client:'client_first'} : {}), ...(review ? {review:true} : {}), ...(counted === undefined ? {} : {_counted:counted})};
@@ -53,6 +53,7 @@ function comments({temporary = false, sendState = '', review = false, counted, a
   vm.runInContext(section("wrapAct('cmt-dgo', async", '/* 发帖：'), ctx);
   vm.runInContext(section('function apiPost(', 'const apiCmt ='), ctx);
   if (realRead){ vm.runInContext(line('const apiCmt ='), ctx); vm.runInContext(section('function loadMyComments(', "ACTIONS['my-cmt-retry']"), ctx); }
+  if(pinOutside){ctx.LIVE.cfg={commentLists:{version:1,pinned:true}};ctx.LIVE.cmts={};post.pinnedCommentId=first.id;post.discussionVersion=1;ctx.COMMENTS.p=ctx.COMMENTS.p.filter(c=>c!==first);vm.runInContext(section('function liveCmtState(','function commentOrderHtml('),ctx);Object.assign(ctx.liveCmtState('p'),{status:'ready',loaded:true,pinned:first,pinVersion:1});}
   ctx.first = first; ctx.mineOther = mineOther;
   vm.runInContext('Object.assign(myCmtState(),{rows:[{p:POST("p"),c:first},{p:POST("p"),c:mineOther}],count:2,loaded:true,status:"ready",lastRead:Date.now(),next:"next_page"})', ctx);
   const key = c => vm.runInContext('cmtKey("p", fixture)', Object.assign(ctx, {fixture:c}));
@@ -171,3 +172,7 @@ test('删除成功使我的评论旧读取失效，迟到响应不能复活已�
   r.reads[1].resolve({items:[{post:rawPost,comment:rawComment('c_mine_other')}],count:1,next:null}); await r.state().task; await tick();
   assert.equal(r.state().status, 'ready'); assert.equal(r.state().count, 1); assert.equal(r.state().next, null); assert.deepEqual(Array.from(r.mine(), row => row.c.id), ['c_mine_other']);
 });
+
+test('页外置顶评论可撤销删除，撤销不发HTTP且恢复置顶原文',()=>{const h=comments({pinOutside:true});assert.equal(h.visible()[0].id,h.first.id);h.remove();assert(!h.visible().some(c=>c.id===h.first.id));h.toasts.at(-1)[3].undo();assert.equal(h.visible()[0].id,h.first.id);h.fire();assert.equal(h.requests.length,0);});
+test('页外置顶评论删除会走真实提交，成功后不被额外缓存复活',async()=>{const h=comments({pinOutside:true});h.remove();h.fire();await tick();assert.equal(h.requests.length,1);assert.equal(h.requests[0].args[1],'/comments/'+h.first.id);h.pending.resolve({ok:true});await tick();assert(!h.visible().some(c=>c.id===h.first.id));assert.equal(h.post.pinnedCommentId,null);});
+test('页外置顶评论删除失败恢复原文和置顶，不能丢掉未完成删除',async()=>{const h=comments({pinOutside:true});h.remove();h.fire();await tick();h.pending.reject(Error('offline'));await tick();assert.equal(h.visible()[0].id,h.first.id);assert.equal(h.post.pinnedCommentId,h.first.id);assert.equal(h.failures.length,1);});
