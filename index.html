@@ -10492,7 +10492,7 @@ function folReset(){ if (LIVE.fol === undefined && !LIVE.folBusy) return; LIVE.f
 ACTIONS['fol-retry'] = () => { LIVE.folErr = null; rerender(); };
 async function liveFeed(){
   const state = LIVE.feed ||= {seq:0}, seq = ++state.seq, base = API.base, me = ME; state.status = POSTS.length ? 'refreshing' : 'pending'; state.error = null; syncFeedState();
-  try { const r = await API.req('GET', '/posts?tab=rec&limit=50'); if (LIVE.feed !== state || state.seq !== seq || base !== API.base || me !== ME) return;
+  try { const r = await API.req('GET', '/posts?tab=rec&limit=50&confirmed=1'); if (LIVE.feed !== state || state.seq !== seq || base !== API.base || me !== ME) return;
     const feed = r.items.map(apiPost), got = new Set(feed.map(p => p.id)), pend = Object.values(LIVE.pend).filter(p => p.author === ME && !got.has(p.id)); LIVE.next = r.next;
     const open = CUR.key?.startsWith('user|') ? CUR.key.slice(5) : '';   // 正在看的主页：作品、读取状态、翻页游标都留着，不闪回「正在加载」，也不重复读
     const fol = [...new Set([...(LIVE.fol || []).map(id => POST(id)), ...POSTS.filter(p => p.author === open)])].filter(p => p && !got.has(p.id) && !pend.some(x => x.id === p.id)); fol.forEach(p => p.folOnly = true);   // 关注流和当前主页的帖子留着（「推荐」不显示）
@@ -12908,7 +12908,7 @@ async function moreLoad(k){ if (MORE.busy[k]) return; MORE.busy[k] = true;
   try {
     if (k === 'home' && (UI.homeTab || 'rec') === 'fol'){ const seq = LIVE.folSeq, c = homeNext();   // 关注流翻自己的游标，不去翻推荐流
       if (c){ const r = await API.req('GET', '/posts?tab=following&limit=30&cursor=' + encodeURIComponent(c)); if (seq === LIVE.folSeq && LIVE.folMe === ME && Array.isArray(LIVE.fol)){ LIVE.fnext = r.next; folAdd(r.items); } } }
-    else if (k === 'home' && LIVE.next){ const r = await API.req('GET', '/posts?tab=rec&limit=30&cursor=' + encodeURIComponent(LIVE.next)); if(owner!==JSON.stringify([API.base,API.epoch,ME,STATE.role])||LIVE.feed!==feed||feed?.seq!==feedSeq)return; LIVE.next = r.next; addPosts(r.items); }
+    else if (k === 'home' && LIVE.next){ const r = await API.req('GET', '/posts?tab=rec&limit=30&confirmed=1&cursor=' + encodeURIComponent(LIVE.next)); if(owner!==JSON.stringify([API.base,API.epoch,ME,STATE.role])||LIVE.feed!==feed||feed?.seq!==feedSeq)return; LIVE.next = r.next; addPosts(r.items); }
     else if (k === 'shop' && LSHOP.next){ const r = await API.req('GET', '/products?limit=60&cursor=' + encodeURIComponent(LSHOP.next)); LSHOP.next = r.next; r.items.forEach(apiProduct); }
     else if (k.startsWith('user:')){ const id = k.slice(5), c = LIVE.pnext?.[id]; if (c){ const r = await API.req('GET', `/posts?author=${encodeURIComponent(id)}&limit=50&cursor=${encodeURIComponent(c)}`); LIVE.pnext[id] = r.next; addPosts(r.items); } }
     if (state === moreState() && !patchMoreList(k)) rerender();
@@ -13252,7 +13252,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 <script src="scripts/official-inbox.js?v=20261112-1"></script>
 <script src="scripts/relationship-lists.js?v=20261111-1"></script>
 <script src="scripts/following-feed.js?v=20261112-1"></script>
-<script src="scripts/recommendation-window.js?v=20261112-1"></script>
+<script src="scripts/recommendation-window.js?v=20261112-2"></script>
 <script src="scripts/favorites.js?v=20261111-5"></script>
 <script src="scripts/dm-voice.js?v=20261111-5"></script>
 <script src="scripts/post-audience.js?v=20261111-2"></script>

@@ -25,7 +25,7 @@ function setup(hash='#v-target'){
   const ctx=vm.createContext({console,Date,Map,Set,Promise,URLSearchParams,location,CUR,UI,POSTS:[],TRACKS:{},GEN:{media},
     ME:'guest',LIVE:{pend:{},contentReady:false,feed:{status:'pending',seq:0}},ACTIONS:{},STATE:{liked:new Set(),follows:new Set()},STAFF:{tok:null},HST:{stk:[hash],d:0},NAVX:{},
     document:{documentElement:{style:{}},body:{classList:{add:k=>classes.add(k),remove:k=>classes.delete(k)}},fonts:{ready:fonts.promise},dispatchEvent:e=>events.push(e)},
-    Event:class{constructor(type){this.type=type;}},API:{tok:null,on:()=>true,req:async(method,path)=>{assert.equal(path,'/posts?tab=rec&limit=50');return feed.promise;}},
+    Event:class{constructor(type){this.type=type;}},API:{tok:null,on:()=>true,req:async(method,path)=>{assert.equal(path,'/posts?tab=rec&limit=50&confirmed=1');return feed.promise;}},
     POST:id=>ctx.POSTS.find(p=>p.id===id),inStream:p=>!!p && (p.type==='audio' || p.type==='video' && !!p.vis),
     apiUser:u=>{ctx.USERS[u.id]=u;},hash:()=>1,ago:()=>'',fmtT:s=>`0:${String(Math.round(s)).padStart(2,'0')}`,BODY:{},COMMENTS:{},USERS:{},
     COVER_TPLS:{wave:{},dots:{}},COVER_PALS:{pb:{}},VIS:{dots:{}},IS_MOBILE:false,IC:{play:''},esc:String,av:()=>'',P:()=>null,onSale:()=>false,
