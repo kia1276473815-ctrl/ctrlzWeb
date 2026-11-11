@@ -246,8 +246,8 @@ test('CTRL 清理删除节点的页面闭包，同时保留已移动且仍在 DO
 
 test('moreLoad 正常走局部补页，导航改变时旧响应不重画当前页', async () => {
   let resolve, patches=0, renders=0; const requests=[];
-  const ctx=realm({CUR:{key:'home|'},UI:{homeTab:'rec',shop:{cat:'all'},userTab:'works'},STATE:{settings:{pers:true},follows:new Set(),blocks:new Set()},
-    LIVE:{next:'cursor1'},LSHOP:{},MORE:{busy:{}},API:{req:(method,path)=>{requests.push(path);return new Promise(r=>resolve=r);}},
+  const ctx=realm({ME:'me',CUR:{key:'home|'},UI:{homeTab:'rec',shop:{cat:'all'},userTab:'works'},STATE:{role:'user',settings:{pers:true},follows:new Set(),blocks:new Set()},
+    LIVE:{next:'cursor1',feed:{seq:0}},LSHOP:{},MORE:{busy:{}},API:{base:'fixture',epoch:1,req:(method,path)=>{requests.push(path);return new Promise(r=>resolve=r);}},
     addPosts(){},patchMoreList:()=>{patches++;return true;},rerender:()=>renders++,apiFail(){},$:()=>null});
   vm.runInContext(section('const moreState = () =>','function patchMoreList('),ctx);
   vm.runInContext(section('async function moreLoad(k){','ACTIONS.more ='),ctx);

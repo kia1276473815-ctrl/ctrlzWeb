@@ -2645,6 +2645,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 <link rel="stylesheet" href="scripts/relationship-lists.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/official-inbox.css?v=20261112-1">
 <link rel="stylesheet" href="scripts/following-feed.css?v=20261112-1">
+<link rel="stylesheet" href="scripts/recommendation-window.css?v=20261112-1">
 <link rel="stylesheet" href="scripts/communication.css?v=20261112-r21">
 <link rel="stylesheet" href="scripts/publications.css?v=20261112-1">
 <link rel="stylesheet" href="scripts/comment-replies.css?v=20261111-1">
@@ -12903,15 +12904,15 @@ function patchMoreList(k, changed = new Set()){
   document.dispatchEvent(new Event('rendered')); return true;
 }
 async function moreLoad(k){ if (MORE.busy[k]) return; MORE.busy[k] = true;
-  const state = moreState();
+  const state = moreState(), owner = JSON.stringify([API.base,API.epoch,ME,STATE.role]), feed = LIVE.feed, feedSeq = feed?.seq;
   try {
     if (k === 'home' && (UI.homeTab || 'rec') === 'fol'){ const seq = LIVE.folSeq, c = homeNext();   // 关注流翻自己的游标，不去翻推荐流
       if (c){ const r = await API.req('GET', '/posts?tab=following&limit=30&cursor=' + encodeURIComponent(c)); if (seq === LIVE.folSeq && LIVE.folMe === ME && Array.isArray(LIVE.fol)){ LIVE.fnext = r.next; folAdd(r.items); } } }
-    else if (k === 'home' && LIVE.next){ const r = await API.req('GET', '/posts?tab=rec&limit=30&cursor=' + encodeURIComponent(LIVE.next)); LIVE.next = r.next; addPosts(r.items); }
+    else if (k === 'home' && LIVE.next){ const r = await API.req('GET', '/posts?tab=rec&limit=30&cursor=' + encodeURIComponent(LIVE.next)); if(owner!==JSON.stringify([API.base,API.epoch,ME,STATE.role])||LIVE.feed!==feed||feed?.seq!==feedSeq)return; LIVE.next = r.next; addPosts(r.items); }
     else if (k === 'shop' && LSHOP.next){ const r = await API.req('GET', '/products?limit=60&cursor=' + encodeURIComponent(LSHOP.next)); LSHOP.next = r.next; r.items.forEach(apiProduct); }
     else if (k.startsWith('user:')){ const id = k.slice(5), c = LIVE.pnext?.[id]; if (c){ const r = await API.req('GET', `/posts?author=${encodeURIComponent(id)}&limit=50&cursor=${encodeURIComponent(c)}`); LIVE.pnext[id] = r.next; addPosts(r.items); } }
     if (state === moreState() && !patchMoreList(k)) rerender();
-  } catch(e){ if (e.code === 'feed_expired' && k === 'home'){ LIVE.next = null; await liveFeed(); if (state === moreState()) patchMoreList('home'); } else apiFail(e); } finally { MORE.busy[k] = false; const b = $('#app [data-act="more"]'); if (b?.dataset.v === k){ b.disabled = false; b.textContent = '加载更多'; } } }
+  } catch(e){ if(owner!==JSON.stringify([API.base,API.epoch,ME,STATE.role])||k==='home'&&(UI.homeTab||'rec')==='rec'&&(LIVE.feed!==feed||feed?.seq!==feedSeq))return; if (e.code === 'feed_expired' && k === 'home'){ LIVE.next = null; await liveFeed(); if (state === moreState()) patchMoreList('home'); } else apiFail(e); } finally { MORE.busy[k] = false; const b = $('#app [data-act="more"]'); if (b?.dataset.v === k){ b.disabled = false; b.textContent = '加载更多'; } } }
 ACTIONS.more = b => { b.disabled = true; b.textContent = '加载中…'; moreLoad(b.dataset.v); };
 const MORE_IO = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ const b = e.target.querySelector('[data-act="more"]'); if (b && !b.disabled) ACTIONS.more(b); } }), {rootMargin:'600px 0px'}) : null;
 const moreWatch = () => { if (MORE_IO){ MORE_IO.disconnect(); $$('.feed-more').forEach(el => MORE_IO.observe(el)); } };
@@ -13251,6 +13252,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 <script src="scripts/official-inbox.js?v=20261112-1"></script>
 <script src="scripts/relationship-lists.js?v=20261111-1"></script>
 <script src="scripts/following-feed.js?v=20261112-1"></script>
+<script src="scripts/recommendation-window.js?v=20261112-1"></script>
 <script src="scripts/favorites.js?v=20261111-5"></script>
 <script src="scripts/dm-voice.js?v=20261111-5"></script>
 <script src="scripts/post-audience.js?v=20261111-2"></script>
