@@ -2644,7 +2644,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 
 <link rel="stylesheet" href="scripts/relationship-lists.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/official-inbox.css?v=20261111-1">
-<link rel="stylesheet" href="scripts/communication.css?v=20261112-r15">
+<link rel="stylesheet" href="scripts/communication.css?v=20261112-r18">
 <link rel="stylesheet" href="scripts/comment-replies.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/block-operations.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/favorites.css?v=20261111-2">
@@ -9821,7 +9821,7 @@ function openSearch(scope, tab){
   SHIST.k = scope === 'all' ? 'shist' : 'shist-' + scope; SHIST.def = S.hist;
   const el = document.createElement('div'); el.className = 'srch'; el.id = 'srch'; el.dataset.s = scope;
   el._returnFocus = document.activeElement;
-  el.innerHTML = `<div class="srch-in"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><button class="hd-back" style="display:grid" data-act="sclose" aria-label="返回">${IC.back}</button><span class="lab">${S.lab}</span></div><div class="sq-w"><input id="sq" type="search" role="combobox" aria-label="${S.lab}，${S.ph}" aria-autocomplete="list" aria-controls="sOptions" aria-expanded="false" placeholder="${S.ph}" autocomplete="off" enterkeyhint="search"><button class="sq-x" data-act="sclear" aria-label="清空输入" tabindex="-1">${IC.x}</button></div><div id="sres"></div></div>`;
+  el.innerHTML = `<div class="srch-in"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><button class="hd-back" style="display:grid" data-act="sclose" aria-label="返回">${IC.back}</button><span class="lab">${S.lab}</span></div><div class="sq-w"><input id="sq" type="search"${scope==='msg'?' maxlength="80"':''} role="combobox" aria-label="${S.lab}，${S.ph}" aria-autocomplete="list" aria-controls="sOptions" aria-expanded="false" placeholder="${S.ph}" autocomplete="off" enterkeyhint="search"><button class="sq-x" data-act="sclear" aria-label="清空输入" tabindex="-1">${IC.x}</button></div><div id="sres"></div></div>`;
   document.body.appendChild(el); document.documentElement.style.overflow = 'hidden';
   const q = $('#sq'); q.focus(); let sel = 0;
   const draw = (preserve=true) => {
@@ -9890,13 +9890,13 @@ const typeTagCN = {image:'图文', audio:'声音', video:'视频', question:'提
     const search = () => { cancel(); const v = q.value.trim().replace(el.dataset.s === 'msg' ? /$^/ : /^#/, '');
       if (!v){ el._remote = null; el._draw?.(); return; }
       const dm = el.dataset.s === 'msg'; if (dm && !API.tok){ el._remote = null; el._draw?.(); return; }
-      const my = seq; ctrl = new AbortController(); const signal = ctrl.signal; const remote = el._remote = {pending:true,error:null,query:v.toLowerCase(),contacts:new Set(),users:[],owner:searchUserScope()}; el._draw?.();
+      const my = seq; ctrl = new AbortController(); const signal = ctrl.signal; const remote = el._remote = {pending:true,error:null,query:v.toLowerCase(),requestQuery:v,contacts:new Set(),users:[],owner:searchUserScope()}; el._draw?.();
       t = setTimeout(async () => {
         try {
           if(remote.owner!==searchUserScope())return;
           const jobs = [];
-          if (dm){jobs.push(API.req('GET', '/dm/contacts?q=' + encodeURIComponent(v), undefined, {signal}).then(r => { if (my === seq && el.isConnected){ remote.contacts = new Set(r.items.map(u => u.id)); r.items.forEach(u => { apiUser(u); LSRCH.add(u.id); }); } }));
-            if(v.trim().length>=2)jobs.push(API.req('GET','/dm/search?q='+encodeURIComponent(v)).then(r=>{if(my===seq && el.isConnected){remote.messages=r.items;remote.messageNext=r.next;}}));}
+          if (dm){if(v.length<=40)jobs.push(API.req('GET', '/dm/contacts?q=' + encodeURIComponent(v), undefined, {signal}).then(r => { if (my === seq && el.isConnected){ remote.contacts = new Set(r.items.map(u => u.id)); r.items.forEach(u => { apiUser(u); LSRCH.add(u.id); }); } }));
+            if(v.trim().length>=1)jobs.push(API.req('GET','/dm/search?q='+encodeURIComponent(v),undefined,{signal}).then(r=>{if(my===seq && el.isConnected){remote.messages=r.items;remote.messageNext=r.next;}}));}
 
           else {
             if (el.dataset.s === 'all') { jobs.push(API.req('GET', '/posts?limit=30&q=' + encodeURIComponent(v), undefined, {signal}).then(r => { if (my === seq && el.isConnected) addPosts(r.items); }));
@@ -13221,7 +13221,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 <script src="scripts/dm-expressions.js?v=20261111-2"></script>
 <script src="scripts/media-url-core.js?v=20261112-1"></script>
 <script src="scripts/post-edit-core.js?v=20261112-1"></script>
-<script src="scripts/communication.js?v=20261112-r16"></script>
+<script src="scripts/communication.js?v=20261112-r18"></script>
 <script src="scripts/comment-replies.js?v=20261111-1"></script>
 <script src="scripts/block-operations.js?v=20261111-1"></script>
 <script src="scripts/official-inbox.js?v=20261111-1"></script>

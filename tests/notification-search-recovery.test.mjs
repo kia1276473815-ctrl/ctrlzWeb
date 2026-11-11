@@ -90,3 +90,6 @@ test('服务器历史消息纳入聊天记录页签计数、键盘结果和分�
   assert.match(h.html(),/聊天记录<i>1\+<\/i>/);assert.match(h.html(),/data-message-id="m_remote"/);assert.match(h.html(),/role="listbox"/);assert.match(h.html(),/comm-search-more/);assert.doesNotMatch(h.html(),/没找到/);
   h.ctx.UI.stabs.msg='contact';h.el._draw();assert.doesNotMatch(h.html(),/data-message-id=/);assert.doesNotMatch(h.html(),/comm-search-more/);assert.match(h.html(),/data-v="chat"/);
 });
+
+test('私信全局搜索也会查询单个汉字，并把同一请求取消信号交给消息查询',async()=>{const h=searches();h.input('琴');await h.flush();assert.equal(h.requests.length,2);assert(h.requests.some(r=>r.path==='/dm/search?q='+encodeURIComponent('琴')));});
+test('41至80字的消息搜索不调用仅支持40字的联系人接口',async()=>{const h=searches();h.input('长'.repeat(50));await h.flush();assert.equal(h.requests.length,1);assert(h.requests[0].path.startsWith('/dm/search?q='));h.requests[0].resolve({items:[],next:null});await tick();assert(!h.html().includes('搜索失败'));});

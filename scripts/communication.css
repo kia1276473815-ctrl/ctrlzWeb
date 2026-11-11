@@ -42,3 +42,9 @@ button.dm-quote{min-height:44px;cursor:pointer}.dm-quote span{display:-webkit-bo
 
 .comm-edit-comparison{margin-top:16px;padding-top:16px;border-top:1px solid var(--rule);max-height:280px;overflow:auto;overflow-wrap:anywhere}.comm-edit-comparison p{white-space:pre-wrap;line-height:1.6;margin:8px 0 16px}
 #layer .sheet:has(#peB) .inp{font-size:16px;min-height:44px}
+
+.comm-chat-search-peer{color:var(--ink-2);font-size:14px;line-height:1.6;overflow-wrap:anywhere;margin:0}.sheet #commChatQuery{font-size:16px;min-height:44px;min-width:0}.comm-chat-search-results{min-width:0;margin-top:0}.comm-chat-hit{display:flex;flex-direction:column;gap:7px;width:100%;min-height:44px;padding:16px 0;border:0;border-bottom:1px solid var(--rule);background:none;text-align:left;color:var(--ink);font-size:16px;line-height:1.6;overflow-wrap:anywhere}.comm-chat-hit-meta{font-size:13px;color:var(--ink-2)}.comm-chat-hit:hover{background:var(--paper)}.comm-chat-hit:focus-visible{outline:2px solid var(--ink);outline-offset:2px}.comm-chat-search-status{display:flex;align-items:center;flex-wrap:wrap;gap:12px;font-size:14px;line-height:1.6;margin:16px 0;color:var(--ink-2)}.comm-chat-search-status button,.comm-chat-search-more{min-height:44px}.comm-chat-search-more{margin-top:16px}
+
+.comm-chat-hit>span:last-child{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+
+#commChatQuery::placeholder{color:var(--ink-2);opacity:1}
