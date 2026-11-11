@@ -72,7 +72,7 @@ function searches(){
   });
   vm.runInContext(part('const LIVE_COLS =','function apiPost('),ctx);
   vm.runInContext(part('const SCOPES =','/* 当前页面属于哪个板块的搜索'),ctx);
-  vm.runInContext(part('const LSRCH =','const typeTagCN ='),ctx);
+  vm.runInContext(part('function searchUserScope(){','const typeTagCN ='),ctx);
   vm.runInContext(part('{ const open0 = openSearch;','function closeSearch('),ctx);ctx.openSearch('msg');
   const input=value=>{q.value=value;for(const fn of handlers.get('input')||[])fn();},flush=async()=>{const jobs=[...timers.values()];timers.clear();jobs.forEach(fn=>fn());await tick();};
   return{ctx,el,q,requests,input,flush,html:()=>results.innerHTML};

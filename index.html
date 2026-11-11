@@ -9808,6 +9808,11 @@ document.addEventListener('rendered', syncSearchBtn);
 document.addEventListener('rendered', () => { const r = routeOf(CUR.hash), meRoot = r === 'me' && !parentOf(CUR.hash);
   $('#hd').classList.toggle('at-home', r === 'home'); $('#hd').classList.toggle('at-me', meRoot);
   document.documentElement.classList.toggle('no-hd', !parentOf(CUR.hash)); });   // 一级页面在手机上没有顶栏
+function searchUserScope(){return JSON.stringify([API.base,API.epoch,ME,STATE.role]);}
+function searchUsersForQuery(v,remote){
+  const pool=API.on()&&API.tok ? remote?.query===v&&remote.owner===searchUserScope() ? (remote.users||[]).map(id=>USERS[id]).filter(Boolean):[] : Object.values(USERS).filter(u=>(u.name+u.role+u.bio+(u.handle||'')).toLowerCase().includes(v));
+  return pool.filter(u=>!API.on()||LIVE.u.has(u.id)&&u.id!==ME);
+}
 const LSRCH = new Set();   // 连着后端时搜索从后端找到的人（私信搜索里也能直接发起私信）
 function contactIds(){ return [...new Set([...Object.keys(CHATS), ...STATE.follows, ...LSRCH])].filter(id => USERS[id] && id !== ME); }
 function openSearch(scope, tab){
@@ -9841,7 +9846,7 @@ function openSearch(scope, tab){
       if (scope === 'all'){
         G.post = POSTS.filter(p => (p.title + p.ex + p.tags.join(' ') + (p.type === 'question' ? '提问' : '')).toLowerCase().includes(v))
           .map(p => ({go:'post-' + p.id, img:p.cover ? cover(p.cover, hash(p.id)%50, 120, 120) : null, t:hl(p.title), s:`${USERS[p.author].name} · ${typeTagCN[p.type]}`}));
-        G.user = Object.values(USERS).filter(u => (!API.on() || (LIVE.u.has(u.id) && u.id !== ME)) && (u.name + u.role + u.bio + (u.handle || '')).toLowerCase().includes(v)).map(u => ({go:'user-' + u.id, av:u.id, t:hl(u.name), s:u.role}));
+        G.user = searchUsersForQuery(v,el._remote).map(u => ({go:'user-' + u.id, av:u.id, t:hl(u.name), s:u.role}));
       }
     }
     const keys = S.tabs.map(([k]) => k), tab = keys.includes(UI.stabs[scope]) ? UI.stabs[scope] : (keys.find(k => G[k].length) || keys[0]), rows = G[tab];
@@ -9885,19 +9890,20 @@ const typeTagCN = {image:'图文', audio:'声音', video:'视频', question:'提
     const search = () => { cancel(); const v = q.value.trim().replace(el.dataset.s === 'msg' ? /$^/ : /^#/, '');
       if (!v){ el._remote = null; el._draw?.(); return; }
       const dm = el.dataset.s === 'msg'; if (dm && !API.tok){ el._remote = null; el._draw?.(); return; }
-      const my = seq; ctrl = new AbortController(); const signal = ctrl.signal; const remote = el._remote = {pending:true,error:null,query:v.toLowerCase(),contacts:new Set()}; el._draw?.();
+      const my = seq; ctrl = new AbortController(); const signal = ctrl.signal; const remote = el._remote = {pending:true,error:null,query:v.toLowerCase(),contacts:new Set(),users:[],owner:searchUserScope()}; el._draw?.();
       t = setTimeout(async () => {
         try {
+          if(remote.owner!==searchUserScope())return;
           const jobs = [];
           if (dm){jobs.push(API.req('GET', '/dm/contacts?q=' + encodeURIComponent(v), undefined, {signal}).then(r => { if (my === seq && el.isConnected){ remote.contacts = new Set(r.items.map(u => u.id)); r.items.forEach(u => { apiUser(u); LSRCH.add(u.id); }); } }));
             if(v.trim().length>=2)jobs.push(API.req('GET','/dm/search?q='+encodeURIComponent(v)).then(r=>{if(my===seq && el.isConnected){remote.messages=r.items;remote.messageNext=r.next;}}));}
 
           else {
             if (el.dataset.s === 'all') { jobs.push(API.req('GET', '/posts?limit=30&q=' + encodeURIComponent(v), undefined, {signal}).then(r => { if (my === seq && el.isConnected) addPosts(r.items); }));
-              if (API.tok) jobs.push(API.req('GET', '/users?q=' + encodeURIComponent(v), undefined, {signal}).then(r => { if (my === seq && el.isConnected) r.items.forEach(u => apiUser(u)); })); }
+              if (API.tok) jobs.push(API.req('GET', '/users?q=' + encodeURIComponent(v), undefined, {signal}).then(r => { if (my === seq && el.isConnected && remote.owner===searchUserScope()){remote.users=r.items.map(u=>u.id);r.items.forEach(u => apiUser(u));} })); }
             jobs.push(API.req('GET', '/products?limit=30&q=' + encodeURIComponent(v), undefined, {signal}).then(r => { if (my === seq && el.isConnected) r.items.forEach(apiProduct); }));
           }
-          await Promise.all(jobs); if (my !== seq || !el.isConnected) return; el._remote = {...remote,pending:false,error:null}; el._draw?.();
+          await Promise.all(jobs); if (my !== seq || !el.isConnected || remote.owner!==searchUserScope()) return; el._remote = {...remote,pending:false,error:null}; el._draw?.();
         } catch(e){ if (my !== seq || !el.isConnected || e.code === 'cancel') return; el._remote = {...remote,pending:false,error:e.message || '搜索失败，请重试'}; el._draw?.(); }
       }, 250);
     };

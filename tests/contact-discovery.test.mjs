@@ -1,0 +1,10 @@
+import fs from'node:fs';import vm from'node:vm';import assert from'node:assert/strict';import{test}from'node:test';
+const s=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8'),start=s.indexOf('function searchUserScope(){'),end=s.indexOf('const LSRCH = new Set();',start),source=s.slice(start,end);
+function setup(){const c=vm.createContext({API:{on:()=>true,tok:{},base:'qa',epoch:1},ME:'me',STATE:{role:'user'},USERS:{first:{id:'first',name:'旧缓存',role:'创作者',bio:'',handle:'first'},target:{id:'target',name:'目标朋友',role:'创作者',bio:'钢琴',handle:'jazz_public'},me:{id:'me',name:'我',role:'创作者',bio:'',handle:'mine'}},LIVE:{u:new Set(['first','target','me'])}});vm.runInContext(source,c);return{c,ids:(v,r)=>Array.from(c.searchUsersForQuery(v,r),u=>u.id),remote:(query,users)=>({query,users,owner:c.searchUserScope()})};}
+test('公开ID与@查询直接采用服务端结果，不因昵称无相同字符串再次丢弃',()=>{const h=setup();for(const q of['target','@jazz_public'])assert.deepEqual(h.ids(q,h.remote(q,['target'])),['target']);});
+test('精确匹配优先级沿用服务端顺序而非旧缓存插入顺序',()=>{const h=setup();assert.deepEqual(h.ids('target',h.remote('target',['target','first'])),['target','first']);});
+test('读取中、失败或空结果不回退到过期缓存，避免显示已被服务排除的人',()=>{const h=setup();assert.deepEqual(h.ids('旧缓存',null),[]);assert.deepEqual(h.ids('旧缓存',h.remote('旧缓存',[])),[]);});
+test('查询发生变化不显示旧关键词结果',()=>{const h=setup();assert.deepEqual(h.ids('@new',h.remote('@old',['target'])),[]);});
+test('账号、服务或凭据修订变化时不借用上一身份的搜索结果',()=>{for(const key of['ME','epoch','base','role']){const h=setup(),r=h.remote('query',['target']);if(key==='ME')h.c.ME='other';else if(key==='role')h.c.STATE.role='admin';else h.c.API[key]='changed';assert.deepEqual(h.ids('query',r),[]);}});
+test('不存在的服务ID和本人不成为可打开的结果',()=>{const h=setup();assert.deepEqual(h.ids('query',h.remote('query',['missing','me','target'])),['target']);});
+test('访客与离线演示保留原有本地昵称、简介搜索方式',()=>{const h=setup();h.c.API.tok=null;assert.deepEqual(h.ids('钢琴',null),['target']);h.c.API.on=()=>false;assert.deepEqual(h.ids('旧缓存',null),['first']);});

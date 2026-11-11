@@ -110,10 +110,10 @@ test('先到的新信息流优先，迟到旧请求与旧账号响应不回填',
 function searches(){
   const timers=new Map(),handlers={},pending=[],applied=[];let timer=0,draws=0;
   const el={dataset:{s:'all'},isConnected:true,_draw:()=>draws++,remove(){this.isConnected=false;}},q={value:'',addEventListener:(type,fn)=>handlers[type]=fn};
-  const ctx=vm.createContext({Promise,AbortController,Map,Set,clearTimeout:id=>timers.delete(id),setTimeout:fn=>{timers.set(++timer,fn);return timer;},
+  const ctx=vm.createContext({Promise,AbortController,Map,Set,ME:'fixture_reader',STATE:{role:'user'},clearTimeout:id=>timers.delete(id),setTimeout:fn=>{timers.set(++timer,fn);return timer;},
     openSearch(){},$:sel=>sel==='#sq'?q:sel==='#srch'?el:sel==='#layer'?{firstElementChild:null}:null,API:{tok:{access:'test'},on:()=>true,req:(method,path,body,opts)=>{const wait=defer();pending.push({...wait,path,signal:opts.signal});return wait.promise;}},
     addPosts:items=>applied.push(...items),apiProduct:x=>applied.push(x),apiUser:x=>applied.push(x),LSRCH:new Set(),CUR:{post:null},RL:{on:false},document:{documentElement:{style:{}}}});
-  vm.runInContext(section('{ const open0 = openSearch;','function closeSearch('),ctx);vm.runInContext(section('function closeSearch(','ACTIONS.sclose'),ctx);ctx.openSearch();
+  vm.runInContext(section('function searchUserScope(){','function searchUsersForQuery('),ctx);vm.runInContext(section('{ const open0 = openSearch;','function closeSearch('),ctx);vm.runInContext(section('function closeSearch(','ACTIONS.sclose'),ctx);ctx.openSearch();
   const input=value=>{q.value=value;handlers.input();};const flush=()=>{const jobs=[...timers.values()];timers.clear();jobs.forEach(fn=>fn());};
   return {ctx,el,q,pending,applied,timers,input,flush,get draws(){return draws;}};
 }
