@@ -2644,6 +2644,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 
 <link rel="stylesheet" href="scripts/communication.css?v=20261111-r13">
 <link rel="stylesheet" href="scripts/favorites.css?v=20261111-2">
+<link rel="stylesheet" href="scripts/my-interactions.css?v=20261111-2">
 <link rel="stylesheet" href="scripts/dm-voice.css?v=20261111-4">
 <link rel="stylesheet" href="scripts/post-audience.css?v=20261111-2">
 </head>
@@ -8789,6 +8790,7 @@ function meHead(){
     </div></div>`;
 }
 function meTabBody(t){
+  if(globalThis.CZMyInteractions?.enabled()&&['cmts','likes'].includes(t))return CZMyInteractions.profile(t);
   if(t==='favs'&&globalThis.CZFavorites&&liveUser())return CZFavorites.profile();
   if (t === 'works'){ const ws = POSTS.filter(p => p.author === ME); return ws.length ? `<div class="mason">${ws.map(postCard).join('')}</div>` : `<div class="empty"><div class="x">空</div><span>还没有作品</span><button class="pill" data-act="compose">${IC.plus}发第一篇</button></div>`; }
   if (t === 'cmts'){ const cs = myComments(), s = myCmtState(); return (cs.length ? `<div class="mcl">${cs.map(({p, c}) => `<a class="mc" href="#${postHref(p)}${c.id ? '?comment='+encodeURIComponent(c.id) : ''}" data-act="goto-cmt" data-p="${esc(p.id)}" data-cid="${esc(c.id || '')}" data-t="${esc(c.t)}"><span class="mc-t"><p>${globalThis.CZCommunication ? CZCommunication.mentionText(c.t,c.mentions) : esc(c.t)}</p><span>${c.parentId ? '回复了评论' : '评论了 ' + esc(USERS[p.author]?.name || '创作者') + ' 的' + (inStream(p) ? '声音' : '帖子')} · ${c.time} · ♥ ${c.likes}${c.review ? ' · 审核中' : ''}${p.myStatus === 'taken_down' ? ' · 帖子已下架' : ''}</span></span>${miniThumb(p, 'mc-th')}</a>`).join('')}</div>` : !s || s.status === 'ready' ? `<div class="empty"><div class="x">空</div><span>还没有评论过</span></div>` : '')
@@ -8803,12 +8805,12 @@ function meTabBody(t){
   return '';
 }
 function meProfile(){
-  const t = ['works','cmts','favs','hist'].includes(UI.meTab) ? UI.meTab : 'works';
+  const managed=globalThis.CZMyInteractions?.enabled(),t = ['works','cmts','favs','hist',...(managed?['likes']:[])].includes(UI.meTab) ? UI.meTab : 'works';
   onMount(root => mountWaves(root));
-  const mine = myCmtState(); if (mine && (mine.status === 'idle' || mine.status === 'ready' && Date.now()-mine.lastRead > 15000)) onMount(() => loadMyComments(false,mine.loaded));
-  const n = {works:POSTS.filter(p => p.author === ME).length, cmts:mine ? mine.count ?? '…' : myComments().length, favs:globalThis.CZFavorites?.total()??[...STATE.favs].length, hist:(STATE.hist || []).length};
+  const mine = managed ? null : myCmtState(); if (mine && (mine.status === 'idle' || mine.status === 'ready' && Date.now()-mine.lastRead > 15000)) onMount(() => loadMyComments(false,mine.loaded));
+  const n = {works:POSTS.filter(p => p.author === ME).length, cmts:managed ? CZMyInteractions.count()??'…' : mine ? mine.count ?? '…' : myComments().length, favs:globalThis.CZFavorites?.total()??[...STATE.favs].length, hist:(STATE.hist || []).length};
   return `<div class="wrap mep">${meHead()}
-    <div class="mtabs" role="tablist" aria-label="我的内容">${[['works','作品'],['cmts','评论'],['favs','收藏'],['hist','历史']].map(([k, l]) => `<button role="tab" aria-selected="${t === k}" aria-controls="me-content" tabindex="${t === k ? '0' : '-1'}" class="${t === k ? 'on' : ''}" data-act="me-tab" data-v="${k}">${l}<i>${n[k]}</i></button>`).join('')}</div>
+    <div class="mtabs" role="tablist" aria-label="我的内容">${[['works','作品'],['cmts','评论'],...(managed?[['likes','赞过']]:[]),['favs','收藏'],['hist','历史']].map(([k, l]) => `<button role="tab" aria-selected="${t === k}" aria-controls="me-content" tabindex="${t === k ? '0' : '-1'}" class="${t === k ? 'on' : ''}" data-act="me-tab" data-v="${k}">${l}${k==='likes'?'':`<i>${n[k]}</i>`}</button>`).join('')}</div>
     <div class="mtb" id="me-content" role="tabpanel">${meTabBody(t)}</div></div>`;
 }
 document.addEventListener('keydown', e => {
@@ -8846,7 +8848,7 @@ Object.assign(ACTIONS, {
 ROUTES.me = arg => {
   if (STATE.role === 'guest' || STATE.role === 'admin' || ['lib','orders','settings','edit','blocks','close','wallet'].includes(arg)) return meLegacy(arg || 'lib');
   if (arg === 'collab') UI.meTab = 'works';   // 旧链接 #me-collab：合作已下线，归到作品
-  else if (['works','cmts','favs','hist'].includes(arg)) UI.meTab = arg;
+  else if (['works','cmts','likes','favs','hist'].includes(arg)) UI.meTab = arg;
   return meProfile();
 };
 /* ================= 账号：登录 / 注册 / 切换 / 退出（全部模拟） =================
@@ -13202,6 +13204,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 <script src="scripts/dm-voice.js?v=20261111-5"></script>
 <script src="scripts/post-audience.js?v=20261111-2"></script>
 <script src="scripts/post-access.js?v=20261111-2"></script>
+<script src="scripts/my-interactions.js?v=20261111-2"></script>
 
 <script src="scripts/oauth-v1.js?v=20261110-1"></script>
 </body>

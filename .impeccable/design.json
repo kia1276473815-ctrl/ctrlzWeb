@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-11T03:02:30.721Z",
+  "title": "Design System: CTRL Z",
+  "extensions": {
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(.2,.9,.1,1)",
+        "purpose": "源码共享缓动；触屏按钮 transform 过渡使用 .16s。"
+      },
+      {
+        "name": "spring",
+        "value": "cubic-bezier(.3,1.5,.5,1)",
+        "purpose": "共享按钮按压 transform 的 .15s 过渡。"
+      }
+    ],
+    "shadows": [
+      {
+        "name": "button-light-outline",
+        "value": "inset 0 0 0 1px var(--rule)",
+        "purpose": "浅色按钮的静态轮廓，不表示记录卡片悬浮。"
+      },
+      {
+        "name": "button-light-hover",
+        "value": "inset 0 0 0 1px var(--ink)",
+        "purpose": "浅色按钮的悬停轮廓。"
+      },
+      {
+        "name": "button-primary-hover",
+        "value": "0 0 0 3px rgba(20,20,24,.12)",
+        "purpose": "共享主按钮的悬停外圈。"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "interaction-stack",
+        "value": "560px"
+      },
+      {
+        "name": "profile-tab-small-type",
+        "value": "359px"
+      },
+      {
+        "name": "shared-mobile-fields",
+        "value": "760px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "确认层主按钮",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "既有墨色主按钮；片段包含本批确认层删除动作的 44px 最小高度覆盖。",
+      "html": "<button class=\"ds-primary\">删除评论</button>",
+      "css": ".ds-primary{min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 18px;border:0;border-radius:999px;font:600 14px/1 'HarmonyOS Sans','HarmonyOS Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif;cursor:pointer;white-space:nowrap;transition:transform .15s cubic-bezier(.3,1.5,.5,1),background .2s,color .2s,box-shadow .2s;background:var(--ink,#141418);color:var(--paper,#F2F2EE)}.ds-primary:hover{box-shadow:0 0 0 3px rgba(20,20,24,.12)}.ds-primary:focus-visible{outline:2px solid var(--blue,#2E5BFF);outline-offset:2px}.ds-primary:active{transform:scale(.95)}.ds-primary:disabled{opacity:.4;pointer-events:none}@media(hover:none){.ds-primary{transition:transform .16s cubic-bezier(.2,.9,.1,1)}.ds-primary:active{transform:scale(.97)}}"
+    },
+    {
+      "name": "本人互动浅色动作",
+      "kind": "button",
+      "refersTo": "interaction-action",
+      "description": "查看、取消赞、删除、刷新与重试使用的局部 44px 小号浅色按钮。",
+      "html": "<button class=\"ds-interaction-action\">取消赞</button>",
+      "css": ".ds-interaction-action{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 18px;border:0;border-radius:999px;font:600 14px/1 'HarmonyOS Sans','HarmonyOS Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif;cursor:pointer;white-space:nowrap;transition:transform .15s cubic-bezier(.3,1.5,.5,1),background .2s,color .2s,box-shadow .2s;height:32px;min-height:44px;padding:0 13px;font-size:13px;background:var(--card,#FFFFFF);color:var(--ink,#141418);box-shadow:inset 0 0 0 1px var(--rule,#DEDED8)}.ds-interaction-action:hover{box-shadow:inset 0 0 0 1px var(--ink,#141418)}.ds-interaction-action:focus-visible{outline:2px solid var(--blue,#2E5BFF);outline-offset:2px}.ds-interaction-action:active{transform:scale(.95)}.ds-interaction-action:disabled{opacity:.4;pointer-events:none}@media(hover:none){.ds-interaction-action{transition:transform .16s cubic-bezier(.2,.9,.1,1)}.ds-interaction-action:active{transform:scale(.97)}}"
+    },
+    {
+      "name": "共享输入框",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "既有单行输入原语；本批本人互动列表未新增字段。",
+      "html": "<input class=\"ds-input\" aria-label=\"输入内容\" placeholder=\"输入内容\">",
+      "css": ".ds-input{height:44px;padding:0 14px;border-radius:12px;border:0;background:var(--paper,#F2F2EE);color:var(--ink,#141418);width:100%;font:15px/1.6 'HarmonyOS Sans','HarmonyOS Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif;outline:0;transition:box-shadow .15s}.ds-input:focus{box-shadow:inset 0 0 0 1.5px var(--ink,#141418)}@media(max-width:760px){.ds-input{font-size:16px}}"
+    },
+    {
+      "name": "个人页页签",
+      "kind": "nav",
+      "description": "最终级联中的黄色不规则圆角标记；片段只展示视觉和语义，不实现路由切换。",
+      "html": "<div class=\"ds-profile-tabs\" role=\"tablist\" aria-label=\"我的内容\"><button role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">作品</button><button class=\"ds-on\" role=\"tab\" aria-selected=\"true\">评论 <i>3</i></button><button role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">赞过</button></div>",
+      "css": ".ds-profile-tabs{display:flex;gap:clamp(18px,4vw,34px);margin-top:18px;padding:12px 0 10px;border-bottom:1px solid var(--rule,#DEDED8);background:color-mix(in srgb,var(--paper,#F2F2EE) 92%,transparent);backdrop-filter:blur(12px)}.ds-profile-tabs button{position:relative;isolation:isolate;display:flex;align-items:baseline;gap:5px;font:700 16px/1 'HarmonyOS Sans','HarmonyOS Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif;color:var(--ink-3,#6A6B74);padding:4px 0;border:0;background:none;white-space:nowrap;flex:none;cursor:pointer}.ds-profile-tabs button::before{content:\"\";position:absolute;inset:-10px -6px}.ds-profile-tabs button i{font-style:normal;font-size:12px;font-weight:600}.ds-profile-tabs .ds-on{color:#141418}.ds-profile-tabs .ds-on::after{content:\"\";position:absolute;z-index:-1;left:-8px;right:-8px;top:-4px;bottom:-4px;border-radius:5px 8px 6px 7px;background:var(--yellow,#FFE14A);transform:none}.ds-profile-tabs button:focus-visible{outline:2px solid var(--blue,#2E5BFF);outline-offset:2px}@media(max-width:560px){.ds-profile-tabs{gap:clamp(12px,3vw,26px);overflow-x:auto;scrollbar-width:thin}.ds-profile-tabs button{min-height:44px}}@media(max-width:359px){.ds-profile-tabs button{font-size:15px;gap:3px}}"
+    },
+    {
+      "name": "点赞分类",
+      "kind": "chip",
+      "description": "局部主题语义色的分段分类；片段静态选中项通过 aria-pressed 表达。",
+      "html": "<div class=\"ds-kinds\" aria-label=\"点赞记录分类\"><button class=\"ds-on\" aria-pressed=\"true\">帖子</button><button aria-pressed=\"false\">评论</button></div>",
+      "css": ".ds-kinds{display:inline-flex;flex-wrap:wrap;margin:18px 0;background:var(--card,#FFFFFF);border-radius:999px;padding:3px}.ds-kinds button{height:30px;min-height:44px;padding:0 13px;border:0;border-radius:999px;font:700 12px/1 'HarmonyOS Sans','HarmonyOS Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif;color:var(--ink,#141418);background:none;cursor:pointer;white-space:nowrap;transition:background-color .18s,color .18s,border-color .18s,box-shadow .18s,transform .18s,opacity .18s}.ds-kinds button.ds-on{background:var(--ink,#141418);color:var(--paper,#F2F2EE)}.ds-kinds button:focus-visible{outline:2px solid var(--blue,#2E5BFF);outline-offset:2px}"
+    },
+    {
+      "name": "本人互动记录行",
+      "kind": "card",
+      "description": "纯文本记录、来源和局部动作；窄屏动作移动到正文下方。",
+      "html": "<article class=\"ds-record\"><div class=\"ds-record-copy\"><p>我留下的评论原文。</p><span>原帖当前不可查看 · 刚刚</span><span>你仍可管理自己留下的记录</span></div><div class=\"ds-record-actions\"><button class=\"ds-record-button\">删除</button></div></article>",
+      "css": ".ds-record{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 24px;padding:20px 0;border-bottom:1px solid var(--rule,#DEDED8);font-family:'HarmonyOS Sans','HarmonyOS Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif}.ds-record-copy{min-width:0}.ds-record-copy p{margin:0 0 8px;font-size:16px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink,#141418)}.ds-record-copy>span{display:block;font-size:13px;line-height:1.7;overflow-wrap:anywhere;color:var(--ink-2,#53535C)}.ds-record-actions{display:flex;align-items:center;align-self:center;justify-content:flex-end;flex-wrap:wrap;gap:12px}.ds-record-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 18px;border:0;border-radius:999px;font:600 14px/1 'HarmonyOS Sans','HarmonyOS Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif;cursor:pointer;white-space:nowrap;transition:transform .15s cubic-bezier(.3,1.5,.5,1),background .2s,color .2s,box-shadow .2s;height:32px;min-height:44px;padding:0 13px;font-size:13px;background:var(--card,#FFFFFF);color:var(--ink,#141418);box-shadow:inset 0 0 0 1px var(--rule,#DEDED8)}.ds-record-button:hover{box-shadow:inset 0 0 0 1px var(--ink,#141418)}.ds-record-button:focus-visible{outline:2px solid var(--blue,#2E5BFF);outline-offset:2px}.ds-record-button:active{transform:scale(.95)}@media(hover:none){.ds-record-button{transition:transform .16s cubic-bezier(.2,.9,.1,1)}.ds-record-button:active{transform:scale(.97)}}@media(max-width:560px){.ds-record{grid-template-columns:minmax(0,1fr);gap:12px}.ds-record-actions{justify-content:flex-start}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "每天重印的孔版杂志",
+    "overview": "这是既有源码对视觉世界的命名：纸面、实色油墨、清楚的文字层级与细分隔线。个人页的管理区域沿用这套材料，以紧凑列表承载正文、来源和操作；不为本批增加新的视觉主题。\n\n本文是实现后的有限抽样记录，覆盖共享字体与颜色、个人页页签、按钮、输入框，以及收藏与本人互动列表。事实来源为冻结前端 `D:/ctrlz/output/communication-my-interactions-20261111/frontend-e088c8fe` 的 `index.html`、`scripts/my-interactions.js`、`scripts/my-interactions.css` 与 `scripts/favorites.css`。它不是全站界面审计，也不补造缺失的产品策略。",
+    "keyCharacteristics": [
+      "鸿蒙字体承担正文、导航与操作。",
+      "纸面与表面随主题切换，细线组织列表。",
+      "黄色不规则圆角色块标记个人页当前页签。",
+      "胶囊按钮提供直接命名的管理动作，窄屏允许动作换行。"
+    ],
+    "rules": [
+      {
+        "name": "Theme-Semantics",
+        "body": "本人互动分类使用主题的卡片底和墨色文字；选中项沿用墨色底、纸面字的反色组合。不要把局部修复推广为全站分段控件重绘。",
+        "section": "colors"
+      },
+      {
+        "name": "Body-For-Operations",
+        "body": "导航、计数、表单和管理动作继承正文栈；展示字体的既有用途不扩展到互动管理文案。",
+        "section": "typography"
+      }
+    ],
+    "dos": [
+      "**Do** 以运行时主题变量组合背景、正文和分隔线。",
+      "**Do** 让本人互动的新动作保留至少 44px 高度，并在窄屏换行。",
+      "**Do** 保留原文与来源的文字层级，使失败反馈靠近对应记录。"
+    ],
+    "donts": [
+      "**Don't** 把本批分类配色覆盖扩到全站分段控件。",
+      "**Don't** 将已被后续级联取消的页签旋转记成当前规则。",
+      "**Don't** 把这份有限抽样或界面 ship 处置当成全站功能、无障碍或部署验收。"
+    ]
+  }
+}
