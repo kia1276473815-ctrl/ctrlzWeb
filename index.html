@@ -2643,6 +2643,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 </style>
 
 <link rel="stylesheet" href="scripts/communication.css?v=20261111-r13">
+<link rel="stylesheet" href="scripts/block-operations.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/favorites.css?v=20261111-2">
 <link rel="stylesheet" href="scripts/my-interactions.css?v=20261111-2">
 <link rel="stylesheet" href="scripts/dm-voice.css?v=20261111-4">
@@ -10475,14 +10476,17 @@ ACTIONS['feed-retry'] = () => liveFeed().catch(apiFail);
 ACTIONS['prof-retry'] = b => { delete LIVE.prof[b.dataset.id]; rerender(); };   // 别人主页读取失败后重试
 async function liveMeExtras(){
   if (LIVE.me?.accessState === 'verification_required') return;
+  const ownerKey=JSON.stringify([API.base,API.epoch,ME,STATE.role]),blockTicket=globalThis.CZBlocks?.readTicket()||{key:ownerKey,revision:LIVE.blockRevision||0,seq:LIVE.blockReadSeq=(LIVE.blockReadSeq||0)+1},relationRevision=LIVE.relationshipRevision||0,pendingFollows=()=>typeof INTERACTIONS!=='undefined'&&[...INTERACTIONS.keys()].some(key=>key.startsWith(ME+':follow:')),followPending=pendingFollows(),current=()=>ownerKey===JSON.stringify([API.base,API.epoch,ME,STATE.role]);
   const [fo, bl, nt, prof, mine] = await Promise.all([API.req('GET', `/users/${ME}/following?limit=50`), API.req('GET', '/me/blocks'), API.req('GET', '/notifications?limit=50'), API.req('GET', `/users/${ME}`),
     API.req('GET', `/posts?author=${encodeURIComponent(ME)}&limit=50`)]);
+  if(!current())return;
   LIVE.pend = {};
   mine.items.filter(p => p.status === 'review').forEach(p => { const o = apiPost(p), i = POSTS.findIndex(x => x.id === o.id); i >= 0 ? POSTS[i] = o : POSTS.unshift(o); });
-  STATE.follows = new Set(fo.items.map(u => apiUser(u).id));
-  STATE.blocks = new Set(bl.items.map(u => apiUser(u).id));
+  const blocksCurrent=globalThis.CZBlocks?CZBlocks.applySnapshot(bl.items,blockTicket):(STATE.blocks=new Set(bl.items.map(u=>apiUser(u).id)),true);
+  const followsCurrent=(blocksCurrent||globalThis.CZBlocks?.mutationCurrent(blockTicket))&&!followPending&&!pendingFollows()&&relationRevision===(LIVE.relationshipRevision||0);
+  if(followsCurrent)STATE.follows=new Set(fo.items.map(u=>apiUser(u).id).filter(id=>!STATE.blocks.has(id))); 
   ADM.inbox[ME] = nt.items.map(n => ({id:n.id, title:n.title, text:n.body, ts:+new Date(n.createdAt), read:n.read, ...n.extra}));
-  Object.assign(USERS[ME], {fans:prof.followers, follow:prof.following});
+  if(followsCurrent)Object.assign(USERS[ME], {fans:prof.followers, follow:prof.following});
 }
 /* 用 /me 的结果设置当前账号（不弹欢迎提示） */
 function liveMe(me){
@@ -10526,6 +10530,7 @@ const INTERACTIONS = new Map();
 async function sendInteraction(kind,id,was,now,perform){
   const key = ME + ':' + kind + ':' + id, current = accountSession(); let entry = INTERACTIONS.get(key);
   if (!entry){ entry = {confirmed:was,seq:0,tail:Promise.resolve()}; INTERACTIONS.set(key,entry); }
+  if(kind==='follow')LIVE.relationshipRevision=(LIVE.relationshipRevision||0)+1;
   const seq = ++entry.seq, set = STATE[kind === 'like' ? 'liked' : kind === 'fav' ? 'favs' : 'follows'];
   if (kind === 'follow' && !now) (LIVE.folOff ||= new Set()).add(id);   // 刚取关的作者马上从关注流里拿掉，不等重读
   const task = entry.tail.catch(() => {}).then(async () => { if (!current()) return; const r = await perform(); if (!current()) return;
@@ -10534,7 +10539,7 @@ async function sendInteraction(kind,id,was,now,perform){
     entry.confirmed = now; syncInteraction(kind,id); if (kind === 'follow') folReset();   // 关注 / 取关后重读关注流
   }); entry.tail = task;
   try { await task; } catch(e){ if (current() && entry.seq === seq){ entry.confirmed ? set.add(id) : set.delete(id); apiFail(e); syncInteraction(kind,id); } }
-  finally { if (entry.seq === seq && INTERACTIONS.get(key) === entry) INTERACTIONS.delete(key); }
+  finally { if(kind==='follow')LIVE.relationshipRevision=(LIVE.relationshipRevision||0)+1;if (entry.seq === seq && INTERACTIONS.get(key) === entry) INTERACTIONS.delete(key); }
 }
 
 wrapAct('like', async (orig, b, e) => {
@@ -10686,15 +10691,8 @@ wrapAct('pers', async (orig, b, e) => {
   try { await API.req('PATCH', '/me', {personalized:STATE.settings.pers}); await liveFeed(); rerender(); }
   catch(err){ STATE.settings.pers = !STATE.settings.pers; applySettings(); apiFail(err); rerender(); }
 });
-wrapAct('blk-go', async (orig, b, e) => {
-  const id = b.dataset.id; orig(b, e); if (!liveUser() || !LIVE.u.has(id)) return;
-  try { await API.req('PUT', `/me/blocks/${id}`); await liveFeed(); rerender(); } catch(err){ STATE.blocks.delete(id); blkSave(); apiFail(err); rerender(); }
-});
-wrapAct('blk', async (orig, b, e) => {
-  const id = b.dataset.id, was = STATE.blocks.has(id); orig(b, e);
-  if (!was || STATE.blocks.has(id) || !liveUser() || !LIVE.u.has(id)) return;   // 只处理「解除拉黑」；拉黑在 blk-go
-  try { await API.req('DELETE', `/me/blocks/${id}`); await liveFeed(); rerender(); } catch(err){ STATE.blocks.add(id); blkSave(); apiFail(err); rerender(); }
-});
+wrapAct('blk-go', (orig,b,e) => {if(globalThis.CZBlocks)return CZBlocks.block(orig,b,e);toast('拉黑组件尚未就绪，请刷新后重试','orange');});
+wrapAct('blk', (orig,b,e) => {if(globalThis.CZBlocks)return CZBlocks.toggle(orig,b,e);toast('拉黑组件尚未就绪，请刷新后重试','orange');});
 const PROFILE_SAVES = new Map();
 wrapAct('save-prof', async (orig, b, e) => {
   if (!liveUser()) return orig(b,e);
@@ -13203,6 +13201,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 </script>
 <script src="scripts/dm-expressions.js?v=20261111-2"></script>
 <script src="scripts/communication.js?v=20261111-r14"></script>
+<script src="scripts/block-operations.js?v=20261111-1"></script>
 <script src="scripts/favorites.js?v=20261111-5"></script>
 <script src="scripts/dm-voice.js?v=20261111-5"></script>
 <script src="scripts/post-audience.js?v=20261111-2"></script>
@@ -13212,3 +13211,5 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 <script src="scripts/oauth-v1.js?v=20261111-2"></script>
 </body>
 </html>
+
+
