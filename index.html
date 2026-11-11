@@ -2644,7 +2644,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 
 <link rel="stylesheet" href="scripts/relationship-lists.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/official-inbox.css?v=20261111-1">
-<link rel="stylesheet" href="scripts/communication.css?v=20261112-r18">
+<link rel="stylesheet" href="scripts/communication.css?v=20261112-r19">
 <link rel="stylesheet" href="scripts/comment-replies.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/block-operations.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/favorites.css?v=20261111-2">
@@ -11411,13 +11411,12 @@ async function dmRefs(list,force=false){
   for(const [key,entry]of waiting)outcomes.set(key,await entry.promise);return valid()?outcomes:new Map();
 }
 async function dmThreads(){
-  const cursor=arguments[0];
-  const current = dmSession();
-  let r; try { r = await API.req('GET', '/dm/threads?limit=50'+(cursor ? '&cursor='+encodeURIComponent(cursor):'')); } catch(e){ if (current() && LDM.listState !== 'ready') LDM.listState = 'error'; throw e; }
-  const fresh = [], open = CUR.key?.startsWith('msg|') ? CUR.key.slice(4) : '';
-  if (!current()) return fresh; LDM.listState = 'ready'; LDM.listAt = Date.now(); LDM.unread = r.items.reduce((n, t) => n + t.unread, 0);
-  globalThis.CZCommunication?.threadPage(r,cursor);
-  for (const t of r.items){
+  const cursor=arguments[0],current=dmSession(),bridge=globalThis.CZCommunication,ticket=bridge?.beginThreadPage?.(cursor);if(ticket===false)return [];
+  try{const r=await API.req('GET','/dm/threads?limit=50'+(cursor?'&cursor='+encodeURIComponent(cursor):''));if(!current())return [];if(bridge?.threadPage(r,cursor,ticket)===false)return [];LDM.listState='ready';LDM.listAt=Date.now();if(!cursor)LDM.unread=r.items.reduce((n,t)=>n+t.unread,0);const fresh=dmApplyThreadRows(r.items);if(!cursor)await bridge?.resolveLoadedThreads?.();return current()?fresh:[];
+  }catch(e){if(current()){bridge?.failThreadPage?.(e,cursor,ticket);if(LDM.listState!=='ready')LDM.listState='error';}throw e;}
+}
+function dmApplyThreadRows(items){const fresh=[],open=CUR.key?.startsWith('msg|')?CUR.key.slice(4):'';
+  for (const t of items){
     apiUser(t.peer); const uid = t.peer.id;globalThis.CZCommunication?.absorb(uid,t.conversation); const m = dmMap(t.last); if (dmCut(uid, m.ts)) continue;
     const had = LDM.last[uid]; LDM.last[uid] = m.id;
     if (had !== m.id && had && !m.me && uid !== open && !m.rc) fresh.push([uid, m]);
@@ -13221,7 +13220,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 <script src="scripts/dm-expressions.js?v=20261111-2"></script>
 <script src="scripts/media-url-core.js?v=20261112-1"></script>
 <script src="scripts/post-edit-core.js?v=20261112-1"></script>
-<script src="scripts/communication.js?v=20261112-r18"></script>
+<script src="scripts/communication.js?v=20261112-r19"></script>
 <script src="scripts/comment-replies.js?v=20261111-1"></script>
 <script src="scripts/block-operations.js?v=20261111-1"></script>
 <script src="scripts/official-inbox.js?v=20261111-1"></script>
