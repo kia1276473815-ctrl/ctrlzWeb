@@ -10621,6 +10621,8 @@ wrapAct('cp-publish', async (orig, b, e) => {
   const panel = $('#cpWrap'), scope = cpStoreKey(), epoch = API.epoch;
   const current = () => UI.cp === C && !C.closed && $('#cpWrap') === panel && panel?.isConnected !== false && scope === cpStoreKey() && API.epoch === epoch && liveUser();
   if (C.key !== scope || !current()) return;
+  // 旧请求结果未知时继续保留确认状态；首次明确资格拒绝则回到可编辑草稿。
+  const retryingPublish = !!C.pendingPublish;
   cpCapture(C); const p = cpDraft(), k = cpKind(), afile = C.audio?.file, snd = k === 'audio' || k === 'vis', tr = snd ? TRACKS['post:draft'] : null;
   if (!C.pendingPublish && !cpTitle() && !C.imgs.length && !C.audio && !C.video && !detectPlat(cpLink())) return;
   const type = snd ? 'audio' : p.tcover ? 'text' : p.type === 'question' ? 'question' : p.type === 'image' ? 'image' : 'video';
@@ -10673,7 +10675,7 @@ wrapAct('cp-publish', async (orig, b, e) => {
     if (UI.cp === C) closeSheet(); UI.feed = {type:'all', cat:'all', tag:null, sort:'new'};
     toast(np.review ? '已提交审核，通过前仅自己可见' : np.visibility==='private' ? '已发布 · 仅自己可见' : np.visibility==='followers' ? '已发布 · 当前粉丝可见' : '发出去了 · ' + KIND[k][0], np.review ? 'orange' : 'pink');
     if(np.visibility==='private'||np.visibility==='followers')go('user-'+ME);else if (CUR.key === 'feed|') rerender(); else go('feed');
-  } catch(err){ if(err.status>=400&&err.status<500&&![401,403,409].includes(err.status))C.pendingPublish=null;await cpSave(C); if (current()) apiFail(err); }
+  } catch(err){ if((!retryingPublish && err.status===403 && ['phone_required','verification_required'].includes(err.code)) || (err.status>=400&&err.status<500&&![401,403,409].includes(err.status)))C.pendingPublish=null;await cpSave(C); if (current()) apiFail(err); }
   finally { C.busy = false; C.progress = ''; if (UI.cp === C && $('#cpWrap') === panel){ panel?.removeAttribute('inert'); if (current()) cpRender(); else if (b.isConnected){ b.disabled = true; b.textContent = '账号已变化，请重新打开发帖'; } } }
 });
 wrapAct('post-esave', async (orig, b, e) => {
