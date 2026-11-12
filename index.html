@@ -2651,6 +2651,7 @@ footer .ft-legal{margin-top:6px} footer .ft-legal a{text-decoration:underline;te
 <link rel="stylesheet" href="scripts/publications.css?v=20261112-1">
 <link rel="stylesheet" href="scripts/comment-replies.css?v=20261112-1">
 <link rel="stylesheet" href="scripts/activity-inbox.css?v=20261112-1">
+<link rel="stylesheet" href="scripts/creator-posts.css?v=20261112-1">
 <link rel="stylesheet" href="scripts/block-operations.css?v=20261111-1">
 <link rel="stylesheet" href="scripts/favorites.css?v=20261112-2">
 <link rel="stylesheet" href="scripts/my-interactions.css?v=20261112-1">
@@ -7033,7 +7034,7 @@ ROUTES.user = id => {
       ${isMe ? `<a class="pill ol" href="#me-edit">编辑资料</a>` : bl ? '' : `<div style="display:flex;gap:8px"><button class="pill ${STATE.follows.has(u.id) ? 'lt' : ''}" data-act="follow" data-id="${u.id}">${STATE.follows.has(u.id) ? '已关注' : '关注'}</button><a class="pill ol" href="#msg-${u.id}">私信</a><button class="pill ol sq-ic" data-act="shr-open" data-k="user" data-id="${u.id}" aria-label="分享主页">${RIC.fwd}</button></div>`}</div></div>
   ${bl ? `<div class="ann warn"><span class="ann-i">${IC.x}</span><span class="ann-t"><b>你已拉黑 TA</b><span>看不到 TA 的帖子和评论，也不能互发私信</span></span><button class="pill sm lt" data-act="blk" data-id="${u.id}">解除</button></div>` : ''}
   <div class="utabs"><button class="${tab==='works'?'on':''}" data-act="utab" data-v="works">作品 <i>${works.length}</i></button>${showShop ? `<button class="${tab==='shop'?'on':''}" data-act="utab" data-v="shop">店铺 <i>${shop.length}</i></button>` : ''}</div>
-  ${tab === 'works' ? (works.length ? `<div class="mason">${works.map(postCard).join('')}</div>` : '<div class="empty"><div class="x">空</div><span>还没有发布作品</span></div>')
+  ${tab === 'works' ? (globalThis.CZCreatorPosts?.view(u.id) ?? (works.length ? `<div class="mason">${works.map(postCard).join('')}</div>` : '<div class="empty"><div class="x">空</div><span>还没有发布作品</span></div>'))
     : isMe && !STATE.seller ? `<div class="shopband grain c-yellow" style="align-items:center"><div style="position:relative;z-index:2"><div class="x">把你的作品<br>卖给同行</div><p style="margin-top:12px;font-size:15px;max-width:30ch">采样、预设、.tox、视觉循环都可以上架。平台只收 ${+(PLAT*100).toFixed(1)}%。</p></div><button class="pill lg" data-act="sell" style="position:relative;z-index:2">${IC.plus}上架作品</button></div>`
     : `<div class="shopband grain"><div style="position:relative;z-index:2"><span class="lab" style="color:var(--ink)">受邀创作者店铺</span><div class="x" style="margin-top:8px">${esc(u.shop)}</div></div><div class="stats" style="position:relative;z-index:2"><div><b>${shop.length}</b><span style="color:var(--ink)">件资源</span></div><div><b data-roll="${shop.reduce((s,p) => s + p.sales, 0)}">0</b><span style="color:var(--ink)">次被拥有</span></div></div></div>${isMe ? `<div style="display:flex;justify-content:flex-end;margin:-10px 0 18px"><button class="pill" data-act="sell">${IC.plus}上架新资源</button></div>` : ''}<div class="grid-p">${shop.map(sleeve).join('')}</div>`}
   </div>`;
@@ -10841,13 +10842,16 @@ async function liveAfterLogin(){ try { liveMe(await API.req('GET', '/me')); cons
 /* 别人的主页、帖子评论：第一次打开时从后端拉 */
 { const userRoute0 = ROUTES.user;
   ROUTES.user = id => {
+    if(globalThis.CZCreatorPosts?.enabled())return CZCreatorPosts.route(id,userRoute0);
     if (API.on() && id && id !== ME && (!LIVE.prof[id] || LIVE.prof[id] === 'stale')){
+      const profileScope=JSON.stringify([API.base,API.epoch,ME,STATE.role]),profileCurrent=()=>profileScope===JSON.stringify([API.base,API.epoch,ME,STATE.role])&&!globalThis.CZCreatorPosts?.enabled();
       const quiet = !!LIVE.prof[id]; LIVE.prof[id] = quiet ? 'ok' : 'loading';   // stale：已经显示着（刚登录，要换成本人看到的关注状态），后台重读，不退回「正在加载」
       Promise.all([API.req('GET', `/users/${id}`), API.req('GET', `/posts?author=${encodeURIComponent(id)}&limit=50`)]).then(([u, ps]) => {
+        if(!profileCurrent())return;
         apiUser(u, {fans:u.followers, follow:u.following}); u.isFollowing ? STATE.follows.add(u.id) : STATE.follows.delete(u.id);
         ps.items.forEach(p => { const np = apiPost(p); if (!POSTS.some(x => x.id === np.id)) POSTS.push(np); }); (LIVE.pnext ||= {})[id] = ps.next;
         LIVE.prof[id] = 'ok'; rerender();
-      }).catch(e => { const gone = e.status === 404 || e.code === 'not_found'; LIVE.prof[id] = gone ? 'missing' : quiet ? 'ok' : 'error'; if (!gone) apiFail(e); rerender(); });   // 网络错误不当成「用户不存在」
+      }).catch(e => { if(!profileCurrent())return;const gone = e.status === 404 || e.code === 'not_found'; LIVE.prof[id] = gone ? 'missing' : quiet ? 'ok' : 'error'; if (!gone) apiFail(e); rerender(); });   // 网络错误不当成「用户不存在」
       if (!quiet) return `<div class="wrap msub"><div class="empty miss"><div class="x">···</div><span>正在加载</span></div></div>`;
     }
     if (API.on() && LIVE.prof[id] === 'loading') return `<div class="wrap msub"><div class="empty miss"><div class="x">···</div><span>正在加载</span></div></div>`;
@@ -12921,7 +12925,7 @@ const moreWatch = () => { if (MORE_IO){ MORE_IO.disconnect(); $$('.feed-more').f
 document.addEventListener('rendered',moreWatch);
 { const h0 = ROUTES.home; ROUTES.home = (...a) => { const h = h0(...a); if (!API.on() || !homeNext()) return h; onMount(moreWatch); return h + moreBox('home'); }; }
 { const s0 = ROUTES.shop; ROUTES.shop = (...a) => { const h = s0(...a); if (!API.on() || !LSHOP.next) return h; onMount(moreWatch); return h + moreBox('shop'); }; }
-{ const u0 = ROUTES.user; ROUTES.user = id => { const h = u0(id); if (!API.on() || !LIVE.pnext?.[id] || (UI.userTab && UI.userTab !== 'works')) return h; onMount(moreWatch); return h + moreBox('user:' + id); }; }
+{ const u0 = ROUTES.user; ROUTES.user = id => { const h = u0(id); if (globalThis.CZCreatorPosts?.enabled() || !API.on() || !LIVE.pnext?.[id] || (UI.userTab && UI.userTab !== 'works')) return h; onMount(moreWatch); return h + moreBox('user:' + id); }; }
 
 /* 搜索请求统一由上面的可取消任务处理；首页推荐词读热门话题。 */
 async function hotTags(){ try { const r = await API.req('GET', '/tags/hot'); if (r.items.length) SCOPES.all.tries = r.items.slice(0, 8).map(x => x.tag); } catch(e){} }
@@ -13252,6 +13256,7 @@ function orderAttempt(pr,body){ const signature = JSON.stringify([ME,pr.id,body.
 <script src="scripts/publications.js?v=20261112-1"></script>
 <script src="scripts/reply-composer.js?v=20261112-2"></script>
 <script src="scripts/activity-inbox.js?v=20261112-1"></script>
+<script src="scripts/creator-posts.js?v=20261112-1"></script>
 <script src="scripts/comment-replies.js?v=20261112-2"></script>
 <script src="scripts/block-operations.js?v=20261111-1"></script>
 <script src="scripts/official-inbox.js?v=20261112-1"></script>
